@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
 
 const navItems = [
+  { label: 'Connection Test', path: '/', end: true },
   { label: 'Dashboard', path: '/dashboard' },
   { label: 'Analytics', path: '/analytics' },
   { label: 'Settings', path: '/settings' },
@@ -19,6 +20,7 @@ function DashboardLayout() {
               className={({ isActive }) =>
                 isActive ? 'nav-link nav-link-active' : 'nav-link'
               }
+              end={item.end}
               to={item.path}
             >
               {item.label}
