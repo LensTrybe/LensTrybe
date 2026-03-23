@@ -1,0 +1,60 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  text-align: left;
+}
+
+.app-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.app-brand {
+  font-weight: 600;
+  color: var(--text-h);
+  letter-spacing: -0.02em;
+}
+
+.app-nav {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.app-nav-link {
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.95rem;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.app-nav-link:hover {
+  color: var(--text-h);
+  background: var(--social-bg);
+}
+
+.app-nav-link.active {
+  color: var(--text-h);
+  background: var(--accent-bg);
+}
+
+.app-main {
+  flex: 1;
+  padding: 2rem 1.25rem;
+}
+
+.page h1 {
+  margin-top: 0;
+}
+
+.page p {
+  margin: 0.75rem 0 0;
+  max-width: 42rem;
+}
