@@ -3,6 +3,23 @@ import useAuthUser from '../../hooks/useAuthUser'
 import { supabase } from '../../lib/supabaseClient'
 import { filterRowsForUser } from '../../lib/filterRowsForUser'
 
+async function fetchContactsForUser(userId) {
+  if (!supabase || !userId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('crm_contacts')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return filterRowsForUser(data, userId)
+}
+
 function CRMPage() {
   const { user, loading: authLoading } = useAuthUser()
   const [contacts, setContacts] = useState([])
@@ -14,9 +31,53 @@ function CRMPage() {
   const [notes, setNotes] = useState('')
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const userId = user?.id ?? null
+
+  useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
+    if (!supabase || !userId) {
+      setContacts([])
+      setErrorMessage('')
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+    setLoading(true)
+    setErrorMessage('')
+
+    fetchContactsForUser(userId)
+      .then((rows) => {
+        if (!isMounted) {
+          return
+        }
+        setContacts(rows)
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+        setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (!isMounted) {
+          return
+        }
+        setLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, userId])
 
   const loadContacts = async () => {
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
+      setContacts([])
+      setErrorMessage('')
       setLoading(false)
       return
     }
@@ -24,30 +85,20 @@ function CRMPage() {
     setLoading(true)
     setErrorMessage('')
 
-    const { data, error } = await supabase
-      .from('crm_contacts')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
+    try {
+      const rows = await fetchContactsForUser(userId)
+      setContacts(rows)
+    } catch (error) {
       setErrorMessage(error.message)
-    } else {
-      setContacts(filterRowsForUser(data, user.id))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
-
-  useEffect(() => {
-    if (!authLoading) {
-      loadContacts()
-    }
-  }, [authLoading, user])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
       setErrorMessage('Supabase is not configured or user is missing.')
       return
     }
@@ -57,7 +108,7 @@ function CRMPage() {
     setErrorMessage('')
 
     const { error } = await supabase.from('crm_contacts').insert({
-      user_id: user.id,
+      user_id: userId,
       name,
       email,
       phone,

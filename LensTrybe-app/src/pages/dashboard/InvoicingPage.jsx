@@ -3,6 +3,23 @@ import useAuthUser from '../../hooks/useAuthUser'
 import { supabase } from '../../lib/supabaseClient'
 import { filterRowsForUser } from '../../lib/filterRowsForUser'
 
+async function fetchInvoicesForUser(userId) {
+  if (!supabase || !userId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('invoices')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return filterRowsForUser(data, userId)
+}
+
 function InvoicingPage() {
   const { user, loading: authLoading } = useAuthUser()
   const [invoices, setInvoices] = useState([])
@@ -14,9 +31,53 @@ function InvoicingPage() {
   const [status, setStatus] = useState('draft')
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const userId = user?.id ?? null
+
+  useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
+    if (!supabase || !userId) {
+      setInvoices([])
+      setErrorMessage('')
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+    setLoading(true)
+    setErrorMessage('')
+
+    fetchInvoicesForUser(userId)
+      .then((rows) => {
+        if (!isMounted) {
+          return
+        }
+        setInvoices(rows)
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+        setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (!isMounted) {
+          return
+        }
+        setLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, userId])
 
   const loadInvoices = async () => {
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
+      setInvoices([])
+      setErrorMessage('')
       setLoading(false)
       return
     }
@@ -24,30 +85,20 @@ function InvoicingPage() {
     setLoading(true)
     setErrorMessage('')
 
-    const { data, error } = await supabase
-      .from('invoices')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
+    try {
+      const rows = await fetchInvoicesForUser(userId)
+      setInvoices(rows)
+    } catch (error) {
       setErrorMessage(error.message)
-    } else {
-      setInvoices(filterRowsForUser(data, user.id))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
-
-  useEffect(() => {
-    if (!authLoading) {
-      loadInvoices()
-    }
-  }, [authLoading, user])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
       setErrorMessage('Supabase is not configured or user is missing.')
       return
     }
@@ -57,7 +108,7 @@ function InvoicingPage() {
     setErrorMessage('')
 
     const { error } = await supabase.from('invoices').insert({
-      user_id: user.id,
+      user_id: userId,
       client_name: clientName,
       amount: amount ? Number(amount) : null,
       due_date: dueDate || null,

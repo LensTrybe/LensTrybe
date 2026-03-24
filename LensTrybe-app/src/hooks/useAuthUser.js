@@ -3,13 +3,13 @@ import { supabase } from '../lib/supabaseClient'
 
 function useAuthUser() {
   const [user, setUser] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [loading, setLoading] = useState(Boolean(supabase))
+  const [errorMessage, setErrorMessage] = useState(
+    supabase ? '' : 'Supabase is not configured.',
+  )
 
   useEffect(() => {
     if (!supabase) {
-      setErrorMessage('Supabase is not configured.')
-      setLoading(false)
       return undefined
     }
 

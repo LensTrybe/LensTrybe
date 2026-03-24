@@ -3,6 +3,23 @@ import useAuthUser from '../../hooks/useAuthUser'
 import { supabase } from '../../lib/supabaseClient'
 import { filterRowsForUser } from '../../lib/filterRowsForUser'
 
+async function fetchAvailabilityForUser(userId) {
+  if (!supabase || !userId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('availability')
+    .select('*')
+    .order('date', { ascending: true })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return filterRowsForUser(data, userId)
+}
+
 function AvailabilityPage() {
   const { user, loading: authLoading } = useAuthUser()
   const [availabilityRows, setAvailabilityRows] = useState([])
@@ -12,9 +29,53 @@ function AvailabilityPage() {
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const userId = user?.id ?? null
+
+  useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
+    if (!supabase || !userId) {
+      setAvailabilityRows([])
+      setErrorMessage('')
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+    setLoading(true)
+    setErrorMessage('')
+
+    fetchAvailabilityForUser(userId)
+      .then((rows) => {
+        if (!isMounted) {
+          return
+        }
+        setAvailabilityRows(rows)
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+        setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (!isMounted) {
+          return
+        }
+        setLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, userId])
 
   const loadAvailability = async () => {
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
+      setAvailabilityRows([])
+      setErrorMessage('')
       setLoading(false)
       return
     }
@@ -22,30 +83,20 @@ function AvailabilityPage() {
     setLoading(true)
     setErrorMessage('')
 
-    const { data, error } = await supabase
-      .from('availability')
-      .select('*')
-      .order('date', { ascending: true })
-
-    if (error) {
+    try {
+      const rows = await fetchAvailabilityForUser(userId)
+      setAvailabilityRows(rows)
+    } catch (error) {
       setErrorMessage(error.message)
-    } else {
-      setAvailabilityRows(filterRowsForUser(data, user.id))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
-
-  useEffect(() => {
-    if (!authLoading) {
-      loadAvailability()
-    }
-  }, [authLoading, user])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!supabase || !user?.id || !date) {
+    if (!supabase || !userId || !date) {
       setErrorMessage('Date, user, or Supabase configuration is missing.')
       return
     }
@@ -66,7 +117,7 @@ function AvailabilityPage() {
     } else {
       response = await supabase
         .from('availability')
-        .insert({ user_id: user.id, date, status })
+        .insert({ user_id: userId, date, status })
     }
 
     const { error } = response

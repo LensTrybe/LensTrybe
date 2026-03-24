@@ -3,6 +3,23 @@ import useAuthUser from '../../hooks/useAuthUser'
 import { supabase } from '../../lib/supabaseClient'
 import { filterRowsForUser } from '../../lib/filterRowsForUser'
 
+async function fetchQuotesForUser(userId) {
+  if (!supabase || !userId) {
+    return []
+  }
+
+  const { data, error } = await supabase
+    .from('quotes')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  return filterRowsForUser(data, userId)
+}
+
 function QuotesPage() {
   const { user, loading: authLoading } = useAuthUser()
   const [quotes, setQuotes] = useState([])
@@ -13,9 +30,53 @@ function QuotesPage() {
   const [details, setDetails] = useState('')
   const [message, setMessage] = useState('')
   const [errorMessage, setErrorMessage] = useState('')
+  const userId = user?.id ?? null
+
+  useEffect(() => {
+    if (authLoading) {
+      return
+    }
+
+    if (!supabase || !userId) {
+      setQuotes([])
+      setErrorMessage('')
+      setLoading(false)
+      return
+    }
+
+    let isMounted = true
+    setLoading(true)
+    setErrorMessage('')
+
+    fetchQuotesForUser(userId)
+      .then((rows) => {
+        if (!isMounted) {
+          return
+        }
+        setQuotes(rows)
+      })
+      .catch((error) => {
+        if (!isMounted) {
+          return
+        }
+        setErrorMessage(error.message)
+      })
+      .finally(() => {
+        if (!isMounted) {
+          return
+        }
+        setLoading(false)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [authLoading, userId])
 
   const loadQuotes = async () => {
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
+      setQuotes([])
+      setErrorMessage('')
       setLoading(false)
       return
     }
@@ -23,30 +84,20 @@ function QuotesPage() {
     setLoading(true)
     setErrorMessage('')
 
-    const { data, error } = await supabase
-      .from('quotes')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (error) {
+    try {
+      const rows = await fetchQuotesForUser(userId)
+      setQuotes(rows)
+    } catch (error) {
       setErrorMessage(error.message)
-    } else {
-      setQuotes(filterRowsForUser(data, user.id))
+    } finally {
+      setLoading(false)
     }
-
-    setLoading(false)
   }
-
-  useEffect(() => {
-    if (!authLoading) {
-      loadQuotes()
-    }
-  }, [authLoading, user])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
 
-    if (!supabase || !user?.id) {
+    if (!supabase || !userId) {
       setErrorMessage('Supabase is not configured or user is missing.')
       return
     }
@@ -56,7 +107,7 @@ function QuotesPage() {
     setErrorMessage('')
 
     const { error } = await supabase.from('quotes').insert({
-      user_id: user.id,
+      user_id: userId,
       client_name: clientName,
       amount: amount ? Number(amount) : null,
       details,
