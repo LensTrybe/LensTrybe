@@ -10,7 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@supabase/supabase-js": "^2.99.3",
+=======
+    "@supabase/supabase-js": "^2.99.2",
+>>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "react-router-dom": "^7.13.1"
@@ -19,11 +23,19 @@
     "@eslint/js": "^9.39.4",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
+<<<<<<< HEAD
     "@vitejs/plugin-react": "^6.0.1",
+=======
+    "@vitejs/plugin-react": "^6.0.0",
+>>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d
     "eslint": "^9.39.4",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.5.2",
     "globals": "^17.4.0",
+<<<<<<< HEAD
     "vite": "^8.0.1"
+=======
+    "vite": "^8.0.0"
+>>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d
   }
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useEffect, useState } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
@@ -30,3 +31,27 @@ export default function ProtectedRoute({ children }) {
 
   return children
 }
+=======
+import { Navigate, Outlet } from 'react-router-dom'
+import useAuthUser from '../hooks/useAuthUser'
+
+function ProtectedRoute() {
+  const { user, loading, errorMessage } = useAuthUser()
+
+  if (loading) {
+    return <p>Checking authentication...</p>
+  }
+
+  if (errorMessage) {
+    return <p>{errorMessage}</p>
+  }
+
+  if (!user) {
+    return <Navigate replace to="/login" />
+  }
+
+  return <Outlet />
+}
+
+export default ProtectedRoute
+>>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d

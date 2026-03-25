@@ -10,9 +10,14 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+<<<<<<< HEAD
 *.local
 
 .env
+=======
+.env
+*.local
+>>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d
 
 # Editor directories and files
 .vscode/*
