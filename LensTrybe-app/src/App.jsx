@@ -1,65 +1,37 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-<<<<<<< HEAD
-import AppShell from './components/AppShell.jsx'
+import DashboardLayout from './components/DashboardLayout.jsx'
 import ProtectedRoute from './components/ProtectedRoute.jsx'
-import AboutPage from './pages/AboutPage.jsx'
+import AvailabilityPage from './pages/dashboard/AvailabilityPage.jsx'
+import BookingRequestsPage from './pages/dashboard/BookingRequestsPage.jsx'
+import BrandKitPage from './pages/dashboard/BrandKitPage.jsx'
+import CRMPage from './pages/dashboard/CRMPage.jsx'
+import ClientPortalsPage from './pages/dashboard/ClientPortalsPage.jsx'
+import ContractsPage from './pages/dashboard/ContractsPage.jsx'
+import DeliverPage from './pages/dashboard/DeliverPage.jsx'
+import EditProfilePage from './pages/dashboard/EditProfilePage.jsx'
+import InsightsPage from './pages/dashboard/InsightsPage.jsx'
+import InvoicingPage from './pages/dashboard/InvoicingPage.jsx'
+import MarketplacePage from './pages/dashboard/MarketplacePage.jsx'
+import MessagesPage from './pages/dashboard/MessagesPage.jsx'
+import MyBookingsPage from './pages/dashboard/MyBookingsPage.jsx'
+import PortfolioPage from './pages/dashboard/PortfolioPage.jsx'
+import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage.jsx'
+import QuotesPage from './pages/dashboard/QuotesPage.jsx'
+import ReviewsPage from './pages/dashboard/ReviewsPage.jsx'
+import TeamPage from './pages/dashboard/TeamPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
-import HomePage from './pages/HomePage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
+import NotFoundPage from './pages/NotFoundPage.jsx'
 import './App.css'
 
 export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
-      <Route element={<AppShell />}>
-        <Route index element={<HomePage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
-  )
-}
-=======
-import DashboardLayout from './components/DashboardLayout'
-import ProtectedRoute from './components/ProtectedRoute'
-import LoginPage from './pages/LoginPage'
-import NotFoundPage from './pages/NotFoundPage'
-import AvailabilityPage from './pages/dashboard/AvailabilityPage'
-import BookingRequestsPage from './pages/dashboard/BookingRequestsPage'
-import BrandKitPage from './pages/dashboard/BrandKitPage'
-import CRMPage from './pages/dashboard/CRMPage'
-import ClientPortalsPage from './pages/dashboard/ClientPortalsPage'
-import ContractsPage from './pages/dashboard/ContractsPage'
-import DeliverPage from './pages/dashboard/DeliverPage'
-import EditProfilePage from './pages/dashboard/EditProfilePage'
-import InsightsPage from './pages/dashboard/InsightsPage'
-import InvoicingPage from './pages/dashboard/InvoicingPage'
-import MarketplacePage from './pages/dashboard/MarketplacePage'
-import MessagesPage from './pages/dashboard/MessagesPage'
-import MyBookingsPage from './pages/dashboard/MyBookingsPage'
-import PortfolioPage from './pages/dashboard/PortfolioPage'
-import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage'
-import QuotesPage from './pages/dashboard/QuotesPage'
-import ReviewsPage from './pages/dashboard/ReviewsPage'
-import TeamPage from './pages/dashboard/TeamPage'
-
-function App() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
 
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Navigate replace to="profile/edit-profile" />} />
+          <Route index element={<DashboardPage />} />
 
           <Route path="profile/edit-profile" element={<EditProfilePage />} />
 
@@ -95,6 +67,3 @@ function App() {
     </Routes>
   )
 }
-
-export default App
->>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d
