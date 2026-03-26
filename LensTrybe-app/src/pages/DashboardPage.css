@@ -1,6 +1,8 @@
 .dashboard {
   width: 100%;
   max-width: 100%;
+  font-family: var(--font-sans);
+  color: #fff;
 }
 
 .dashboard-header {
@@ -18,43 +20,26 @@
 }
 
 .dashboard-title {
-  font-family: var(--heading);
-  font-weight: 500;
+  font-family: var(--font-sans);
+  font-weight: 600;
   font-size: clamp(1.35rem, 2.5vw, 1.75rem);
   letter-spacing: -0.03em;
   line-height: 1.2;
-  color: var(--text-h);
+  color: #fff;
   margin: 0 0 0.65rem;
 }
 
 .dashboard-badge {
   display: inline-block;
-  font-size: 0.7rem;
-  font-weight: 500;
-  letter-spacing: 0.04em;
+  font-size: 0.65rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--text);
-  padding: 0.2rem 0.55rem;
+  color: var(--brand-pink);
+  padding: 0.25rem 0.6rem;
   border-radius: 999px;
-  border: 1px solid var(--border);
-  background: transparent;
-}
-
-.dashboard-signout {
-  font-family: var(--sans);
-  font-size: 0.9rem;
-  padding: 0.4rem 0.85rem;
-  border-radius: 6px;
-  border: 1px solid var(--border);
-  color: var(--text-h);
-  background: var(--social-bg);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.dashboard-signout:hover {
-  border-color: var(--accent-border);
-  background: var(--accent-bg);
+  border: 1px solid rgba(217, 70, 239, 0.45);
+  background: rgba(217, 70, 239, 0.1);
 }
 
 .dashboard-section {
@@ -89,9 +74,9 @@
   gap: 0.75rem;
   padding: 1rem 1rem 1.1rem;
   border-radius: 10px;
-  border: 1px solid var(--border);
-  background: var(--code-bg);
-  box-shadow: var(--shadow);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
 .stat-card-icon {
@@ -101,7 +86,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
+  color: var(--brand-green);
 }
 
 .stat-card-icon svg {
@@ -117,20 +102,21 @@
 .stat-card-label {
   font-size: 0.78rem;
   line-height: 1.35;
-  color: var(--text);
+  color: rgba(255, 255, 255, 0.65);
   margin-bottom: 0.35rem;
 }
 
 .stat-card-value {
-  font-family: var(--mono);
+  font-family: var(--font-sans);
   font-size: 1.35rem;
-  font-weight: 500;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.02em;
-  color: var(--text-h);
+  color: #fff;
   line-height: 1.2;
 }
 
 .stat-card-value--muted {
   font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.88);
 }

@@ -2,19 +2,22 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router-dom'
 import useAuthUser from '../hooks/useAuthUser.js'
 import { supabase } from '../lib/supabaseClient.js'
+import './LoginPage.css'
 
 export default function LoginPage() {
   const navigate = useNavigate()
   const { user, loading } = useAuthUser()
-  const [mode, setMode] = useState('login')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
-  const [signupMessage, setSignupMessage] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   if (loading) {
-    return <p>Loading session...</p>
+    return (
+      <div className="login-page">
+        <p className="login-status">Loading session...</p>
+      </div>
+    )
   }
 
   if (user) {
@@ -24,7 +27,6 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault()
     setError(null)
-    setSignupMessage(null)
 
     if (!supabase) {
       setError('Supabase is not configured.')
@@ -33,90 +35,58 @@ export default function LoginPage() {
 
     setSubmitting(true)
 
-    if (mode === 'login') {
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      })
-      setSubmitting(false)
-      if (signInError) {
-        setError(signInError.message)
-        return
-      }
-      navigate('/dashboard', { replace: true })
-      return
-    }
-
-    const { error: signUpError } = await supabase.auth.signUp({
+    const { error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     })
     setSubmitting(false)
-    if (signUpError) {
-      setError(signUpError.message)
+    if (signInError) {
+      setError(signInError.message)
       return
     }
-    setSignupMessage('Check your email to confirm your account before signing in.')
+    navigate('/dashboard', { replace: true })
   }
 
   return (
-    <div>
-      <h1>{mode === 'login' ? 'Sign in' : 'Sign up'}</h1>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">LensTrybe</div>
+        <h1 className="login-title">Sign in</h1>
 
-      {signupMessage && <p role="status">{signupMessage}</p>}
-      {error && <p role="alert">{error}</p>}
-
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" disabled={submitting}>
-          {submitting
-            ? mode === 'login'
-              ? 'Signing in...'
-              : 'Signing up...'
-            : mode === 'login'
-              ? 'Sign in'
-              : 'Sign up'}
-        </button>
-      </form>
-
-      <p>
-        {mode === 'login' ? (
-          <>
-            Need an account?{' '}
-            <button type="button" onClick={() => setMode('signup')}>
-              Sign up
-            </button>
-          </>
-        ) : (
-          <>
-            Already have an account?{' '}
-            <button type="button" onClick={() => setMode('login')}>
-              Sign in
-            </button>
-          </>
+        {error && (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
         )}
-      </p>
+
+        <form onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="login-field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button className="login-submit" type="submit" disabled={submitting}>
+            {submitting ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
     </div>
   )
 }

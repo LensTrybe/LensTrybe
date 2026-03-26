@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import './DashboardLayout.css'
 
 const navSections = [
   {
@@ -62,28 +63,39 @@ function DashboardLayout() {
   }
 
   return (
-    <div>
-      <aside>
-        <h2>LensTrybe Dashboard</h2>
-        <button type="button" onClick={signOut}>
-          Sign Out
-        </button>
-        <nav>
+    <div className="dashboard-shell">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-sidebar-brand">LensTrybe</div>
+        <nav className="dashboard-sidebar-nav" aria-label="Dashboard">
           {navSections.map((section) => (
             <section key={section.title}>
-              <h3>{section.title}</h3>
-              <ul>
+              <h3 className="dashboard-sidebar-heading">{section.title}</h3>
+              <ul className="dashboard-sidebar-list">
                 {section.links.map((link) => (
                   <li key={link.to}>
-                    <NavLink to={link.to}>{link.label}</NavLink>
+                    <NavLink
+                      to={link.to}
+                      className={({ isActive }) =>
+                        isActive
+                          ? 'dashboard-nav-link dashboard-nav-link--active'
+                          : 'dashboard-nav-link'
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
                   </li>
                 ))}
               </ul>
             </section>
           ))}
         </nav>
+        <div className="dashboard-sidebar-footer">
+          <button type="button" className="dashboard-sidebar-signout" onClick={signOut}>
+            Sign Out
+          </button>
+        </div>
       </aside>
-      <main>
+      <main className="dashboard-main">
         <Outlet />
       </main>
     </div>

@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient.js'
 import './DashboardPage.css'
 
@@ -77,10 +76,13 @@ const ICONS = {
 }
 
 export default function DashboardPage() {
-  const navigate = useNavigate()
   const [user, setUser] = useState(null)
 
   useEffect(() => {
+    if (!supabase) {
+      return undefined
+    }
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
     })
@@ -92,11 +94,6 @@ export default function DashboardPage() {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function handleSignOut() {
-    await supabase.auth.signOut()
-    navigate('/login', { replace: true })
-  }
-
   const name = displayNameFromUser(user)
 
   return (
@@ -106,9 +103,6 @@ export default function DashboardPage() {
           <h1 className="dashboard-title">Welcome, {name}</h1>
           <span className="dashboard-badge">+ Founding Member</span>
         </div>
-        <button type="button" className="dashboard-signout" onClick={handleSignOut}>
-          Sign out
-        </button>
       </header>
 
       <section className="dashboard-section" aria-label="Overview stats">

@@ -6,11 +6,19 @@ export default function ProtectedRoute() {
   const { user, loading, errorMessage } = useAuthUser()
 
   if (loading) {
-    return <p>Checking authentication...</p>
+    return (
+      <div className="brand-screen-message">
+        <p>Checking authentication...</p>
+      </div>
+    )
   }
 
   if (errorMessage) {
-    return <p>{errorMessage}</p>
+    return (
+      <div className="brand-screen-message">
+        <p className="brand-screen-message__error">{errorMessage}</p>
+      </div>
+    )
   }
 
   if (!user) {

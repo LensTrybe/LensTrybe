@@ -22,7 +22,6 @@ import TeamPage from './pages/dashboard/TeamPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
-import './App.css'
 
 export default function App() {
   return (
