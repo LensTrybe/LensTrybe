@@ -14,7 +14,7 @@ import InvoicingPage from './pages/dashboard/InvoicingPage.jsx'
 import MarketplacePage from './pages/dashboard/MarketplacePage.jsx'
 import MessagesPage from './pages/dashboard/MessagesPage.jsx'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage.jsx'
-import PortfolioPage from './pages/dashboard/PortfolioPage.jsx'
+import PortfolioPage from './pages/PortfolioPage.jsx'
 import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage.jsx'
 import QuotesPage from './pages/dashboard/QuotesPage.jsx'
 import ReviewsPage from './pages/dashboard/ReviewsPage.jsx'
@@ -65,6 +65,7 @@ export default function App() {
       <Route path="/" element={<Navigate replace to="/dashboard" />} />
       <Route path="*" element={<NotFoundPage />} />
       <Route path="/sign/:token" element={<SignContract />} />
+      <Route path="/portfolio/:id" element={<PortfolioPage />} />
       <Route path="/portal/:token" element={<ClientPortalPage />} />
     </Routes>
   )

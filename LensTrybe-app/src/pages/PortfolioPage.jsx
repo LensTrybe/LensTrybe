@@ -22,15 +22,12 @@ export default function PortfolioPage() {
       .select("*")
       .eq("id", id)
       .single();
-
     if (error || !prof) { setNotFound(true); setLoading(false); return; }
     setProfile(prof);
-
     const [itemsRes, reviewsRes] = await Promise.all([
       supabase.from("portfolio_items").select("*").eq("creative_id", id).order("sort_order", { ascending: true }),
       supabase.from("reviews").select("*").eq("creative_id", id).order("created_at", { ascending: false }),
     ]);
-
     setItems(itemsRes.data || []);
     setReviews(reviewsRes.data || []);
     setLoading(false);
@@ -66,7 +63,6 @@ export default function PortfolioPage() {
         .port-name { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 8px; }
         .port-tagline { font-size: 16px; color: #888; margin-bottom: 12px; }
         .port-meta { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 13px; color: #555; flex-wrap: wrap; }
-        .port-meta-item { display: flex; align-items: center; gap: 5px; }
         .port-rating { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border-radius: 20px; padding: 4px 12px; }
         .port-rating-stars { color: #facc15; font-size: 12px; }
         .port-rating-num { font-size: 13px; color: #fff; font-weight: 600; }
@@ -83,7 +79,7 @@ export default function PortfolioPage() {
         .featured-card-title { font-size: 15px; font-weight: 700; color: #fff; }
         .featured-card-cat { font-size: 11px; color: #aaa; margin-top: 3px; }
         .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-        .cat-tab { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 6px 16px; font-size: 12px; color: #666; cursor: pointer; transition: all 0.15s; }
+        .cat-tab { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 6px 16px; font-size: 12px; color: #666; cursor: pointer; }
         .cat-tab.active { background: #1e2a1e; border-color: #39ff14; color: #39ff14; }
         .portfolio-masonry { columns: 3; gap: 12px; }
         @media (max-width: 768px) { .portfolio-masonry { columns: 2; } }
@@ -96,9 +92,6 @@ export default function PortfolioPage() {
         .masonry-title { font-size: 13px; font-weight: 600; color: #fff; }
         .masonry-cat { font-size: 11px; color: #aaa; }
         .no-img-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 20px; break-inside: avoid; margin-bottom: 12px; }
-        .no-img-title { font-size: 14px; font-weight: 600; color: #fff; }
-        .no-img-cat { font-size: 11px; color: #666; margin-top: 4px; }
-        .no-img-desc { font-size: 12px; color: #888; margin-top: 8px; line-height: 1.5; }
         .reviews-section { margin-top: 48px; }
         .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
         .review-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px; }
@@ -124,8 +117,8 @@ export default function PortfolioPage() {
           <div className="port-name">{profile.business_name}</div>
           {profile.tagline && <div className="port-tagline">{profile.tagline}</div>}
           <div className="port-meta">
-            {profile.location && <span className="port-meta-item">📍 {profile.location}</span>}
-            {profile.years_experience && <span className="port-meta-item">⏱ {profile.years_experience} years experience</span>}
+            {profile.location && <span>📍 {profile.location}</span>}
+            {profile.years_experience && <span>⏱ {profile.years_experience} years experience</span>}
             {avgRating && (
               <div className="port-rating">
                 <span className="port-rating-stars">★</span>
@@ -175,7 +168,7 @@ export default function PortfolioPage() {
           </div>
 
           {filtered.length === 0 ? (
-            <div className="empty-portfolio">No work in this category yet</div>
+            <div className="empty-portfolio">No work added yet</div>
           ) : (
             <div className="portfolio-masonry">
               {filtered.map((item) => (
@@ -189,9 +182,9 @@ export default function PortfolioPage() {
                   </div>
                 ) : (
                   <div key={item.id} className="no-img-card">
-                    <div className="no-img-title">{item.title}</div>
-                    <div className="no-img-cat">{item.category}</div>
-                    {item.description && <div className="no-img-desc">{item.description}</div>}
+                    <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{item.title}</div>
+                    <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{item.category}</div>
+                    {item.description && <div style={{ fontSize: 12, color: "#888", marginTop: 8, lineHeight: 1.5 }}>{item.description}</div>}
                   </div>
                 )
               ))}
@@ -218,7 +211,6 @@ export default function PortfolioPage() {
             </div>
           )}
         </div>
-
         <div className="port-footer">Powered by <span>LensTrybe</span></div>
       </div>
 
