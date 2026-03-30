@@ -1,229 +1,256 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
 
 export default function PortfolioPage() {
-  const { id } = useParams();
-  const [profile, setProfile] = useState(null);
-  const [items, setItems] = useState([]);
-  const [reviews, setReviews] = useState([]);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [notFound, setNotFound] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("All");
-  const [lightbox, setLightbox] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [uploading, setUploading] = useState({});
+  const [form, setForm] = useState({
+    business_name: "", tagline: "", bio: "", location: "",
+    phone: "", website: "", years_experience: "",
+    skill_types: "", specialties: "", avatar_url: "", cover_url: "",
+  });
+  const avatarRef = useRef(null);
+  const coverRef = useRef(null);
 
   useEffect(() => {
-    fetchPortfolio();
-  }, [id]);
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
 
-  const fetchPortfolio = async () => {
-    const { data: prof, error } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", id)
-      .single();
-    if (error || !prof) { setNotFound(true); setLoading(false); return; }
-    setProfile(prof);
-    const [itemsRes, reviewsRes] = await Promise.all([
-      supabase.from("portfolio_items").select("*").eq("creative_id", id).order("sort_order", { ascending: true }),
-      supabase.from("reviews").select("*").eq("creative_id", id).order("created_at", { ascending: false }),
-    ]);
-    setItems(itemsRes.data || []);
-    setReviews(reviewsRes.data || []);
+  useEffect(() => {
+    if (!user) return;
+    fetchProfile();
+  }, [user]);
+
+  const fetchProfile = async () => {
+    setLoading(true);
+    const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single();
+    if (data) {
+      setForm({
+        business_name: data.business_name || "",
+        tagline: data.tagline || "",
+        bio: data.bio || "",
+        location: data.location || "",
+        phone: data.phone || "",
+        website: data.website || "",
+        years_experience: data.years_experience || "",
+        skill_types: (data.skill_types || []).join(", "),
+        specialties: (data.specialties || []).join(", "),
+        avatar_url: data.avatar_url || "",
+        cover_url: data.cover_url || "",
+      });
+    }
     setLoading(false);
   };
 
-  const categories = ["All", ...new Set(items.map((i) => i.category).filter(Boolean))];
-  const filtered = activeCategory === "All" ? items : items.filter((i) => i.category === activeCategory);
-  const featured = items.filter((i) => i.featured);
-  const avgRating = reviews.length ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : null;
+  const saveProfile = async () => {
+    setSaving(true);
+    const payload = {
+      ...form,
+      skill_types: form.skill_types ? form.skill_types.split(",").map(s => s.trim()).filter(Boolean) : [],
+      specialties: form.specialties ? form.specialties.split(",").map(s => s.trim()).filter(Boolean) : [],
+      years_experience: form.years_experience ? parseInt(form.years_experience) : null,
+    };
+    await supabase.from("profiles").update(payload).eq("id", user.id);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+    setSaving(false);
+  };
 
-  if (loading) return (
-    <div style={{ background: "#0f0f0f", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "system-ui" }}>
-      Loading portfolio...
-    </div>
-  );
+  const uploadImage = async (file, field) => {
+    setUploading(p => ({ ...p, [field]: true }));
+    const path = user.id + "/" + field + "-" + Date.now() + "." + file.name.split(".").pop();
+    const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
+    if (!error) {
+      const { data } = supabase.storage.from("avatars").getPublicUrl(path);
+      setForm(p => ({ ...p, [field]: data.publicUrl }));
+    }
+    setUploading(p => ({ ...p, [field]: false }));
+  };
 
-  if (notFound) return (
-    <div style={{ background: "#0f0f0f", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "system-ui", flexDirection: "column", gap: 12 }}>
-      <span style={{ fontSize: 48 }}>🔍</span>
-      <p>Portfolio not found</p>
-    </div>
-  );
+  const f = (field, val) => setForm(p => ({ ...p, [field]: val }));
+
+  if (loading) return <div style={{ padding: 40, color: "#444" }}>Loading...</div>;
 
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #0f0f0f; }
-        .port-page { min-height: 100vh; background: #0f0f0f; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
-        .port-hero { background: linear-gradient(180deg, #141414 0%, #0f0f0f 100%); border-bottom: 1px solid #1e1e1e; padding: 60px 32px 40px; text-align: center; }
-        .port-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #000; margin: 0 auto 16px; overflow: hidden; }
-        .port-avatar img { width: 100%; height: 100%; object-fit: cover; }
-        .port-name { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 8px; }
-        .port-tagline { font-size: 16px; color: #888; margin-bottom: 12px; }
-        .port-meta { display: flex; align-items: center; justify-content: center; gap: 16px; font-size: 13px; color: #555; flex-wrap: wrap; }
-        .port-rating { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border-radius: 20px; padding: 4px 12px; }
-        .port-rating-stars { color: #facc15; font-size: 12px; }
-        .port-rating-num { font-size: 13px; color: #fff; font-weight: 600; }
-        .port-skills { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 16px; }
-        .port-skill { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 20px; padding: 4px 12px; font-size: 12px; color: #aaa; }
-        .port-body { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
-        .port-section-title { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.1em; font-weight: 700; margin-bottom: 20px; }
-        .featured-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; margin-bottom: 48px; }
-        .featured-card { position: relative; border-radius: 12px; overflow: hidden; aspect-ratio: 4/3; cursor: pointer; }
-        .featured-card img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.3s; }
-        .featured-card:hover img { transform: scale(1.03); }
-        .featured-card-overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 50%); opacity: 0; transition: opacity 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 16px; }
-        .featured-card:hover .featured-card-overlay { opacity: 1; }
-        .featured-card-title { font-size: 15px; font-weight: 700; color: #fff; }
-        .featured-card-cat { font-size: 11px; color: #aaa; margin-top: 3px; }
-        .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
-        .cat-tab { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 6px 16px; font-size: 12px; color: #666; cursor: pointer; }
-        .cat-tab.active { background: #1e2a1e; border-color: #39ff14; color: #39ff14; }
-        .portfolio-masonry { columns: 3; gap: 12px; }
-        @media (max-width: 768px) { .portfolio-masonry { columns: 2; } }
-        @media (max-width: 480px) { .portfolio-masonry { columns: 1; } }
-        .masonry-item { break-inside: avoid; margin-bottom: 12px; border-radius: 10px; overflow: hidden; cursor: pointer; position: relative; }
-        .masonry-item img { width: 100%; display: block; transition: transform 0.3s; }
-        .masonry-item:hover img { transform: scale(1.02); }
-        .masonry-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); opacity: 0; transition: opacity 0.2s; display: flex; flex-direction: column; justify-content: flex-end; padding: 12px; }
-        .masonry-item:hover .masonry-overlay { opacity: 1; }
-        .masonry-title { font-size: 13px; font-weight: 600; color: #fff; }
-        .masonry-cat { font-size: 11px; color: #aaa; }
-        .no-img-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 10px; padding: 20px; break-inside: avoid; margin-bottom: 12px; }
-        .reviews-section { margin-top: 48px; }
-        .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-        .review-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px; }
-        .review-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .review-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; flex-shrink: 0; }
-        .review-name { font-size: 14px; font-weight: 600; color: #fff; }
-        .review-stars { color: #facc15; font-size: 12px; margin-top: 2px; }
-        .review-comment { font-size: 13px; color: #888; line-height: 1.6; }
-        .port-footer { text-align: center; padding: 40px 20px; color: #333; font-size: 12px; border-top: 1px solid #1a1a1a; margin-top: 60px; }
-        .port-footer span { color: #39ff14; font-weight: 700; }
-        .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        .lightbox-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
-        .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 28px; color: #aaa; cursor: pointer; background: none; border: none; }
-        .lightbox-info { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); text-align: center; color: #aaa; font-size: 14px; }
-        .empty-portfolio { text-align: center; padding: 60px 20px; color: #444; font-size: 14px; }
+        .pp-wrap { background: #0f0f0f; min-height: 100vh; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
+        .pp-header { display: flex; align-items: center; justify-content: space-between; padding: 24px 32px 20px; }
+        .pp-title { font-size: 22px; font-weight: 700; color: #fff; }
+        .pp-subtitle { font-size: 13px; color: #555; margin-top: 4px; }
+        .save-btn { background: #39ff14; color: #000; border: none; border-radius: 8px; padding: 9px 22px; font-size: 13px; font-weight: 700; cursor: pointer; transition: opacity 0.15s; }
+        .save-btn:hover { opacity: 0.85; }
+        .save-btn.saved { background: #22c55e; }
+        .pp-body { padding: 0 32px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .pp-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 22px; }
+        .pp-card.full { grid-column: 1 / -1; }
+        .pp-card-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+        .pp-field { margin-bottom: 14px; }
+        .pp-field label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+        .pp-field input, .pp-field textarea { width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 9px 12px; color: #e8e8e8; font-size: 13px; outline: none; font-family: inherit; box-sizing: border-box; }
+        .pp-field input:focus, .pp-field textarea:focus { border-color: #39ff14; }
+        .pp-field textarea { resize: vertical; min-height: 90px; }
+
+        /* Cover photo */
+        .cover-wrap { position: relative; width: 100%; height: 150px; border-radius: 10px; overflow: hidden; margin-bottom: 48px; cursor: pointer; }
+        .cover-bg { width: 100%; height: 100%; background: linear-gradient(135deg, #1a2a1a, #1e1e3a); object-fit: cover; display: block; }
+        .cover-pencil { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); border: 1px solid #2a2a2a; border-radius: 6px; padding: 5px 8px; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 5px; pointer-events: none; }
+        .cover-pencil span { font-size: 11px; }
+
+        /* Avatar */
+        .avatar-wrap { position: absolute; bottom: -36px; left: 20px; width: 72px; height: 72px; border-radius: 50%; border: 3px solid #141414; overflow: hidden; cursor: pointer; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #000; }
+        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-pencil { position: absolute; bottom: 0; right: 0; background: #39ff14; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid #141414; pointer-events: none; }
+
+        /* Uploading state */
+        .uploading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #39ff14; border-radius: inherit; }
+
+        /* Preview card */
+        .preview-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; grid-column: 1 / -1; }
+        .preview-cover { height: 100px; background: linear-gradient(135deg, #1a2a1a, #1e1e3a); position: relative; }
+        .preview-cover img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-avatar { width: 56px; height: 56px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); border: 3px solid #141414; position: absolute; bottom: -20px; left: 20px; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #000; }
+        .preview-avatar img { width: 100%; height: 100%; object-fit: cover; }
+        .preview-body { padding: 28px 20px 20px; }
+        .preview-name { font-size: 18px; font-weight: 800; color: #fff; }
+        .preview-tagline { font-size: 13px; color: #888; margin-top: 4px; }
+        .preview-bio { font-size: 13px; color: #aaa; margin-top: 10px; line-height: 1.6; }
+        .preview-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .preview-tag { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #aaa; }
+        .preview-meta { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #555; flex-wrap: wrap; }
+        .remove-link { background: none; border: none; color: #f87171; font-size: 11px; cursor: pointer; padding: 0; }
       `}</style>
 
-      <div className="port-page">
-        <div className="port-hero">
-          <div className="port-avatar">
-            {profile.avatar_url ? <img src={profile.avatar_url} alt={profile.business_name} /> : profile.business_name?.[0]?.toUpperCase() || "?"}
+      <div className="pp-wrap">
+        <div className="pp-header">
+          <div>
+            <div className="pp-title">Portfolio</div>
+            <div className="pp-subtitle">Your public business profile</div>
           </div>
-          <div className="port-name">{profile.business_name}</div>
-          {profile.tagline && <div className="port-tagline">{profile.tagline}</div>}
-          <div className="port-meta">
-            {profile.location && <span>📍 {profile.location}</span>}
-            {profile.years_experience && <span>⏱ {profile.years_experience} years experience</span>}
-            {avgRating && (
-              <div className="port-rating">
-                <span className="port-rating-stars">★</span>
-                <span className="port-rating-num">{avgRating}</span>
-                <span style={{ color: "#555", fontSize: 11 }}>({reviews.length})</span>
-              </div>
-            )}
-          </div>
-          {(profile.skill_types?.length > 0 || profile.skills?.length > 0) && (
-            <div className="port-skills">
-              {[...(profile.skill_types || []), ...(profile.skills || [])].slice(0, 6).map((s, i) => (
-                <span key={i} className="port-skill">{s}</span>
-              ))}
-            </div>
-          )}
+          <button className={"save-btn" + (saved ? " saved" : "")} onClick={saveProfile} disabled={saving}>
+            {saving ? "Saving..." : saved ? "Saved!" : "Save Profile"}
+          </button>
         </div>
 
-        <div className="port-body">
-          {featured.length > 0 && (
-            <div style={{ marginBottom: 48 }}>
-              <div className="port-section-title">Featured Work</div>
-              <div className="featured-grid">
-                {featured.map((item) => (
-                  <div key={item.id} className="featured-card" onClick={() => item.image_url && setLightbox(item)}>
-                    {item.image_url ? (
-                      <>
-                        <img src={item.image_url} alt={item.title} />
-                        <div className="featured-card-overlay">
-                          <div className="featured-card-title">{item.title}</div>
-                          <div className="featured-card-cat">{item.category}</div>
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ background: "#141414", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🖼️</div>
-                    )}
-                  </div>
-                ))}
+        <div className="pp-body">
+
+          {/* Live Preview */}
+          <div className="preview-card">
+            <div className="preview-cover">
+              {form.cover_url && <img src={form.cover_url} alt="cover" />}
+              <div className="preview-avatar">
+                {form.avatar_url ? <img src={form.avatar_url} alt="avatar" /> : form.business_name?.[0]?.toUpperCase() || "?"}
               </div>
             </div>
-          )}
-
-          <div className="port-section-title">All Work ({items.length})</div>
-          <div className="cat-tabs">
-            {categories.map((c) => (
-              <button key={c} className={"cat-tab " + (activeCategory === c ? "active" : "")} onClick={() => setActiveCategory(c)}>{c}</button>
-            ))}
+            <div className="preview-body">
+              <div className="preview-name">{form.business_name || "Your Business Name"}</div>
+              {form.tagline && <div className="preview-tagline">{form.tagline}</div>}
+              {form.bio && <div className="preview-bio">{form.bio}</div>}
+              <div className="preview-tags">
+                {form.skill_types.split(",").filter(s => s.trim()).map((s, i) => (
+                  <span key={i} className="preview-tag">{s.trim()}</span>
+                ))}
+              </div>
+              <div className="preview-meta">
+                {form.location && <span>📍 {form.location}</span>}
+                {form.years_experience && <span>⏱ {form.years_experience} yrs</span>}
+                {form.website && <span>🌐 {form.website}</span>}
+              </div>
+            </div>
           </div>
 
-          {filtered.length === 0 ? (
-            <div className="empty-portfolio">No work added yet</div>
-          ) : (
-            <div className="portfolio-masonry">
-              {filtered.map((item) => (
-                item.image_url ? (
-                  <div key={item.id} className="masonry-item" onClick={() => setLightbox(item)}>
-                    <img src={item.image_url} alt={item.title} />
-                    <div className="masonry-overlay">
-                      <div className="masonry-title">{item.title}</div>
-                      <div className="masonry-cat">{item.category}</div>
-                    </div>
-                  </div>
-                ) : (
-                  <div key={item.id} className="no-img-card">
-                    <div style={{ fontSize: 14, fontWeight: 600, color: "#fff" }}>{item.title}</div>
-                    <div style={{ fontSize: 11, color: "#666", marginTop: 4 }}>{item.category}</div>
-                    {item.description && <div style={{ fontSize: 12, color: "#888", marginTop: 8, lineHeight: 1.5 }}>{item.description}</div>}
-                  </div>
-                )
-              ))}
-            </div>
-          )}
+          {/* Photos section */}
+          <div className="pp-card full">
+            <div className="pp-card-title">🖼️ Photos</div>
 
-          {reviews.length > 0 && (
-            <div className="reviews-section">
-              <div className="port-section-title">Client Reviews</div>
-              <div className="reviews-grid">
-                {reviews.map((r) => (
-                  <div key={r.id} className="review-card">
-                    <div className="review-top">
-                      <div className="review-avatar">{r.client_name?.[0]?.toUpperCase() || "?"}</div>
-                      <div>
-                        <div className="review-name">{r.client_name}</div>
-                        <div className="review-stars">{"★".repeat(r.rating || 0)}{"☆".repeat(5 - (r.rating || 0))}</div>
-                      </div>
-                    </div>
-                    {r.comment && <div className="review-comment">{r.comment}</div>}
-                  </div>
-                ))}
+            {/* Cover photo */}
+            <div className="cover-wrap" onClick={() => coverRef.current && coverRef.current.click()}>
+              {form.cover_url
+                ? <img src={form.cover_url} alt="cover" className="cover-bg" />
+                : <div className="cover-bg" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#333", fontSize: 13 }}>Click to upload cover photo</div>
+              }
+              <div className="cover-pencil">✏️ <span>Edit cover</span></div>
+              {uploading.cover_url && <div className="uploading-overlay">Uploading...</div>}
+
+              {/* Avatar overlaid on cover */}
+              <div className="avatar-wrap" onClick={e => { e.stopPropagation(); avatarRef.current && avatarRef.current.click(); }}>
+                {form.avatar_url ? <img src={form.avatar_url} alt="avatar" /> : form.business_name?.[0]?.toUpperCase() || "?"}
+                <div className="avatar-pencil">✏️</div>
+                {uploading.avatar_url && <div className="uploading-overlay" style={{ borderRadius: "50%" }}>...</div>}
               </div>
             </div>
-          )}
+
+            <input ref={coverRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0], "cover_url")} />
+            <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }}
+              onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0], "avatar_url")} />
+
+            <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
+              {form.avatar_url && <button className="remove-link" onClick={() => f("avatar_url", "")}>Remove logo</button>}
+              {form.cover_url && <button className="remove-link" onClick={() => f("cover_url", "")}>Remove cover</button>}
+            </div>
+          </div>
+
+          {/* Business Info */}
+          <div className="pp-card">
+            <div className="pp-card-title">🏢 Business Info</div>
+            <div className="pp-field">
+              <label>Business Name</label>
+              <input placeholder="Your Studio Name" value={form.business_name} onChange={e => f("business_name", e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <label>Tagline</label>
+              <input placeholder="Capturing moments that last a lifetime" value={form.tagline} onChange={e => f("tagline", e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <label>Location</label>
+              <input placeholder="Brisbane, QLD" value={form.location} onChange={e => f("location", e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <label>Years Experience</label>
+              <input type="number" placeholder="5" value={form.years_experience} onChange={e => f("years_experience", e.target.value)} />
+            </div>
+          </div>
+
+          {/* Contact */}
+          <div className="pp-card">
+            <div className="pp-card-title">📞 Contact</div>
+            <div className="pp-field">
+              <label>Phone</label>
+              <input placeholder="+61 400 000 000" value={form.phone} onChange={e => f("phone", e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <label>Website</label>
+              <input placeholder="https://yourstudio.com" value={form.website} onChange={e => f("website", e.target.value)} />
+            </div>
+          </div>
+
+          {/* Bio */}
+          <div className="pp-card full">
+            <div className="pp-card-title">📝 Bio</div>
+            <div className="pp-field">
+              <textarea placeholder="Tell potential clients about yourself and your work..." value={form.bio} onChange={e => f("bio", e.target.value)} />
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div className="pp-card full">
+            <div className="pp-card-title">🎯 Skills and Specialties</div>
+            <div className="pp-field">
+              <label>Skill Types (comma separated)</label>
+              <input placeholder="Photography, Videography, Editing" value={form.skill_types} onChange={e => f("skill_types", e.target.value)} />
+            </div>
+            <div className="pp-field">
+              <label>Specialties (comma separated)</label>
+              <input placeholder="Wedding, Portrait, Commercial" value={form.specialties} onChange={e => f("specialties", e.target.value)} />
+            </div>
+          </div>
+
         </div>
-        <div className="port-footer">Powered by <span>LensTrybe</span></div>
       </div>
-
-      {lightbox && (
-        <div className="lightbox-overlay" onClick={() => setLightbox(null)}>
-          <button className="lightbox-close" onClick={() => setLightbox(null)}>×</button>
-          <img src={lightbox.image_url} alt={lightbox.title} className="lightbox-img" />
-          <div className="lightbox-info">
-            <div>{lightbox.title}</div>
-            <div style={{ fontSize: 12, color: "#555", marginTop: 4 }}>{lightbox.category}</div>
-          </div>
-        </div>
-      )}
     </>
   );
 }

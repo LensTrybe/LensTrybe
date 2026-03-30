@@ -8,6 +8,7 @@ import CRMPage from './pages/dashboard/CRMPage.jsx'
 import ClientPortalsPage from './pages/dashboard/ClientPortalsPage.jsx'
 import ContractsPage from './pages/dashboard/ContractsPage.jsx'
 import DeliverPage from './pages/dashboard/DeliverPage.jsx'
+import DeliverDownloadPage from './pages/DeliverDownloadPage';
 import EditProfilePage from './pages/dashboard/EditProfilePage.jsx'
 import InsightsPage from './pages/dashboard/InsightsPage.jsx'
 import InvoicingPage from './pages/dashboard/InvoicingPage.jsx'
@@ -15,6 +16,7 @@ import MarketplacePage from './pages/dashboard/MarketplacePage.jsx'
 import MessagesPage from './pages/dashboard/MessagesPage.jsx'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage.jsx'
 import PortfolioPage from './pages/PortfolioPage.jsx'
+import DashboardPortfolioPage from './pages/dashboard/PortfolioPage.jsx'
 import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage.jsx'
 import QuotesPage from './pages/dashboard/QuotesPage.jsx'
 import ReviewsPage from './pages/dashboard/ReviewsPage.jsx'
@@ -47,7 +49,7 @@ export default function App() {
           <Route path="finance/quotes" element={<QuotesPage />} />
           <Route path="finance/contracts" element={<ContractsPage />} />
 
-          <Route path="portfolio-design/portfolio" element={<PortfolioPage />} />
+          <Route path="portfolio-design/portfolio" element={<DashboardPortfolioPage />} />
           <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
           <Route
             path="portfolio-design/portfolio-website"
@@ -67,6 +69,7 @@ export default function App() {
       <Route path="/sign/:token" element={<SignContract />} />
       <Route path="/portfolio/:id" element={<PortfolioPage />} />
       <Route path="/portal/:token" element={<ClientPortalPage />} />
+      <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
     </Routes>
   )
 }
