@@ -22,6 +22,7 @@ import TeamPage from './pages/dashboard/TeamPage.jsx'
 import DashboardPage from './pages/DashboardPage.jsx'
 import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
+import SignContract from './pages/SignContract';
 
 export default function App() {
   return (
@@ -63,6 +64,7 @@ export default function App() {
 
       <Route path="/" element={<Navigate replace to="/dashboard" />} />
       <Route path="*" element={<NotFoundPage />} />
+      <Route path="/sign/:token" element={<SignContract />} />
     </Routes>
   )
 }
