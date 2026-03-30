@@ -4,6 +4,12 @@ import './DashboardLayout.css'
 
 const navSections = [
   {
+    title: '',
+    links: [
+      { label: 'Dashboard', to: '/dashboard' },
+    ],
+  }, 
+  {
     title: 'PROFILE',
     links: [{ label: 'Edit Profile', to: '/dashboard/profile/edit-profile' }],
   },
