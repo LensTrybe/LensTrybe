@@ -476,3 +476,195 @@
 .contracts-page__message--ok {
   color: var(--green);
 }
+
+.contracts-page__btn-preview {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--green);
+  background: rgba(74, 222, 128, 0.1);
+  border: 1px solid rgba(74, 222, 128, 0.4);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.contracts-page__btn-preview:hover {
+  color: var(--bg);
+  background: var(--green);
+  border-color: var(--green);
+}
+
+/* Contract preview modal — document style on white */
+.contracts-page__preview-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 1.5rem 1rem;
+  overflow-y: auto;
+  background: rgba(0, 0, 0, 0.65);
+  box-sizing: border-box;
+}
+
+.contracts-page__preview-sheet {
+  width: 100%;
+  max-width: 42rem;
+  margin: auto 0;
+  border-radius: 12px;
+  box-shadow:
+    0 25px 50px -12px rgba(0, 0, 0, 0.35),
+    0 0 0 1px rgba(0, 0, 0, 0.06);
+  background: #ffffff;
+  color: #111827;
+}
+
+.contracts-page__preview-doc {
+  padding: 1.75rem 1.85rem 2rem;
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.contracts-page__preview-doc-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.25rem;
+  border-bottom: 2px solid #111827;
+}
+
+.contracts-page__preview-business {
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.contracts-page__preview-contract-title {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: #111827;
+}
+
+.contracts-page__preview-header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.contracts-page__preview-close {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #ffffff;
+  background: #111827;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.contracts-page__preview-close:hover {
+  background: #374151;
+}
+
+.contracts-page__preview-meta-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (min-width: 480px) {
+  .contracts-page__preview-meta-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.contracts-page__preview-meta-status .contracts-page__preview-label {
+  margin-bottom: 0.35rem;
+}
+
+.contracts-page__preview-label {
+  margin: 0 0 0.2rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.contracts-page__preview-value {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+}
+
+.contracts-page__preview-billto {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+.contracts-page__preview-section-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.contracts-page__preview-billto-name {
+  margin: 0;
+  font-weight: 600;
+  color: #111827;
+}
+
+.contracts-page__preview-billto-email {
+  margin: 0.25rem 0 0;
+  color: #374151;
+}
+
+.contracts-page__preview-billto-muted {
+  margin: 0.25rem 0 0;
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.contracts-page__preview-file {
+  margin-top: 0;
+}
+
+.contracts-page__preview-content-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f9fafb;
+  padding: 0;
+  max-height: 26rem;
+  overflow: auto;
+}
+
+.contracts-page__preview-content-pre {
+  margin: 0;
+  padding: 1rem 1.1rem;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono',
+    'Courier New', monospace;
+  font-size: 0.9rem;
+  color: #111827;
+}

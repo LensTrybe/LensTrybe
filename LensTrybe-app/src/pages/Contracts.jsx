@@ -208,6 +208,8 @@ function Contracts() {
   const [sendContractFeedback, setSendContractFeedback] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [businessName, setBusinessName] = useState('')
+  const [previewContract, setPreviewContract] = useState(null)
 
   const loadContracts = useCallback(async () => {
     if (!supabase || !userId) {
@@ -241,6 +243,46 @@ function Contracts() {
     }
     loadContracts()
   }, [authLoading, loadContracts])
+
+  const loadBusinessProfile = useCallback(async () => {
+    if (!supabase || !userId) {
+      setBusinessName('')
+      return
+    }
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('business_name')
+      .eq('id', userId)
+      .maybeSingle()
+    if (error || !data?.business_name?.trim()) {
+      setBusinessName('')
+    } else {
+      setBusinessName(data.business_name.trim())
+    }
+  }, [userId])
+
+  useEffect(() => {
+    if (authLoading) {
+      return
+    }
+    loadBusinessProfile()
+  }, [authLoading, loadBusinessProfile])
+
+  const previewCloseRef = useRef(null)
+  useEffect(() => {
+    if (!previewContract) {
+      return undefined
+    }
+
+    const onKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        setPreviewContract(null)
+      }
+    }
+    window.addEventListener('keydown', onKeyDown)
+    previewCloseRef.current?.focus()
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [previewContract])
 
   const clearUploadedFile = () => {
     uploadAbortRef.current?.abort()
@@ -890,6 +932,13 @@ function Contracts() {
                       )}
                       <button
                         type="button"
+                        className="contracts-page__btn-preview"
+                        onClick={() => setPreviewContract(row)}
+                      >
+                        Preview
+                      </button>
+                      <button
+                        type="button"
                         className="contracts-page__delete"
                         disabled={deletingId === row.id || sendingId === row.id}
                         onClick={() => handleDelete(row.id)}
@@ -914,6 +963,136 @@ function Contracts() {
         <p className="contracts-page__message contracts-page__message--ok" role="status">
           {successMessage}
         </p>
+      )}
+
+      {previewContract && (
+        <div
+          className="contracts-page__preview-backdrop"
+          role="presentation"
+          onClick={() => setPreviewContract(null)}
+        >
+          <div
+            className="contracts-page__preview-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="contract-preview-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="contracts-page__preview-doc">
+              <div className="contracts-page__preview-doc-header">
+                <div>
+                  <p className="contracts-page__preview-business">
+                    {businessName || 'Your business'}
+                  </p>
+                  <h2
+                    id="contract-preview-title"
+                    className="contracts-page__preview-contract-title"
+                  >
+                    CONTRACT
+                  </h2>
+                </div>
+                <div className="contracts-page__preview-header-actions">
+                  <button
+                    ref={previewCloseRef}
+                    type="button"
+                    className="contracts-page__preview-close"
+                    onClick={() => setPreviewContract(null)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              {(() => {
+                const { variant, label } = getStatusInfo(previewContract)
+                const statusClass =
+                  variant === 'draft'
+                    ? 'contracts-page__status--draft'
+                    : variant === 'sent'
+                      ? 'contracts-page__status--sent'
+                      : variant === 'signed'
+                        ? 'contracts-page__status--signed'
+                        : 'contracts-page__status--unknown'
+
+                const signedAt = resolveSignedAt(previewContract)
+                const fileUrl = resolveContractFileUrl(previewContract)
+
+                return (
+                  <>
+                    <div className="contracts-page__preview-meta-grid">
+                      <div>
+                        <p className="contracts-page__preview-label">Contract title</p>
+                        <p className="contracts-page__preview-value">
+                          {resolveTitle(previewContract)}
+                        </p>
+                      </div>
+                      <div className="contracts-page__preview-meta-status">
+                        <p className="contracts-page__preview-label">Status</p>
+                        <span
+                          className={`contracts-page__status ${statusClass}`}
+                        >
+                          {label}
+                        </span>
+                      </div>
+                      {String(previewContract?.status ?? '').toLowerCase().trim() === 'signed' && (
+                        <div>
+                          <p className="contracts-page__preview-label">Signed at</p>
+                          <p className="contracts-page__preview-value">
+                            {signedAt ? formatDateTime(signedAt) : '—'}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="contracts-page__preview-billto">
+                      <p className="contracts-page__preview-section-title">Client</p>
+                      <p className="contracts-page__preview-billto-name">
+                        {resolveClientName(previewContract)}
+                      </p>
+                      {(() => {
+                        const email =
+                          typeof previewContract.client_email === 'string'
+                            ? previewContract.client_email.trim()
+                            : String(previewContract.client_email ?? '').trim()
+                        if (!email) {
+                          return (
+                            <p className="contracts-page__preview-billto-muted">
+                              No email on file
+                            </p>
+                          )
+                        }
+                        return (
+                          <p className="contracts-page__preview-billto-email">
+                            {email}
+                          </p>
+                        )
+                      })()}
+                    </div>
+
+                    {fileUrl ? (
+                      <p className="contracts-page__preview-file">
+                        <a
+                          className="contracts-page__view-contract"
+                          href={fileUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          View Contract File
+                        </a>
+                      </p>
+                    ) : (
+                      <div className="contracts-page__preview-content-box">
+                        <pre className="contracts-page__preview-content-pre">
+                          {previewContract.content ?? ''}
+                        </pre>
+                      </div>
+                    )}
+                  </>
+                )
+              })()}
+            </div>
+          </div>
+        </div>
       )}
     </section>
   )
