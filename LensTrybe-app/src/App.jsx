@@ -1,54 +1,52 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import DashboardLayout from './components/DashboardLayout'
-import ProtectedRoute from './components/ProtectedRoute'
-import LoginPage from './pages/LoginPage'
-import NotFoundPage from './pages/NotFoundPage'
-import Availability from './pages/Availability'
-import BookingRequests from './pages/BookingRequests'
-import BrandKitPage from './pages/dashboard/BrandKitPage'
-import CRMPage from './pages/dashboard/CRMPage'
-import ClientPortalsPage from './pages/dashboard/ClientPortalsPage'
-import Contracts from './pages/Contracts'
-import DeliverPage from './pages/dashboard/DeliverPage'
-import EditProfile from './pages/EditProfile'
-import InsightsPage from './pages/dashboard/InsightsPage'
-import Invoicing from './pages/Invoicing'
-import MarketplacePage from './pages/dashboard/MarketplacePage'
-import MessagesPage from './pages/dashboard/MessagesPage'
-import MyBookingsPage from './pages/dashboard/MyBookingsPage'
-import Portfolio from './pages/Portfolio'
-import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage'
-import Quotes from './pages/Quotes'
-import ReviewsPage from './pages/dashboard/ReviewsPage'
-import TeamPage from './pages/dashboard/TeamPage'
-import SignContract from './pages/SignContract'
+import DashboardLayout from './components/DashboardLayout.jsx'
+import ProtectedRoute from './components/ProtectedRoute.jsx'
+import AvailabilityPage from './pages/dashboard/AvailabilityPage.jsx'
+import BookingRequestsPage from './pages/dashboard/BookingRequestsPage.jsx'
+import BrandKitPage from './pages/dashboard/BrandKitPage.jsx'
+import CRMPage from './pages/dashboard/CRMPage.jsx'
+import ClientPortalsPage from './pages/dashboard/ClientPortalsPage.jsx'
+import ContractsPage from './pages/dashboard/ContractsPage.jsx'
+import DeliverPage from './pages/dashboard/DeliverPage.jsx'
+import EditProfilePage from './pages/dashboard/EditProfilePage.jsx'
+import InsightsPage from './pages/dashboard/InsightsPage.jsx'
+import InvoicingPage from './pages/dashboard/InvoicingPage.jsx'
+import MarketplacePage from './pages/dashboard/MarketplacePage.jsx'
+import MessagesPage from './pages/dashboard/MessagesPage.jsx'
+import MyBookingsPage from './pages/dashboard/MyBookingsPage.jsx'
+import PortfolioPage from './pages/dashboard/PortfolioPage.jsx'
+import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage.jsx'
+import QuotesPage from './pages/dashboard/QuotesPage.jsx'
+import ReviewsPage from './pages/dashboard/ReviewsPage.jsx'
+import TeamPage from './pages/dashboard/TeamPage.jsx'
+import DashboardPage from './pages/DashboardPage.jsx'
+import LoginPage from './pages/LoginPage.jsx'
+import NotFoundPage from './pages/NotFoundPage.jsx'
 
-function App() {
+export default function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
-      <Route path="/sign/:token" element={<SignContract />} />
-
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
-          <Route index element={<Navigate replace to="profile/edit-profile" />} />
+          <Route index element={<DashboardPage />} />
 
-          <Route path="profile/edit-profile" element={<EditProfile />} />
+          <Route path="profile/edit-profile" element={<EditProfilePage />} />
 
           <Route path="my-work/my-bookings" element={<MyBookingsPage />} />
-          <Route path="my-work/booking-requests" element={<BookingRequests />} />
-          <Route path="my-work/availability" element={<Availability />} />
+          <Route path="my-work/booking-requests" element={<BookingRequestsPage />} />
+          <Route path="my-work/availability" element={<AvailabilityPage />} />
 
           <Route path="clients/messages" element={<MessagesPage />} />
           <Route path="clients/crm" element={<CRMPage />} />
           <Route path="clients/client-portals" element={<ClientPortalsPage />} />
 
-          <Route path="finance/invoicing" element={<Invoicing />} />
-          <Route path="finance/quotes" element={<Quotes />} />
-          <Route path="finance/contracts" element={<Contracts />} />
+          <Route path="finance/invoicing" element={<InvoicingPage />} />
+          <Route path="finance/quotes" element={<QuotesPage />} />
+          <Route path="finance/contracts" element={<ContractsPage />} />
 
-          <Route path="portfolio-design/portfolio" element={<Portfolio />} />
+          <Route path="portfolio-design/portfolio" element={<PortfolioPage />} />
           <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
           <Route
             path="portfolio-design/portfolio-website"
@@ -68,5 +66,3 @@ function App() {
     </Routes>
   )
 }
-
-export default App

@@ -1,79 +1,92 @@
 import { useState } from 'react'
-import { Navigate } from 'react-router-dom'
-import useAuthUser from '../hooks/useAuthUser'
-import { supabase } from '../lib/supabaseClient'
+import { Navigate, useNavigate } from 'react-router-dom'
+import useAuthUser from '../hooks/useAuthUser.js'
+import { supabase } from '../lib/supabaseClient.js'
+import './LoginPage.css'
 
-function LoginPage() {
+export default function LoginPage() {
+  const navigate = useNavigate()
   const { user, loading } = useAuthUser()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [message, setMessage] = useState('')
-  const [errorMessage, setErrorMessage] = useState('')
+  const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
 
   if (loading) {
-    return <p>Loading session...</p>
+    return (
+      <div className="login-page">
+        <p className="login-status">Loading session...</p>
+      </div>
+    )
   }
 
   if (user) {
-    return <Navigate replace to="/dashboard" />
+    return <Navigate to="/dashboard" replace />
   }
 
-  const handleSignIn = async (event) => {
-    event.preventDefault()
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null)
 
     if (!supabase) {
-      setErrorMessage('Supabase is not configured.')
+      setError('Supabase is not configured.')
       return
     }
 
     setSubmitting(true)
-    setMessage('')
-    setErrorMessage('')
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-
-    if (error) {
-      setErrorMessage(error.message)
-    } else {
-      setMessage('Signed in successfully.')
-    }
-
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
     setSubmitting(false)
+    if (signInError) {
+      setError(signInError.message)
+      return
+    }
+    navigate('/dashboard', { replace: true })
   }
 
   return (
-    <section>
-      <h1>LensTrybe Login</h1>
-      <form onSubmit={handleSignIn}>
-        <div>
-          <label htmlFor="login-email">Email</label>
-          <input
-            id="login-email"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            required
-          />
-        </div>
-        <div>
-          <label htmlFor="login-password">Password</label>
-          <input
-            id="login-password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-            required
-          />
-        </div>
-        <button type="submit" disabled={submitting}>
-          {submitting ? 'Signing in...' : 'Sign In'}
-        </button>
-      </form>
-      {message && <p>{message}</p>}
-      {errorMessage && <p>{errorMessage}</p>}
-    </section>
+    <div className="login-page">
+      <div className="login-card">
+        <div className="login-logo">LensTrybe</div>
+        <h1 className="login-title">Sign in</h1>
+
+        {error && (
+          <p className="login-error" role="alert">
+            {error}
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div className="login-field">
+            <label htmlFor="email">Email</label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div className="login-field">
+            <label htmlFor="password">Password</label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button className="login-submit" type="submit" disabled={submitting}>
+            {submitting ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+      </div>
+    </div>
   )
 }
-
-export default LoginPage

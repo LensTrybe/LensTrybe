@@ -1,22 +1,29 @@
-import { Navigate, Outlet } from 'react-router-dom'
-import useAuthUser from '../hooks/useAuthUser'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
+import useAuthUser from '../hooks/useAuthUser.js'
 
-function ProtectedRoute() {
+export default function ProtectedRoute() {
+  const location = useLocation()
   const { user, loading, errorMessage } = useAuthUser()
 
   if (loading) {
-    return <p>Checking authentication...</p>
+    return (
+      <div className="brand-screen-message">
+        <p>Checking authentication...</p>
+      </div>
+    )
   }
 
   if (errorMessage) {
-    return <p>{errorMessage}</p>
+    return (
+      <div className="brand-screen-message">
+        <p className="brand-screen-message__error">{errorMessage}</p>
+      </div>
+    )
   }
 
   if (!user) {
-    return <Navigate replace to="/login" />
+    return <Navigate to="/login" state={{ from: location }} replace />
   }
 
   return <Outlet />
 }
-
-export default ProtectedRoute

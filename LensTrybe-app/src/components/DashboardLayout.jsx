@@ -63,27 +63,22 @@ function DashboardLayout() {
   }
 
   return (
-    <div className="dashboard-layout">
-      <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
-        <div className="dashboard-sidebar__header">
-          <h2 className="dashboard-sidebar__brand">LensTrybe Dashboard</h2>
-          <button type="button" className="dashboard-sidebar__signout" onClick={signOut}>
-            Sign out
-          </button>
-        </div>
-        <nav className="dashboard-sidebar__nav">
+    <div className="dashboard-shell">
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-sidebar-brand">LensTrybe</div>
+        <nav className="dashboard-sidebar-nav" aria-label="Dashboard">
           {navSections.map((section) => (
-            <section key={section.title} className="dashboard-sidebar__section">
-              <h3 className="dashboard-sidebar__section-title">{section.title}</h3>
-              <ul className="dashboard-sidebar__list">
+            <section key={section.title}>
+              <h3 className="dashboard-sidebar-heading">{section.title}</h3>
+              <ul className="dashboard-sidebar-list">
                 {section.links.map((link) => (
-                  <li key={link.to} className="dashboard-sidebar__item">
+                  <li key={link.to}>
                     <NavLink
                       to={link.to}
                       className={({ isActive }) =>
                         isActive
-                          ? 'dashboard-sidebar__link dashboard-sidebar__link--active'
-                          : 'dashboard-sidebar__link'
+                          ? 'dashboard-nav-link dashboard-nav-link--active'
+                          : 'dashboard-nav-link'
                       }
                     >
                       {link.label}
@@ -94,6 +89,11 @@ function DashboardLayout() {
             </section>
           ))}
         </nav>
+        <div className="dashboard-sidebar-footer">
+          <button type="button" className="dashboard-sidebar-signout" onClick={signOut}>
+            Sign Out
+          </button>
+        </div>
       </aside>
       <main className="dashboard-main">
         <Outlet />
