@@ -1,0 +1,214 @@
+/* LensTrybe booking requests */
+
+.booking-requests-page {
+  --bg: #080810;
+  --green: #4ade80;
+  --pink: #d946ef;
+  --text: #ffffff;
+  --muted: rgba(255, 255, 255, 0.12);
+  --muted-text: rgba(255, 255, 255, 0.55);
+  --yellow: #facc15;
+  --red: #f87171;
+
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100%;
+  padding: 1.5rem 1.5rem 2.5rem;
+  box-sizing: border-box;
+}
+
+.booking-requests-page__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--pink);
+}
+
+.booking-requests-page__subtitle {
+  margin: 0 0 1.5rem;
+  font-size: 0.9375rem;
+  color: var(--muted-text);
+  max-width: 42rem;
+}
+
+.booking-requests-page__grid {
+  display: grid;
+  gap: 1.1rem;
+  grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+}
+
+.booking-requests-page__card {
+  border: 1px solid var(--muted);
+  border-radius: 12px;
+  padding: 1.1rem 1.15rem;
+  background: rgba(255, 255, 255, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.booking-requests-page__status {
+  align-self: flex-start;
+  padding: 0.25rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.booking-requests-page__status--pending {
+  color: var(--yellow);
+  background: rgba(250, 204, 21, 0.12);
+  border: 1px solid rgba(250, 204, 21, 0.35);
+}
+
+.booking-requests-page__status--confirmed {
+  color: var(--green);
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+}
+
+.booking-requests-page__status--declined {
+  color: var(--red);
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+}
+
+.booking-requests-page__status--unknown {
+  color: var(--muted-text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--muted);
+}
+
+.booking-requests-page__client {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--text);
+  line-height: 1.3;
+}
+
+.booking-requests-page__email {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--muted-text);
+  word-break: break-word;
+}
+
+.booking-requests-page__email a {
+  color: var(--green);
+  text-decoration: none;
+}
+
+.booking-requests-page__email a:hover {
+  text-decoration: underline;
+}
+
+.booking-requests-page__meta {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.45;
+}
+
+.booking-requests-page__meta-label {
+  color: var(--muted-text);
+  font-weight: 500;
+}
+
+.booking-requests-page__notes {
+  margin: 0;
+  padding-top: 0.35rem;
+  border-top: 1px solid var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--muted-text);
+}
+
+.booking-requests-page__notes strong {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 600;
+}
+
+.booking-requests-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.35rem;
+}
+
+.booking-requests-page__btn {
+  flex: 1 1 auto;
+  min-width: 5.5rem;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.booking-requests-page__btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.booking-requests-page__btn--confirm {
+  color: var(--bg);
+  background: var(--green);
+  border-color: var(--green);
+}
+
+.booking-requests-page__btn--confirm:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.booking-requests-page__btn--decline {
+  color: var(--red);
+  background: rgba(248, 113, 113, 0.1);
+  border-color: rgba(248, 113, 113, 0.4);
+}
+
+.booking-requests-page__btn--decline:hover:not(:disabled) {
+  color: var(--bg);
+  background: var(--red);
+  border-color: var(--red);
+}
+
+.booking-requests-page__btn--delete {
+  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--muted);
+}
+
+.booking-requests-page__btn--delete:hover:not(:disabled) {
+  color: var(--red);
+  border-color: rgba(248, 113, 113, 0.5);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.booking-requests-page__empty {
+  margin: 0;
+  padding: 2.5rem 1.25rem;
+  text-align: center;
+  font-size: 0.9375rem;
+  color: var(--muted-text);
+  border: 1px dashed var(--muted);
+  border-radius: 12px;
+  max-width: 32rem;
+}
+
+.booking-requests-page__message {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: var(--red);
+}
+
+.booking-requests-page__message--ok {
+  color: var(--green);
+}

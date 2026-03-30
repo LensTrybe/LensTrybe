@@ -1,81 +1,54 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-<<<<<<< HEAD
-import AppShell from './components/AppShell.jsx'
-import ProtectedRoute from './components/ProtectedRoute.jsx'
-import AboutPage from './pages/AboutPage.jsx'
-import DashboardPage from './pages/DashboardPage.jsx'
-import HomePage from './pages/HomePage.jsx'
-import LoginPage from './pages/LoginPage.jsx'
-import './App.css'
-
-export default function App() {
-  return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route element={<AppShell />}>
-        <Route index element={<HomePage />} />
-        <Route path="about" element={<AboutPage />} />
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Route>
-    </Routes>
-  )
-}
-=======
 import DashboardLayout from './components/DashboardLayout'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import NotFoundPage from './pages/NotFoundPage'
-import AvailabilityPage from './pages/dashboard/AvailabilityPage'
-import BookingRequestsPage from './pages/dashboard/BookingRequestsPage'
+import Availability from './pages/Availability'
+import BookingRequests from './pages/BookingRequests'
 import BrandKitPage from './pages/dashboard/BrandKitPage'
 import CRMPage from './pages/dashboard/CRMPage'
 import ClientPortalsPage from './pages/dashboard/ClientPortalsPage'
-import ContractsPage from './pages/dashboard/ContractsPage'
+import Contracts from './pages/Contracts'
 import DeliverPage from './pages/dashboard/DeliverPage'
-import EditProfilePage from './pages/dashboard/EditProfilePage'
+import EditProfile from './pages/EditProfile'
 import InsightsPage from './pages/dashboard/InsightsPage'
-import InvoicingPage from './pages/dashboard/InvoicingPage'
+import Invoicing from './pages/Invoicing'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
 import MessagesPage from './pages/dashboard/MessagesPage'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage'
-import PortfolioPage from './pages/dashboard/PortfolioPage'
+import Portfolio from './pages/Portfolio'
 import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage'
-import QuotesPage from './pages/dashboard/QuotesPage'
+import Quotes from './pages/Quotes'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import TeamPage from './pages/dashboard/TeamPage'
+import SignContract from './pages/SignContract'
 
 function App() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
 
+      <Route path="/sign/:token" element={<SignContract />} />
+
       <Route element={<ProtectedRoute />}>
         <Route path="/dashboard" element={<DashboardLayout />}>
           <Route index element={<Navigate replace to="profile/edit-profile" />} />
 
-          <Route path="profile/edit-profile" element={<EditProfilePage />} />
+          <Route path="profile/edit-profile" element={<EditProfile />} />
 
           <Route path="my-work/my-bookings" element={<MyBookingsPage />} />
-          <Route path="my-work/booking-requests" element={<BookingRequestsPage />} />
-          <Route path="my-work/availability" element={<AvailabilityPage />} />
+          <Route path="my-work/booking-requests" element={<BookingRequests />} />
+          <Route path="my-work/availability" element={<Availability />} />
 
           <Route path="clients/messages" element={<MessagesPage />} />
           <Route path="clients/crm" element={<CRMPage />} />
           <Route path="clients/client-portals" element={<ClientPortalsPage />} />
 
-          <Route path="finance/invoicing" element={<InvoicingPage />} />
-          <Route path="finance/quotes" element={<QuotesPage />} />
-          <Route path="finance/contracts" element={<ContractsPage />} />
+          <Route path="finance/invoicing" element={<Invoicing />} />
+          <Route path="finance/quotes" element={<Quotes />} />
+          <Route path="finance/contracts" element={<Contracts />} />
 
-          <Route path="portfolio-design/portfolio" element={<PortfolioPage />} />
+          <Route path="portfolio-design/portfolio" element={<Portfolio />} />
           <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
           <Route
             path="portfolio-design/portfolio-website"
@@ -97,4 +70,3 @@ function App() {
 }
 
 export default App
->>>>>>> origin/cursor/lenstrybe-app-initial-setup-6f7d

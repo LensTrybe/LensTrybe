@@ -1,5 +1,6 @@
 import { NavLink, Outlet } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import './DashboardLayout.css'
 
 const navSections = [
   {
@@ -62,20 +63,31 @@ function DashboardLayout() {
   }
 
   return (
-    <div>
-      <aside>
-        <h2>LensTrybe Dashboard</h2>
-        <button type="button" onClick={signOut}>
-          Sign Out
-        </button>
-        <nav>
+    <div className="dashboard-layout">
+      <aside className="dashboard-sidebar" aria-label="Dashboard navigation">
+        <div className="dashboard-sidebar__header">
+          <h2 className="dashboard-sidebar__brand">LensTrybe Dashboard</h2>
+          <button type="button" className="dashboard-sidebar__signout" onClick={signOut}>
+            Sign out
+          </button>
+        </div>
+        <nav className="dashboard-sidebar__nav">
           {navSections.map((section) => (
-            <section key={section.title}>
-              <h3>{section.title}</h3>
-              <ul>
+            <section key={section.title} className="dashboard-sidebar__section">
+              <h3 className="dashboard-sidebar__section-title">{section.title}</h3>
+              <ul className="dashboard-sidebar__list">
                 {section.links.map((link) => (
-                  <li key={link.to}>
-                    <NavLink to={link.to}>{link.label}</NavLink>
+                  <li key={link.to} className="dashboard-sidebar__item">
+                    <NavLink
+                      to={link.to}
+                      className={({ isActive }) =>
+                        isActive
+                          ? 'dashboard-sidebar__link dashboard-sidebar__link--active'
+                          : 'dashboard-sidebar__link'
+                      }
+                    >
+                      {link.label}
+                    </NavLink>
                   </li>
                 ))}
               </ul>
@@ -83,7 +95,7 @@ function DashboardLayout() {
           ))}
         </nav>
       </aside>
-      <main>
+      <main className="dashboard-main">
         <Outlet />
       </main>
     </div>
