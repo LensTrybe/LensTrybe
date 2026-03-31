@@ -136,4 +136,3 @@
   color: #16a34a;
   font-weight: 700;
 }
-<Route path="/portal/:token" element={<ClientPortalPage />} />
