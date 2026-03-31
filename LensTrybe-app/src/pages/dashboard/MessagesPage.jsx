@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
 const formatTime = (ts) => {
@@ -15,17 +15,17 @@ const AttachmentPreview = ({ attachment }) => {
   const isPDF = attachment.type === "application/pdf";
   return (
     <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="attachment-chip">
-      <span className="attachment-icon">{isImage ? "🖼️" : isPDF ? "📄" : "📎"}</span>
+      <span className="attachment-icon">{isImage ? "IMG" : isPDF ? "PDF" : "FILE"}</span>
       <span className="attachment-name">{attachment.name}</span>
     </a>
   );
 };
 
 const LinkedDocBadge = ({ type }) => {
-  const icons = { invoice: "💰", quote: "📋", contract: "📝" };
+  const icons = { invoice: "Invoice", quote: "Quote", contract: "Contract" };
   return (
     <span className="linked-doc-badge">
-      {icons[type]} {type.charAt(0).toUpperCase() + type.slice(1)} attached
+      {icons[type]} attached
     </span>
   );
 };
@@ -70,12 +70,23 @@ export default function Messages() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (!activeThread) return;
+    const interval = setInterval(() => {
+      fetchMessages(activeThread.id);
+      fetchThreads();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [activeThread]);
+
   const fetchThreads = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
     setLoading(true);
     const { data } = await supabase
       .from("message_threads")
       .select("*")
-      .eq("creative_id", user.id)
+      .eq("creative_id", userData.user.id)
       .order("last_message_at", { ascending: false });
     setThreads(data || []);
     setLoading(false);
@@ -91,10 +102,12 @@ export default function Messages() {
   };
 
   const fetchDocs = async () => {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
     const [inv, quo, con] = await Promise.all([
-      supabase.from("invoices").select("id, client_name, amount, status").eq("creative_id", user.id),
-      supabase.from("quotes").select("id, client_name, amount, status").eq("creative_id", user.id),
-      supabase.from("contracts").select("id, client_name, title, status").eq("creative_id", user.id),
+      supabase.from("invoices").select("id, client_name, amount, status").eq("creative_id", userData.user.id),
+      supabase.from("quotes").select("id, client_name, amount, status").eq("creative_id", userData.user.id),
+      supabase.from("contracts").select("id, client_name, title, status").eq("creative_id", userData.user.id),
     ]);
     setInvoices(inv.data || []);
     setQuotes(quo.data || []);
@@ -108,9 +121,10 @@ export default function Messages() {
 
   const createThread = async () => {
     if (!newThreadForm.client_name || !newThreadForm.subject) return;
+    const { data: userData } = await supabase.auth.getUser();
     const { data, error } = await supabase
       .from("message_threads")
-      .insert({ ...newThreadForm, creative_id: user.id })
+      .insert({ ...newThreadForm, creative_id: userData.user.id })
       .select()
       .single();
     if (!error && data) {
@@ -124,9 +138,10 @@ export default function Messages() {
   const handleFileUpload = async (files) => {
     if (!files.length) return;
     setUploading(true);
+    const { data: userData } = await supabase.auth.getUser();
     const uploaded = [];
     for (const file of files) {
-      const path = `${user.id}/${Date.now()}-${file.name}`;
+      const path = `${userData.user.id}/${Date.now()}-${file.name}`;
       const { error } = await supabase.storage.from("message-attachments").upload(path, file);
       if (!error) {
         const { data: urlData } = supabase.storage.from("message-attachments").getPublicUrl(path);
@@ -140,12 +155,13 @@ export default function Messages() {
   const sendMessage = async () => {
     if (!newMessage.trim() && !attachments.length && !linkedDoc) return;
     if (!activeThread) return;
+    const { data: userData } = await supabase.auth.getUser();
     const msgData = {
       thread_id: activeThread.id,
-      creative_id: user.id,
+      creative_id: userData.user.id,
       sender_type: "creative",
       sender_name: "You",
-      sender_email: user.email,
+      sender_email: userData.user.email,
       body: newMessage,
       attachments: attachments,
       linked_doc_type: linkedDoc?.type || null,
@@ -156,13 +172,21 @@ export default function Messages() {
     const { data, error } = await supabase.from("messages").insert(msgData).select().single();
     if (!error) {
       setMessages((prev) => [...prev, data]);
-      await supabase
-        .from("message_threads")
-        .update({ last_message_at: new Date().toISOString() })
-        .eq("id", activeThread.id);
+      await supabase.from("message_threads").update({ last_message_at: new Date().toISOString() }).eq("id", activeThread.id);
       setNewMessage("");
       setAttachments([]);
       setLinkedDoc(null);
+      if (activeThread.client_email && newMessage.trim()) {
+        fetch("https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-reply-notification", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms",
+            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms"
+          },
+          body: JSON.stringify({ thread_id: activeThread.id, reply_body: newMessage.trim() }),
+        }).catch(console.error);
+      }
     }
   };
 
@@ -297,7 +321,7 @@ export default function Messages() {
         <div className="chat-area">
           {!activeThread ? (
             <div className="no-chat-selected">
-              <span>📨</span>
+              <span>MSG</span>
               <p style={{ color: "#444", fontSize: 14 }}>Select a conversation or start a new one</p>
             </div>
           ) : (
@@ -306,14 +330,14 @@ export default function Messages() {
                 <div className="chat-avatar">{activeThread.client_name?.[0]?.toUpperCase() || "?"}</div>
                 <div className="chat-header-info">
                   <h3>{activeThread.client_name}</h3>
-                  <p>{activeThread.client_email} · {activeThread.subject}</p>
+                  <p>{activeThread.client_email} - {activeThread.subject}</p>
                 </div>
               </div>
 
               <div className="messages-scroll">
                 {messages.length === 0 && (
                   <div style={{ textAlign: "center", color: "#333", fontSize: 13, marginTop: 40 }}>
-                    No messages yet — send the first one!
+                    No messages yet - send the first one!
                   </div>
                 )}
                 {messages.map((msg) => (
@@ -341,18 +365,17 @@ export default function Messages() {
                   <div className="attachment-preview-row">
                     {attachments.map((a, i) => (
                       <div key={i} className="attachment-preview-item">
-                        <span>{a.type?.startsWith("image/") ? "🖼️" : "📄"}</span>
+                        <span>{a.type?.startsWith("image/") ? "IMG" : "PDF"}</span>
                         <span>{a.name}</span>
-                        <button className="remove-attachment" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>×</button>
+                        <button className="remove-attachment" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>x</button>
                       </div>
                     ))}
                   </div>
                 )}
                 {linkedDoc && (
                   <div className="linked-doc-preview">
-                    <span>{linkedDoc.type === "invoice" ? "💰" : linkedDoc.type === "quote" ? "📋" : "📝"}</span>
                     <span>Attaching {linkedDoc.type}: {linkedDoc.label}</span>
-                    <button onClick={() => setLinkedDoc(null)}>×</button>
+                    <button onClick={() => setLinkedDoc(null)}>x</button>
                   </div>
                 )}
                 <div className="compose-row">
@@ -366,9 +389,9 @@ export default function Messages() {
                   />
                   <div className="compose-actions">
                     <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={(e) => handleFileUpload(Array.from(e.target.files))} />
-                    <button className="action-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>{uploading ? "⏳" : "📎"}</button>
-                    <button className="action-btn" title="Link document" onClick={() => setShowLinkDoc(true)}>📋</button>
-                    <button className="send-btn" onClick={sendMessage} disabled={!newMessage.trim() && !attachments.length && !linkedDoc}>↑</button>
+                    <button className="action-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>{uploading ? "..." : "attach"}</button>
+                    <button className="action-btn" title="Link document" onClick={() => setShowLinkDoc(true)}>doc</button>
+                    <button className="send-btn" onClick={sendMessage} disabled={!newMessage.trim() && !attachments.length && !linkedDoc}>^</button>
                   </div>
                 </div>
               </div>
@@ -391,7 +414,7 @@ export default function Messages() {
             </div>
             <div className="modal-field">
               <label>Subject</label>
-              <input placeholder="Wedding shoot – June 2026" value={newThreadForm.subject} onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))} />
+              <input placeholder="Wedding shoot" value={newThreadForm.subject} onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))} />
             </div>
             <div className="modal-actions">
               <button className="modal-cancel" onClick={() => setShowNewThread(false)}>Cancel</button>
@@ -425,7 +448,7 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
       <div className="doc-type-tabs">
         {["invoice", "quote", "contract"].map((t) => (
           <button key={t} className={`doc-type-tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t === "invoice" ? "💰" : t === "quote" ? "📋" : "📝"} {t.charAt(0).toUpperCase() + t.slice(1)}s
+            {t.charAt(0).toUpperCase() + t.slice(1)}s
           </button>
         ))}
       </div>
@@ -434,11 +457,10 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
           <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>No {tab}s found</div>
         ) : (
           current.map((doc) => (
-            <div key={doc.id} className="link-doc-item" onClick={() => onSelect({ type: tab, id: doc.id, label: doc.client_name + (doc.amount ? ` – $${doc.amount}` : doc.title ? ` – ${doc.title}` : "") })}>
-              <span>{tab === "invoice" ? "💰" : tab === "quote" ? "📋" : "📝"}</span>
+            <div key={doc.id} className="link-doc-item" onClick={() => onSelect({ type: tab, id: doc.id, label: doc.client_name + (doc.amount ? ` - $${doc.amount}` : doc.title ? ` - ${doc.title}` : "") })}>
               <div>
-                <div className="doc-name">{doc.client_name}{doc.title ? ` – ${doc.title}` : ""}</div>
-                <div className="doc-meta">{doc.amount ? `$${doc.amount}` : ""} · {doc.status}</div>
+                <div className="doc-name">{doc.client_name}{doc.title ? ` - ${doc.title}` : ""}</div>
+                <div className="doc-meta">{doc.amount ? `$${doc.amount}` : ""} - {doc.status}</div>
               </div>
             </div>
           ))
