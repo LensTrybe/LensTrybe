@@ -163,6 +163,13 @@ export default function Messages() {
       setNewMessage("");
       setAttachments([]);
       setLinkedDoc(null);
+      if (activeThread.client_email && newMessage.trim()) {
+        fetch("https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-reply-notification", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms" },
+          body: JSON.stringify({ thread_id: activeThread.id, reply_body: newMessage.trim() }),
+        }).catch(console.error);
+      }
     }
   };
 
@@ -447,3 +454,5 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
     </div>
   );
 }
+
+
