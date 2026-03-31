@@ -1,4 +1,4 @@
-﻿import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
 const formatTime = (ts) => {
@@ -15,14 +15,14 @@ const AttachmentPreview = ({ attachment }) => {
   const isPDF = attachment.type === "application/pdf";
   return (
     <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="attachment-chip">
-      <span className="attachment-icon">{isImage ? "ðŸ–¼ï¸" : isPDF ? "ðŸ“„" : "ðŸ“Ž"}</span>
+      <span className="attachment-icon">{isImage ? "🖼️" : isPDF ? "📄" : "📎"}</span>
       <span className="attachment-name">{attachment.name}</span>
     </a>
   );
 };
 
 const LinkedDocBadge = ({ type }) => {
-  const icons = { invoice: "ðŸ’°", quote: "ðŸ“‹", contract: "ðŸ“" };
+  const icons = { invoice: "💰", quote: "📋", contract: "📝" };
   return (
     <span className="linked-doc-badge">
       {icons[type]} {type.charAt(0).toUpperCase() + type.slice(1)} attached
@@ -163,13 +163,6 @@ export default function Messages() {
       setNewMessage("");
       setAttachments([]);
       setLinkedDoc(null);
-      if (activeThread.client_email && newMessage.trim()) {
-        fetch("https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-reply-notification", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms" },
-          body: JSON.stringify({ thread_id: activeThread.id, reply_body: newMessage.trim() }),
-        }).catch(console.error);
-      }
     }
   };
 
@@ -276,7 +269,7 @@ export default function Messages() {
               <div className="empty-threads"><p>Loading...</p></div>
             ) : filteredThreads.length === 0 ? (
               <div className="empty-threads">
-                <div style={{ fontSize: 32, marginBottom: 8 }}>ðŸ’¬</div>
+                <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
                 <p>No conversations yet</p>
                 <p style={{ fontSize: 11, marginTop: 4 }}>Click + New to start one</p>
               </div>
@@ -304,7 +297,7 @@ export default function Messages() {
         <div className="chat-area">
           {!activeThread ? (
             <div className="no-chat-selected">
-              <span>ðŸ“¨</span>
+              <span>📨</span>
               <p style={{ color: "#444", fontSize: 14 }}>Select a conversation or start a new one</p>
             </div>
           ) : (
@@ -313,14 +306,14 @@ export default function Messages() {
                 <div className="chat-avatar">{activeThread.client_name?.[0]?.toUpperCase() || "?"}</div>
                 <div className="chat-header-info">
                   <h3>{activeThread.client_name}</h3>
-                  <p>{activeThread.client_email} Â· {activeThread.subject}</p>
+                  <p>{activeThread.client_email} · {activeThread.subject}</p>
                 </div>
               </div>
 
               <div className="messages-scroll">
                 {messages.length === 0 && (
                   <div style={{ textAlign: "center", color: "#333", fontSize: 13, marginTop: 40 }}>
-                    No messages yet â€” send the first one!
+                    No messages yet — send the first one!
                   </div>
                 )}
                 {messages.map((msg) => (
@@ -348,18 +341,18 @@ export default function Messages() {
                   <div className="attachment-preview-row">
                     {attachments.map((a, i) => (
                       <div key={i} className="attachment-preview-item">
-                        <span>{a.type?.startsWith("image/") ? "ðŸ–¼ï¸" : "ðŸ“„"}</span>
+                        <span>{a.type?.startsWith("image/") ? "🖼️" : "📄"}</span>
                         <span>{a.name}</span>
-                        <button className="remove-attachment" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>Ã—</button>
+                        <button className="remove-attachment" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>×</button>
                       </div>
                     ))}
                   </div>
                 )}
                 {linkedDoc && (
                   <div className="linked-doc-preview">
-                    <span>{linkedDoc.type === "invoice" ? "ðŸ’°" : linkedDoc.type === "quote" ? "ðŸ“‹" : "ðŸ“"}</span>
+                    <span>{linkedDoc.type === "invoice" ? "💰" : linkedDoc.type === "quote" ? "📋" : "📝"}</span>
                     <span>Attaching {linkedDoc.type}: {linkedDoc.label}</span>
-                    <button onClick={() => setLinkedDoc(null)}>Ã—</button>
+                    <button onClick={() => setLinkedDoc(null)}>×</button>
                   </div>
                 )}
                 <div className="compose-row">
@@ -373,9 +366,9 @@ export default function Messages() {
                   />
                   <div className="compose-actions">
                     <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={(e) => handleFileUpload(Array.from(e.target.files))} />
-                    <button className="action-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>{uploading ? "â³" : "ðŸ“Ž"}</button>
-                    <button className="action-btn" title="Link document" onClick={() => setShowLinkDoc(true)}>ðŸ“‹</button>
-                    <button className="send-btn" onClick={sendMessage} disabled={!newMessage.trim() && !attachments.length && !linkedDoc}>â†‘</button>
+                    <button className="action-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>{uploading ? "⏳" : "📎"}</button>
+                    <button className="action-btn" title="Link document" onClick={() => setShowLinkDoc(true)}>📋</button>
+                    <button className="send-btn" onClick={sendMessage} disabled={!newMessage.trim() && !attachments.length && !linkedDoc}>↑</button>
                   </div>
                 </div>
               </div>
@@ -398,7 +391,7 @@ export default function Messages() {
             </div>
             <div className="modal-field">
               <label>Subject</label>
-              <input placeholder="Wedding shoot â€“ June 2026" value={newThreadForm.subject} onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))} />
+              <input placeholder="Wedding shoot – June 2026" value={newThreadForm.subject} onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))} />
             </div>
             <div className="modal-actions">
               <button className="modal-cancel" onClick={() => setShowNewThread(false)}>Cancel</button>
@@ -432,7 +425,7 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
       <div className="doc-type-tabs">
         {["invoice", "quote", "contract"].map((t) => (
           <button key={t} className={`doc-type-tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
-            {t === "invoice" ? "ðŸ’°" : t === "quote" ? "ðŸ“‹" : "ðŸ“"} {t.charAt(0).toUpperCase() + t.slice(1)}s
+            {t === "invoice" ? "💰" : t === "quote" ? "📋" : "📝"} {t.charAt(0).toUpperCase() + t.slice(1)}s
           </button>
         ))}
       </div>
@@ -441,11 +434,11 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
           <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>No {tab}s found</div>
         ) : (
           current.map((doc) => (
-            <div key={doc.id} className="link-doc-item" onClick={() => onSelect({ type: tab, id: doc.id, label: doc.client_name + (doc.amount ? ` â€“ $${doc.amount}` : doc.title ? ` â€“ ${doc.title}` : "") })}>
-              <span>{tab === "invoice" ? "ðŸ’°" : tab === "quote" ? "ðŸ“‹" : "ðŸ“"}</span>
+            <div key={doc.id} className="link-doc-item" onClick={() => onSelect({ type: tab, id: doc.id, label: doc.client_name + (doc.amount ? ` – $${doc.amount}` : doc.title ? ` – ${doc.title}` : "") })}>
+              <span>{tab === "invoice" ? "💰" : tab === "quote" ? "📋" : "📝"}</span>
               <div>
-                <div className="doc-name">{doc.client_name}{doc.title ? ` â€“ ${doc.title}` : ""}</div>
-                <div className="doc-meta">{doc.amount ? `$${doc.amount}` : ""} Â· {doc.status}</div>
+                <div className="doc-name">{doc.client_name}{doc.title ? ` – ${doc.title}` : ""}</div>
+                <div className="doc-meta">{doc.amount ? `$${doc.amount}` : ""} · {doc.status}</div>
               </div>
             </div>
           ))
@@ -454,7 +447,3 @@ function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
     </div>
   );
 }
-
-
-
-
