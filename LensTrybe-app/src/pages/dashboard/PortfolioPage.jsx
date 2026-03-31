@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
 export default function PortfolioPage() {
@@ -61,7 +61,8 @@ export default function PortfolioPage() {
 
   const uploadImage = async (file, field) => {
     setUploading(p => ({ ...p, [field]: true }));
-    const path = user.id + "/" + field + "-" + Date.now() + "." + file.name.split(".").pop();
+    const ext = file.name.split(".").pop();
+    const path = user.id + "/" + field + "-" + Date.now() + "." + ext;
     const { error } = await supabase.storage.from("avatars").upload(path, file, { upsert: true });
     if (!error) {
       const { data } = supabase.storage.from("avatars").getPublicUrl(path);
@@ -73,6 +74,8 @@ export default function PortfolioPage() {
   const f = (field, val) => setForm(p => ({ ...p, [field]: val }));
 
   if (loading) return <div style={{ padding: 40, color: "#444" }}>Loading...</div>;
+
+  const initials = form.business_name?.[0]?.toUpperCase() || "?";
 
   return (
     <>
@@ -87,26 +90,93 @@ export default function PortfolioPage() {
         .pp-body { padding: 0 32px 32px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .pp-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 22px; }
         .pp-card.full { grid-column: 1 / -1; }
-        .pp-card-title { font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 16px; }
+        .pp-card-title { font-size: 13px; font-weight: 700; color: #39ff14; margin-bottom: 18px; text-transform: uppercase; letter-spacing: 0.06em; }
         .pp-field { margin-bottom: 14px; }
-        .pp-field label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+        .pp-field label { display: block; font-size: 11px; color: #666; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
         .pp-field input, .pp-field textarea { width: 100%; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 9px 12px; color: #e8e8e8; font-size: 13px; outline: none; font-family: inherit; box-sizing: border-box; }
         .pp-field input:focus, .pp-field textarea:focus { border-color: #39ff14; }
         .pp-field textarea { resize: vertical; min-height: 90px; }
 
-        /* Cover photo */
-        .cover-wrap { position: relative; width: 100%; height: 150px; border-radius: 10px; overflow: hidden; margin-bottom: 48px; cursor: pointer; }
-        .cover-bg { width: 100%; height: 100%; background: linear-gradient(135deg, #1a2a1a, #1e1e3a); object-fit: cover; display: block; }
-        .cover-pencil { position: absolute; top: 10px; right: 10px; background: rgba(0,0,0,0.7); border: 1px solid #2a2a2a; border-radius: 6px; padding: 5px 8px; font-size: 13px; color: #fff; display: flex; align-items: center; gap: 5px; pointer-events: none; }
-        .cover-pencil span { font-size: 11px; }
+        /* ── Photos card ── */
+        .photos-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; grid-column: 1 / -1; }
+        .photos-card-header { padding: 18px 22px 14px; border-bottom: 1px solid #1e1e1e; }
+
+        /* Cover */
+        .cover-zone {
+          position: relative;
+          width: 100%;
+          height: 220px;
+          background: linear-gradient(135deg, #1a2a1a 0%, #0f1a2a 50%, #1e1a2a 100%);
+          cursor: pointer;
+          overflow: hidden;
+        }
+        .cover-zone:hover .cover-overlay { opacity: 1; }
+        .cover-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .cover-overlay {
+          position: absolute; inset: 0;
+          background: rgba(0,0,0,0.55);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 8px; opacity: 0; transition: opacity 0.2s;
+        }
+        .cover-zone:not(.has-cover) .cover-overlay { opacity: 1; }
+        .cover-overlay-icon { font-size: 28px; }
+        .cover-overlay-text { font-size: 13px; color: #fff; font-weight: 600; }
+        .cover-overlay-sub { font-size: 11px; color: #aaa; }
+        .cover-edit-badge {
+          position: absolute; top: 12px; right: 12px;
+          background: rgba(0,0,0,0.7); border: 1px solid #333;
+          border-radius: 6px; padding: 5px 10px;
+          font-size: 12px; color: #ccc; display: flex; align-items: center; gap: 5px;
+          pointer-events: none;
+        }
+        .cover-uploading {
+          position: absolute; inset: 0; background: rgba(0,0,0,0.7);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 13px; color: #39ff14; font-weight: 600; gap: 8px;
+        }
 
         /* Avatar */
-        .avatar-wrap { position: absolute; bottom: -36px; left: 20px; width: 72px; height: 72px; border-radius: 50%; border: 3px solid #141414; overflow: hidden; cursor: pointer; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 700; color: #000; }
-        .avatar-wrap img { width: 100%; height: 100%; object-fit: cover; }
-        .avatar-pencil { position: absolute; bottom: 0; right: 0; background: #39ff14; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; border: 2px solid #141414; pointer-events: none; }
+        .avatar-section {
+          position: relative;
+          padding: 0 22px 18px;
+          display: flex; align-items: flex-end; gap: 16px;
+          margin-top: -44px;
+        }
+        .avatar-zone {
+          position: relative;
+          width: 88px; height: 88px;
+          border-radius: 50%;
+          border: 4px solid #141414;
+          background: linear-gradient(135deg, #39ff14, #a855f7);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 32px; font-weight: 800; color: #000;
+          cursor: pointer; overflow: hidden; flex-shrink: 0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .avatar-zone:hover .avatar-overlay { opacity: 1; }
+        .avatar-img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-overlay {
+          position: absolute; inset: 0; border-radius: 50%;
+          background: rgba(0,0,0,0.6);
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          opacity: 0; transition: opacity 0.2s; gap: 2px;
+        }
+        .avatar-overlay-icon { font-size: 18px; }
+        .avatar-overlay-text { font-size: 9px; color: #fff; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .avatar-uploading {
+          position: absolute; inset: 0; border-radius: 50%;
+          background: rgba(0,0,0,0.75);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; color: #39ff14; font-weight: 700;
+        }
+        .avatar-info { padding-bottom: 6px; }
+        .avatar-info-name { font-size: 18px; font-weight: 800; color: #fff; }
+        .avatar-info-sub { font-size: 12px; color: #555; margin-top: 2px; }
 
-        /* Uploading state */
-        .uploading-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.6); display: flex; align-items: center; justify-content: center; font-size: 12px; color: #39ff14; border-radius: inherit; }
+        /* Remove links */
+        .photo-actions { padding: 0 22px 18px; display: flex; gap: 12px; }
+        .remove-link { background: none; border: 1px solid #2a2a2a; color: #888; border-radius: 6px; padding: 4px 10px; font-size: 11px; cursor: pointer; }
+        .remove-link:hover { border-color: #f87171; color: #f87171; }
 
         /* Preview card */
         .preview-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; overflow: hidden; grid-column: 1 / -1; }
@@ -121,7 +191,6 @@ export default function PortfolioPage() {
         .preview-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .preview-tag { background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 20px; padding: 3px 10px; font-size: 11px; color: #aaa; }
         .preview-meta { display: flex; gap: 16px; margin-top: 10px; font-size: 12px; color: #555; flex-wrap: wrap; }
-        .remove-link { background: none; border: none; color: #f87171; font-size: 11px; cursor: pointer; padding: 0; }
       `}</style>
 
       <div className="pp-wrap">
@@ -142,7 +211,7 @@ export default function PortfolioPage() {
             <div className="preview-cover">
               {form.cover_url && <img src={form.cover_url} alt="cover" />}
               <div className="preview-avatar">
-                {form.avatar_url ? <img src={form.avatar_url} alt="avatar" /> : form.business_name?.[0]?.toUpperCase() || "?"}
+                {form.avatar_url ? <img src={form.avatar_url} alt="avatar" /> : initials}
               </div>
             </div>
             <div className="preview-body">
@@ -155,48 +224,74 @@ export default function PortfolioPage() {
                 ))}
               </div>
               <div className="preview-meta">
-                {form.location && <span>📍 {form.location}</span>}
-                {form.years_experience && <span>⏱ {form.years_experience} yrs</span>}
-                {form.website && <span>🌐 {form.website}</span>}
+                {form.location && <span>{form.location}</span>}
+                {form.years_experience && <span>{form.years_experience} yrs exp</span>}
+                {form.website && <span>{form.website}</span>}
               </div>
             </div>
           </div>
 
-          {/* Photos section */}
-          <div className="pp-card full">
-            <div className="pp-card-title">🖼️ Photos</div>
+          {/* Photos */}
+          <div className="photos-card">
+            <div className="photos-card-header">
+              <div className="pp-card-title" style={{ margin: 0 }}>Photos</div>
+            </div>
 
-            {/* Cover photo */}
-            <div className="cover-wrap" onClick={() => coverRef.current && coverRef.current.click()}>
-              {form.cover_url
-                ? <img src={form.cover_url} alt="cover" className="cover-bg" />
-                : <div className="cover-bg" style={{ display: "flex", alignItems: "center", justifyContent: "center", color: "#333", fontSize: 13 }}>Click to upload cover photo</div>
-              }
-              <div className="cover-pencil">✏️ <span>Edit cover</span></div>
-              {uploading.cover_url && <div className="uploading-overlay">Uploading...</div>}
+            {/* Cover zone */}
+            <div
+              className={"cover-zone" + (form.cover_url ? " has-cover" : "")}
+              onClick={() => coverRef.current?.click()}
+            >
+              {form.cover_url && <img src={form.cover_url} alt="cover" className="cover-img" />}
+              <div className="cover-overlay">
+                <div className="cover-overlay-icon">+</div>
+                <div className="cover-overlay-text">{form.cover_url ? "Change cover photo" : "Upload cover photo"}</div>
+                <div className="cover-overlay-sub">Recommended: 1500 x 500px</div>
+              </div>
+              {form.cover_url && <div className="cover-edit-badge">Edit cover</div>}
+              {uploading.cover_url && (
+                <div className="cover-uploading">Uploading...</div>
+              )}
+            </div>
 
-              {/* Avatar overlaid on cover */}
-              <div className="avatar-wrap" onClick={e => { e.stopPropagation(); avatarRef.current && avatarRef.current.click(); }}>
-                {form.avatar_url ? <img src={form.avatar_url} alt="avatar" /> : form.business_name?.[0]?.toUpperCase() || "?"}
-                <div className="avatar-pencil">✏️</div>
-                {uploading.avatar_url && <div className="uploading-overlay" style={{ borderRadius: "50%" }}>...</div>}
+            {/* Avatar + name row */}
+            <div className="avatar-section">
+              <div className="avatar-zone" onClick={() => avatarRef.current?.click()}>
+                {form.avatar_url
+                  ? <img src={form.avatar_url} alt="avatar" className="avatar-img" />
+                  : initials
+                }
+                <div className="avatar-overlay">
+                  <div className="avatar-overlay-icon">+</div>
+                  <div className="avatar-overlay-text">Change</div>
+                </div>
+                {uploading.avatar_url && (
+                  <div className="avatar-uploading">...</div>
+                )}
+              </div>
+              <div className="avatar-info">
+                <div className="avatar-info-name">{form.business_name || "Your Business Name"}</div>
+                <div className="avatar-info-sub">Click the photo to change it</div>
               </div>
             </div>
+
+            {/* Remove links */}
+            {(form.avatar_url || form.cover_url) && (
+              <div className="photo-actions">
+                {form.avatar_url && <button className="remove-link" onClick={() => f("avatar_url", "")}>Remove profile photo</button>}
+                {form.cover_url && <button className="remove-link" onClick={() => f("cover_url", "")}>Remove cover photo</button>}
+              </div>
+            )}
 
             <input ref={coverRef} type="file" accept="image/*" style={{ display: "none" }}
               onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0], "cover_url")} />
             <input ref={avatarRef} type="file" accept="image/*" style={{ display: "none" }}
               onChange={e => e.target.files?.[0] && uploadImage(e.target.files[0], "avatar_url")} />
-
-            <div style={{ display: "flex", gap: 12, marginTop: 6 }}>
-              {form.avatar_url && <button className="remove-link" onClick={() => f("avatar_url", "")}>Remove logo</button>}
-              {form.cover_url && <button className="remove-link" onClick={() => f("cover_url", "")}>Remove cover</button>}
-            </div>
           </div>
 
           {/* Business Info */}
           <div className="pp-card">
-            <div className="pp-card-title">🏢 Business Info</div>
+            <div className="pp-card-title">Business Info</div>
             <div className="pp-field">
               <label>Business Name</label>
               <input placeholder="Your Studio Name" value={form.business_name} onChange={e => f("business_name", e.target.value)} />
@@ -217,7 +312,7 @@ export default function PortfolioPage() {
 
           {/* Contact */}
           <div className="pp-card">
-            <div className="pp-card-title">📞 Contact</div>
+            <div className="pp-card-title">Contact</div>
             <div className="pp-field">
               <label>Phone</label>
               <input placeholder="+61 400 000 000" value={form.phone} onChange={e => f("phone", e.target.value)} />
@@ -230,7 +325,7 @@ export default function PortfolioPage() {
 
           {/* Bio */}
           <div className="pp-card full">
-            <div className="pp-card-title">📝 Bio</div>
+            <div className="pp-card-title">Bio</div>
             <div className="pp-field">
               <textarea placeholder="Tell potential clients about yourself and your work..." value={form.bio} onChange={e => f("bio", e.target.value)} />
             </div>
@@ -238,7 +333,7 @@ export default function PortfolioPage() {
 
           {/* Skills */}
           <div className="pp-card full">
-            <div className="pp-card-title">🎯 Skills and Specialties</div>
+            <div className="pp-card-title">Skills and Specialties</div>
             <div className="pp-field">
               <label>Skill Types (comma separated)</label>
               <input placeholder="Photography, Videography, Editing" value={form.skill_types} onChange={e => f("skill_types", e.target.value)} />
