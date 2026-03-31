@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { supabase } from "../../lib/supabaseClient";
 
 const ROLES = ["Photographer","Videographer","Editor","Assistant","Second Shooter","Studio Manager","Social Media","Other"];
@@ -9,6 +9,7 @@ export default function TeamPage() {
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [inviting, setInviting] = useState({});
   const [form, setForm] = useState({ name: "", email: "", role: "Assistant", status: "active" });
 
   useEffect(() => {
@@ -63,8 +64,56 @@ export default function TeamPage() {
     setMembers((prev) => prev.map((mem) => mem.id === m.id ? { ...mem, status: newStatus } : mem));
   };
 
+  const sendInvite = async (m) => {
+    if (!m.email) return alert("This team member has no email address. Edit them to add one first.");
+    setInviting((p) => ({ ...p, [m.id]: true }));
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const res = await fetch("https://lqafxisymvrazipaozfk.supabase.co/functions/v1/invite-team-member", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({
+          name: m.name,
+          email: m.email,
+          role: m.role,
+          creative_id: user.id,
+          team_member_id: m.id,
+        }),
+      });
+      const result = await res.json();
+      if (result.success) {
+        setMembers((prev) => prev.map((mem) => mem.id === m.id ? { ...mem, invite_status: "sent", invite_sent_at: new Date().toISOString() } : mem));
+      } else {
+        alert("Invite failed: " + (result.error || "Unknown error"));
+      }
+    } catch (err) {
+      alert("Invite failed: " + err.message);
+    }
+    setInviting((p) => ({ ...p, [m.id]: false }));
+  };
+
   const active = members.filter((m) => m.status === "active");
   const inactive = members.filter((m) => m.status === "inactive");
+
+  const InviteBadge = ({ m }) => {
+    if (!m.email) return null;
+    if (m.invite_status === "sent") {
+      const sentAt = m.invite_sent_at ? new Date(m.invite_sent_at).toLocaleDateString([], { month: "short", day: "numeric" }) : "";
+      return <span className="invite-badge sent">Invited{sentAt ? ` ${sentAt}` : ""}</span>;
+    }
+    return (
+      <button
+        className="invite-btn"
+        onClick={() => sendInvite(m)}
+        disabled={inviting[m.id]}
+      >
+        {inviting[m.id] ? "Sending..." : "Send Invite"}
+      </button>
+    );
+  };
 
   return (
     <>
@@ -78,18 +127,27 @@ export default function TeamPage() {
         .team-stat { background: #141414; border: 1px solid #1e1e1e; border-radius: 8px; padding: 12px 18px; font-size: 12px; color: #888; }
         .team-stat strong { font-size: 20px; color: #fff; display: block; font-weight: 800; }
         .section-label { font-size: 11px; color: #555; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-bottom: 12px; margin-top: 20px; }
-        .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
         .member-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
-        .member-top { display: flex; align-items: center; gap: 12px; }
+        .member-top { display: flex; align-items: flex-start; gap: 12px; }
         .member-avatar { width: 44px; height: 44px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: #000; flex-shrink: 0; }
         .member-avatar.inactive { background: #2a2a2a; color: #555; }
-        .member-info { flex: 1; }
+        .member-info { flex: 1; min-width: 0; }
         .member-name { font-size: 14px; font-weight: 600; color: #fff; }
         .member-role { font-size: 12px; color: #888; margin-top: 2px; }
-        .member-email { font-size: 11px; color: #555; }
-        .member-status { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 7px; border: 1px solid; text-transform: uppercase; }
+        .member-email { font-size: 11px; color: #555; margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .member-status { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 2px 7px; border: 1px solid; text-transform: uppercase; flex-shrink: 0; }
         .member-status.active { color: #39ff14; border-color: #2a4a2a; background: #1a2a1a; }
         .member-status.inactive { color: #555; border-color: #2a2a2a; background: #1a1a1a; }
+        .invite-row { display: flex; align-items: center; gap: 8px; padding-top: 2px; border-top: 1px solid #1e1e1e; }
+        .invite-btn { background: #1a2a3a; border: 1px solid #2a4a6a; border-radius: 6px; color: #60a5fa; font-size: 11px; font-weight: 700; padding: 5px 10px; cursor: pointer; }
+        .invite-btn:hover { background: #1e3a5a; border-color: #3a6a9a; }
+        .invite-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .invite-badge { font-size: 10px; font-weight: 700; border-radius: 4px; padding: 3px 8px; border: 1px solid; }
+        .invite-badge.sent { color: #60a5fa; border-color: #1e3a6a; background: #0f1e3a; }
+        .invite-no-email { font-size: 11px; color: #444; font-style: italic; }
+        .resend-link { background: none; border: none; color: #555; font-size: 10px; cursor: pointer; text-decoration: underline; }
+        .resend-link:hover { color: #aaa; }
         .member-actions { display: flex; gap: 6px; }
         .member-btn { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 7px; padding: 6px; font-size: 11px; color: #888; cursor: pointer; text-align: center; }
         .member-btn:hover { border-color: #444; color: #fff; }
@@ -97,7 +155,8 @@ export default function TeamPage() {
         .empty-team { text-align: center; padding: 60px 20px; color: #444; }
         .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
         .modal { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px; width: 420px; max-width: 90vw; }
-        .modal h3 { font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 20px; }
+        .modal h3 { font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 6px; }
+        .modal-hint { font-size: 12px; color: #555; margin-bottom: 20px; line-height: 1.5; }
         .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
         .modal-field { display: flex; flex-direction: column; gap: 6px; }
         .modal-field.full { grid-column: 1 / -1; }
@@ -109,6 +168,7 @@ export default function TeamPage() {
         .modal-cancel { background: none; border: 1px solid #2a2a2a; color: #888; border-radius: 8px; padding: 9px 18px; cursor: pointer; font-size: 13px; }
         .modal-confirm { background: #39ff14; border: none; color: #000; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; }
       `}</style>
+
       <div className="team-wrap">
         <div className="team-header">
           <div>
@@ -117,72 +177,102 @@ export default function TeamPage() {
           </div>
           <button className="add-btn" onClick={openNew}>+ Add Member</button>
         </div>
+
         {members.length > 0 && (
           <div className="team-stats">
             <div className="team-stat"><strong>{members.length}</strong>Total</div>
             <div className="team-stat"><strong>{active.length}</strong>Active</div>
             <div className="team-stat"><strong>{inactive.length}</strong>Inactive</div>
+            <div className="team-stat"><strong>{members.filter(m => m.invite_status === "sent").length}</strong>Invited</div>
           </div>
         )}
-        {loading ? <div className="empty-team"><p>Loading...</p></div> : members.length === 0 ? (
+
+        {loading ? (
+          <div className="empty-team"><p>Loading...</p></div>
+        ) : members.length === 0 ? (
           <div className="empty-team">
             <div style={{ fontSize: 48, marginBottom: 12 }}>👥</div>
             <p>No team members yet</p>
+            <p style={{ fontSize: 12, marginTop: 6, color: "#333" }}>Add a member and send them an invite to join your studio</p>
           </div>
         ) : (
           <>
-            {active.length > 0 && (<>
-              <div className="section-label">Active ({active.length})</div>
-              <div className="team-grid">
-                {active.map((m) => (
-                  <div key={m.id} className="member-card">
-                    <div className="member-top">
-                      <div className="member-avatar">{m.name?.[0]?.toUpperCase() || "?"}</div>
-                      <div className="member-info">
-                        <div className="member-name">{m.name}</div>
-                        <div className="member-role">{m.role}</div>
-                        {m.email && <div className="member-email">{m.email}</div>}
+            {active.length > 0 && (
+              <>
+                <div className="section-label">Active ({active.length})</div>
+                <div className="team-grid">
+                  {active.map((m) => (
+                    <div key={m.id} className="member-card">
+                      <div className="member-top">
+                        <div className="member-avatar">{m.name?.[0]?.toUpperCase() || "?"}</div>
+                        <div className="member-info">
+                          <div className="member-name">{m.name}</div>
+                          <div className="member-role">{m.role}</div>
+                          {m.email && <div className="member-email">{m.email}</div>}
+                        </div>
+                        <span className="member-status active">active</span>
                       </div>
-                      <span className="member-status active">active</span>
-                    </div>
-                    <div className="member-actions">
-                      <button className="member-btn" onClick={() => openEdit(m)}>Edit</button>
-                      <button className="member-btn" onClick={() => toggleStatus(m)}>Deactivate</button>
-                      <button className="member-btn danger" onClick={() => deleteMember(m.id)}>Delete</button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>)}
-            {inactive.length > 0 && (<>
-              <div className="section-label">Inactive ({inactive.length})</div>
-              <div className="team-grid">
-                {inactive.map((m) => (
-                  <div key={m.id} className="member-card">
-                    <div className="member-top">
-                      <div className="member-avatar inactive">{m.name?.[0]?.toUpperCase() || "?"}</div>
-                      <div className="member-info">
-                        <div className="member-name">{m.name}</div>
-                        <div className="member-role">{m.role}</div>
+
+                      <div className="invite-row">
+                        {m.email ? (
+                          <>
+                            <InviteBadge m={m} />
+                            {m.invite_status === "sent" && (
+                              <button className="resend-link" onClick={() => sendInvite(m)} disabled={inviting[m.id]}>
+                                Resend
+                              </button>
+                            )}
+                          </>
+                        ) : (
+                          <span className="invite-no-email">Add email to send invite</span>
+                        )}
                       </div>
-                      <span className="member-status inactive">inactive</span>
+
+                      <div className="member-actions">
+                        <button className="member-btn" onClick={() => openEdit(m)}>Edit</button>
+                        <button className="member-btn" onClick={() => toggleStatus(m)}>Deactivate</button>
+                        <button className="member-btn danger" onClick={() => deleteMember(m.id)}>Delete</button>
+                      </div>
                     </div>
-                    <div className="member-actions">
-                      <button className="member-btn" onClick={() => openEdit(m)}>Edit</button>
-                      <button className="member-btn" onClick={() => toggleStatus(m)}>Activate</button>
-                      <button className="member-btn danger" onClick={() => deleteMember(m.id)}>Delete</button>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {inactive.length > 0 && (
+              <>
+                <div className="section-label">Inactive ({inactive.length})</div>
+                <div className="team-grid">
+                  {inactive.map((m) => (
+                    <div key={m.id} className="member-card">
+                      <div className="member-top">
+                        <div className="member-avatar inactive">{m.name?.[0]?.toUpperCase() || "?"}</div>
+                        <div className="member-info">
+                          <div className="member-name">{m.name}</div>
+                          <div className="member-role">{m.role}</div>
+                          {m.email && <div className="member-email">{m.email}</div>}
+                        </div>
+                        <span className="member-status inactive">inactive</span>
+                      </div>
+                      <div className="member-actions">
+                        <button className="member-btn" onClick={() => openEdit(m)}>Edit</button>
+                        <button className="member-btn" onClick={() => toggleStatus(m)}>Activate</button>
+                        <button className="member-btn danger" onClick={() => deleteMember(m.id)}>Delete</button>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            </>)}
+                  ))}
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
+
       {showModal && (
         <div className="modal-overlay" onClick={() => setShowModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <h3>{editing ? "Edit Member" : "Add Team Member"}</h3>
+            <p className="modal-hint">After adding, use the "Send Invite" button on their card to email them a link to create their account.</p>
             <div className="modal-grid">
               <div className="modal-field full">
                 <label>Name *</label>
