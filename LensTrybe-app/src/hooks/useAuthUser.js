@@ -22,7 +22,8 @@ function useAuthUser() {
       }
 
       if (error) {
-        setErrorMessage(error.message)
+        // Treat "Auth session missing" as simply not logged in — not an error
+        setErrorMessage('')
         setUser(null)
       } else {
         setErrorMessage('')
