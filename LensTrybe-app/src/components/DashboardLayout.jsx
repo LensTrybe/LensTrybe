@@ -52,7 +52,6 @@ const navSections = [
   {
     title: 'BUSINESS',
     links: [
-      { label: 'Insights', to: '/dashboard/business/insights' },
       { label: 'Reviews', to: '/dashboard/business/reviews' },
       { label: 'Marketplace', to: '/dashboard/business/marketplace' },
       { label: 'Team', to: '/dashboard/business/team' },

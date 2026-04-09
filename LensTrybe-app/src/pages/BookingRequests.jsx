@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import useAuthUser from '../hooks/useAuthUser'
 import { supabase } from '../lib/supabaseClient'
-import './BookingRequests.css'
 
 function getStatusInfo(row) {
   const raw = String(row?.status ?? 'pending').toLowerCase().trim()
@@ -163,128 +162,203 @@ function BookingRequests() {
     setPendingAction(null)
   }
 
+  const THEME = {
+    pageBg: '#0a0a0f',
+    text: 'rgb(242, 242, 242)',
+    subtitle: '#666',
+    muted: '#555',
+    cardBg: '#13131a',
+    cardBorder: '1px solid #20202740',
+    itemBg: '#1a1a24',
+    itemBorder: '1px solid #202027',
+    softText: '#aaa',
+    notesText: '#888',
+    green: '#39ff14',
+    red: '#f87171',
+  }
+
+  const shellStyle = {
+    background: THEME.pageBg,
+    minHeight: '100vh',
+    padding: 32,
+    color: THEME.text,
+    fontFamily: 'Inter, sans-serif',
+    boxSizing: 'border-box',
+  }
+
+  const wrapStyle = { maxWidth: 800, margin: '0 auto' }
+
   if (authLoading) {
     return (
-      <section className="booking-requests-page">
-        <p className="booking-requests-page__subtitle">Loading session…</p>
+      <section style={shellStyle}>
+        <div style={wrapStyle}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Booking Requests</div>
+          <div style={{ fontSize: 13, color: THEME.subtitle, marginTop: 6 }}>
+            Review and respond to incoming booking requests
+          </div>
+          <div style={{ marginTop: 18, color: THEME.muted, fontSize: 13 }}>Loading session…</div>
+        </div>
       </section>
     )
   }
 
   if (!userId) {
     return (
-      <section className="booking-requests-page">
-        <h1 className="booking-requests-page__title">Booking requests</h1>
-        <p className="booking-requests-page__subtitle">Sign in to view your booking requests.</p>
+      <section style={shellStyle}>
+        <div style={wrapStyle}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Booking Requests</div>
+          <div style={{ fontSize: 13, color: THEME.subtitle, marginTop: 6 }}>
+            Review and respond to incoming booking requests
+          </div>
+          <div style={{ marginTop: 18, color: THEME.muted, fontSize: 13 }}>
+            Sign in to view your booking requests.
+          </div>
+        </div>
       </section>
     )
   }
 
+  const pendingBookings = bookings.filter((row) => getStatusInfo(row).variant === 'pending')
+
+  const sectionCardStyle = {
+    background: THEME.cardBg,
+    border: THEME.cardBorder,
+    borderRadius: 12,
+    padding: 24,
+  }
+
+  const sectionHeadingStyle = {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 700,
+    marginBottom: 16,
+    borderLeft: `3px solid ${THEME.green}`,
+    paddingLeft: 10,
+  }
+
+  const actionBtnStyle = ({ variant, disabled }) => {
+    const isAccept = variant === 'accept'
+    const bg = isAccept ? '#1e2a1e' : '#2a1a1a'
+    const border = isAccept ? `1px solid ${THEME.green}` : `1px solid ${THEME.red}`
+    const color = isAccept ? THEME.green : THEME.red
+    return {
+      background: bg,
+      border,
+      color,
+      borderRadius: 8,
+      padding: '8px 16px',
+      fontWeight: 600,
+      fontSize: 13,
+      cursor: 'pointer',
+      opacity: disabled ? 0.55 : 1,
+      userSelect: 'none',
+    }
+  }
+
   return (
-    <section className="booking-requests-page">
-      <h1 className="booking-requests-page__title">Booking requests</h1>
-      <p className="booking-requests-page__subtitle">
-        Review incoming client requests, confirm or decline, or remove a booking from your list.
-      </p>
-
-      {loading ? (
-        <p className="booking-requests-page__subtitle">Loading bookings…</p>
-      ) : bookings.length === 0 ? (
-        <p className="booking-requests-page__empty">
-          No booking requests yet. When clients reach out, they will appear here.
-        </p>
-      ) : (
-        <div className="booking-requests-page__grid">
-          {bookings.map((row) => {
-            const { variant, label } = getStatusInfo(row)
-            const statusClass =
-              variant === 'confirmed'
-                ? 'booking-requests-page__status--confirmed'
-                : variant === 'declined'
-                  ? 'booking-requests-page__status--declined'
-                  : variant === 'pending'
-                    ? 'booking-requests-page__status--pending'
-                    : 'booking-requests-page__status--unknown'
-
-            const email = resolveClientEmail(row)
-            const notes = resolveNotes(row)
-            const isBusy = pendingAction?.id === row.id
-            const busyKind = isBusy ? pendingAction.kind : null
-
-            return (
-              <article key={row.id} className="booking-requests-page__card">
-                <span className={`booking-requests-page__status ${statusClass}`}>{label}</span>
-                <h2 className="booking-requests-page__client">{resolveClientName(row)}</h2>
-                {email ? (
-                  <p className="booking-requests-page__email">
-                    <a href={`mailto:${email}`}>{email}</a>
-                  </p>
-                ) : (
-                  <p className="booking-requests-page__email">No email on file</p>
-                )}
-                <p className="booking-requests-page__meta">
-                  <span className="booking-requests-page__meta-label">Date requested: </span>
-                  {formatRequestedDate(resolveRequestedDate(row))}
-                </p>
-                <p className="booking-requests-page__meta">
-                  <span className="booking-requests-page__meta-label">Service: </span>
-                  {resolveServiceType(row)}
-                </p>
-                {notes ? (
-                  <p className="booking-requests-page__notes">
-                    <strong>Notes</strong>
-                    <br />
-                    {notes}
-                  </p>
-                ) : (
-                  <p className="booking-requests-page__notes">
-                    <strong>Notes</strong>
-                    <br />
-                    None
-                  </p>
-                )}
-                <div className="booking-requests-page__actions">
-                  <button
-                    type="button"
-                    className="booking-requests-page__btn booking-requests-page__btn--confirm"
-                    disabled={isBusy || variant === 'confirmed'}
-                    onClick={() => updateStatus(row.id, 'confirmed')}
-                  >
-                    {busyKind === 'confirm' ? '…' : 'Confirm'}
-                  </button>
-                  <button
-                    type="button"
-                    className="booking-requests-page__btn booking-requests-page__btn--decline"
-                    disabled={isBusy || variant === 'declined'}
-                    onClick={() => updateStatus(row.id, 'declined')}
-                  >
-                    {busyKind === 'decline' ? '…' : 'Decline'}
-                  </button>
-                  <button
-                    type="button"
-                    className="booking-requests-page__btn booking-requests-page__btn--delete"
-                    disabled={isBusy}
-                    onClick={() => handleDelete(row.id)}
-                  >
-                    {busyKind === 'delete' ? '…' : 'Delete'}
-                  </button>
-                </div>
-              </article>
-            )
-          })}
+    <section style={shellStyle}>
+      <div style={wrapStyle}>
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Booking Requests</div>
+          <div style={{ fontSize: 13, color: THEME.subtitle, marginTop: 6 }}>
+            Review and respond to incoming booking requests
+          </div>
         </div>
-      )}
 
-      {errorMessage && (
-        <p className="booking-requests-page__message" role="alert">
-          {errorMessage}
-        </p>
-      )}
-      {successMessage && !errorMessage && (
-        <p className="booking-requests-page__message booking-requests-page__message--ok" role="status">
-          {successMessage}
-        </p>
-      )}
+        {(errorMessage || successMessage) && (
+          <div
+            style={{
+              marginBottom: 16,
+              borderRadius: 12,
+              padding: 12,
+              fontSize: 13,
+              background: errorMessage ? '#2a1a1a' : '#1e2a1e',
+              border: errorMessage ? '1px solid #3a1a1a' : `1px solid ${THEME.green}33`,
+              color: errorMessage ? THEME.red : THEME.green,
+            }}
+            role={errorMessage ? 'alert' : 'status'}
+          >
+            {errorMessage || successMessage}
+          </div>
+        )}
+
+        <div style={sectionCardStyle}>
+          <div style={sectionHeadingStyle}>Pending Booking Requests</div>
+
+          {loading ? (
+            <div style={{ color: THEME.muted, fontSize: 13 }}>Loading bookings…</div>
+          ) : pendingBookings.length === 0 ? (
+            <div
+              style={{
+                background: THEME.itemBg,
+                borderRadius: 10,
+                padding: 32,
+                textAlign: 'center',
+                color: THEME.muted,
+              }}
+            >
+              <div style={{ fontSize: 32, marginBottom: 12 }} aria-hidden="true">
+                📥
+              </div>
+              <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>No pending booking requests.</div>
+            </div>
+          ) : (
+            <div>
+              {pendingBookings.map((row) => {
+                const notes = resolveNotes(row)
+                const isBusy = pendingAction?.id === row.id
+                const busyKind = isBusy ? pendingAction.kind : null
+                const requestedDate = formatRequestedDate(resolveRequestedDate(row))
+
+                return (
+                  <div
+                    key={row.id}
+                    style={{
+                      background: THEME.itemBg,
+                      border: THEME.itemBorder,
+                      borderRadius: 10,
+                      padding: 16,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, marginBottom: 6 }}>
+                      {resolveClientName(row)}
+                    </div>
+                    <div style={{ color: THEME.softText, fontSize: 13, marginBottom: 4 }}>
+                      {resolveServiceType(row)}
+                    </div>
+                    <div style={{ color: THEME.softText, fontSize: 13, marginBottom: 8 }}>
+                      {requestedDate}
+                    </div>
+                    <div style={{ color: THEME.notesText, fontSize: 12, fontStyle: 'italic', marginBottom: 12 }}>
+                      {notes ? notes : '—'}
+                    </div>
+
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button
+                        type="button"
+                        style={actionBtnStyle({ variant: 'accept', disabled: isBusy })}
+                        disabled={isBusy}
+                        onClick={() => updateStatus(row.id, 'confirmed')}
+                      >
+                        {busyKind === 'confirm' ? '…' : 'Accept'}
+                      </button>
+                      <button
+                        type="button"
+                        style={actionBtnStyle({ variant: 'decline', disabled: isBusy })}
+                        disabled={isBusy}
+                        onClick={() => updateStatus(row.id, 'declined')}
+                      >
+                        {busyKind === 'decline' ? '…' : 'Decline'}
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

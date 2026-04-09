@@ -4,10 +4,16 @@ import { jsPDF } from 'jspdf'
 import useAuthUser from '../hooks/useAuthUser'
 import { supabase } from '../lib/supabaseClient'
 
-const STATUS_OPTIONS = ['draft', 'sent', 'accepted', 'declined']
 const SEND_QUOTE_URL = 'https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-quote'
 
-const initialForm = { client_name: '', client_email: '', valid_until: '', status: 'draft' }
+const initialForm = {
+  client_name: '',
+  client_email: '',
+  quote_title: '',
+  valid_days: '14',
+  tax_percent: '10',
+  status: 'draft',
+}
 
 function newLineItemRow() {
   return {
@@ -92,7 +98,11 @@ function formatDocumentDate(value) {
 
 function formatMoney(amount) {
   if (amount === null || amount === undefined) return '—'
-  try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(amount) } catch { return String(amount) }
+  try {
+    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount)
+  } catch {
+    return String(amount)
+  }
 }
 
 function formatLineItemCount(n) {
@@ -103,73 +113,109 @@ function formatLineItemCount(n) {
 
 function shortQuoteNumber(id) { if (id == null || id === '') return '—'; return String(id).slice(0, 8) }
 
+function resolveQuoteTitle(row) {
+  const t = row?.title ?? row?.service
+  if (t && String(t).trim()) return String(t).trim()
+  const raw = parseItemsFromRow(row)[0]
+  if (raw && typeof raw === 'object') {
+    const d = String(raw.description ?? raw.desc ?? '').trim()
+    if (d) return d.length > 80 ? `${d.slice(0, 80)}…` : d
+  }
+  return `Quote #${shortQuoteNumber(row.id)}`
+}
+
 function Quotes() {
   const { user, loading: authLoading } = useAuthUser()
   const userId = user?.id ?? null
 
-  const ui = {
-    bg: '#0f0f0f',
-    card: '#141414',
+  const PAGE = {
+    bg: '#0a0a0f',
+    text: 'rgb(242, 242, 242)',
+    card: '#13131a',
     border: '#1e1e1e',
-    text: '#e8e8e8',
+    inner: '#1a1a24',
+    innerBorder: '#202027',
     muted: '#555',
+    label: '#888',
     green: '#39ff14',
     yellow: '#facc15',
     red: '#f87171',
     grey: '#9ca3af',
-    inputBg: '#1a1a1a',
-    inputBorder: '#2a2a2a',
   }
 
+  const font = { fontFamily: 'Inter, sans-serif' }
+
   const labelStyle = {
-    color: '#888',
-    fontSize: 11,
+    color: PAGE.label,
+    fontSize: 12,
     fontWeight: 600,
     textTransform: 'uppercase',
-    letterSpacing: '0.05em',
-    marginBottom: 6,
+    letterSpacing: '0.06em',
+    marginBottom: 8,
     display: 'block',
+    ...font,
   }
 
   const inputStyle = {
     width: '100%',
     boxSizing: 'border-box',
-    padding: '10px 12px',
-    borderRadius: 8,
-    border: `1px solid ${ui.inputBorder}`,
-    background: ui.inputBg,
-    color: ui.text,
-    fontFamily: 'inherit',
+    padding: '8px 10px',
+    borderRadius: 6,
+    border: `1px solid ${PAGE.innerBorder}`,
+    background: PAGE.inner,
+    color: '#fff',
+    ...font,
     outline: 'none',
     fontSize: 14,
   }
 
   const cardStyle = {
-    background: ui.card,
-    border: `1px solid ${ui.border}`,
+    background: PAGE.card,
+    border: `1px solid ${PAGE.border}`,
     borderRadius: 12,
     padding: 24,
+    boxSizing: 'border-box',
+    ...font,
+  }
+
+  const sectionHeading = {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 700,
+    borderLeft: `3px solid ${PAGE.green}`,
+    paddingLeft: 10,
+    marginBottom: 20,
+    ...font,
+  }
+
+  const subSectionTitle = {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 700,
+    marginBottom: 12,
+    ...font,
   }
 
   const pillStyle = (active) => ({
-    background: active ? '#1e2a1e' : ui.inputBg,
-    border: `1px solid ${active ? ui.green : ui.inputBorder}`,
-    color: active ? ui.green : '#666',
-    borderRadius: 20,
-    padding: '6px 16px',
+    background: active ? '#1e2a1e' : PAGE.inner,
+    border: `1px solid ${active ? PAGE.green : PAGE.innerBorder}`,
+    color: active ? PAGE.green : PAGE.label,
+    borderRadius: 999,
+    padding: '8px 16px',
     fontSize: 12,
     fontWeight: 700,
-    userSelect: 'none',
+    cursor: 'pointer',
+    ...font,
   })
 
   const statusBadgeStyle = (variant) => {
     const v = String(variant || '').toLowerCase()
-    if (v === 'accepted') return { bg: `${ui.green}18`, border: `${ui.green}55`, color: ui.green }
-    if (v === 'sent') return { bg: `${ui.yellow}18`, border: `${ui.yellow}55`, color: ui.yellow }
-    if (v === 'declined') return { bg: `${ui.red}18`, border: `${ui.red}55`, color: ui.red }
-    if (v === 'draft') return { bg: `${ui.grey}18`, border: `${ui.grey}55`, color: ui.grey }
-    if (v === 'converted') return { bg: '#1a1a1a', border: ui.inputBorder, color: '#93c5fd' }
-    return { bg: '#1a1a1a', border: ui.inputBorder, color: ui.text }
+    if (v === 'accepted') return { bg: `${PAGE.green}18`, border: `${PAGE.green}55`, color: PAGE.green }
+    if (v === 'sent') return { bg: `${PAGE.yellow}18`, border: `${PAGE.yellow}55`, color: PAGE.yellow }
+    if (v === 'declined') return { bg: `${PAGE.red}18`, border: `${PAGE.red}55`, color: PAGE.red }
+    if (v === 'draft') return { bg: `${PAGE.grey}18`, border: `${PAGE.grey}55`, color: PAGE.grey }
+    if (v === 'converted') return { bg: '#1a1a1a', border: PAGE.innerBorder, color: '#93c5fd' }
+    return { bg: '#1a1a1a', border: PAGE.innerBorder, color: PAGE.text }
   }
 
   const [quotes, setQuotes] = useState([])
@@ -184,6 +230,7 @@ function Quotes() {
   const [sendQuoteFeedback, setSendQuoteFeedback] = useState(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+  const [quoteFilter, setQuoteFilter] = useState('all')
   const [businessName, setBusinessName] = useState('')
   const [brandKit, setBrandKit] = useState(null)
   const [previewQuote, setPreviewQuote] = useState(null)
@@ -191,7 +238,26 @@ function Quotes() {
   const previewCloseRef = useRef(null)
   const quoteContentRef = useRef(null)
 
-  const draftTotal = useMemo(() => lineItemsTotal(buildItemsPayload(lineItems)), [lineItems])
+  const { draftSubtotal, draftTax, draftTotalWithTax } = useMemo(() => {
+    const payload = buildItemsPayload(lineItems)
+    const sub = lineItemsTotal(payload)
+    const pct = Number(form.tax_percent)
+    const tax = Number.isFinite(pct) ? sub * (pct / 100) : 0
+    return { draftSubtotal: sub, draftTax: tax, draftTotalWithTax: sub + tax }
+  }, [lineItems, form.tax_percent])
+
+  const filteredQuotes = useMemo(() => {
+    return quotes.filter((row) => {
+      const { variant } = getStatusInfo(row)
+      if (quoteFilter === 'all') return true
+      if (quoteFilter === 'draft') return variant === 'draft'
+      if (quoteFilter === 'sent') return variant === 'sent'
+      if (quoteFilter === 'accepted') return variant === 'accepted' || variant === 'converted'
+      if (quoteFilter === 'declined') return variant === 'declined'
+      return true
+    })
+  }, [quotes, quoteFilter])
+
   const previewLines = useMemo(() => (previewQuote ? buildInvoiceItemsFromQuote(previewQuote) : []), [previewQuote])
 
   const loadQuotes = useCallback(async () => {
@@ -252,18 +318,61 @@ function Quotes() {
   const removeLineItem = (id) => { setLineItems((prev) => { const next = prev.filter((line) => line.id !== id); return next.length === 0 ? [newLineItemRow()] : next }) }
 
   const handleSubmit = async (e) => {
-    e.preventDefault(); setSuccessMessage('')
-    if (!supabase || !userId) { setErrorMessage('Not signed in.'); return }
-    if (!form.client_name.trim()) { setErrorMessage('Client name is required.'); return }
-    const itemsPayload = buildItemsPayload(lineItems)
-    if (itemsPayload.length === 0) { setErrorMessage('Add at least one line item.'); return }
-    const amountTotal = lineItemsTotal(itemsPayload)
-    if (!Number.isFinite(amountTotal) || amountTotal <= 0) { setErrorMessage('Quote total must be greater than zero.'); return }
-    setSubmitting(true); setErrorMessage('')
-    const payload = { creative_id: userId, client_name: form.client_name.trim(), client_email: form.client_email.trim() || null, amount: amountTotal, items: itemsPayload, valid_until: form.valid_until || null, status: form.status }
+    e.preventDefault()
+    setSuccessMessage('')
+    if (!supabase || !userId) {
+      setErrorMessage('Not signed in.')
+      return
+    }
+    if (!form.client_name.trim()) {
+      setErrorMessage('Client name is required.')
+      return
+    }
+    let itemsPayload = buildItemsPayload(lineItems)
+    if (itemsPayload.length === 0) {
+      setErrorMessage('Add at least one line item.')
+      return
+    }
+    const titlePrefix = form.quote_title.trim()
+    if (titlePrefix) {
+      itemsPayload = itemsPayload.map((it, idx) =>
+        idx === 0 ? { ...it, description: `${titlePrefix} — ${it.description}`.trim() } : it,
+      )
+    }
+    const subtotal = lineItemsTotal(itemsPayload)
+    const taxPct = Number(form.tax_percent)
+    const taxAmt = Number.isFinite(taxPct) ? subtotal * (taxPct / 100) : 0
+    const amountTotal = subtotal + taxAmt
+    if (!Number.isFinite(amountTotal) || amountTotal <= 0) {
+      setErrorMessage('Quote total must be greater than zero.')
+      return
+    }
+    const days = Number(form.valid_days)
+    let validUntil = null
+    if (Number.isFinite(days) && days > 0) {
+      const d = new Date()
+      d.setDate(d.getDate() + Math.floor(days))
+      validUntil = d.toISOString().slice(0, 10)
+    }
+    setSubmitting(true)
+    setErrorMessage('')
+    const payload = {
+      creative_id: userId,
+      client_name: form.client_name.trim(),
+      client_email: form.client_email.trim() || null,
+      amount: amountTotal,
+      items: itemsPayload,
+      valid_until: validUntil,
+      status: form.status,
+    }
     const { error } = await supabase.from('quotes').insert(payload)
     if (error) setErrorMessage(error.message)
-    else { setSuccessMessage('Quote created.'); setForm(initialForm); setLineItems([newLineItemRow()]); await loadQuotes() }
+    else {
+      setSuccessMessage('Quote created.')
+      setForm(initialForm)
+      setLineItems([newLineItemRow()])
+      await loadQuotes()
+    }
     setSubmitting(false)
   }
 
@@ -274,6 +383,19 @@ function Quotes() {
     if (error) setErrorMessage(error.message)
     else { setSuccessMessage('Quote removed.'); setQuotes((c) => c.filter((row) => row.id !== id)) }
     setDeletingId(null)
+  }
+
+  const handleAcceptQuote = async (id) => {
+    if (!supabase || !userId || !id) return
+    setSuccessMessage('')
+    setErrorMessage('')
+    const { error } = await supabase.from('quotes').update({ status: 'accepted' }).eq('id', id).eq('creative_id', userId)
+    if (error) setErrorMessage(error.message)
+    else {
+      setSuccessMessage('Quote marked as accepted.')
+      setQuotes((c) => c.map((row) => (row.id === id ? { ...row, status: 'accepted' } : row)))
+      setPreviewQuote((open) => (open?.id === id ? { ...open, status: 'accepted' } : open))
+    }
   }
 
   const handleConvertToInvoice = async (row) => {
@@ -335,15 +457,15 @@ function Quotes() {
     return (
       <section
         style={{
-          background: ui.bg,
+          background: PAGE.bg,
           minHeight: '100vh',
-          padding: 28,
-          color: ui.text,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          padding: 32,
+          color: PAGE.text,
+          ...font,
           boxSizing: 'border-box',
         }}
       >
-        <p style={{ margin: 0, color: ui.muted }}>Loading session…</p>
+        <p style={{ margin: 0, color: PAGE.muted }}>Loading session…</p>
       </section>
     )
 
@@ -351,151 +473,202 @@ function Quotes() {
     return (
       <section
         style={{
-          background: ui.bg,
+          background: PAGE.bg,
           minHeight: '100vh',
-          padding: 28,
-          color: ui.text,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          padding: 32,
+          color: PAGE.text,
+          ...font,
           boxSizing: 'border-box',
         }}
       >
         <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#fff' }}>Quotes</h1>
-        <p style={{ margin: '8px 0 0', color: ui.muted, fontSize: 13 }}>
+        <p style={{ margin: '8px 0 0', color: PAGE.muted, fontSize: 13 }}>
           Sign in to manage quotes.
         </p>
       </section>
     )
 
+  const colHeader = {
+    color: PAGE.label,
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    ...font,
+  }
+
+  const actionBtn = (disabled) => ({
+    padding: '8px 12px',
+    borderRadius: 8,
+    border: `1px solid ${PAGE.innerBorder}`,
+    background: PAGE.inner,
+    color: PAGE.text,
+    fontSize: 12,
+    fontWeight: 700,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.6 : 1,
+    ...font,
+  })
+
+  const FILTER_KEYS = [
+    { key: 'all', label: 'All' },
+    { key: 'draft', label: 'Draft' },
+    { key: 'sent', label: 'Sent' },
+    { key: 'accepted', label: 'Accepted' },
+    { key: 'declined', label: 'Declined' },
+  ]
+
   return (
     <section
       style={{
-        background: ui.bg,
+        background: PAGE.bg,
         minHeight: '100vh',
-        padding: 28,
-        color: ui.text,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        padding: 32,
+        color: PAGE.text,
+        ...font,
         boxSizing: 'border-box',
       }}
     >
-      <div style={{ marginBottom: 18 }}>
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#fff' }}>Quotes</h1>
-        <p style={{ margin: '8px 0 0', color: ui.muted, fontSize: 13 }}>
-          Create and send professional quotes to your clients
-        </p>
-      </div>
+      {errorMessage && (
+        <div style={{ marginBottom: 16, color: PAGE.red, fontWeight: 700, fontSize: 13 }} role="alert">
+          {errorMessage}
+        </div>
+      )}
+      {successMessage && !errorMessage && (
+        <div style={{ marginBottom: 16, color: PAGE.green, fontWeight: 700, fontSize: 13 }} role="status">
+          {successMessage}
+        </div>
+      )}
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
-        <span style={pillStyle(true)}>All</span>
-        <span style={pillStyle(false)}>Draft</span>
-        <span style={pillStyle(false)}>Sent</span>
-        <span style={pillStyle(false)}>Accepted</span>
-        <span style={pillStyle(false)}>Declined</span>
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gap: 18,
-          alignItems: 'start',
-        }}
-      >
+      <div style={{ display: 'grid', gap: 24, maxWidth: 1100, margin: '0 auto' }}>
         <div style={cardStyle}>
-          <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 14 }}>
-            Create New Quote
-          </div>
+          <div style={sectionHeading}>Create New Quote</div>
 
           <form onSubmit={handleSubmit}>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: 12,
+                gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
+                gap: 24,
+                marginBottom: 24,
               }}
             >
               <div>
-                <label style={labelStyle} htmlFor="quote-client-name">
-                  Client Name
-                </label>
-                <input
-                  id="quote-client-name"
-                  name="client_name"
-                  value={form.client_name}
-                  onChange={handleFormChange}
-                  required
-                  autoComplete="off"
-                  style={inputStyle}
-                />
+                <div style={subSectionTitle}>Client Information</div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle} htmlFor="quote-client-name">
+                    Client name
+                  </label>
+                  <input
+                    id="quote-client-name"
+                    name="client_name"
+                    value={form.client_name}
+                    onChange={handleFormChange}
+                    required
+                    autoComplete="off"
+                    placeholder="Client name"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle} htmlFor="quote-client-email">
+                    Client email
+                  </label>
+                  <input
+                    id="quote-client-email"
+                    name="client_email"
+                    type="email"
+                    value={form.client_email}
+                    onChange={handleFormChange}
+                    autoComplete="off"
+                    placeholder="Client email"
+                    style={inputStyle}
+                  />
+                </div>
               </div>
+
               <div>
-                <label style={labelStyle} htmlFor="quote-client-email">
-                  Client Email
-                </label>
-                <input
-                  id="quote-client-email"
-                  name="client_email"
-                  type="email"
-                  value={form.client_email}
-                  onChange={handleFormChange}
-                  autoComplete="off"
-                  style={inputStyle}
-                />
-              </div>
-              <div>
-                <label style={labelStyle} htmlFor="quote-valid-until">
-                  Valid Until
-                </label>
-                <input
-                  id="quote-valid-until"
-                  name="valid_until"
-                  type="date"
-                  value={form.valid_until}
-                  onChange={handleFormChange}
-                  style={inputStyle}
-                />
+                <div style={subSectionTitle}>Project Details</div>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={labelStyle} htmlFor="quote-title">
+                    Quote title
+                  </label>
+                  <input
+                    id="quote-title"
+                    name="quote_title"
+                    value={form.quote_title}
+                    onChange={handleFormChange}
+                    autoComplete="off"
+                    placeholder="Project title"
+                    style={inputStyle}
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle} htmlFor="quote-valid-days">
+                    Valid until (days from now)
+                  </label>
+                  <input
+                    id="quote-valid-days"
+                    name="valid_days"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={form.valid_days}
+                    onChange={handleFormChange}
+                    style={inputStyle}
+                  />
+                </div>
               </div>
             </div>
 
-            <div style={{ marginTop: 12 }}>
-              <label style={labelStyle} htmlFor="quote-status">
-                Status
-              </label>
-              <select
-                id="quote-status"
-                name="status"
-                value={form.status}
-                onChange={handleFormChange}
-                style={inputStyle}
+            <div style={{ marginBottom: 20 }}>
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: 10,
+                  marginBottom: 10,
+                  flexWrap: 'wrap',
+                }}
               >
-                {STATUS_OPTIONS.map((s) => (
-                  <option key={s} value={s}>
-                    {s.charAt(0).toUpperCase() + s.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-                <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>Line Items</div>
+                <span style={{ color: '#fff', fontSize: 14, fontWeight: 700, ...font }}>Line Items</span>
                 <button
                   type="button"
                   onClick={addLineItem}
                   style={{
-                    background: ui.inputBg,
-                    border: `1px solid ${ui.inputBorder}`,
-                    color: '#666',
-                    borderRadius: 20,
-                    padding: '6px 16px',
+                    background: '#1e2a1e',
+                    border: `1px solid ${PAGE.green}`,
+                    color: PAGE.green,
+                    borderRadius: 8,
+                    padding: '6px 14px',
                     fontSize: 12,
                     fontWeight: 700,
                     cursor: 'pointer',
+                    ...font,
                   }}
                 >
-                  Add Item
+                  + Add Item
                 </button>
               </div>
 
-              <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 80px 120px 120px 36px',
+                  gap: 8,
+                  alignItems: 'center',
+                  marginBottom: 8,
+                }}
+              >
+                <span style={colHeader}>Description</span>
+                <span style={colHeader}>Qty</span>
+                <span style={colHeader}>Rate</span>
+                <span style={{ ...colHeader, textAlign: 'right' }}>Total</span>
+                <span style={colHeader} aria-hidden />
+              </div>
+
+              <div style={{ display: 'grid', gap: 8 }}>
                 {lineItems.map((line, index) => {
                   const qty = Number(line.quantity)
                   const rate = Number(line.unit_price)
@@ -504,91 +677,146 @@ function Quotes() {
                     <div
                       key={line.id}
                       style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 90px 120px 120px auto',
-                        gap: 10,
-                        alignItems: 'end',
-                        padding: 12,
-                        borderRadius: 12,
-                        border: `1px solid ${ui.inputBorder}`,
-                        background: ui.inputBg,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
                       }}
                     >
-                      <div>
-                        <label style={labelStyle} htmlFor={`q-desc-${line.id}`}>
-                          Description
-                        </label>
-                        <input
-                          id={`q-desc-${line.id}`}
-                          value={line.description}
-                          onChange={(e) => updateLineItem(line.id, 'description', e.target.value)}
-                          placeholder="e.g. Half-day shoot"
-                          autoComplete="off"
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <label style={labelStyle} htmlFor={`q-qty-${line.id}`}>
-                          Qty
-                        </label>
-                        <input
-                          id={`q-qty-${line.id}`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={line.quantity}
-                          onChange={(e) => updateLineItem(line.id, 'quantity', e.target.value)}
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <label style={labelStyle} htmlFor={`q-price-${line.id}`}>
-                          Rate
-                        </label>
-                        <input
-                          id={`q-price-${line.id}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.unit_price}
-                          onChange={(e) => updateLineItem(line.id, 'unit_price', e.target.value)}
-                          placeholder="0.00"
-                          style={inputStyle}
-                        />
-                      </div>
-                      <div>
-                        <span style={labelStyle}>Total</span>
-                        <div style={{ padding: '10px 12px', borderRadius: 8, border: `1px solid ${ui.inputBorder}`, background: '#111', color: ui.text, fontWeight: 700 }}>
-                          {formatMoney(lineTotal)}
-                        </div>
+                      <input
+                        id={`q-desc-${line.id}`}
+                        value={line.description}
+                        onChange={(e) => updateLineItem(line.id, 'description', e.target.value)}
+                        placeholder="Description"
+                        autoComplete="off"
+                        aria-label={`Line ${index + 1} description`}
+                        style={{ ...inputStyle, flex: 1, minWidth: 0 }}
+                      />
+                      <input
+                        id={`q-qty-${line.id}`}
+                        type="number"
+                        min="1"
+                        step="1"
+                        value={line.quantity}
+                        onChange={(e) => updateLineItem(line.id, 'quantity', e.target.value)}
+                        aria-label={`Line ${index + 1} quantity`}
+                        style={{ ...inputStyle, width: 80, textAlign: 'center' }}
+                      />
+                      <input
+                        id={`q-price-${line.id}`}
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={line.unit_price}
+                        onChange={(e) => updateLineItem(line.id, 'unit_price', e.target.value)}
+                        placeholder="Rate"
+                        aria-label={`Line ${index + 1} rate`}
+                        style={{ ...inputStyle, width: 120, textAlign: 'center' }}
+                      />
+                      <div
+                        style={{
+                          width: 120,
+                          textAlign: 'right',
+                          color: '#aaa',
+                          fontSize: 13,
+                          fontWeight: 600,
+                          ...font,
+                          minWidth: 0,
+                        }}
+                      >
+                        {formatMoney(lineTotal)}
                       </div>
                       <button
                         type="button"
                         onClick={() => removeLineItem(line.id)}
                         disabled={lineItems.length === 1}
                         aria-label={`Remove line ${index + 1}`}
+                        title="Remove"
                         style={{
-                          borderRadius: 8,
-                          border: `1px solid ${ui.inputBorder}`,
+                          width: 36,
+                          height: 36,
+                          borderRadius: 6,
+                          border: 'none',
                           background: 'transparent',
-                          color: ui.red,
-                          padding: '10px 12px',
-                          fontSize: 12,
+                          color: PAGE.red,
+                          fontSize: 20,
                           fontWeight: 700,
+                          lineHeight: 1,
                           cursor: lineItems.length === 1 ? 'not-allowed' : 'pointer',
-                          opacity: lineItems.length === 1 ? 0.5 : 1,
+                          opacity: lineItems.length === 1 ? 0.35 : 1,
+                          ...font,
                         }}
                       >
-                        Remove
+                        ×
                       </button>
                     </div>
                   )
                 })}
               </div>
+            </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 14, paddingTop: 14, borderTop: `1px solid ${ui.border}` }}>
-                <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>Total</div>
-                <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{formatMoney(draftTotal)}</div>
+            <div
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-end',
+                gap: 10,
+                paddingTop: 16,
+                borderTop: `1px solid ${PAGE.border}`,
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  maxWidth: 320,
+                  gap: 16,
+                  ...font,
+                }}
+              >
+                <span style={{ color: PAGE.label }}>Subtotal</span>
+                <span style={{ color: '#fff' }}>{formatMoney(draftSubtotal)}</span>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                  maxWidth: 320,
+                  gap: 16,
+                  ...font,
+                }}
+              >
+                <span style={{ color: PAGE.label }}>Tax (GST)</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                  <input
+                    name="tax_percent"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={form.tax_percent}
+                    onChange={handleFormChange}
+                    aria-label="GST percent"
+                    style={{ ...inputStyle, width: 60, minWidth: 60, padding: '6px 8px' }}
+                  />
+                  <span style={{ color: PAGE.label }}>%</span>
+                  <span style={{ color: '#fff', fontWeight: 600 }}>{formatMoney(draftTax)}</span>
+                </div>
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  width: '100%',
+                  maxWidth: 320,
+                  gap: 16,
+                  marginTop: 4,
+                  ...font,
+                }}
+              >
+                <span style={{ color: '#fff', fontWeight: 700 }}>Total</span>
+                <span style={{ color: PAGE.green, fontWeight: 700, fontSize: 20 }}>{formatMoney(draftTotalWithTax)}</span>
               </div>
             </div>
 
@@ -598,15 +826,16 @@ function Quotes() {
               style={{
                 marginTop: 16,
                 width: '100%',
-                background: ui.green,
+                background: PAGE.green,
                 color: '#000',
                 border: 'none',
                 borderRadius: 8,
-                padding: '12px 14px',
+                padding: 12,
                 fontWeight: 700,
                 fontSize: 14,
                 cursor: submitting || loading ? 'not-allowed' : 'pointer',
                 opacity: submitting || loading ? 0.6 : 1,
+                ...font,
               }}
             >
               {submitting ? 'Creating…' : 'Create Quote'}
@@ -614,32 +843,35 @@ function Quotes() {
           </form>
         </div>
 
-        <div>
-          <div style={{ color: '#fff', fontSize: 15, fontWeight: 700, marginBottom: 12 }}>Quotes</div>
+        <div style={cardStyle}>
+          <div style={sectionHeading}>Quotes</div>
+
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+            {FILTER_KEYS.map(({ key, label }) => (
+              <button key={key} type="button" onClick={() => setQuoteFilter(key)} style={pillStyle(quoteFilter === key)}>
+                {label}
+              </button>
+            ))}
+          </div>
 
           {loading ? (
-            <p style={{ margin: 0, color: ui.muted }}>Loading quotes…</p>
+            <p style={{ margin: 0, color: PAGE.muted }}>Loading quotes…</p>
           ) : quotes.length === 0 ? (
-            <div
-              style={{
-                background: ui.card,
-                border: `1px dashed ${ui.border}`,
-                borderRadius: 12,
-                padding: 22,
-                color: ui.muted,
-                textAlign: 'center',
-              }}
-            >
-              <div style={{ color: '#fff', fontWeight: 700 }}>No quotes yet</div>
-              <div style={{ marginTop: 6, fontSize: 13 }}>Create your first quote using the form.</div>
+            <div style={{ textAlign: 'center', padding: '48px 16px', color: PAGE.muted }}>
+              <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 12 }}>📋</div>
+              <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, ...font }}>No quotes yet.</div>
+              <div style={{ marginTop: 8, fontSize: 13, color: PAGE.muted, ...font }}>Create your first quote to get started.</div>
             </div>
+          ) : filteredQuotes.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 32, color: PAGE.muted, ...font }}>No quotes match this filter.</div>
           ) : (
             <div style={{ display: 'grid', gap: 12 }}>
-              {quotes.map((row) => {
+              {filteredQuotes.map((row) => {
                 const { variant, label } = getStatusInfo(row)
                 const statusRaw = String(row?.status ?? '').toLowerCase().trim()
                 const showConvert = statusRaw === 'accepted'
                 const showSend = statusRaw !== 'converted'
+                const showAccept = statusRaw === 'sent'
                 const rowConvertFeedback = convertCardFeedback?.quoteId === row.id ? convertCardFeedback : null
                 const total = resolveQuoteTotal(row)
                 const lineCount = parseItemsFromRow(row).length
@@ -652,22 +884,18 @@ function Quotes() {
                   <div
                     key={row.id}
                     style={{
-                      background: ui.card,
-                      border: `1px solid ${ui.border}`,
-                      borderRadius: 12,
-                      padding: 18,
+                      background: PAGE.inner,
+                      border: `1px solid ${PAGE.innerBorder}`,
+                      borderRadius: 10,
+                      padding: 16,
                       display: 'grid',
-                      gap: 10,
+                      gap: 12,
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
                       <div style={{ minWidth: 0 }}>
-                        <div style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>
-                          {resolveClientName(row)}
-                        </div>
-                        <div style={{ marginTop: 4, color: ui.muted, fontSize: 13 }}>
-                          Quote #{String(row.id).slice(0, 8)}
-                        </div>
+                        <div style={{ color: '#fff', fontSize: 16, fontWeight: 700, ...font }}>{resolveClientName(row)}</div>
+                        <div style={{ marginTop: 6, color: '#aaa', fontSize: 13, ...font }}>{resolveQuoteTitle(row)}</div>
                       </div>
                       <span
                         style={{
@@ -684,52 +912,35 @@ function Quotes() {
                           textTransform: 'uppercase',
                           letterSpacing: '0.05em',
                           whiteSpace: 'nowrap',
+                          ...font,
                         }}
                       >
                         {label}
                       </span>
                     </div>
 
-                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', alignItems: 'flex-end' }}>
                       <div>
-                        <div style={{ color: ui.muted, fontSize: 12, fontWeight: 700 }}>Amount</div>
-                        <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{formatMoney(total)}</div>
+                        <div style={{ color: '#fff', fontSize: 22, fontWeight: 800, ...font }}>{formatMoney(total)}</div>
                       </div>
-                      <div>
-                        <div style={{ color: ui.muted, fontSize: 12, fontWeight: 700 }}>Date</div>
-                        <div style={{ color: ui.text, fontSize: 13, fontWeight: 700 }}>
-                          {createdAt ? formatDocumentDate(createdAt) : '—'}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, fontSize: 12, color: PAGE.label, ...font }}>
+                        <div>
+                          <div style={{ fontWeight: 700, marginBottom: 2 }}>Date</div>
+                          <div style={{ color: PAGE.text, fontWeight: 600 }}>{createdAt ? formatDocumentDate(createdAt) : '—'}</div>
                         </div>
-                      </div>
-                      <div>
-                        <div style={{ color: ui.muted, fontSize: 12, fontWeight: 700 }}>Valid until</div>
-                        <div style={{ color: ui.text, fontSize: 13, fontWeight: 700 }}>
-                          {formatValidUntil(resolveValidUntil(row))}
+                        <div>
+                          <div style={{ fontWeight: 700, marginBottom: 2 }}>Valid until</div>
+                          <div style={{ color: PAGE.text, fontWeight: 600 }}>{formatValidUntil(resolveValidUntil(row))}</div>
                         </div>
-                      </div>
-                      <div>
-                        <div style={{ color: ui.muted, fontSize: 12, fontWeight: 700 }}>Items</div>
-                        <div style={{ color: ui.text, fontSize: 13, fontWeight: 700 }}>
-                          {formatLineItemCount(lineCount)}
+                        <div>
+                          <div style={{ fontWeight: 700, marginBottom: 2 }}>Items</div>
+                          <div style={{ color: PAGE.text, fontWeight: 600 }}>{formatLineItemCount(lineCount)}</div>
                         </div>
                       </div>
                     </div>
 
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                      <button
-                        type="button"
-                        onClick={() => setPreviewQuote(row)}
-                        style={{
-                          padding: '9px 10px',
-                          borderRadius: 8,
-                          border: `1px solid ${ui.inputBorder}`,
-                          background: ui.inputBg,
-                          color: ui.text,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                        }}
-                      >
+                      <button type="button" onClick={() => setPreviewQuote(row)} style={actionBtn(false)}>
                         View
                       </button>
 
@@ -738,19 +949,15 @@ function Quotes() {
                           type="button"
                           disabled={sendingQuoteId === row.id}
                           onClick={() => handleSendQuote(row)}
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 8,
-                            border: `1px solid ${ui.inputBorder}`,
-                            background: ui.inputBg,
-                            color: ui.text,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor: sendingQuoteId === row.id ? 'not-allowed' : 'pointer',
-                            opacity: sendingQuoteId === row.id ? 0.6 : 1,
-                          }}
+                          style={actionBtn(sendingQuoteId === row.id)}
                         >
                           {sendingQuoteId === row.id ? 'Sending...' : 'Send'}
+                        </button>
+                      )}
+
+                      {showAccept && (
+                        <button type="button" onClick={() => handleAcceptQuote(row.id)} style={actionBtn(false)}>
+                          Accept
                         </button>
                       )}
 
@@ -759,20 +966,7 @@ function Quotes() {
                           type="button"
                           disabled={convertingId === row.id || deletingId === row.id}
                           onClick={() => handleConvertToInvoice(row)}
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 8,
-                            border: `1px solid ${ui.inputBorder}`,
-                            background: ui.inputBg,
-                            color: ui.text,
-                            fontSize: 12,
-                            fontWeight: 700,
-                            cursor:
-                              convertingId === row.id || deletingId === row.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                            opacity: convertingId === row.id || deletingId === row.id ? 0.6 : 1,
-                          }}
+                          style={actionBtn(convertingId === row.id || deletingId === row.id)}
                         >
                           {convertingId === row.id ? 'Converting…' : 'Convert to Invoice'}
                         </button>
@@ -783,18 +977,9 @@ function Quotes() {
                         disabled={deletingId === row.id || convertingId === row.id}
                         onClick={() => handleDelete(row.id)}
                         style={{
-                          padding: '9px 10px',
-                          borderRadius: 8,
-                          border: `1px solid ${ui.inputBorder}`,
+                          ...actionBtn(deletingId === row.id || convertingId === row.id),
                           background: 'transparent',
-                          color: ui.red,
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor:
-                            deletingId === row.id || convertingId === row.id
-                              ? 'not-allowed'
-                              : 'pointer',
-                          opacity: deletingId === row.id || convertingId === row.id ? 0.6 : 1,
+                          color: PAGE.red,
                         }}
                       >
                         {deletingId === row.id ? 'Removing…' : 'Delete'}
@@ -806,7 +991,8 @@ function Quotes() {
                             marginLeft: 6,
                             fontSize: 12,
                             fontWeight: 700,
-                            color: rowSendFeedback.kind === 'success' ? ui.green : ui.red,
+                            color: rowSendFeedback.kind === 'success' ? PAGE.green : PAGE.red,
+                            ...font,
                           }}
                           role={rowSendFeedback.kind === 'error' ? 'alert' : 'status'}
                         >
@@ -820,7 +1006,8 @@ function Quotes() {
                             marginLeft: 6,
                             fontSize: 12,
                             fontWeight: 700,
-                            color: rowConvertFeedback.kind === 'success' ? ui.green : ui.red,
+                            color: rowConvertFeedback.kind === 'success' ? PAGE.green : PAGE.red,
+                            ...font,
                           }}
                           role={rowConvertFeedback.kind === 'error' ? 'alert' : 'status'}
                         >
@@ -835,17 +1022,6 @@ function Quotes() {
           )}
         </div>
       </div>
-
-      {errorMessage && (
-        <div style={{ marginTop: 14, color: ui.red, fontWeight: 700, fontSize: 13 }} role="alert">
-          {errorMessage}
-        </div>
-      )}
-      {successMessage && !errorMessage && (
-        <div style={{ marginTop: 14, color: ui.green, fontWeight: 700, fontSize: 13 }} role="status">
-          {successMessage}
-        </div>
-      )}
 
       {previewQuote && (
         <div

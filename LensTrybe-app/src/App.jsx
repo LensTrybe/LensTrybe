@@ -10,9 +10,8 @@ import ContractsPage from './pages/dashboard/ContractsPage.jsx'
 import DeliverPage from './pages/dashboard/DeliverPage.jsx'
 import DeliverDownloadPage from './pages/DeliverDownloadPage';
 import EditProfilePage from './pages/dashboard/EditProfilePage.jsx'
-import InsightsPage from './pages/dashboard/InsightsPage.jsx'
 import InvoicingPage from './pages/dashboard/InvoicingPage.jsx'
-import MarketplacePage from './pages/dashboard/MarketplacePage.jsx'
+import MarketplacePage from './pages/dashboard/MarketplacePage'
 import MessagesPage from './pages/dashboard/MessagesPage.jsx'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage.jsx'
 import PortfolioPage from './pages/PortfolioPage.jsx'
@@ -26,6 +25,7 @@ import LoginPage from './pages/LoginPage.jsx'
 import NotFoundPage from './pages/NotFoundPage.jsx'
 import SignContract from './pages/SignContract';
 import ClientPortalPage from './pages/ClientPortalPage.jsx';
+import TeamAcceptPage from './pages/TeamAcceptPage.jsx'
 export default function App() {
   return (
     <Routes>
@@ -57,7 +57,6 @@ export default function App() {
           />
           <Route path="portfolio-design/deliver" element={<DeliverPage />} />
 
-          <Route path="business/insights" element={<InsightsPage />} />
           <Route path="business/reviews" element={<ReviewsPage />} />
           <Route path="business/marketplace" element={<MarketplacePage />} />
           <Route path="business/team" element={<TeamPage />} />
@@ -70,6 +69,7 @@ export default function App() {
       <Route path="/portfolio/:id" element={<PortfolioPage />} />
       <Route path="/portal/:token" element={<ClientPortalPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
+      <Route path="/team/accept/:token" element={<TeamAcceptPage />} />
     </Routes>
   )
 }

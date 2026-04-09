@@ -134,6 +134,7 @@ export default function DeliverPage() {
   const fileInputRef = useRef(null)
 
   const [editingId, setEditingId] = useState(null)
+  const [editingExistingFiles, setEditingExistingFiles] = useState([])
   const [showPassword, setShowPassword] = useState(false)
 
   const [uploading, setUploading] = useState(false)
@@ -166,7 +167,7 @@ export default function DeliverPage() {
     if (!supabase || !uid) return
     const { data } = await supabase
       .from('profiles')
-      .select('business_name, business_email')
+      .select('business_name, business_email, brand_primary_color, brand_logo_url')
       .eq('id', uid)
       .single()
     setProfile(data ?? null)
@@ -188,10 +189,10 @@ export default function DeliverPage() {
     if (!user) return false
     if (!form.client_name.trim()) return false
     if (!form.title.trim()) return false
-    if (!selectedFiles.length) return false
+    if (!editingId && !selectedFiles.length) return false
     if (form.password_enabled && !form.password) return false
     return true
-  }, [form, selectedFiles.length, user])
+  }, [form, selectedFiles.length, user, editingId])
 
   const handlePickFiles = (fileList) => {
     const next = Array.from(fileList || []).map((f) => ({
@@ -287,18 +288,26 @@ export default function DeliverPage() {
     setActionFeedback(null)
 
     let uploadedFiles = []
-    try {
-      uploadedFiles = await uploadAllFiles()
-    } catch (err) {
-      setSubmitting(false)
-      setUploading(false)
-      setActionFeedback({
-        id: 'form',
-        kind: 'error',
-        message: err instanceof Error ? err.message : 'Upload failed.',
-      })
-      return
+    if (selectedFiles.length > 0) {
+      try {
+        uploadedFiles = await uploadAllFiles()
+      } catch (err) {
+        setSubmitting(false)
+        setUploading(false)
+        setActionFeedback({
+          id: 'form',
+          kind: 'error',
+          message: err instanceof Error ? err.message : 'Upload failed.',
+        })
+        return
+      }
     }
+
+    const updatedFiles = editingId
+      ? uploadedFiles.length > 0
+        ? [...(editingExistingFiles || []), ...uploadedFiles]
+        : editingExistingFiles || []
+      : uploadedFiles
 
     const payload = {
       creative_id: user.id,
@@ -306,10 +315,12 @@ export default function DeliverPage() {
       client_email: form.client_email.trim() || null,
       title: form.title.trim(),
       message: form.message.trim() || null,
-      files: uploadedFiles,
+      files: updatedFiles,
       // Optional Base44-ish fields (will work if columns exist)
       password: form.password_enabled ? form.password : null,
       watermark: !!form.watermark_enabled,
+      brand_primary_color: profile?.brand_primary_color ?? null,
+      brand_logo_url: profile?.brand_logo_url ?? null,
     }
 
     let delivery = null
@@ -365,7 +376,7 @@ export default function DeliverPage() {
     setActionFeedback({
       id: 'form',
       kind: 'success',
-      message: editingId ? 'Delivery updated.' : 'Delivery sent.',
+      message: editingId ? 'Delivery updated.' : 'Delivery created.',
     })
     window.setTimeout(() => {
       setActionFeedback((cur) => (cur?.id === 'form' ? null : cur))
@@ -374,6 +385,7 @@ export default function DeliverPage() {
 
   const handleEdit = (row) => {
     setEditingId(row.id)
+    setEditingExistingFiles(Array.isArray(row.files) ? row.files : [])
     setForm((prev) => ({
       ...prev,
       client_name: row.client_name ?? '',
@@ -759,7 +771,7 @@ export default function DeliverPage() {
               disabled={submitting || uploading || !canSubmit}
               onClick={upsertDelivery}
             >
-              {submitting ? 'Saving…' : editingId ? 'Update Delivery' : 'Send Delivery'}
+              {submitting ? 'Saving…' : editingId ? 'Update Delivery' : 'Create Delivery'}
             </button>
           </div>
 

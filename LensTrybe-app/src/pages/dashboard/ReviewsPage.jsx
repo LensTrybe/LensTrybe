@@ -1,197 +1,606 @@
-import { useState, useEffect } from "react";
-import { supabase } from "../../lib/supabaseClient";
+import { useState, useEffect, useCallback } from 'react'
+import { Link } from 'react-router-dom'
+import { supabase } from '../../lib/supabaseClient'
 
-const Stars = ({ rating, size = 14 }) => (
-  <span>
-    {[1,2,3,4,5].map((s) => (
-      <span key={s} style={{ color: s <= rating ? "#facc15" : "#333", fontSize: size }}>★</span>
-    ))}
-  </span>
-);
+const PAGE = {
+  bg: '#0a0a0f',
+  text: 'rgb(242, 242, 242)',
+  card: '#13131a',
+  border: '#1e1e1e',
+  inner: '#1a1a24',
+  innerBorder: '#202027',
+  muted: '#888',
+  dim: '#555',
+  green: '#39ff14',
+  red: '#f87171',
+  yellow: '#facc15',
+}
+
+const font = { fontFamily: 'Inter, sans-serif' }
+
+const SPECIALTIES_BY_TYPE = {
+  Photographer: [
+    'Architecture',
+    'Automotive',
+    'Boudoir',
+    'Commercial',
+    'Corporate/Headshots',
+    'Events',
+    'Fashion',
+    'Food',
+    'Maternity',
+    'Pets',
+    'Portrait',
+    'Product',
+    'Real Estate',
+    'Schools & Education',
+    'Sports',
+    'Street',
+    'Wedding',
+  ],
+  Videographer: ['Weddings', 'Events', 'Commercial', 'Music Video', 'Documentary', 'Social Shorts', 'Interviews', 'Brand Film'],
+  'Drone Pilot': ['Real Estate', 'Weddings', 'Events', 'Commercial', 'Cinematics', 'Construction', 'Tourism'],
+  'Video Editor': ['Short-form', 'Long-form', 'Color grading', 'Sound design', 'Motion graphics', 'Reels/TikTok'],
+  'Photo Editor': ['Retouching', 'Color correction', 'Skin retouch', 'Product cleanup', 'Batch editing'],
+  'Social Media Manager': ['Content planning', 'Posting & scheduling', 'Community', 'Analytics', 'Paid ads'],
+  'Hair and Makeup Artist': ['Bridal', 'Editorial', 'Event glam', 'Natural glam', 'SFX'],
+  'UGC Creator': ['Lifestyle', 'Beauty', 'Fitness', 'Food', 'Tech', 'Travel'],
+}
+
+const PROJECT_TYPE_OPTIONS = ['Other', ...Array.from(new Set(Object.values(SPECIALTIES_BY_TYPE).flat())).sort((a, b) => a.localeCompare(b))]
+
+const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const YEARS = Array.from({ length: 10 }, (_, i) => String(2017 + i))
+
+const META_SUFFIX_RE = /\n\n\(([^·]+?)\s·\s([^)]+)\)\s*$/
+
+function buildComment(reviewText, projectType, month, year) {
+  const t = String(reviewText || '').trim()
+  const p = String(projectType || 'Other').trim() || 'Other'
+  const meta = `(${p} · ${month} ${year})`
+  return t ? `${t}\n\n${meta}` : meta
+}
+
+function parseBodyAndMeta(comment) {
+  const raw = String(comment || '')
+  const m = raw.match(META_SUFFIX_RE)
+  if (!m) return { body: raw.trim(), project: '', approx: '' }
+  return { body: raw.slice(0, m.index).trim(), project: m[1].trim(), approx: m[2].trim() }
+}
+
+function parseClientNameForForm(clientName) {
+  const t = String(clientName || '').trim()
+  if (!t) return { first_name: '', last_initial: '' }
+  const parts = t.split(/\s+/)
+  if (parts.length === 1) return { first_name: parts[0], last_initial: '' }
+  const last = parts[parts.length - 1]
+  if (last.length <= 2 && last.endsWith('.')) {
+    return { first_name: parts.slice(0, -1).join(' '), last_initial: last.replace(/\./g, '') }
+  }
+  return { first_name: t, last_initial: '' }
+}
+
+function parseApproxFromComment(comment, createdAt) {
+  const { approx } = parseBodyAndMeta(comment)
+  if (approx) {
+    const y = approx.match(/(\d{4})\s*$/)
+    const year = y ? y[1] : String(new Date(createdAt).getFullYear())
+    const monthPart = approx.replace(/\s*\d{4}\s*$/, '').trim()
+    const month = MONTHS.includes(monthPart) ? monthPart : MONTHS[new Date(createdAt).getMonth()] || 'January'
+    return { month, year }
+  }
+  return {
+    month: MONTHS[new Date(createdAt).getMonth()] || 'January',
+    year: String(new Date(createdAt).getFullYear()),
+  }
+}
+
+function StarDisplay({ rating, size = 14 }) {
+  return (
+    <span style={{ display: 'inline-flex', gap: 2, alignItems: 'center' }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <span key={s} style={{ fontSize: size, lineHeight: 1 }}>
+          {s <= rating ? <span style={{ color: PAGE.yellow }}>⭐</span> : <span style={{ color: '#555' }}>☆</span>}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+const initialForm = () => ({
+  first_name: '',
+  last_initial: '',
+  project_type: 'Other',
+  rating: 5,
+  review_text: '',
+  review_month: MONTHS[new Date().getMonth()] || 'January',
+  review_year: String(new Date().getFullYear()),
+})
 
 export default function ReviewsPage() {
-  const [user, setUser] = useState(null);
-  const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState({ client_name: "", rating: 5, comment: "" });
+  const [user, setUser] = useState(null)
+  const [reviews, setReviews] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [editing, setEditing] = useState(null)
+  const [form, setForm] = useState(initialForm)
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+  }, [])
+
+  const fetchReviews = useCallback(async () => {
+    if (!user?.id) return
+    setLoading(true)
+    const { data } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('creative_id', user.id)
+      .order('created_at', { ascending: false })
+    setReviews(data || [])
+    setLoading(false)
+  }, [user])
 
   useEffect(() => {
-    if (!user) return;
-    fetchReviews();
-  }, [user]);
-
-  const fetchReviews = async () => {
-    setLoading(true);
-    const { data } = await supabase.from("reviews").select("*").eq("creative_id", user.id).order("created_at", { ascending: false });
-    setReviews(data || []);
-    setLoading(false);
-  };
+    if (!user) return
+    /* eslint-disable react-hooks/set-state-in-effect -- mount load reviews */
+    fetchReviews()
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [user, fetchReviews])
 
   const openNew = () => {
-    setEditing(null);
-    setForm({ client_name: "", rating: 5, comment: "" });
-    setShowModal(true);
-  };
+    setEditing(null)
+    setForm(initialForm())
+    setShowForm(true)
+  }
 
   const openEdit = (r) => {
-    setEditing(r);
-    setForm({ client_name: r.client_name || "", rating: r.rating || 5, comment: r.comment || "" });
-    setShowModal(true);
-  };
+    setEditing(r)
+    const { first_name, last_initial } = parseClientNameForForm(r.client_name)
+    const { body, project } = parseBodyAndMeta(r.comment || '')
+    const { month, year } = parseApproxFromComment(r.comment || '', r.created_at)
+    setForm({
+      first_name,
+      last_initial,
+      project_type: project && PROJECT_TYPE_OPTIONS.includes(project) ? project : 'Other',
+      rating: r.rating || 5,
+      review_text: body,
+      review_month: month,
+      review_year: year,
+    })
+    setShowForm(true)
+  }
 
   const saveReview = async () => {
-    if (!form.client_name.trim()) return;
-    const payload = { ...form, creative_id: user.id };
+    if (!form.first_name.trim()) return
+    if (!editing && reviews.length >= 5) return
+    const initial = form.last_initial.trim().toUpperCase().slice(0, 1)
+    const client_name = initial ? `${form.first_name.trim()} ${initial}.` : form.first_name.trim()
+    const comment = buildComment(form.review_text, form.project_type, form.review_month, form.review_year)
+    const payload = { client_name, rating: form.rating, comment, creative_id: user.id }
     if (editing) {
-      const { data } = await supabase.from("reviews").update(payload).eq("id", editing.id).select().single();
-      setReviews((prev) => prev.map((r) => r.id === editing.id ? data : r));
+      const { data } = await supabase.from('reviews').update(payload).eq('id', editing.id).select().single()
+      setReviews((prev) => prev.map((x) => (x.id === editing.id ? data : x)))
     } else {
-      const { data } = await supabase.from("reviews").insert(payload).select().single();
-      setReviews((prev) => [data, ...prev]);
+      const { data } = await supabase.from('reviews').insert(payload).select().single()
+      setReviews((prev) => [data, ...prev])
     }
-    setShowModal(false);
-  };
+    setShowForm(false)
+    setEditing(null)
+  }
 
   const deleteReview = async (id) => {
-    await supabase.from("reviews").delete().eq("id", id);
-    setReviews((prev) => prev.filter((r) => r.id !== id));
-  };
+    await supabase.from('reviews').delete().eq('id', id)
+    setReviews((prev) => prev.filter((r) => r.id !== id))
+  }
 
-  const avgRating = reviews.length ? (reviews.reduce((s, r) => s + (r.rating || 0), 0) / reviews.length).toFixed(1) : "0.0";
-  const dist = [5,4,3,2,1].map((n) => ({ star: n, count: reviews.filter((r) => r.rating === n).length, pct: reviews.length ? (reviews.filter((r) => r.rating === n).length / reviews.length) * 100 : 0 }));
+  const labelStyle = {
+    display: 'block',
+    color: PAGE.muted,
+    fontSize: 12,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    marginBottom: 8,
+    ...font,
+  }
+
+  const inputStyle = {
+    width: '100%',
+    boxSizing: 'border-box',
+    background: PAGE.inner,
+    border: `1px solid ${PAGE.innerBorder}`,
+    borderRadius: 8,
+    padding: '10px 14px',
+    color: '#fff',
+    fontSize: 14,
+    outline: 'none',
+    ...font,
+  }
+
+  const portfolioUrl = user?.id ? `${window.location.origin}/portfolio/${user.id}` : '#'
+  const atMax = reviews.length >= 5
 
   return (
-    <>
-      <style>{`
-        .reviews-wrap { padding: 28px 32px; background: #0f0f0f; min-height: 100vh; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
-        .reviews-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
-        .reviews-title { font-size: 22px; font-weight: 700; color: #fff; }
-        .reviews-subtitle { font-size: 13px; color: #555; margin-top: 4px; }
-        .add-btn { background: #39ff14; color: #000; border: none; border-radius: 8px; padding: 9px 18px; font-size: 13px; font-weight: 700; cursor: pointer; }
-        .reviews-summary { display: flex; gap: 20px; background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 24px; margin-bottom: 24px; }
-        .avg-block { display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 100px; border-right: 1px solid #222; padding-right: 24px; }
-        .avg-number { font-size: 48px; font-weight: 800; color: #facc15; line-height: 1; }
-        .avg-label { font-size: 12px; color: #555; margin-top: 4px; }
-        .dist-block { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
-        .dist-row { display: flex; align-items: center; gap: 8px; }
-        .dist-star { font-size: 11px; color: #888; width: 16px; text-align: right; }
-        .dist-bar-bg { flex: 1; background: #1e1e1e; border-radius: 4px; height: 8px; }
-        .dist-bar-fill { height: 100%; border-radius: 4px; background: #facc15; }
-        .dist-count { font-size: 11px; color: #555; width: 20px; }
-        .reviews-grid { display: flex; flex-direction: column; gap: 12px; }
-        .review-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px 20px; }
-        .review-top { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
-        .review-avatar { width: 40px; height: 40px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #000; flex-shrink: 0; }
-        .review-info { flex: 1; }
-        .review-name { font-size: 14px; font-weight: 600; color: #fff; }
-        .review-date { font-size: 11px; color: #555; margin-top: 2px; }
-        .review-actions { display: flex; gap: 6px; }
-        .review-btn { background: none; border: 1px solid #2a2a2a; border-radius: 6px; padding: 5px 10px; font-size: 11px; color: #666; cursor: pointer; }
-        .review-btn.danger:hover { border-color: #f87171; color: #f87171; }
-        .review-comment { font-size: 13px; color: #aaa; line-height: 1.6; }
-        .empty-reviews { text-align: center; padding: 60px 20px; color: #444; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.75); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px; width: 440px; max-width: 90vw; }
-        .modal h3 { font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 20px; }
-        .modal-field { margin-bottom: 14px; }
-        .modal-field label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-        .modal-field input, .modal-field textarea { width: 100%; background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 9px 12px; color: #e8e8e8; font-size: 13px; outline: none; font-family: inherit; box-sizing: border-box; }
-        .modal-field input:focus, .modal-field textarea:focus { border-color: #39ff14; }
-        .modal-field textarea { resize: vertical; min-height: 80px; }
-        .star-picker { display: flex; gap: 6px; margin-top: 4px; }
-        .star-btn { background: none; border: none; font-size: 24px; cursor: pointer; padding: 0; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
-        .modal-cancel { background: none; border: 1px solid #2a2a2a; color: #888; border-radius: 8px; padding: 9px 18px; cursor: pointer; font-size: 13px; }
-        .modal-confirm { background: #39ff14; border: none; color: #000; border-radius: 8px; padding: 9px 20px; font-size: 13px; font-weight: 700; cursor: pointer; }
-      `}</style>
-      <div className="reviews-wrap">
-        <div className="reviews-header">
-          <div>
-            <div className="reviews-title">Reviews</div>
-            <div className="reviews-subtitle">Manage and showcase client feedback</div>
+    <section
+      style={{
+        background: PAGE.bg,
+        minHeight: '100vh',
+        padding: 32,
+        color: PAGE.text,
+        ...font,
+        boxSizing: 'border-box',
+      }}
+    >
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
+        <Link
+          to="/dashboard"
+          style={{
+            display: 'inline-block',
+            marginBottom: 12,
+            fontSize: 13,
+            color: PAGE.green,
+            textDecoration: 'none',
+            fontWeight: 600,
+          }}
+        >
+          ← Back
+        </Link>
+
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+            flexWrap: 'wrap',
+            marginBottom: 20,
+          }}
+        >
+          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#fff' }}>Reviews</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+            <a
+              href={portfolioUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: 13, fontWeight: 600, color: PAGE.green, textDecoration: 'none' }}
+            >
+              👁 View Profile
+            </a>
+            <button
+              type="button"
+              onClick={openNew}
+              disabled={atMax && !editing}
+              style={{
+                background: PAGE.green,
+                color: '#000',
+                fontWeight: 700,
+                borderRadius: 8,
+                padding: '8px 18px',
+                border: 'none',
+                fontSize: 13,
+                cursor: atMax && !editing ? 'not-allowed' : 'pointer',
+                opacity: atMax && !editing ? 0.5 : 1,
+              }}
+            >
+              + Add Past Client Review
+            </button>
           </div>
-          <button className="add-btn" onClick={openNew}>+ Add Review</button>
         </div>
-        {reviews.length > 0 && (
-          <div className="reviews-summary">
-            <div className="avg-block">
-              <div className="avg-number">{avgRating}</div>
-              <Stars rating={Math.round(Number(avgRating))} size={16} />
-              <div className="avg-label">{reviews.length} review{reviews.length !== 1 ? "s" : ""}</div>
-            </div>
-            <div className="dist-block">
-              {dist.map((d) => (
-                <div key={d.star} className="dist-row">
-                  <div className="dist-star">{d.star}</div>
-                  <div className="dist-bar-bg"><div className="dist-bar-fill" style={{ width: d.pct + "%" }} /></div>
-                  <div className="dist-count">{d.count}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-        {loading ? <div className="empty-reviews"><p>Loading...</p></div> : reviews.length === 0 ? (
-          <div className="empty-reviews">
-            <div style={{ fontSize: 48, marginBottom: 12 }}>⭐</div>
-            <p>No reviews yet</p>
-          </div>
-        ) : (
-          <div className="reviews-grid">
-            {reviews.map((r) => (
-              <div key={r.id} className="review-card">
-                <div className="review-top">
-                  <div className="review-avatar">{r.client_name?.[0]?.toUpperCase() || "?"}</div>
-                  <div className="review-info">
-                    <div className="review-name">{r.client_name}</div>
-                    <div className="review-date">{new Date(r.created_at).toLocaleDateString()}</div>
-                  </div>
-                  <Stars rating={r.rating} />
-                  <div className="review-actions">
-                    <button className="review-btn" onClick={() => openEdit(r)}>Edit</button>
-                    <button className="review-btn danger" onClick={() => deleteReview(r.id)}>Delete</button>
-                  </div>
-                </div>
-                {r.comment && <div className="review-comment">{r.comment}</div>}
+
+        {showForm && (
+          <div
+            style={{
+              background: PAGE.card,
+              border: `1px solid ${PAGE.border}`,
+              borderRadius: 12,
+              padding: 24,
+              marginBottom: 20,
+              boxSizing: 'border-box',
+            }}
+          >
+            <h2 style={{ margin: '0 0 18px', fontSize: 16, fontWeight: 700, color: '#fff' }}>
+              {editing ? 'Edit Past Client Review' : 'Add Past Client Review'}
+            </h2>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))',
+                gap: 16,
+              }}
+            >
+              <div>
+                <label style={labelStyle}>Client First Name</label>
+                <input
+                  value={form.first_name}
+                  onChange={(e) => setForm((p) => ({ ...p, first_name: e.target.value }))}
+                  placeholder="Jane"
+                  style={inputStyle}
+                />
               </div>
-            ))}
+              <div>
+                <label style={labelStyle}>Last Name Initial</label>
+                <input
+                  value={form.last_initial}
+                  onChange={(e) => setForm((p) => ({ ...p, last_initial: e.target.value.slice(0, 1) }))}
+                  placeholder="S"
+                  maxLength={1}
+                  style={{ ...inputStyle, width: '100%', maxWidth: 80, textTransform: 'uppercase' }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Project Type</label>
+                <select
+                  value={form.project_type}
+                  onChange={(e) => setForm((p) => ({ ...p, project_type: e.target.value }))}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  {PROJECT_TYPE_OPTIONS.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Star Rating</label>
+                <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setForm((p) => ({ ...p, rating: s }))}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        padding: 4,
+                        fontSize: 22,
+                        lineHeight: 1,
+                      }}
+                      aria-label={`${s} stars`}
+                    >
+                      {s <= form.rating ? (
+                        <span style={{ color: PAGE.yellow }}>⭐</span>
+                      ) : (
+                        <span style={{ color: '#555' }}>☆</span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div style={{ gridColumn: '1 / -1' }}>
+                <label style={labelStyle}>Review Text</label>
+                <textarea
+                  value={form.review_text}
+                  onChange={(e) => setForm((p) => ({ ...p, review_text: e.target.value }))}
+                  placeholder="What did the client say?"
+                  style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
+                />
+              </div>
+              <div>
+                <label style={labelStyle}>Approximate Month</label>
+                <select
+                  value={form.review_month}
+                  onChange={(e) => setForm((p) => ({ ...p, review_month: e.target.value }))}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  {MONTHS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Approximate Year</label>
+                <select
+                  value={form.review_year}
+                  onChange={(e) => setForm((p) => ({ ...p, review_year: e.target.value }))}
+                  style={{ ...inputStyle, cursor: 'pointer' }}
+                >
+                  {YEARS.map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20, flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowForm(false)
+                  setEditing(null)
+                }}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${PAGE.innerBorder}`,
+                  color: PAGE.muted,
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveReview}
+                style={{
+                  background: PAGE.green,
+                  color: '#000',
+                  fontWeight: 700,
+                  borderRadius: 8,
+                  padding: '9px 20px',
+                  border: 'none',
+                  fontSize: 13,
+                  cursor: 'pointer',
+                }}
+              >
+                Save Review
+              </button>
+            </div>
           </div>
         )}
+
+        <div
+          style={{
+            background: PAGE.card,
+            border: `1px solid ${PAGE.border}`,
+            borderRadius: 12,
+            padding: 24,
+            boxSizing: 'border-box',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: 12,
+              marginBottom: 16,
+              flexWrap: 'wrap',
+            }}
+          >
+            <h2
+              style={{
+                margin: 0,
+                fontSize: 16,
+                fontWeight: 700,
+                color: '#fff',
+                borderLeft: `3px solid ${PAGE.green}`,
+                paddingLeft: 10,
+              }}
+            >
+              Past Client Reviews
+            </h2>
+            {!showForm && (
+              <button
+                type="button"
+                onClick={openNew}
+                disabled={atMax}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: PAGE.green,
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: atMax ? 'not-allowed' : 'pointer',
+                  opacity: atMax ? 0.45 : 1,
+                  padding: 0,
+                }}
+              >
+                + Add Past Client Review
+              </button>
+            )}
+          </div>
+
+          {loading ? (
+            <p style={{ color: PAGE.dim, margin: 0 }}>Loading…</p>
+          ) : reviews.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <div style={{ fontSize: 32, marginBottom: 12 }} aria-hidden>
+                💬
+              </div>
+              <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, marginBottom: 8 }}>No imported reviews yet.</div>
+              <div style={{ color: PAGE.dim, fontSize: 13, maxWidth: 360, margin: '0 auto', lineHeight: 1.5 }}>
+                Add up to 5 past client reviews to build your social proof.
+              </div>
+            </div>
+          ) : (
+            <div>
+              {reviews.map((r) => {
+                const { body, project, approx } = parseBodyAndMeta(r.comment || '')
+                const displayProject = project || '—'
+                const displayApprox = approx || new Date(r.created_at).toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+                return (
+                  <div
+                    key={r.id}
+                    style={{
+                      background: PAGE.inner,
+                      border: `1px solid ${PAGE.innerBorder}`,
+                      borderRadius: 10,
+                      padding: 16,
+                      marginBottom: 10,
+                      boxSizing: 'border-box',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, marginBottom: 8 }}>
+                      <div style={{ minWidth: 0, flex: 1 }}>
+                        <div style={{ fontWeight: 700, color: '#fff', fontSize: 15, marginBottom: 4 }}>{r.client_name}</div>
+                        <div style={{ color: '#aaa', fontSize: 12, marginBottom: 8 }}>{displayProject}</div>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                        <button
+                          type="button"
+                          onClick={() => openEdit(r)}
+                          style={{
+                            background: PAGE.inner,
+                            border: `1px solid ${PAGE.innerBorder}`,
+                            color: '#aaa',
+                            borderRadius: 6,
+                            padding: '4px 12px',
+                            fontSize: 12,
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteReview(r.id)}
+                          title="Delete"
+                          aria-label="Delete review"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            color: PAGE.red,
+                            fontSize: 18,
+                            cursor: 'pointer',
+                            padding: 4,
+                            lineHeight: 1,
+                          }}
+                        >
+                          🗑
+                        </button>
+                      </div>
+                    </div>
+                    <div style={{ marginBottom: 8 }}>
+                      <StarDisplay rating={r.rating || 0} size={16} />
+                    </div>
+                    {body ? (
+                      <div style={{ color: '#ccc', fontSize: 13, lineHeight: 1.55, marginBottom: 10 }}>{body}</div>
+                    ) : null}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10 }}>
+                      <span style={{ color: PAGE.dim, fontSize: 12 }}>{displayApprox}</span>
+                      <span
+                        style={{
+                          background: '#555',
+                          color: '#fff',
+                          fontSize: 10,
+                          fontWeight: 600,
+                          borderRadius: 4,
+                          padding: '2px 6px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        Imported Review
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
       </div>
-      {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>{editing ? "Edit Review" : "Add Review"}</h3>
-            <div className="modal-field">
-              <label>Client Name *</label>
-              <input placeholder="Jane Smith" value={form.client_name} onChange={(e) => setForm((p) => ({ ...p, client_name: e.target.value }))} />
-            </div>
-            <div className="modal-field">
-              <label>Rating</label>
-              <div className="star-picker">
-                {[1,2,3,4,5].map((s) => (
-                  <button key={s} className="star-btn" onClick={() => setForm((p) => ({ ...p, rating: s }))}>
-                    <span style={{ color: s <= form.rating ? "#facc15" : "#333" }}>★</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="modal-field">
-              <label>Review</label>
-              <textarea placeholder="What did the client say?" value={form.comment} onChange={(e) => setForm((p) => ({ ...p, comment: e.target.value }))} />
-            </div>
-            <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowModal(false)}>Cancel</button>
-              <button className="modal-confirm" onClick={saveReview}>{editing ? "Save" : "Add Review"}</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </>
-  );
+    </section>
+  )
 }

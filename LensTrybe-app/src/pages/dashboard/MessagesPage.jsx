@@ -1,166 +1,252 @@
-﻿import { useState, useEffect, useRef } from "react";
-import { supabase } from "../../lib/supabaseClient";
+﻿import { useState, useEffect, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { supabase } from '../../lib/supabaseClient'
+
+const PAGE = {
+  bg: '#0a0a0f',
+  panel: '#13131a',
+  inputBg: '#1a1a24',
+  border: '#1e1e1e',
+  border2: '#202027',
+  text: 'rgb(242, 242, 242)',
+  muted: '#888',
+  dim: '#555',
+  green: '#39ff14',
+  activeRow: '#1e2a1e',
+}
+
+const font = { fontFamily: 'Inter, sans-serif' }
 
 const formatTime = (ts) => {
-  if (!ts) return "";
-  const d = new Date(ts);
-  const now = new Date();
-  const isToday = d.toDateString() === now.toDateString();
-  if (isToday) return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-  return d.toLocaleDateString([], { month: "short", day: "numeric" });
-};
+  if (!ts) return ''
+  const d = new Date(ts)
+  const now = new Date()
+  const isToday = d.toDateString() === now.toDateString()
+  if (isToday) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
+}
 
-const AttachmentPreview = ({ attachment }) => {
-  const isImage = attachment.type?.startsWith("image/");
-  const isPDF = attachment.type === "application/pdf";
+function threadPreview(thread) {
   return (
-    <a href={attachment.url} target="_blank" rel="noopener noreferrer" className="attachment-chip">
-      <span className="attachment-icon">{isImage ? "IMG" : isPDF ? "PDF" : "FILE"}</span>
-      <span className="attachment-name">{attachment.name}</span>
+    thread.last_message ??
+    thread.last_message_body ??
+    thread.last_message_preview ??
+    thread.preview ??
+    thread.subject ??
+    ''
+  )
+}
+
+function AttachmentPreview({ attachment }) {
+  const isImage = attachment.type?.startsWith('image/')
+  const isPDF = attachment.type === 'application/pdf'
+  return (
+    <a
+      href={attachment.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        background: PAGE.inputBg,
+        border: `1px solid ${PAGE.border2}`,
+        borderRadius: 8,
+        padding: '5px 10px',
+        fontSize: 12,
+        color: PAGE.muted,
+        textDecoration: 'none',
+        ...font,
+      }}
+    >
+      <span style={{ fontWeight: 700, fontSize: 10 }}>{isImage ? 'IMG' : isPDF ? 'PDF' : 'FILE'}</span>
+      <span style={{ maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+        {attachment.name}
+      </span>
     </a>
-  );
-};
+  )
+}
 
-const LinkedDocBadge = ({ type }) => {
-  const icons = { invoice: "Invoice", quote: "Quote", contract: "Contract" };
+function LinkedDocBadge({ type }) {
+  const icons = { invoice: 'Invoice', quote: 'Quote', contract: 'Contract' }
   return (
-    <span className="linked-doc-badge">
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        background: '#1e1e3a',
+        border: '1px solid #3a3a6a',
+        borderRadius: 8,
+        padding: '5px 10px',
+        fontSize: 12,
+        color: '#a78bfa',
+        marginTop: 4,
+        ...font,
+      }}
+    >
       {icons[type]} attached
     </span>
-  );
-};
+  )
+}
 
 export default function Messages() {
-  const [user, setUser] = useState(null);
-  const [threads, setThreads] = useState([]);
-  const [activeThread, setActiveThread] = useState(null);
-  const [messages, setMessages] = useState([]);
-  const [newMessage, setNewMessage] = useState("");
-  const [attachments, setAttachments] = useState([]);
-  const [uploading, setUploading] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [showNewThread, setShowNewThread] = useState(false);
-  const [newThreadForm, setNewThreadForm] = useState({ client_name: "", client_email: "", subject: "" });
-  const [invoices, setInvoices] = useState([]);
-  const [quotes, setQuotes] = useState([]);
-  const [contracts, setContracts] = useState([]);
-  const [showLinkDoc, setShowLinkDoc] = useState(false);
-  const [linkedDoc, setLinkedDoc] = useState(null);
-  const [search, setSearch] = useState("");
-  const bottomRef = useRef(null);
-  const fileInputRef = useRef(null);
+  const navigate = useNavigate()
+  const [user, setUser] = useState(null)
+  const [threads, setThreads] = useState([])
+  const [activeThread, setActiveThread] = useState(null)
+  const [messages, setMessages] = useState([])
+  const [newMessage, setNewMessage] = useState('')
+  const [attachments, setAttachments] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [showNewThread, setShowNewThread] = useState(false)
+  const [newThreadForm, setNewThreadForm] = useState({ client_name: '', client_email: '', subject: '' })
+  const [invoices, setInvoices] = useState([])
+  const [quotes, setQuotes] = useState([])
+  const [contracts, setContracts] = useState([])
+  const [showLinkDoc, setShowLinkDoc] = useState(false)
+  const [linkedDoc, setLinkedDoc] = useState(null)
+  const [search, setSearch] = useState('')
+  const [hoveredThreadId, setHoveredThreadId] = useState(null)
+  const bottomRef = useRef(null)
+  const fileInputRef = useRef(null)
+  const threadsSigRef = useRef('')
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
-  }, []);
+    supabase.auth.getUser().then(({ data }) => setUser(data.user))
+  }, [])
 
-  useEffect(() => {
-    if (!user) return;
-    fetchThreads();
-    fetchDocs();
-  }, [user]);
-
-  useEffect(() => {
-    if (!activeThread) return;
-    fetchMessages(activeThread.id);
-    markThreadRead(activeThread.id);
-  }, [activeThread]);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  useEffect(() => {
-    if (!activeThread) return;
-    const interval = setInterval(() => {
-      fetchMessages(activeThread.id);
-      fetchThreads();
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [activeThread]);
-
-  const fetchThreads = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
-    setLoading(true);
+  async function fetchThreads({ silent = false } = {}) {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return
+    if (!silent) setLoading(true)
     const { data } = await supabase
-      .from("message_threads")
-      .select("*")
-      .eq("creative_id", userData.user.id)
-      .order("last_message_at", { ascending: false });
-    setThreads(data || []);
-    setLoading(false);
-  };
+      .from('message_threads')
+      .select('*')
+      .eq('creative_id', userData.user.id)
+      .order('last_message_at', { ascending: false })
+    const next = data || []
+    const sig = next
+      .map((t) => `${t.id}|${t.last_message_at || ''}|${t.unread_count || 0}|${threadPreview(t)}`)
+      .join('~')
+    if (sig !== threadsSigRef.current) {
+      threadsSigRef.current = sig
+      setThreads(next)
+    }
+    if (!silent) setLoading(false)
+  }
 
-  const fetchMessages = async (threadId) => {
+  async function fetchMessages(threadId) {
     const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("thread_id", threadId)
-      .order("created_at", { ascending: true });
-    setMessages(data || []);
-  };
+      .from('messages')
+      .select('*')
+      .eq('thread_id', threadId)
+      .order('created_at', { ascending: true })
+    setMessages(data || [])
+  }
 
-  const fetchDocs = async () => {
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData.user) return;
+  async function fetchDocs() {
+    const { data: userData } = await supabase.auth.getUser()
+    if (!userData.user) return
     const [inv, quo, con] = await Promise.all([
-      supabase.from("invoices").select("id, client_name, amount, status").eq("creative_id", userData.user.id),
-      supabase.from("quotes").select("id, client_name, amount, status").eq("creative_id", userData.user.id),
-      supabase.from("contracts").select("id, client_name, title, status").eq("creative_id", userData.user.id),
-    ]);
-    setInvoices(inv.data || []);
-    setQuotes(quo.data || []);
-    setContracts(con.data || []);
-  };
+      supabase.from('invoices').select('id, client_name, amount, status').eq('creative_id', userData.user.id),
+      supabase.from('quotes').select('id, client_name, amount, status').eq('creative_id', userData.user.id),
+      supabase.from('contracts').select('id, client_name, title, status').eq('creative_id', userData.user.id),
+    ])
+    setInvoices(inv.data || [])
+    setQuotes(quo.data || [])
+    setContracts(con.data || [])
+  }
 
-  const markThreadRead = async (threadId) => {
-    await supabase.from("message_threads").update({ unread_count: 0 }).eq("id", threadId);
-    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, unread_count: 0 } : t)));
-  };
+  async function markThreadRead(threadId) {
+    await supabase.from('message_threads').update({ unread_count: 0 }).eq('id', threadId)
+    setThreads((prev) => prev.map((t) => (t.id === threadId ? { ...t, unread_count: 0 } : t)))
+  }
+
+  useEffect(() => {
+    if (!user) return
+    /* eslint-disable react-hooks/set-state-in-effect -- initial load threads/docs */
+    fetchThreads()
+    fetchDocs()
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [user])
+
+  useEffect(() => {
+    if (!activeThread) return
+    /* eslint-disable react-hooks/set-state-in-effect -- load messages on selection */
+    fetchMessages(activeThread.id)
+    markThreadRead(activeThread.id)
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, [activeThread])
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages])
+
+  useEffect(() => {
+    if (!activeThread) return
+    const interval = setInterval(() => {
+      fetchMessages(activeThread.id)
+      fetchThreads({ silent: true })
+    }, 3000)
+    return () => clearInterval(interval)
+  }, [activeThread])
+
+  const deleteThread = async (e, thread) => {
+    e.stopPropagation()
+    if (!window.confirm('Delete this conversation? This cannot be undone.')) return
+    await supabase.from('messages').delete().eq('thread_id', thread.id)
+    await supabase.from('message_threads').delete().eq('id', thread.id)
+    setThreads((prev) => prev.filter((t) => t.id !== thread.id))
+    if (activeThread?.id === thread.id) {
+      setActiveThread(null)
+      setMessages([])
+    }
+  }
 
   const createThread = async () => {
-    if (!newThreadForm.client_name || !newThreadForm.subject) return;
-    const { data: userData } = await supabase.auth.getUser();
+    if (!newThreadForm.client_name || !newThreadForm.subject) return
+    const { data: userData } = await supabase.auth.getUser()
     const { data, error } = await supabase
-      .from("message_threads")
+      .from('message_threads')
       .insert({ ...newThreadForm, creative_id: userData.user.id })
       .select()
-      .single();
+      .single()
     if (!error && data) {
-      setThreads((prev) => [data, ...prev]);
-      setActiveThread(data);
-      setShowNewThread(false);
-      setNewThreadForm({ client_name: "", client_email: "", subject: "" });
+      setThreads((prev) => [data, ...prev])
+      setActiveThread(data)
+      setShowNewThread(false)
+      setNewThreadForm({ client_name: '', client_email: '', subject: '' })
     }
-  };
+  }
 
   const handleFileUpload = async (files) => {
-    if (!files.length) return;
-    setUploading(true);
-    const { data: userData } = await supabase.auth.getUser();
-    const uploaded = [];
+    if (!files.length) return
+    setUploading(true)
+    const { data: userData } = await supabase.auth.getUser()
+    const uploaded = []
     for (const file of files) {
-      const path = `${userData.user.id}/${Date.now()}-${file.name}`;
-      const { error } = await supabase.storage.from("message-attachments").upload(path, file);
+      const path = `${userData.user.id}/${Date.now()}-${file.name}`
+      const { error } = await supabase.storage.from('message-attachments').upload(path, file)
       if (!error) {
-        const { data: urlData } = supabase.storage.from("message-attachments").getPublicUrl(path);
-        uploaded.push({ name: file.name, url: urlData.publicUrl, type: file.type });
+        const { data: urlData } = supabase.storage.from('message-attachments').getPublicUrl(path)
+        uploaded.push({ name: file.name, url: urlData.publicUrl, type: file.type })
       }
     }
-    setAttachments((prev) => [...prev, ...uploaded]);
-    setUploading(false);
-  };
+    setAttachments((prev) => [...prev, ...uploaded])
+    setUploading(false)
+  }
 
   const sendMessage = async () => {
-    if (!newMessage.trim() && !attachments.length && !linkedDoc) return;
-    if (!activeThread) return;
-    const { data: userData } = await supabase.auth.getUser();
+    if (!newMessage.trim() && !attachments.length && !linkedDoc) return
+    if (!activeThread) return
+    const { data: userData } = await supabase.auth.getUser()
     const msgData = {
       thread_id: activeThread.id,
       creative_id: userData.user.id,
-      sender_type: "creative",
-      sender_name: "You",
+      sender_type: 'creative',
+      sender_name: 'You',
       sender_email: userData.user.email,
       body: newMessage,
       attachments: attachments,
@@ -168,304 +254,884 @@ export default function Messages() {
       linked_doc_id: linkedDoc?.id || null,
       subject: activeThread.subject,
       read: true,
-    };
-    const { data, error } = await supabase.from("messages").insert(msgData).select().single();
+    }
+    const { data, error } = await supabase.from('messages').insert(msgData).select().single()
     if (!error) {
-      setMessages((prev) => [...prev, data]);
-      await supabase.from("message_threads").update({ last_message_at: new Date().toISOString() }).eq("id", activeThread.id);
-      setNewMessage("");
-      setAttachments([]);
-      setLinkedDoc(null);
+      setMessages((prev) => [...prev, data])
+      await supabase.from('message_threads').update({ last_message_at: new Date().toISOString() }).eq('id', activeThread.id)
+      setNewMessage('')
+      setAttachments([])
+      setLinkedDoc(null)
       if (activeThread.client_email && newMessage.trim()) {
-        fetch("https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-reply-notification", {
-          method: "POST",
+        fetch('https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-reply-notification', {
+          method: 'POST',
           headers: {
-            "Content-Type": "application/json",
-            "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms",
-            "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms"
+            'Content-Type': 'application/json',
+            apikey:
+              'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms',
+            Authorization:
+              'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxxYWZ4aXN5bXZyYXppcGFvemZrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNDM3NTIsImV4cCI6MjA4OTgxOTc1Mn0.FPcNjzMkHSjFEMQvXrpVMvggBDzaKBf4JqbEpDVuoms',
           },
           body: JSON.stringify({ thread_id: activeThread.id, reply_body: newMessage.trim() }),
-        }).catch(console.error);
+        }).catch(console.error)
       }
     }
-  };
+  }
 
   const filteredThreads = threads.filter(
     (t) =>
       t.client_name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.subject?.toLowerCase().includes(search.toLowerCase())
-  );
+      t.subject?.toLowerCase().includes(search.toLowerCase()),
+  )
+
+  const layoutStyle = {
+    display: 'flex',
+    flexDirection: 'column',
+    minHeight: 'calc(100dvh - 5.5rem)',
+    margin: '-1.75rem -1.75rem -2.5rem',
+    background: PAGE.bg,
+    color: PAGE.text,
+    ...font,
+    boxSizing: 'border-box',
+  }
+
+  const rowBaseStyle = (isActive, isHovered) => ({
+    padding: '12px 16px',
+    cursor: 'pointer',
+    borderBottom: `1px solid ${PAGE.border}`,
+    background: isActive ? PAGE.activeRow : isHovered ? PAGE.inputBg : 'transparent',
+    borderLeft: isActive ? `3px solid ${PAGE.green}` : '3px solid transparent',
+    boxSizing: 'border-box',
+    position: 'relative',
+  })
+
+  const modalOverlay = {
+    position: 'fixed',
+    inset: 0,
+    background: 'rgba(0,0,0,0.75)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 100,
+    ...font,
+  }
+
+  const modalBox = {
+    background: PAGE.inputBg,
+    border: `1px solid ${PAGE.border2}`,
+    borderRadius: 16,
+    padding: 28,
+    width: 420,
+    maxWidth: '90vw',
+    boxSizing: 'border-box',
+  }
 
   return (
     <>
-      <style>{`
-        .messages-layout { display: flex; height: calc(100vh - 60px); background: #0f0f0f; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; overflow: hidden; }
-        .thread-sidebar { width: 300px; min-width: 300px; background: #141414; border-right: 1px solid #222; display: flex; flex-direction: column; }
-        .sidebar-header { padding: 20px 16px 12px; border-bottom: 1px solid #222; display: flex; align-items: center; justify-content: space-between; }
-        .sidebar-title { font-size: 16px; font-weight: 600; color: #fff; }
-        .new-thread-btn { background: #39ff14; color: #000; border: none; border-radius: 6px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; }
-        .new-thread-btn:hover { opacity: 0.85; }
-        .search-bar { padding: 10px 12px; border-bottom: 1px solid #1e1e1e; }
-        .search-bar input { width: 100%; background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 8px; padding: 7px 12px; color: #e8e8e8; font-size: 13px; outline: none; box-sizing: border-box; }
-        .search-bar input:focus { border-color: #39ff14; }
-        .thread-list { flex: 1; overflow-y: auto; }
-        .thread-item { padding: 14px 16px; border-bottom: 1px solid #1a1a1a; cursor: pointer; transition: background 0.1s; }
-        .thread-item:hover { background: #1a1a1a; }
-        .thread-item.active { background: #1e2a1e; border-left: 3px solid #39ff14; }
-        .thread-name { font-size: 14px; font-weight: 600; color: #fff; display: flex; align-items: center; justify-content: space-between; }
-        .thread-time { font-size: 11px; color: #555; }
-        .thread-subject { font-size: 12px; color: #888; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .unread-badge { background: #39ff14; color: #000; border-radius: 10px; font-size: 10px; font-weight: 800; padding: 1px 6px; }
-        .empty-threads { padding: 40px 20px; text-align: center; color: #444; font-size: 13px; }
-        .chat-area { flex: 1; display: flex; flex-direction: column; background: #0f0f0f; min-width: 0; }
-        .chat-header { padding: 16px 24px; border-bottom: 1px solid #1e1e1e; background: #141414; display: flex; align-items: center; gap: 12px; }
-        .chat-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #39ff14, #a855f7); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; color: #000; flex-shrink: 0; }
-        .chat-header-info h3 { font-size: 15px; font-weight: 600; color: #fff; margin: 0; }
-        .chat-header-info p { font-size: 12px; color: #666; margin: 2px 0 0; }
-        .no-chat-selected { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #333; gap: 12px; }
-        .no-chat-selected span { font-size: 48px; }
-        .messages-scroll { flex: 1; overflow-y: auto; padding: 20px 24px; display: flex; flex-direction: column; gap: 12px; }
-        .message-row { display: flex; gap: 10px; max-width: 72%; }
-        .message-row.from-creative { align-self: flex-end; flex-direction: row-reverse; }
-        .message-row.from-client { align-self: flex-start; }
-        .msg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; margin-top: 2px; }
-        .msg-avatar.creative { background: linear-gradient(135deg, #39ff14, #22c55e); color: #000; }
-        .msg-avatar.client { background: #2a2a2a; color: #aaa; }
-        .msg-content { display: flex; flex-direction: column; gap: 4px; }
-        .msg-bubble { padding: 10px 14px; border-radius: 14px; font-size: 14px; line-height: 1.5; word-break: break-word; }
-        .from-creative .msg-bubble { background: #1a3a1a; border: 1px solid #2a4a2a; color: #d4f5d4; border-bottom-right-radius: 4px; }
-        .from-client .msg-bubble { background: #1e1e1e; border: 1px solid #2a2a2a; color: #e8e8e8; border-bottom-left-radius: 4px; }
-        .msg-attachments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
-        .attachment-chip { display: inline-flex; align-items: center; gap: 6px; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 8px; padding: 5px 10px; font-size: 12px; color: #aaa; text-decoration: none; }
-        .attachment-chip:hover { border-color: #39ff14; color: #39ff14; }
-        .attachment-name { max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        .linked-doc-badge { display: inline-flex; align-items: center; gap: 6px; background: #1e1e3a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 5px 10px; font-size: 12px; color: #a78bfa; margin-top: 4px; }
-        .msg-time { font-size: 10px; color: #444; padding: 0 4px; }
-        .from-creative .msg-time { text-align: right; }
-        .compose-area { border-top: 1px solid #1e1e1e; background: #141414; padding: 12px 20px 16px; }
-        .attachment-preview-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-        .attachment-preview-item { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 8px; padding: 4px 10px; font-size: 12px; color: #aaa; }
-        .remove-attachment { background: none; border: none; color: #555; cursor: pointer; font-size: 14px; padding: 0; }
-        .remove-attachment:hover { color: #f87171; }
-        .linked-doc-preview { display: flex; align-items: center; gap: 8px; background: #1e1e3a; border: 1px solid #3a3a6a; border-radius: 8px; padding: 6px 12px; font-size: 12px; color: #a78bfa; margin-bottom: 10px; }
-        .linked-doc-preview button { background: none; border: none; color: #555; cursor: pointer; font-size: 14px; margin-left: auto; }
-        .compose-row { display: flex; gap: 8px; align-items: flex-end; }
-        .compose-input { flex: 1; background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 10px 14px; color: #e8e8e8; font-size: 14px; resize: none; outline: none; font-family: inherit; min-height: 44px; max-height: 120px; line-height: 1.5; }
-        .compose-input:focus { border-color: #39ff14; }
-        .compose-input::placeholder { color: #444; }
-        .compose-actions { display: flex; gap: 6px; align-items: center; }
-        .action-btn { width: 38px; height: 38px; background: #1e1e1e; border: 1px solid #2a2a2a; border-radius: 10px; color: #666; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 16px; }
-        .action-btn:hover { border-color: #444; color: #aaa; }
-        .send-btn { width: 38px; height: 38px; background: #39ff14; border: none; border-radius: 10px; color: #000; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
-        .send-btn:hover { opacity: 0.85; }
-        .send-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; }
-        .modal { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 16px; padding: 28px; width: 420px; max-width: 90vw; }
-        .modal h3 { font-size: 18px; font-weight: 700; color: #fff; margin: 0 0 20px; }
-        .modal-field { margin-bottom: 14px; }
-        .modal-field label { display: block; font-size: 12px; color: #888; margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
-        .modal-field input { width: 100%; background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 10px 12px; color: #e8e8e8; font-size: 14px; outline: none; box-sizing: border-box; }
-        .modal-field input:focus { border-color: #39ff14; }
-        .modal-actions { display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end; }
-        .modal-cancel { background: none; border: 1px solid #2a2a2a; color: #888; border-radius: 8px; padding: 9px 18px; cursor: pointer; font-size: 14px; }
-        .modal-confirm { background: #39ff14; border: none; color: #000; border-radius: 8px; padding: 9px 20px; font-size: 14px; font-weight: 700; cursor: pointer; }
-        .link-doc-list { max-height: 260px; overflow-y: auto; margin-top: 10px; }
-        .link-doc-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #2a2a2a; border-radius: 8px; margin-bottom: 6px; cursor: pointer; }
-        .link-doc-item:hover { border-color: #a78bfa; background: #1e1e3a; }
-        .doc-name { font-size: 14px; color: #e8e8e8; }
-        .doc-meta { font-size: 11px; color: #666; margin-top: 2px; }
-        .doc-type-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
-        .doc-type-tab { flex: 1; background: #141414; border: 1px solid #2a2a2a; border-radius: 8px; padding: 7px; font-size: 12px; color: #888; cursor: pointer; text-align: center; }
-        .doc-type-tab.active { background: #1e1e3a; border-color: #a78bfa; color: #a78bfa; font-weight: 600; }
-      `}</style>
+      <div style={layoutStyle}>
+        <header
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            padding: '16px 20px 12px',
+            flexShrink: 0,
+            ...font,
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            style={{
+              background: 'none',
+              border: 'none',
+              padding: 0,
+              cursor: 'pointer',
+              color: PAGE.green,
+              fontSize: 14,
+              fontWeight: 600,
+              ...font,
+            }}
+          >
+            ← Back
+          </button>
+          <h1 style={{ margin: 0, fontSize: 20, fontWeight: 700, color: '#fff', ...font }}>Messages</h1>
+        </header>
 
-      <div className="messages-layout">
-        <div className="thread-sidebar">
-          <div className="sidebar-header">
-            <span className="sidebar-title">Messages</span>
-            <button className="new-thread-btn" onClick={() => setShowNewThread(true)}>+ New</button>
-          </div>
-          <div className="search-bar">
-            <input placeholder="Search conversations..." value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-          <div className="thread-list">
-            {loading ? (
-              <div className="empty-threads"><p>Loading...</p></div>
-            ) : filteredThreads.length === 0 ? (
-              <div className="empty-threads">
-                <div style={{ fontSize: 32, marginBottom: 8 }}>💬</div>
-                <p>No conversations yet</p>
-                <p style={{ fontSize: 11, marginTop: 4 }}>Click + New to start one</p>
+        <div
+          style={{
+            display: 'flex',
+            flex: 1,
+            minHeight: 0,
+            overflow: 'hidden',
+          }}
+        >
+          <aside
+            style={{
+              width: 320,
+              minWidth: 320,
+              flexShrink: 0,
+              background: PAGE.panel,
+              borderRight: `1px solid ${PAGE.border}`,
+              display: 'flex',
+              flexDirection: 'column',
+              ...font,
+            }}
+          >
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '16px 16px 12px',
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 18, fontWeight: 700, color: '#fff', ...font }}>Messages</span>
+              <button
+                type="button"
+                onClick={() => setShowNewThread(true)}
+                style={{
+                  background: PAGE.green,
+                  color: '#000',
+                  border: 'none',
+                  borderRadius: 8,
+                  padding: '6px 14px',
+                  fontSize: 12,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  ...font,
+                }}
+              >
+                + New
+              </button>
+            </div>
+            <div style={{ padding: '0 16px 12px', flexShrink: 0 }}>
+              <input
+                placeholder="Search conversations..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: PAGE.inputBg,
+                  border: `1px solid ${PAGE.border2}`,
+                  borderRadius: 8,
+                  padding: '8px 12px',
+                  color: '#fff',
+                  fontSize: 13,
+                  outline: 'none',
+                  ...font,
+                }}
+              />
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', minHeight: 0 }}>
+              {loading ? (
+                <div style={{ padding: 40, textAlign: 'center', color: PAGE.dim, fontSize: 13, ...font }}>
+                  Loading…
+                </div>
+              ) : filteredThreads.length === 0 ? (
+                <div style={{ padding: 40, textAlign: 'center', color: PAGE.dim, fontSize: 13, ...font }}>
+                  <div style={{ fontSize: 32, marginBottom: 10 }} aria-hidden>
+                    💬
+                  </div>
+                  <p style={{ margin: 0, color: PAGE.muted }}>No conversations yet</p>
+                  <p style={{ margin: '8px 0 0', fontSize: 12, color: PAGE.dim }}>Click + New to start one</p>
+                </div>
+              ) : (
+                filteredThreads.map((thread) => {
+                  const isActive = activeThread?.id === thread.id
+                  const isHovered = hoveredThreadId === thread.id
+                  const unread = (thread.unread_count || 0) > 0
+                  const initial = thread.client_name?.[0]?.toUpperCase() || '?'
+                  const preview = threadPreview(thread)
+                  return (
+                    <div
+                      key={thread.id}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setActiveThread(thread)
+                        }
+                      }}
+                      onClick={() => setActiveThread(thread)}
+                      onMouseEnter={() => setHoveredThreadId(thread.id)}
+                      onMouseLeave={() => setHoveredThreadId(null)}
+                      style={rowBaseStyle(isActive, isHovered)}
+                    >
+                      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                        <div
+                          style={{
+                            width: 36,
+                            height: 36,
+                            borderRadius: '50%',
+                            background: PAGE.green,
+                            color: '#000',
+                            fontWeight: 700,
+                            fontSize: 15,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            ...font,
+                          }}
+                        >
+                          {initial}
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'flex-start',
+                              justifyContent: 'space-between',
+                              gap: 8,
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 14,
+                                fontWeight: 700,
+                                color: unread ? PAGE.green : '#fff',
+                                lineHeight: 1.3,
+                                ...font,
+                              }}
+                            >
+                              {thread.client_name}
+                            </span>
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                flexShrink: 0,
+                                ...font,
+                              }}
+                            >
+                              {isHovered ? (
+                                <button
+                                  type="button"
+                                  title="Delete conversation"
+                                  onClick={(e) => deleteThread(e, thread)}
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    padding: '2px 4px',
+                                    cursor: 'pointer',
+                                    fontSize: 14,
+                                    lineHeight: 1,
+                                    opacity: 0.85,
+                                  }}
+                                  aria-label="Delete conversation"
+                                >
+                                  🗑️
+                                </button>
+                              ) : null}
+                              <span style={{ fontSize: 11, color: PAGE.dim, whiteSpace: 'nowrap', ...font }}>
+                                {formatTime(thread.last_message_at)}
+                              </span>
+                            </span>
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 12,
+                              color: PAGE.muted,
+                              marginTop: 4,
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              ...font,
+                            }}
+                          >
+                            {preview}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })
+              )}
+            </div>
+          </aside>
+
+          <div
+            style={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              flexDirection: 'column',
+              background: PAGE.bg,
+              ...font,
+            }}
+          >
+            {!activeThread ? (
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 12,
+                  padding: 24,
+                }}
+              >
+                <span style={{ fontSize: 48, lineHeight: 1, opacity: 0.35 }} aria-hidden>
+                  💬
+                </span>
+                <p style={{ margin: 0, color: PAGE.dim, fontSize: 14, ...font }}>
+                  Select a conversation to view it
+                </p>
               </div>
             ) : (
-              filteredThreads.map((thread) => (
+              <>
                 <div
-                  key={thread.id}
-                  className={`thread-item ${activeThread?.id === thread.id ? "active" : ""}`}
-                  onClick={() => setActiveThread(thread)}
+                  style={{
+                    padding: '16px 20px',
+                    borderBottom: `1px solid ${PAGE.border}`,
+                    background: PAGE.panel,
+                    flexShrink: 0,
+                  }}
                 >
-                  <div className="thread-name">
-                    <span>{thread.client_name}</span>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      {thread.unread_count > 0 && <span className="unread-badge">{thread.unread_count}</span>}
-                      <span className="thread-time">{formatTime(thread.last_message_at)}</span>
-                    </div>
+                  <div style={{ fontSize: 16, fontWeight: 700, color: '#fff', ...font }}>
+                    {activeThread.client_name}
                   </div>
-                  <div className="thread-subject">{thread.subject}</div>
+                  <div style={{ fontSize: 12, color: PAGE.muted, marginTop: 4, ...font }}>
+                    {activeThread.client_email || '—'}
+                  </div>
                 </div>
-              ))
+
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    minHeight: 0,
+                    padding: '20px 20px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 14,
+                  }}
+                >
+                  {messages.length === 0 ? (
+                    <div style={{ textAlign: 'center', color: PAGE.dim, fontSize: 13, marginTop: 32, ...font }}>
+                      No messages yet — send the first one!
+                    </div>
+                  ) : null}
+                  {messages.map((msg) => {
+                    const fromCreative = msg.sender_type === 'creative'
+                    return (
+                      <div
+                        key={msg.id}
+                        style={{
+                          display: 'flex',
+                          justifyContent: fromCreative ? 'flex-end' : 'flex-start',
+                          width: '100%',
+                        }}
+                      >
+                        <div style={{ maxWidth: '70%', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          {msg.body ? (
+                            <div
+                              style={{
+                                background: fromCreative ? PAGE.activeRow : PAGE.panel,
+                                border: fromCreative ? `1px solid ${PAGE.green}` : `1px solid ${PAGE.border}`,
+                                borderRadius: fromCreative ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+                                padding: '10px 14px',
+                                fontSize: 14,
+                                lineHeight: 1.5,
+                                wordBreak: 'break-word',
+                                color: PAGE.text,
+                                ...font,
+                              }}
+                            >
+                              {msg.body}
+                            </div>
+                          ) : null}
+                          {msg.attachments?.length > 0 ? (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                              {msg.attachments.map((a, i) => (
+                                <AttachmentPreview key={i} attachment={a} />
+                              ))}
+                            </div>
+                          ) : null}
+                          {msg.linked_doc_type ? <LinkedDocBadge type={msg.linked_doc_type} /> : null}
+                          <div
+                            style={{
+                              fontSize: 11,
+                              color: PAGE.dim,
+                              paddingLeft: 4,
+                              paddingRight: 4,
+                              textAlign: fromCreative ? 'right' : 'left',
+                              ...font,
+                            }}
+                          >
+                            {formatTime(msg.created_at)}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                  <div ref={bottomRef} />
+                </div>
+
+                <div
+                  style={{
+                    borderTop: `1px solid ${PAGE.border}`,
+                    background: PAGE.bg,
+                    padding: '12px 20px 20px',
+                    flexShrink: 0,
+                  }}
+                >
+                  {attachments.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+                      {attachments.map((a, i) => (
+                        <div
+                          key={i}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            background: PAGE.panel,
+                            border: `1px solid ${PAGE.border2}`,
+                            borderRadius: 8,
+                            padding: '4px 10px',
+                            fontSize: 12,
+                            color: PAGE.muted,
+                            ...font,
+                          }}
+                        >
+                          <span>{a.type?.startsWith('image/') ? 'IMG' : 'PDF'}</span>
+                          <span>{a.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              color: PAGE.dim,
+                              cursor: 'pointer',
+                              fontSize: 14,
+                              padding: 0,
+                            }}
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+                  {linkedDoc ? (
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        background: '#1e1e3a',
+                        border: '1px solid #3a3a6a',
+                        borderRadius: 8,
+                        padding: '6px 12px',
+                        fontSize: 12,
+                        color: '#a78bfa',
+                        marginBottom: 10,
+                        ...font,
+                      }}
+                    >
+                      <span>
+                        Attaching {linkedDoc.type}: {linkedDoc.label}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setLinkedDoc(null)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: PAGE.dim,
+                          cursor: 'pointer',
+                          fontSize: 14,
+                          marginLeft: 'auto',
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ) : null}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                    <textarea
+                      placeholder="Type a message…"
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault()
+                          sendMessage()
+                        }
+                      }}
+                      rows={2}
+                      style={{
+                        flex: 1,
+                        minWidth: 200,
+                        background: PAGE.panel,
+                        border: `1px solid ${PAGE.border}`,
+                        borderRadius: 8,
+                        padding: 10,
+                        color: '#fff',
+                        fontSize: 14,
+                        resize: 'none',
+                        outline: 'none',
+                        minHeight: 44,
+                        maxHeight: 120,
+                        lineHeight: 1.5,
+                        boxSizing: 'border-box',
+                        ...font,
+                      }}
+                    />
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx"
+                      style={{ display: 'none' }}
+                      onChange={(e) => handleFileUpload(Array.from(e.target.files || []))}
+                    />
+                    <button
+                      type="button"
+                      title="Attach file"
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        background: PAGE.inputBg,
+                        border: `1px solid ${PAGE.border2}`,
+                        borderRadius: 8,
+                        color: PAGE.muted,
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        flexShrink: 0,
+                        ...font,
+                      }}
+                    >
+                      {uploading ? '…' : '📎'}
+                    </button>
+                    <button
+                      type="button"
+                      title="Link document"
+                      onClick={() => setShowLinkDoc(true)}
+                      style={{
+                        width: 40,
+                        height: 40,
+                        background: PAGE.inputBg,
+                        border: `1px solid ${PAGE.border2}`,
+                        borderRadius: 8,
+                        color: PAGE.muted,
+                        cursor: 'pointer',
+                        fontSize: 12,
+                        flexShrink: 0,
+                        ...font,
+                      }}
+                    >
+                      Doc
+                    </button>
+                    <button
+                      type="button"
+                      onClick={sendMessage}
+                      disabled={!newMessage.trim() && !attachments.length && !linkedDoc}
+                      style={{
+                        background: PAGE.green,
+                        color: '#000',
+                        border: 'none',
+                        borderRadius: 8,
+                        padding: '10px 18px',
+                        fontSize: 12,
+                        fontWeight: 700,
+                        cursor:
+                          !newMessage.trim() && !attachments.length && !linkedDoc ? 'not-allowed' : 'pointer',
+                        opacity: !newMessage.trim() && !attachments.length && !linkedDoc ? 0.45 : 1,
+                        flexShrink: 0,
+                        ...font,
+                      }}
+                    >
+                      Send Reply
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>
-
-        <div className="chat-area">
-          {!activeThread ? (
-            <div className="no-chat-selected">
-              <span>MSG</span>
-              <p style={{ color: "#444", fontSize: 14 }}>Select a conversation or start a new one</p>
-            </div>
-          ) : (
-            <>
-              <div className="chat-header">
-                <div className="chat-avatar">{activeThread.client_name?.[0]?.toUpperCase() || "?"}</div>
-                <div className="chat-header-info">
-                  <h3>{activeThread.client_name}</h3>
-                  <p>{activeThread.client_email} - {activeThread.subject}</p>
-                </div>
-              </div>
-
-              <div className="messages-scroll">
-                {messages.length === 0 && (
-                  <div style={{ textAlign: "center", color: "#333", fontSize: 13, marginTop: 40 }}>
-                    No messages yet - send the first one!
-                  </div>
-                )}
-                {messages.map((msg) => (
-                  <div key={msg.id} className={`message-row ${msg.sender_type === "creative" ? "from-creative" : "from-client"}`}>
-                    <div className={`msg-avatar ${msg.sender_type}`}>
-                      {msg.sender_type === "creative" ? "Y" : activeThread.client_name?.[0]?.toUpperCase() || "C"}
-                    </div>
-                    <div className="msg-content">
-                      {msg.body && <div className="msg-bubble">{msg.body}</div>}
-                      {msg.attachments?.length > 0 && (
-                        <div className="msg-attachments">
-                          {msg.attachments.map((a, i) => <AttachmentPreview key={i} attachment={a} />)}
-                        </div>
-                      )}
-                      {msg.linked_doc_type && <LinkedDocBadge type={msg.linked_doc_type} />}
-                      <div className="msg-time">{formatTime(msg.created_at)}</div>
-                    </div>
-                  </div>
-                ))}
-                <div ref={bottomRef} />
-              </div>
-
-              <div className="compose-area">
-                {attachments.length > 0 && (
-                  <div className="attachment-preview-row">
-                    {attachments.map((a, i) => (
-                      <div key={i} className="attachment-preview-item">
-                        <span>{a.type?.startsWith("image/") ? "IMG" : "PDF"}</span>
-                        <span>{a.name}</span>
-                        <button className="remove-attachment" onClick={() => setAttachments((prev) => prev.filter((_, j) => j !== i))}>x</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {linkedDoc && (
-                  <div className="linked-doc-preview">
-                    <span>Attaching {linkedDoc.type}: {linkedDoc.label}</span>
-                    <button onClick={() => setLinkedDoc(null)}>x</button>
-                  </div>
-                )}
-                <div className="compose-row">
-                  <textarea
-                    className="compose-input"
-                    placeholder="Type a message... (Enter to send, Shift+Enter for new line)"
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                    rows={1}
-                  />
-                  <div className="compose-actions">
-                    <input ref={fileInputRef} type="file" multiple accept="image/*,.pdf,.doc,.docx" style={{ display: "none" }} onChange={(e) => handleFileUpload(Array.from(e.target.files))} />
-                    <button className="action-btn" title="Attach file" onClick={() => fileInputRef.current?.click()}>{uploading ? "..." : "attach"}</button>
-                    <button className="action-btn" title="Link document" onClick={() => setShowLinkDoc(true)}>doc</button>
-                    <button className="send-btn" onClick={sendMessage} disabled={!newMessage.trim() && !attachments.length && !linkedDoc}>^</button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
-      {showNewThread && (
-        <div className="modal-overlay" onClick={() => setShowNewThread(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>New Conversation</h3>
-            <div className="modal-field">
-              <label>Client Name</label>
-              <input placeholder="Jane Smith" value={newThreadForm.client_name} onChange={(e) => setNewThreadForm((p) => ({ ...p, client_name: e.target.value }))} />
+      {showNewThread ? (
+        <div style={modalOverlay} onClick={() => setShowNewThread(false)} role="presentation">
+          <div style={modalBox} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 20px', ...font }}>
+              New Conversation
+            </h3>
+            <div style={{ marginBottom: 14 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  color: PAGE.muted,
+                  marginBottom: 6,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  ...font,
+                }}
+              >
+                Client Name
+              </label>
+              <input
+                placeholder="Jane Smith"
+                value={newThreadForm.client_name}
+                onChange={(e) => setNewThreadForm((p) => ({ ...p, client_name: e.target.value }))}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: PAGE.bg,
+                  border: `1px solid ${PAGE.border2}`,
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  color: PAGE.text,
+                  fontSize: 14,
+                  outline: 'none',
+                  ...font,
+                }}
+              />
             </div>
-            <div className="modal-field">
-              <label>Client Email</label>
-              <input placeholder="jane@example.com" value={newThreadForm.client_email} onChange={(e) => setNewThreadForm((p) => ({ ...p, client_email: e.target.value }))} />
+            <div style={{ marginBottom: 14 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  color: PAGE.muted,
+                  marginBottom: 6,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  ...font,
+                }}
+              >
+                Client Email
+              </label>
+              <input
+                placeholder="jane@example.com"
+                value={newThreadForm.client_email}
+                onChange={(e) => setNewThreadForm((p) => ({ ...p, client_email: e.target.value }))}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: PAGE.bg,
+                  border: `1px solid ${PAGE.border2}`,
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  color: PAGE.text,
+                  fontSize: 14,
+                  outline: 'none',
+                  ...font,
+                }}
+              />
             </div>
-            <div className="modal-field">
-              <label>Subject</label>
-              <input placeholder="Wedding shoot" value={newThreadForm.subject} onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))} />
+            <div style={{ marginBottom: 14 }}>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: 12,
+                  color: PAGE.muted,
+                  marginBottom: 6,
+                  fontWeight: 600,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  ...font,
+                }}
+              >
+                Subject
+              </label>
+              <input
+                placeholder="Wedding shoot"
+                value={newThreadForm.subject}
+                onChange={(e) => setNewThreadForm((p) => ({ ...p, subject: e.target.value }))}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: PAGE.bg,
+                  border: `1px solid ${PAGE.border2}`,
+                  borderRadius: 8,
+                  padding: '10px 12px',
+                  color: PAGE.text,
+                  fontSize: 14,
+                  outline: 'none',
+                  ...font,
+                }}
+              />
             </div>
-            <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowNewThread(false)}>Cancel</button>
-              <button className="modal-confirm" onClick={createThread}>Start Conversation</button>
+            <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowNewThread(false)}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${PAGE.border2}`,
+                  color: PAGE.muted,
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  ...font,
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={createThread}
+                style={{
+                  background: PAGE.green,
+                  border: 'none',
+                  color: '#000',
+                  borderRadius: 8,
+                  padding: '9px 20px',
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  ...font,
+                }}
+              >
+                Start Conversation
+              </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
-      {showLinkDoc && (
-        <div className="modal-overlay" onClick={() => setShowLinkDoc(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <h3>Link a Document</h3>
-            <LinkDocPicker invoices={invoices} quotes={quotes} contracts={contracts} onSelect={(doc) => { setLinkedDoc(doc); setShowLinkDoc(false); }} />
-            <div className="modal-actions">
-              <button className="modal-cancel" onClick={() => setShowLinkDoc(false)}>Cancel</button>
+      {showLinkDoc ? (
+        <div style={modalOverlay} onClick={() => setShowLinkDoc(false)} role="presentation">
+          <div style={modalBox} onClick={(e) => e.stopPropagation()}>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: '#fff', margin: '0 0 16px', ...font }}>
+              Link a Document
+            </h3>
+            <LinkDocPicker
+              invoices={invoices}
+              quotes={quotes}
+              contracts={contracts}
+              onSelect={(doc) => {
+                setLinkedDoc(doc)
+                setShowLinkDoc(false)
+              }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+              <button
+                type="button"
+                onClick={() => setShowLinkDoc(false)}
+                style={{
+                  background: 'none',
+                  border: `1px solid ${PAGE.border2}`,
+                  color: PAGE.muted,
+                  borderRadius: 8,
+                  padding: '9px 18px',
+                  cursor: 'pointer',
+                  fontSize: 14,
+                  ...font,
+                }}
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </>
-  );
+  )
 }
 
 function LinkDocPicker({ invoices, quotes, contracts, onSelect }) {
-  const [tab, setTab] = useState("invoice");
-  const docs = { invoice: invoices, quote: quotes, contract: contracts };
-  const current = docs[tab] || [];
+  const [tab, setTab] = useState('invoice')
+  const docs = { invoice: invoices, quote: quotes, contract: contracts }
+  const current = docs[tab] || []
   return (
-    <div>
-      <div className="doc-type-tabs">
-        {["invoice", "quote", "contract"].map((t) => (
-          <button key={t} className={`doc-type-tab ${tab === t ? "active" : ""}`} onClick={() => setTab(t)}>
+    <div style={{ ...font }}>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        {['invoice', 'quote', 'contract'].map((t) => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTab(t)}
+            style={{
+              flex: 1,
+              background: tab === t ? '#1e1e3a' : PAGE.bg,
+              border: tab === t ? '1px solid #a78bfa' : `1px solid ${PAGE.border2}`,
+              borderRadius: 8,
+              padding: 8,
+              fontSize: 12,
+              color: tab === t ? '#a78bfa' : PAGE.muted,
+              cursor: 'pointer',
+              fontWeight: tab === t ? 600 : 500,
+              textAlign: 'center',
+              ...font,
+            }}
+          >
             {t.charAt(0).toUpperCase() + t.slice(1)}s
           </button>
         ))}
       </div>
-      <div className="link-doc-list">
+      <div style={{ maxHeight: 260, overflowY: 'auto', marginTop: 4 }}>
         {current.length === 0 ? (
-          <div style={{ color: "#444", fontSize: 13, textAlign: "center", padding: "20px 0" }}>No {tab}s found</div>
+          <div style={{ color: PAGE.dim, fontSize: 13, textAlign: 'center', padding: '20px 0', ...font }}>
+            No {tab}s found
+          </div>
         ) : (
           current.map((doc) => (
-            <div key={doc.id} className="link-doc-item" onClick={() => onSelect({ type: tab, id: doc.id, label: doc.client_name + (doc.amount ? ` - $${doc.amount}` : doc.title ? ` - ${doc.title}` : "") })}>
+            <div
+              key={doc.id}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  onSelect({
+                    type: tab,
+                    id: doc.id,
+                    label:
+                      doc.client_name +
+                      (doc.amount ? ` - $${doc.amount}` : doc.title ? ` - ${doc.title}` : ''),
+                  })
+                }
+              }}
+              onClick={() =>
+                onSelect({
+                  type: tab,
+                  id: doc.id,
+                  label:
+                    doc.client_name + (doc.amount ? ` - $${doc.amount}` : doc.title ? ` - ${doc.title}` : ''),
+                })
+              }
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 12px',
+                border: `1px solid ${PAGE.border2}`,
+                borderRadius: 8,
+                marginBottom: 6,
+                cursor: 'pointer',
+                ...font,
+              }}
+            >
               <div>
-                <div className="doc-name">{doc.client_name}{doc.title ? ` - ${doc.title}` : ""}</div>
-                <div className="doc-meta">{doc.amount ? `$${doc.amount}` : ""} - {doc.status}</div>
+                <div style={{ fontSize: 14, color: PAGE.text, ...font }}>
+                  {doc.client_name}
+                  {doc.title ? ` - ${doc.title}` : ''}
+                </div>
+                <div style={{ fontSize: 11, color: PAGE.dim, marginTop: 2, ...font }}>
+                  {doc.amount ? `$${doc.amount}` : ''}
+                  {doc.amount ? ' · ' : ''}
+                  {doc.status}
+                </div>
               </div>
             </div>
           ))
         )}
       </div>
     </div>
-  );
+  )
 }

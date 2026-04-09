@@ -7,13 +7,13 @@ import { supabase } from '../lib/supabaseClient'
 const SEND_INVOICE_URL =
   'https://lqafxisymvrazipaozfk.supabase.co/functions/v1/send-invoice'
 
-const STATUS_OPTIONS = ['draft', 'sent', 'paid']
-
 const initialForm = {
   client_name: '',
   client_email: '',
+  invoice_title: '',
   due_date: '',
   status: 'draft',
+  tax_percent: '10',
 }
 
 const formatDateTime = (ts) => {
@@ -100,6 +100,12 @@ function resolveClientEmail(row) {
   return typeof e === 'string' ? e.trim() : ''
 }
 
+function formatBsbInput(value) {
+  const d = String(value ?? '').replace(/\D/g, '').slice(0, 6)
+  if (d.length <= 3) return d
+  return `${d.slice(0, 3)}-${d.slice(3)}`
+}
+
 function shortInvoiceNumber(id) {
   if (id == null || id === '') return '—'
   return String(id).slice(0, 8)
@@ -148,16 +154,10 @@ function formatDueDate(value) {
 function formatMoney(amount) {
   if (amount === null || amount === undefined) return '—'
   try {
-    return new Intl.NumberFormat(undefined, { style: 'currency', currency: 'USD' }).format(amount)
+    return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount)
   } catch {
     return String(amount)
   }
-}
-
-function formatLineItemCount(n) {
-  if (n === 0) return '0 line items'
-  if (n === 1) return '1 line item'
-  return `${n} line items`
 }
 
 function Invoicing() {
@@ -181,15 +181,71 @@ function Invoicing() {
   const previewCloseRef = useRef(null)
   const invoiceContentRef = useRef(null)
 
-  const draftTotal = useMemo(() => {
+  const BANKING_DEFAULT = { region: 'au', accountHolder: '', bsb: '', accountNumber: '', international: '' }
+  const [banking, setBanking] = useState(() => {
+    if (typeof window === 'undefined') return BANKING_DEFAULT
+    try {
+      const raw = localStorage.getItem('lt-banking-details')
+      if (raw) return { ...BANKING_DEFAULT, ...JSON.parse(raw) }
+    } catch {
+      /* ignore */
+    }
+    return BANKING_DEFAULT
+  })
+  const [invoiceFilter, setInvoiceFilter] = useState('all')
+  const [paidUpdatingId, setPaidUpdatingId] = useState(null)
+
+  const { draftSubtotal, draftTax, draftTotalWithTax } = useMemo(() => {
     const payload = buildItemsPayload(lineItems)
-    return lineItemsTotal(payload)
-  }, [lineItems])
+    const sub = lineItemsTotal(payload)
+    const pct = Number(form.tax_percent)
+    const tax = Number.isFinite(pct) ? sub * (pct / 100) : 0
+    return { draftSubtotal: sub, draftTax: tax, draftTotalWithTax: sub + tax }
+  }, [lineItems, form.tax_percent])
 
   const previewLines = useMemo(
     () => (previewInvoice ? getNormalizedInvoiceLines(previewInvoice) : []),
     [previewInvoice],
   )
+
+  const revenueSummary = useMemo(() => {
+    const now = new Date()
+    const y = now.getFullYear()
+    const m = now.getMonth()
+    let monthInvoiced = 0
+    let monthPaid = 0
+    let ytdInvoiced = 0
+    let ytdPaid = 0
+    for (const inv of invoices) {
+      const amt = Number(inv.amount) || 0
+      const created = inv.created_at ? new Date(inv.created_at) : null
+      if (!created || Number.isNaN(created.getTime())) continue
+      const isPaid = String(inv.status).toLowerCase() === 'paid'
+      if (created.getFullYear() === y && created.getMonth() === m) {
+        monthInvoiced += amt
+        if (isPaid) monthPaid += amt
+      }
+      if (created.getFullYear() === y) {
+        ytdInvoiced += amt
+        if (isPaid) ytdPaid += amt
+      }
+    }
+    return { monthInvoiced, monthPaid, ytdInvoiced, ytdPaid }
+  }, [invoices])
+
+  const filteredInvoices = useMemo(() => {
+    return invoices.filter((row) => {
+      const { variant } = getStatusInfo(row)
+      const due = resolveDueDate(row)
+      const overdue = variant !== 'paid' && due instanceof Date && due.getTime() < Date.now()
+      if (invoiceFilter === 'all') return true
+      if (invoiceFilter === 'overdue') return overdue
+      if (invoiceFilter === 'paid') return variant === 'paid'
+      if (invoiceFilter === 'draft') return variant === 'draft' && !overdue
+      if (invoiceFilter === 'sent') return variant === 'sent' && !overdue
+      return true
+    })
+  }, [invoices, invoiceFilter])
 
   const loadInvoices = useCallback(async () => {
     if (!supabase || !userId) { setInvoices([]); setLoading(false); return }
@@ -282,9 +338,18 @@ function Invoicing() {
     setSuccessMessage('')
     if (!supabase || !userId) { setErrorMessage('Not signed in.'); return }
     if (!form.client_name.trim()) { setErrorMessage('Client name is required.'); return }
-    const itemsPayload = buildItemsPayload(lineItems)
+    let itemsPayload = buildItemsPayload(lineItems)
     if (itemsPayload.length === 0) { setErrorMessage('Add at least one line item.'); return }
-    const amountTotal = lineItemsTotal(itemsPayload)
+    const titlePrefix = form.invoice_title.trim()
+    if (titlePrefix) {
+      itemsPayload = itemsPayload.map((it, idx) =>
+        idx === 0 ? { ...it, description: `${titlePrefix} — ${it.description}`.trim() } : it,
+      )
+    }
+    const subtotal = lineItemsTotal(itemsPayload)
+    const taxPct = Number(form.tax_percent)
+    const taxAmt = Number.isFinite(taxPct) ? subtotal * (taxPct / 100) : 0
+    const amountTotal = subtotal + taxAmt
     if (!Number.isFinite(amountTotal) || amountTotal <= 0) { setErrorMessage('Invoice total must be greater than zero.'); return }
     setSubmitting(true)
     setErrorMessage('')
@@ -321,6 +386,31 @@ function Invoicing() {
       setPreviewInvoice((open) => (open?.id === id ? null : open))
     }
     setDeletingId(null)
+  }
+
+  const handleMarkPaid = async (id) => {
+    if (!supabase || !id) return
+    setSuccessMessage('')
+    setErrorMessage('')
+    setPaidUpdatingId(id)
+    const { error } = await supabase.from('invoices').update({ status: 'paid' }).eq('id', id)
+    if (error) setErrorMessage(error.message)
+    else {
+      setSuccessMessage('Invoice marked as paid.')
+      setInvoices((c) => c.map((row) => (row.id === id ? { ...row, status: 'paid' } : row)))
+      setPreviewInvoice((open) => (open?.id === id ? { ...open, status: 'paid' } : open))
+    }
+    setPaidUpdatingId(null)
+  }
+
+  const saveBankingDetails = () => {
+    try {
+      localStorage.setItem('lt-banking-details', JSON.stringify(banking))
+      setSuccessMessage('Banking details saved.')
+      setErrorMessage('')
+    } catch {
+      setErrorMessage('Could not save banking details.')
+    }
   }
 
   const handleSendInvoice = async (row) => {
@@ -384,53 +474,120 @@ function Invoicing() {
   const brandColor = brandKit?.primary_color || '#000000'
   const brandLogo = brandKit?.logo_url || ''
 
-  const ui = {
-    bg: '#0f0f0f',
-    card: '#141414',
-    border: '#1e1e1e',
-    text: '#e8e8e8',
+  const T = {
+    pageBg: '#0a0a0f',
+    text: 'rgb(242, 242, 242)',
+    subtitle: '#666',
     muted: '#555',
+    card: '#13131a',
+    cardBorder: '1px solid #1e1e1e',
+    inner: '#1a1a24',
+    innerBorder: '1px solid #202027',
+    inputBorder: '1px solid #202027',
+    label: '#888',
     green: '#39ff14',
     yellow: '#facc15',
     red: '#f87171',
     grey: '#9ca3af',
+    darkBtnBg: '#1a1a24',
+    darkBtnBorder: '1px solid #202027',
+    darkBtnColor: '#aaa',
   }
 
-  const formTopRef = useRef(null)
-
-  const statusPillStyle = (active) => ({
-    padding: '6px 16px',
-    borderRadius: 20,
-    border: `1px solid ${active ? ui.green : '#2a2a2a'}`,
-    background: active ? '#1e2a1e' : '#1a1a1a',
-    color: active ? ui.green : '#666',
+  const lbl = {
+    color: T.label,
     fontSize: 12,
+    fontWeight: 600,
+    textTransform: 'uppercase',
+    letterSpacing: '0.06em',
+    display: 'block',
+    marginBottom: 8,
+  }
+
+  const helperMuted = {
+    color: T.label,
+    fontSize: 12,
+    marginTop: 6,
+    lineHeight: 1.45,
+    fontFamily: 'Inter, sans-serif',
+  }
+
+  const sectionTitle = {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 700,
-    cursor: 'default',
-    userSelect: 'none',
-  })
+    borderLeft: `3px solid ${T.green}`,
+    paddingLeft: 10,
+    marginBottom: 16,
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+    fontFamily: 'Inter, sans-serif',
+  }
+
+  const subSectionTitle = {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 700,
+    marginBottom: 12,
+    fontFamily: 'Inter, sans-serif',
+  }
+
+  const now = new Date()
+  const monthTitle = now.toLocaleDateString('en-AU', { month: 'long' })
+  const yearTitle = String(now.getFullYear())
+
+  const inp = {
+    background: T.inner,
+    border: T.inputBorder,
+    borderRadius: 8,
+    padding: '10px 14px',
+    color: 'rgb(242, 242, 242)',
+    fontFamily: 'Inter, sans-serif',
+    width: '100%',
+    boxSizing: 'border-box',
+    outline: 'none',
+  }
 
   const statusBadgeStyle = (variant) => {
     const v = String(variant || '').toLowerCase()
-    if (v === 'paid') return { color: ui.green, border: `${ui.green}55`, bg: `${ui.green}18` }
-    if (v === 'sent') return { color: ui.yellow, border: `${ui.yellow}55`, bg: `${ui.yellow}18` }
-    if (v === 'draft') return { color: ui.grey, border: `${ui.grey}55`, bg: `${ui.grey}18` }
-    if (v === 'overdue') return { color: ui.red, border: `${ui.red}55`, bg: `${ui.red}18` }
-    return { color: ui.text, border: ui.border, bg: '#1a1a1a' }
+    if (v === 'paid') return { color: T.green, border: `${T.green}55`, bg: `${T.green}18` }
+    if (v === 'sent') return { color: T.yellow, border: `${T.yellow}55`, bg: `${T.yellow}18` }
+    if (v === 'draft') return { color: T.muted, border: `${T.muted}55`, bg: `${T.muted}18` }
+    if (v === 'overdue') return { color: T.red, border: `${T.red}55`, bg: `${T.red}18` }
+    return { color: T.text, border: T.innerBorder, bg: '#1a1a1a' }
   }
+
+  const smallDarkBtn = (disabled) => ({
+    background: T.darkBtnBg,
+    border: T.darkBtnBorder,
+    color: T.darkBtnColor,
+    borderRadius: 8,
+    padding: '8px 10px',
+    fontSize: 12,
+    fontWeight: 600,
+    cursor: disabled ? 'not-allowed' : 'pointer',
+    opacity: disabled ? 0.55 : 1,
+    fontFamily: 'Inter, sans-serif',
+  })
 
   if (authLoading)
     return (
       <section
         style={{
-          background: ui.bg,
+          background: T.pageBg,
           minHeight: '100vh',
-          padding: 28,
-          color: ui.text,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          padding: 32,
+          color: T.text,
+          fontFamily: 'Inter, sans-serif',
+          boxSizing: 'border-box',
         }}
       >
-        <p style={{ margin: 0, color: ui.muted }}>Loading session…</p>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Invoicing</div>
+          <div style={{ fontSize: 13, color: T.subtitle, marginTop: 6 }}>Create and send professional invoices</div>
+          <p style={{ margin: '18px 0 0', color: T.muted, fontSize: 13 }}>Loading session…</p>
+        </div>
       </section>
     )
 
@@ -438,588 +595,674 @@ function Invoicing() {
     return (
       <section
         style={{
-          background: ui.bg,
+          background: T.pageBg,
           minHeight: '100vh',
-          padding: 28,
-          color: ui.text,
-          fontFamily: "'DM Sans', system-ui, sans-serif",
+          padding: 32,
+          color: T.text,
+          fontFamily: 'Inter, sans-serif',
+          boxSizing: 'border-box',
         }}
       >
-        <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#fff' }}>Invoicing</h1>
-        <p style={{ margin: '8px 0 0', color: ui.muted, fontSize: 13 }}>Sign in to manage invoices.</p>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Invoicing</div>
+          <div style={{ fontSize: 13, color: T.subtitle, marginTop: 6 }}>Create and send professional invoices</div>
+          <p style={{ margin: '18px 0 0', color: T.muted, fontSize: 13 }}>Sign in to manage invoices.</p>
+        </div>
       </section>
     )
 
   return (
     <section
       style={{
-        background: ui.bg,
+        background: T.pageBg,
         minHeight: '100vh',
-        padding: 28,
-        color: ui.text,
-        fontFamily: "'DM Sans', system-ui, sans-serif",
+        padding: 32,
+        color: T.text,
+        fontFamily: 'Inter, sans-serif',
         boxSizing: 'border-box',
       }}
     >
-      <div
-        style={{
-          display: 'flex',
-          alignItems: 'flex-end',
-          justifyContent: 'space-between',
-          gap: 16,
-          marginBottom: 18,
-        }}
-      >
-        <div>
-          <h1 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: '#fff' }}>Invoicing</h1>
-          <p style={{ margin: '8px 0 0', color: ui.muted, fontSize: 13 }}>
-            Create and send professional invoices to your clients
-          </p>
+      <div style={{ maxWidth: 900, margin: '0 auto' }}>
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#fff' }}>Invoicing</div>
+          <div style={{ fontSize: 13, color: T.subtitle, marginTop: 6 }}>Create and send professional invoices</div>
         </div>
-        <button
-          type="button"
-          onClick={() => formTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-          style={{
-            background: ui.green,
-            color: '#000',
-            border: 'none',
-            borderRadius: 8,
-            padding: '10px 14px',
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: 'pointer',
-          }}
-        >
-          + New Invoice
-        </button>
-      </div>
 
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 18 }}>
-        <span style={statusPillStyle(true)}>All</span>
-        <span style={statusPillStyle(false)}>Draft</span>
-        <span style={statusPillStyle(false)}>Sent</span>
-        <span style={statusPillStyle(false)}>Paid</span>
-        <span style={statusPillStyle(false)}>Overdue</span>
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gap: 18,
-          alignItems: 'start',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gap: 18,
-          }}
-        >
-          <div
-            ref={formTopRef}
-            style={{
-              background: ui.card,
-              border: `1px solid ${ui.border}`,
-              borderRadius: 12,
-              padding: 18,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff' }}>New Invoice</h2>
-
-            <form onSubmit={handleSubmit} style={{ marginTop: 14 }}>
-              <div
-                style={{
-                  display: 'grid',
-                  gap: 12,
-                  gridTemplateColumns: 'repeat(2, minmax(0, 1fr))',
-                }}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="invoice-client-name" style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Client Name
-                  </label>
-                  <input
-                    id="invoice-client-name"
-                    name="client_name"
-                    value={form.client_name}
-                    onChange={handleFormChange}
-                    required
-                    autoComplete="off"
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #2a2a2a',
-                      background: '#1a1a1a',
-                      color: '#e8e8e8',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="invoice-client-email" style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Client Email
-                  </label>
-                  <input
-                    id="invoice-client-email"
-                    name="client_email"
-                    type="email"
-                    value={form.client_email}
-                    onChange={handleFormChange}
-                    autoComplete="off"
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #2a2a2a',
-                      background: '#1a1a1a',
-                      color: '#e8e8e8',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </div>
+        {(errorMessage || successMessage) && (
+          <div style={{ marginBottom: 16 }}>
+            {errorMessage && (
+              <div style={{ color: T.red, fontWeight: 700, fontSize: 13 }} role="alert">
+                {errorMessage}
               </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 12, marginTop: 12 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="invoice-due-date" style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Due Date
-                  </label>
-                  <input
-                    id="invoice-due-date"
-                    name="due_date"
-                    type="date"
-                    value={form.due_date}
-                    onChange={handleFormChange}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #2a2a2a',
-                      background: '#1a1a1a',
-                      color: '#e8e8e8',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="invoice-status" style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                    Status
-                  </label>
-                  <select
-                    id="invoice-status"
-                    name="status"
-                    value={form.status}
-                    onChange={handleFormChange}
-                    style={{
-                      padding: '10px 12px',
-                      borderRadius: 8,
-                      border: '1px solid #2a2a2a',
-                      background: '#1a1a1a',
-                      color: '#e8e8e8',
-                      outline: 'none',
-                      fontFamily: 'inherit',
-                    }}
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {s.charAt(0).toUpperCase() + s.slice(1)}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ marginTop: 16 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Line Items</div>
-                  <button
-                    type="button"
-                    onClick={addLineItem}
-                    style={{
-                      borderRadius: 8,
-                      border: '1px solid #2a2a2a',
-                      background: '#1a1a1a',
-                      color: '#666',
-                      padding: '6px 16px',
-                      fontSize: 12,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                    }}
-                  >
-                    + Add
-                  </button>
-                </div>
-
-                <div style={{ display: 'grid', gap: 10, marginTop: 10 }}>
-                  {lineItems.map((line, index) => (
-                    <div
-                      key={line.id}
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: '1fr 90px 120px auto',
-                        gap: 10,
-                        alignItems: 'end',
-                        padding: 12,
-                        borderRadius: 12,
-                        border: '1px solid #2a2a2a',
-                        background: '#1a1a1a',
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor={`inv-desc-${line.id}`} style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Description
-                        </label>
-                        <input
-                          id={`inv-desc-${line.id}`}
-                          value={line.description}
-                          onChange={(e) => updateLineItem(line.id, 'description', e.target.value)}
-                          placeholder="e.g. Portrait session"
-                          autoComplete="off"
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            border: '1px solid #2a2a2a',
-                            background: '#1a1a1a',
-                            color: '#e8e8e8',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                          }}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor={`inv-qty-${line.id}`} style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Qty
-                        </label>
-                        <input
-                          id={`inv-qty-${line.id}`}
-                          type="number"
-                          min="1"
-                          step="1"
-                          value={line.quantity}
-                          onChange={(e) => updateLineItem(line.id, 'quantity', e.target.value)}
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            border: '1px solid #2a2a2a',
-                            background: '#1a1a1a',
-                            color: '#e8e8e8',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                          }}
-                        />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        <label htmlFor={`inv-price-${line.id}`} style={{ fontSize: 11, color: '#888', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                          Rate
-                        </label>
-                        <input
-                          id={`inv-price-${line.id}`}
-                          type="number"
-                          min="0"
-                          step="0.01"
-                          value={line.unit_price}
-                          onChange={(e) => updateLineItem(line.id, 'unit_price', e.target.value)}
-                          placeholder="0.00"
-                          style={{
-                            padding: '10px 12px',
-                            borderRadius: 8,
-                            border: '1px solid #2a2a2a',
-                            background: '#1a1a1a',
-                            color: '#e8e8e8',
-                            outline: 'none',
-                            fontFamily: 'inherit',
-                          }}
-                        />
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => removeLineItem(line.id)}
-                        disabled={lineItems.length === 1}
-                        aria-label={`Remove line ${index + 1}`}
-                        style={{
-                          borderRadius: 8,
-                          border: '1px solid #2a2a2a',
-                          background: 'transparent',
-                          color: ui.red,
-                          padding: '10px 12px',
-                          fontSize: 12,
-                          fontWeight: 700,
-                          cursor: lineItems.length === 1 ? 'not-allowed' : 'pointer',
-                          opacity: lineItems.length === 1 ? 0.5 : 1,
-                        }}
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
-                </div>
-
-                <div
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    marginTop: 12,
-                    paddingTop: 12,
-                    borderTop: `1px solid ${ui.border}`,
-                  }}
-                >
-                  <span style={{ color: ui.muted, fontWeight: 800 }}>Total</span>
-                  <span style={{ fontSize: 18, fontWeight: 800, color: '#fff' }}>
-                    {formatMoney(draftTotal)}
-                  </span>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={submitting || loading}
-                style={{
-                  marginTop: 14,
-                  width: '100%',
-                  padding: '12px 14px',
-                  borderRadius: 12,
-                  border: 'none',
-                  background: ui.green,
-                  color: '#000',
-                  fontSize: 14,
-                  fontWeight: 700,
-                  cursor: submitting || loading ? 'not-allowed' : 'pointer',
-                  opacity: submitting || loading ? 0.6 : 1,
-                }}
-              >
-                {submitting ? 'Creating…' : 'Create invoice'}
-              </button>
-            </form>
-          </div>
-
-          <div>
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: '#fff' }}>Invoices</h2>
-            {loading ? (
-              <p style={{ margin: '10px 0 0', color: ui.muted }}>Loading invoices…</p>
-            ) : invoices.length === 0 ? (
-              <div
-                style={{
-                  marginTop: 12,
-                  border: `1px dashed ${ui.border}`,
-                  borderRadius: 12,
-                  padding: 22,
-                  background: ui.card,
-                  textAlign: 'center',
-                  color: ui.muted,
-                }}
-              >
-                <div style={{ fontSize: 28, marginBottom: 10 }}>🧾</div>
-                <div style={{ fontWeight: 900, color: ui.text }}>No invoices yet</div>
-                <div style={{ marginTop: 6, fontSize: 13 }}>
-                  Create your first invoice using the form.
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: 'grid', gap: 12, marginTop: 12 }}>
-                {invoices.map((row) => {
-                  const { variant, label } = getStatusInfo(row)
-                  const total = resolveInvoiceTotal(row)
-                  const due = resolveDueDate(row)
-                  const createdAt = row?.created_at ? new Date(row.created_at) : null
-                  const isOverdue =
-                    variant !== 'paid' && due instanceof Date && due.getTime() < Date.now()
-                  const badge = statusBadgeStyle(isOverdue ? 'overdue' : variant)
-                  const rowSendFeedback =
-                    sendInvoiceFeedback?.invoiceId === row.id ? sendInvoiceFeedback : null
-
-                  return (
-                    <div
-                      key={row.id}
-                      style={{
-                        background: ui.card,
-                        border: `1px solid ${ui.border}`,
-                        borderRadius: 12,
-                        padding: 16,
-                        display: 'grid',
-                        gap: 12,
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'flex-start',
-                          gap: 12,
-                        }}
-                      >
-                        <div style={{ minWidth: 0 }}>
-                          <div style={{ fontSize: 16, fontWeight: 900 }}>
-                            <span style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>
-                              {resolveClientName(row)}
-                            </span>
-                          </div>
-                          <div style={{ marginTop: 4, color: ui.muted, fontSize: 12 }}>
-                            Invoice #{String(row.id).slice(0, 8)}
-                          </div>
-                        </div>
-
-                        <span
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 8,
-                            padding: '6px 10px',
-                            borderRadius: 999,
-                            border: `1px solid ${badge.border}`,
-                            background: badge.bg,
-                            color: badge.color,
-                            fontSize: 11,
-                            fontWeight: 900,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          {isOverdue ? 'overdue' : label}
-                        </span>
-                      </div>
-
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                        <div>
-                          <div style={{ color: ui.muted, fontSize: 12, fontWeight: 800 }}>Amount</div>
-                          <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>
-                            {formatMoney(total)}
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ color: ui.muted, fontSize: 12, fontWeight: 800 }}>Created</div>
-                          <div style={{ fontSize: 13, fontWeight: 900 }}>
-                            {createdAt ? formatDateTime(createdAt) : '—'}
-                          </div>
-                        </div>
-                        <div>
-                          <div style={{ color: ui.muted, fontSize: 12, fontWeight: 800 }}>Due</div>
-                          <div style={{ fontSize: 13, fontWeight: 900 }}>
-                            {formatDueDate(due)}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-                        <button
-                          type="button"
-                          onClick={() => setPreviewInvoice(row)}
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 10,
-                            border: `1px solid ${ui.border}`,
-                            background: '#101010',
-                            color: ui.text,
-                            fontSize: 12,
-                            fontWeight: 900,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          View
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={sendingId === row.id || deletingId === row.id}
-                          onClick={() => handleSendInvoice(row)}
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 10,
-                            border: `1px solid ${ui.border}`,
-                            background: '#101010',
-                            color: ui.text,
-                            fontSize: 12,
-                            fontWeight: 900,
-                            cursor:
-                              sendingId === row.id || deletingId === row.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                            opacity: sendingId === row.id || deletingId === row.id ? 0.6 : 1,
-                          }}
-                        >
-                          {sendingId === row.id ? 'Sending...' : 'Send'}
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled
-                          title="Mark Paid UI only (no existing mutation in this file)."
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 10,
-                            border: `1px solid ${ui.border}`,
-                            background: 'transparent',
-                            color: ui.muted,
-                            fontSize: 12,
-                            fontWeight: 900,
-                            cursor: 'not-allowed',
-                            opacity: 0.6,
-                          }}
-                        >
-                          Mark Paid
-                        </button>
-
-                        <button
-                          type="button"
-                          disabled={deletingId === row.id || sendingId === row.id}
-                          onClick={() => handleDelete(row.id)}
-                          style={{
-                            padding: '9px 10px',
-                            borderRadius: 10,
-                            border: `1px solid ${ui.border}`,
-                            background: 'transparent',
-                            color: ui.red,
-                            fontSize: 12,
-                            fontWeight: 900,
-                            cursor:
-                              deletingId === row.id || sendingId === row.id
-                                ? 'not-allowed'
-                                : 'pointer',
-                            opacity: deletingId === row.id || sendingId === row.id ? 0.6 : 1,
-                          }}
-                        >
-                          {deletingId === row.id ? 'Removing…' : 'Delete'}
-                        </button>
-
-                        {rowSendFeedback && (
-                          <span
-                            style={{
-                              marginLeft: 6,
-                              fontSize: 12,
-                              fontWeight: 900,
-                              color: rowSendFeedback.kind === 'success' ? ui.green : ui.red,
-                            }}
-                            role={rowSendFeedback.kind === 'error' ? 'alert' : 'status'}
-                          >
-                            {rowSendFeedback.message}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+            )}
+            {successMessage && !errorMessage && (
+              <div style={{ color: T.green, fontWeight: 700, fontSize: 13 }} role="status">
+                {successMessage}
               </div>
             )}
           </div>
+        )}
+
+        {/* Section 1 — Revenue Summary */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={sectionTitle}>
+            <span aria-hidden style={{ fontSize: 18 }}>
+              📈
+            </span>
+            Revenue Summary
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16 }}>
+            <div
+              style={{
+                background: T.card,
+                border: T.cardBorder,
+                borderRadius: 12,
+                padding: 20,
+                boxSizing: 'border-box',
+              }}
+            >
+              <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
+                This Month ({monthTitle})
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, fontWeight: 600, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>Invoiced</div>
+              <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, marginBottom: 14, lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>
+                {formatMoney(revenueSummary.monthInvoiced)}
+              </div>
+              <div style={{ color: T.green, fontSize: 12, fontWeight: 600, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>Paid</div>
+              <div style={{ color: T.green, fontSize: 26, fontWeight: 800, lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>
+                {formatMoney(revenueSummary.monthPaid)}
+              </div>
+            </div>
+            <div
+              style={{
+                background: T.card,
+                border: T.cardBorder,
+                borderRadius: 12,
+                padding: 20,
+                boxSizing: 'border-box',
+              }}
+            >
+              <div style={{ color: '#fff', fontSize: 14, fontWeight: 700, marginBottom: 16, fontFamily: 'Inter, sans-serif' }}>
+                Year to Date ({yearTitle})
+              </div>
+              <div style={{ color: '#fff', fontSize: 12, fontWeight: 600, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>Invoiced</div>
+              <div style={{ color: '#fff', fontSize: 26, fontWeight: 800, marginBottom: 14, lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>
+                {formatMoney(revenueSummary.ytdInvoiced)}
+              </div>
+              <div style={{ color: T.green, fontSize: 12, fontWeight: 600, marginBottom: 6, fontFamily: 'Inter, sans-serif' }}>Paid</div>
+              <div style={{ color: T.green, fontSize: 26, fontWeight: 800, lineHeight: 1.2, fontFamily: 'Inter, sans-serif' }}>
+                {formatMoney(revenueSummary.ytdPaid)}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Section 2 — Banking Details */}
+        <div
+          style={{
+            background: T.card,
+            border: T.cardBorder,
+            borderRadius: 12,
+            padding: 24,
+            marginBottom: 24,
+          }}
+        >
+          <div style={sectionTitle}>
+            <span aria-hidden style={{ fontSize: 18 }}>
+              $
+            </span>
+            Banking Details
+          </div>
+          <div
+            style={{
+              background: T.inner,
+              border: T.innerBorder,
+              borderRadius: 8,
+              padding: '12px 14px',
+              marginBottom: 18,
+              color: T.label,
+              fontSize: 13,
+              lineHeight: 1.5,
+              fontFamily: 'Inter, sans-serif',
+            }}
+          >
+            These details will appear on all invoices you send. Clients will see exactly where to transfer payment.
+          </div>
+          <div style={{ marginBottom: 8 }}>
+            <span style={{ ...lbl, marginBottom: 10 }}>Country</span>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              {['au', 'international'].map((r) => {
+                const active = banking.region === r
+                return (
+                  <button
+                    key={r}
+                    type="button"
+                    onClick={() => setBanking((b) => ({ ...b, region: r }))}
+                    style={{
+                      padding: '8px 18px',
+                      borderRadius: 999,
+                      border: active ? `1px solid ${T.green}` : `1px solid ${T.innerBorder}`,
+                      background: active ? '#1e2a1e' : T.inner,
+                      color: active ? T.green : T.muted,
+                      fontSize: 13,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      fontFamily: 'Inter, sans-serif',
+                    }}
+                  >
+                    {r === 'au' ? 'Australia' : 'International'}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+          {banking.region === 'au' ? (
+            <div style={{ display: 'grid', gap: 14 }}>
+              <div>
+                <label htmlFor="bank-holder" style={lbl}>
+                  Account Holder Name
+                </label>
+                <input
+                  id="bank-holder"
+                  value={banking.accountHolder}
+                  onChange={(e) => setBanking((b) => ({ ...b, accountHolder: e.target.value }))}
+                  style={inp}
+                />
+              </div>
+              <div>
+                <label htmlFor="bank-bsb" style={lbl}>
+                  BSB Code
+                </label>
+                <input
+                  id="bank-bsb"
+                  value={banking.bsb}
+                  onChange={(e) => setBanking((b) => ({ ...b, bsb: formatBsbInput(e.target.value) }))}
+                  placeholder="XXX-XXX"
+                  style={inp}
+                />
+                <div style={helperMuted}>Format: XXX-XXX</div>
+              </div>
+              <div>
+                <label htmlFor="bank-acct" style={lbl}>
+                  Account Number
+                </label>
+                <input
+                  id="bank-acct"
+                  value={banking.accountNumber}
+                  onChange={(e) => setBanking((b) => ({ ...b, accountNumber: e.target.value }))}
+                  style={inp}
+                />
+                <div style={helperMuted}>Typically 6–10 digits</div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <label htmlFor="bank-intl" style={lbl}>
+                Bank details
+              </label>
+              <textarea
+                id="bank-intl"
+                value={banking.international}
+                onChange={(e) => setBanking((b) => ({ ...b, international: e.target.value }))}
+                rows={4}
+                style={{ ...inp, minHeight: 100, resize: 'vertical' }}
+              />
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={saveBankingDetails}
+            style={{
+              marginTop: 18,
+              width: '100%',
+              background: T.green,
+              color: '#000',
+              fontWeight: 700,
+              border: 'none',
+              borderRadius: 8,
+              padding: '12px 20px',
+              cursor: 'pointer',
+              fontFamily: 'Inter, sans-serif',
+              fontSize: 14,
+            }}
+          >
+            Save Banking Details
+          </button>
+        </div>
+
+        {/* Section 3 — Create New Invoice */}
+        <div
+          style={{
+            background: T.card,
+            border: T.cardBorder,
+            borderRadius: 12,
+            padding: 24,
+            marginBottom: 24,
+          }}
+        >
+          <div style={{ ...sectionTitle, marginBottom: 20 }}>Create New Invoice</div>
+
+          <form onSubmit={handleSubmit}>
+            <div style={subSectionTitle}>Client Information</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 22 }}>
+              <div>
+                <label htmlFor="inv-client-name" style={lbl}>
+                  Client Name
+                </label>
+                <input
+                  id="inv-client-name"
+                  name="client_name"
+                  value={form.client_name}
+                  onChange={handleFormChange}
+                  required
+                  autoComplete="off"
+                  style={inp}
+                />
+              </div>
+              <div>
+                <label htmlFor="inv-client-email" style={lbl}>
+                  Client Email
+                </label>
+                <input
+                  id="inv-client-email"
+                  name="client_email"
+                  type="email"
+                  value={form.client_email}
+                  onChange={handleFormChange}
+                  autoComplete="off"
+                  style={inp}
+                />
+              </div>
+            </div>
+
+            <div style={subSectionTitle}>Project Details</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 16, marginBottom: 22 }}>
+              <div>
+                <label htmlFor="inv-title" style={lbl}>
+                  Invoice Title
+                </label>
+                <input
+                  id="inv-title"
+                  name="invoice_title"
+                  value={form.invoice_title}
+                  onChange={handleFormChange}
+                  autoComplete="off"
+                  style={inp}
+                />
+              </div>
+              <div>
+                <label htmlFor="inv-due" style={lbl}>
+                  Due Date
+                </label>
+                <input id="inv-due" name="due_date" type="date" value={form.due_date} onChange={handleFormChange} style={inp} />
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: 12,
+                marginBottom: 12,
+                flexWrap: 'wrap',
+              }}
+            >
+              <div style={{ ...subSectionTitle, marginBottom: 0 }}>Line Items</div>
+              <button
+                type="button"
+                onClick={addLineItem}
+                style={{
+                  background: '#1e2a1e',
+                  border: `1px solid ${T.green}`,
+                  color: T.green,
+                  borderRadius: 8,
+                  padding: '6px 14px',
+                  fontWeight: 700,
+                  fontSize: 12,
+                  cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif',
+                }}
+              >
+                + Add Item
+              </button>
+            </div>
+
+            <div style={{ marginBottom: 8 }}>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(0, 1fr) 80px 120px 120px minmax(72px, auto)',
+                  gap: 10,
+                  alignItems: 'center',
+                  padding: '0 0 10px',
+                  borderBottom: '1px solid #1e1e1e',
+                }}
+              >
+                <span style={{ fontSize: 11, color: T.label, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', fontFamily: 'Inter, sans-serif' }}>
+                  Description
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: T.label,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.07em',
+                    textAlign: 'center',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Qty
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: T.label,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.07em',
+                    textAlign: 'right',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Rate
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: T.label,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.07em',
+                    textAlign: 'right',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Total
+                </span>
+                <span
+                  style={{
+                    fontSize: 11,
+                    color: T.label,
+                    fontWeight: 700,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.07em',
+                    textAlign: 'center',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  Remove
+                </span>
+              </div>
+
+              {lineItems.map((line, index) => {
+                const q = Number(line.quantity)
+                const r = Number(line.unit_price)
+                const rowTot = Number.isFinite(q) && Number.isFinite(r) ? q * r : 0
+                return (
+                  <div
+                    key={line.id}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      background: T.inner,
+                      border: T.innerBorder,
+                      borderRadius: 8,
+                      padding: 10,
+                      marginBottom: 10,
+                    }}
+                  >
+                    <input
+                      value={line.description}
+                      onChange={(e) => updateLineItem(line.id, 'description', e.target.value)}
+                      placeholder="Description"
+                      style={{ ...inp, flex: 1, minWidth: 0 }}
+                    />
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={line.quantity}
+                      onChange={(e) => updateLineItem(line.id, 'quantity', e.target.value)}
+                      style={{ ...inp, width: 80, textAlign: 'center' }}
+                    />
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={line.unit_price}
+                      onChange={(e) => updateLineItem(line.id, 'unit_price', e.target.value)}
+                      placeholder="0"
+                      style={{ ...inp, width: 120, textAlign: 'center' }}
+                    />
+                    <div style={{ width: 120, textAlign: 'right', color: 'rgb(242, 242, 242)', fontWeight: 600, fontSize: 13 }}>
+                      {formatMoney(rowTot)}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeLineItem(line.id)}
+                      disabled={lineItems.length === 1}
+                      aria-label={`Remove line ${index + 1}`}
+                      style={{
+                        ...smallDarkBtn(lineItems.length === 1),
+                        width: 96,
+                      }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+
+            <div style={{ borderTop: `1px solid ${T.innerBorder}`, paddingTop: 16, marginTop: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10 }}>
+                <span style={{ color: T.muted, fontSize: 14 }}>Subtotal</span>
+                <span style={{ color: '#fff', fontWeight: 700 }}>{formatMoney(draftSubtotal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, gap: 12, flexWrap: 'wrap' }}>
+                <span style={{ color: T.muted, fontSize: 14 }}>Tax (GST) %</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: '1 1 200px', justifyContent: 'flex-end' }}>
+                  <input
+                    name="tax_percent"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={form.tax_percent}
+                    onChange={handleFormChange}
+                    style={{ ...inp, maxWidth: 120 }}
+                  />
+                  <span style={{ color: 'rgb(242, 242, 242)', fontWeight: 700 }}>{formatMoney(draftTax)}</span>
+                </div>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginTop: 8 }}>
+                <span style={{ color: '#fff', fontSize: 16, fontWeight: 700 }}>Total</span>
+                <span style={{ color: T.green, fontSize: 26, fontWeight: 800 }}>{formatMoney(draftTotalWithTax)}</span>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={submitting || loading}
+              style={{
+                marginTop: 20,
+                width: '100%',
+                background: T.green,
+                color: '#000',
+                fontWeight: 700,
+                border: 'none',
+                borderRadius: 8,
+                padding: 14,
+                fontSize: 15,
+                cursor: submitting || loading ? 'not-allowed' : 'pointer',
+                opacity: submitting || loading ? 0.65 : 1,
+                fontFamily: 'Inter, sans-serif',
+              }}
+            >
+              {submitting ? 'Creating…' : 'Create Invoice'}
+            </button>
+          </form>
+        </div>
+
+        {/* Section 4 — Invoices list */}
+        <div
+          style={{
+            background: T.card,
+            border: T.cardBorder,
+            borderRadius: 12,
+            padding: 24,
+            marginBottom: 24,
+          }}
+        >
+          <div style={{ ...sectionTitle, marginBottom: 16 }}>
+            <span aria-hidden style={{ fontSize: 18 }}>
+              🧾
+            </span>
+            Invoices
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 18 }}>
+            {['all', 'draft', 'sent', 'paid', 'overdue'].map((k) => {
+              const active = invoiceFilter === k
+              const lab = k === 'all' ? 'All' : k.charAt(0).toUpperCase() + k.slice(1)
+              return (
+                <button
+                  key={k}
+                  type="button"
+                  onClick={() => setInvoiceFilter(k)}
+                  style={{
+                    padding: '8px 16px',
+                    borderRadius: 999,
+                    border: active ? `1px solid ${T.green}` : `1px solid ${T.innerBorder}`,
+                    background: active ? '#1e2a1e' : T.inner,
+                    color: active ? T.green : T.label,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'Inter, sans-serif',
+                  }}
+                >
+                  {lab}
+                </button>
+              )
+            })}
+          </div>
+
+          {loading ? (
+            <div style={{ color: T.muted, fontSize: 13 }}>Loading invoices…</div>
+          ) : invoices.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 40 }}>
+              <div style={{ fontSize: 32, marginBottom: 14, lineHeight: 1 }} aria-hidden="true">
+                🧾
+              </div>
+              <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>No invoices yet.</div>
+            </div>
+          ) : filteredInvoices.length === 0 ? (
+            <div style={{ textAlign: 'center', color: T.muted, fontSize: 13, padding: 24 }}>
+              No invoices match this filter.
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {filteredInvoices.map((row) => {
+                const { variant, label } = getStatusInfo(row)
+                const total = resolveInvoiceTotal(row)
+                const due = resolveDueDate(row)
+                const createdAt = row?.created_at ? new Date(row.created_at) : null
+                const isOverdue = variant !== 'paid' && due instanceof Date && due.getTime() < Date.now()
+                const badge = statusBadgeStyle(isOverdue ? 'overdue' : variant)
+                const rowSendFeedback = sendInvoiceFeedback?.invoiceId === row.id ? sendInvoiceFeedback : null
+                const busy = sendingId === row.id || deletingId === row.id || paidUpdatingId === row.id
+
+                return (
+                  <div
+                    key={row.id}
+                    style={{
+                      background: T.inner,
+                      border: T.innerBorder,
+                      borderRadius: 10,
+                      padding: 16,
+                      display: 'grid',
+                      gap: 12,
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                      <div style={{ minWidth: 0 }}>
+                        <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>{resolveClientName(row)}</div>
+                      </div>
+                      <span
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          padding: '6px 10px',
+                          borderRadius: 999,
+                          border: `1px solid ${badge.border}`,
+                          background: badge.bg,
+                          color: badge.color,
+                          fontSize: 11,
+                          fontWeight: 800,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.06em',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {isOverdue ? 'overdue' : label}
+                      </span>
+                    </div>
+                    <div style={{ color: '#fff', fontSize: 22, fontWeight: 800 }}>{formatMoney(total)}</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16, color: T.muted, fontSize: 12 }}>
+                      <span>Created: {createdAt ? formatDateTime(createdAt) : '—'}</span>
+                      <span>Due: {formatDueDate(due)}</span>
+                    </div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                      <button type="button" onClick={() => setPreviewInvoice(row)} style={smallDarkBtn(false)}>
+                        View
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleSendInvoice(row)}
+                        style={smallDarkBtn(busy)}
+                      >
+                        {sendingId === row.id ? 'Sending…' : 'Send'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy || variant === 'paid'}
+                        onClick={() => handleMarkPaid(row.id)}
+                        style={smallDarkBtn(busy || variant === 'paid')}
+                      >
+                        {paidUpdatingId === row.id ? '…' : 'Mark Paid'}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => handleDelete(row.id)}
+                        style={smallDarkBtn(busy)}
+                      >
+                        {deletingId === row.id ? '…' : 'Delete'}
+                      </button>
+                      {rowSendFeedback && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            fontWeight: 700,
+                            color: rowSendFeedback.kind === 'success' ? T.green : T.red,
+                          }}
+                          role={rowSendFeedback.kind === 'error' ? 'alert' : 'status'}
+                        >
+                          {rowSendFeedback.message}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       </div>
 
-      {(errorMessage || successMessage) && (
-        <div style={{ marginTop: 14 }}>
-          {errorMessage && (
-            <div style={{ color: ui.red, fontWeight: 900, fontSize: 13 }} role="alert">
-              {errorMessage}
-            </div>
-          )}
-          {successMessage && !errorMessage && (
-            <div style={{ color: ui.green, fontWeight: 900, fontSize: 13 }} role="status">
-              {successMessage}
-            </div>
-          )}
-        </div>
-      )}
 
       {previewInvoice && (
         <div
