@@ -1,0 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@100..900&display=swap');
+
+:root {
+  /* Backgrounds */
+  --bg-base:     #080810;
+  --bg-elevated: #0d0d1a;
+  --bg-overlay:  #111120;
+  --bg-subtle:   #1a1a2e;
+  --bg-sidebar:  #0a0a18;
+
+  /* Borders */
+  --border-default: #1e1e32;
+  --border-subtle:  #161625;
+  --border-strong:  #2a2a45;
+
+  /* Text */
+  --text-primary:   #F1F5F9;
+  --text-secondary: #94A3B8;
+  --text-muted:     #475569;
+
+  /* Brand — Primary */
+  --green:        #1DB954;
+  --green-dim:    rgba(29, 185, 84, 0.15);
+  --green-bright: #1ED760;
+  --green-muted:  rgba(29, 185, 84, 0.08);
+
+  /* Brand — Accent (silver/white) */
+  --silver:        #C0C8D8;
+  --silver-dim:    rgba(192, 200, 216, 0.12);
+  --silver-bright: #E8ECF2;
+
+  /* Remove pink — replaced by green as primary action colour */
+  --pink:     #1DB954;
+  --pink-dim: rgba(29, 185, 84, 0.15);
+
+  /* Semantic */
+  --success: #4ADE80;
+  --warning: #F59E0B;
+  --error:   #EF4444;
+  --info:    #60A5FA;
+
+  /* Font families */
+  --font-display: 'Instrument Serif', serif;
+  --font-ui:      'Geist', system-ui, sans-serif;
+
+  /* Font sizes */
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-lg:   17px;
+  --text-xl:   20px;
+  --text-2xl:  26px;
+  --text-3xl:  34px;
+  --text-4xl:  48px;
+  --text-5xl:  64px;
+
+  /* Radius */
+  --radius-sm:   6px;
+  --radius-md:   8px;
+  --radius-lg:   12px;
+  --radius-xl:   16px;
+  --radius-2xl:  20px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.4);
+  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.6);
+  --shadow-green: 0 0 24px rgba(29, 185, 84, 0.2);
+
+  /* Transitions */
+  --transition-fast: 100ms ease;
+  --transition-base: 150ms ease;
+  --transition-slow: 200ms ease;
+
+  /* Spacing */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+}

@@ -1,752 +1,268 @@
-﻿import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-
-const ROLES = ['Photographer', 'Videographer', 'Editor', 'Assistant', 'Second Shooter', 'Studio Manager', 'Social Media', 'Other']
-
-const MODAL_ROLE_OPTIONS = ['Member', 'Admin', ...ROLES.filter((r) => r !== 'Member' && r !== 'Admin')]
-
-const PAGE = {
-  bg: '#0a0a0f',
-  text: 'rgb(242, 242, 242)',
-  card: '#13131a',
-  border: '#1e1e1e',
-  inner: '#1a1a24',
-  innerBorder: '#202027',
-  muted: '#888',
-  dim: '#555',
-  green: '#39ff14',
-  red: '#f87171',
-  ownerTint: '#1e2a1e',
-  yellow: '#facc15',
-}
-
-const font = { fontFamily: 'Inter, sans-serif' }
-
-const MAX_TEAM = 4
-
-function initials(name) {
-  const parts = String(name || '')
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean)
-  if (parts.length >= 2) return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
-  if (parts.length === 1 && parts[0].length >= 2) return parts[0].slice(0, 2).toUpperCase()
-  return (parts[0]?.[0] || '?').toUpperCase()
-}
-
-function isOwnerRole(role) {
-  const r = String(role || '').toLowerCase()
-  return r === 'owner'
-}
-
-function isAdminLikeRole(role) {
-  const r = String(role || '').toLowerCase()
-  return r === 'admin' || r === 'owner'
-}
-
-function buildInviteUrl(inviteToken) {
-  return `${window.location.origin}/team/accept/${inviteToken}`
-}
+import { useAuth } from '../../context/AuthContext'
+import { useSubscription } from '../../context/SubscriptionContext'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
+import Badge from '../../components/ui/Badge'
+import Modal from '../../components/ui/Modal'
 
 export default function TeamPage() {
-  const [user, setUser] = useState(null)
+  const { user, profile } = useAuth()
+  const { tier } = useSubscription()
   const [members, setMembers] = useState([])
+  const [invitations, setInvitations] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing] = useState(null)
-  const [inviting, setInviting] = useState({})
-  const [form, setForm] = useState({ name: '', email: '', role: 'Member', status: 'active' })
+  const [showInvite, setShowInvite] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [email, setEmail] = useState('')
+  const isElite = tier === 'elite'
+  const maxMembers = 4
 
-  useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-  }, [])
+  useEffect(() => { loadTeam() }, [user])
 
-  async function fetchMembers() {
-    setLoading(true)
-    const { data } = await supabase.from('team_members').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
-    setMembers(data || [])
+  async function loadTeam() {
+    if (!user) return
+    const [mem, inv] = await Promise.all([
+      supabase.from('team_members').select('*').eq('owner_id', user.id),
+      supabase.from('team_invitations').select('*').eq('owner_id', user.id).eq('status', 'pending'),
+    ])
+    setMembers(mem.data ?? [])
+    setInvitations(inv.data ?? [])
     setLoading(false)
   }
 
-  useEffect(() => {
-    if (!user) return
-    fetchMembers()
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- re-fetch when user changes; fetchMembers closes over latest user
-  }, [user])
-
-  const openNew = () => {
-    setEditing(null)
-    setForm({ name: '', email: '', role: 'Member', status: 'active' })
-    setShowModal(true)
+  async function sendInvite() {
+    if (!email.trim()) return
+    setSaving(true)
+    await supabase.functions.invoke('invite-team-member', {
+      body: { email, ownerId: user.id }
+    })
+    await loadTeam()
+    setShowInvite(false)
+    setEmail('')
+    setSaving(false)
   }
 
-  const openEdit = (m) => {
-    setEditing(m)
-    setForm({ name: m.name || '', email: m.email || '', role: m.role || 'Member', status: m.status || 'active' })
-    setShowModal(true)
+  async function cancelInvitation(id) {
+    await supabase.from('team_invitations').update({ status: 'cancelled' }).eq('id', id)
+    await loadTeam()
   }
 
-  const saveMember = async () => {
-    if (!form.name.trim()) return
-    const payload = { ...form, creative_id: user.id }
-    if (editing) {
-      const { data } = await supabase.from('team_members').update(payload).eq('id', editing.id).select().single()
-      setMembers((prev) => prev.map((m) => (m.id === editing.id ? data : m)))
-    } else {
-      const { data } = await supabase.from('team_members').insert(payload).select().single()
-      setMembers((prev) => [data, ...prev])
-    }
-    setShowModal(false)
-  }
-
-  const deleteMember = async (id) => {
+  async function removeMember(id) {
     await supabase.from('team_members').delete().eq('id', id)
-    setMembers((prev) => prev.filter((m) => m.id !== id))
+    await loadTeam()
   }
 
-  const toggleStatus = async (m) => {
-    const newStatus = m.status === 'active' ? 'inactive' : 'active'
-    await supabase.from('team_members').update({ status: newStatus }).eq('id', m.id)
-    setMembers((prev) => prev.map((mem) => (mem.id === m.id ? { ...mem, status: newStatus } : mem)))
+  const totalSlots = maxMembers
+  const usedSlots = members.length + invitations.length
+  const availableSlots = totalSlots - usedSlots
+
+  const styles = {
+    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
+    upgradeBox: {
+      padding: '32px',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 'var(--radius-xl)',
+      textAlign: 'center',
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      gap: '16px',
+    },
+    upgradeTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    upgradeText: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', maxWidth: '400px', lineHeight: 1.7 },
+    slotsBar: {
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 'var(--radius-xl)',
+      padding: '24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '24px',
+    },
+    slotsInfo: { display: 'flex', flexDirection: 'column', gap: '4px' },
+    slotsTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    slotsSubtitle: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    slotDots: { display: 'flex', gap: '8px' },
+    slotDot: (filled) => ({
+      width: '32px',
+      height: '32px',
+      borderRadius: 'var(--radius-full)',
+      background: filled ? 'var(--green-dim)' : 'var(--bg-subtle)',
+      border: `1px solid ${filled ? 'rgba(29,185,84,0.3)' : 'var(--border-default)'}`,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '14px',
+    }),
+    section: { display: 'flex', flexDirection: 'column', gap: '16px' },
+    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    memberCard: {
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 'var(--radius-xl)',
+      padding: '20px 24px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: '16px',
+    },
+    memberLeft: { display: 'flex', alignItems: 'center', gap: '14px' },
+    avatar: {
+      width: '40px',
+      height: '40px',
+      borderRadius: 'var(--radius-full)',
+      background: 'var(--green-dim)',
+      border: '1px solid rgba(29,185,84,0.3)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '14px',
+      color: 'var(--green)',
+      fontWeight: 600,
+      fontFamily: 'var(--font-ui)',
+      flexShrink: 0,
+    },
+    memberName: { fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    memberEmail: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '2px' },
+    emptyState: {
+      padding: '32px 24px',
+      textAlign: 'center',
+      color: 'var(--text-muted)',
+      fontSize: '14px',
+      fontFamily: 'var(--font-ui)',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 'var(--radius-xl)',
+    },
+    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' },
   }
 
-  const sendInvite = async (m) => {
-    if (!m.email) return alert('This team member has no email address. Edit them to add one first.')
-    setInviting((p) => ({ ...p, [m.id]: true }))
-    try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-      const res = await fetch('https://lqafxisymvrazipaozfk.supabase.co/functions/v1/invite-team-member', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${session.access_token}`,
-        },
-        body: JSON.stringify({
-          name: m.name,
-          email: m.email,
-          role: m.role,
-          creative_id: user.id,
-          team_member_id: m.id,
-        }),
-      })
-      const result = await res.json()
-      if (result.success) {
-        const inviteToken = result.inviteToken || result.invite_token || null
-        setMembers((prev) =>
-          prev.map((mem) =>
-            mem.id === m.id
-              ? { ...mem, invite_status: 'sent', invite_sent_at: new Date().toISOString(), invite_token: inviteToken ?? mem.invite_token }
-              : mem,
-          ),
-        )
-      } else {
-        alert('Invite failed: ' + (result.error || 'Unknown error'))
-      }
-    } catch (err) {
-      alert('Invite failed: ' + err.message)
-    }
-    setInviting((p) => ({ ...p, [m.id]: false }))
-  }
-
-  const pendingInvites = members.filter((m) => m.invite_status === 'sent')
-  const rosterMembers = members.filter((m) => m.invite_status !== 'sent')
-  const activeRosterCount = rosterMembers.filter((m) => m.status === 'active').length
-
-  const labelStyle = {
-    display: 'block',
-    fontSize: 12,
-    color: PAGE.muted,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    fontWeight: 600,
-    marginBottom: 8,
-  }
-
-  const inputStyle = {
-    width: '100%',
-    boxSizing: 'border-box',
-    background: PAGE.inner,
-    border: `1px solid ${PAGE.innerBorder}`,
-    borderRadius: 8,
-    padding: '10px 14px',
-    color: '#fff',
-    fontSize: 14,
-    outline: 'none',
-    ...font,
-  }
-
-  const InviteBadge = ({ m }) => {
-    if (!m.email) return null
-    if (m.invite_status === 'sent') {
-      const sentAt = m.invite_sent_at ? new Date(m.invite_sent_at).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''
-      return (
-        <span
-          style={{
-            fontSize: 11,
-            fontWeight: 600,
-            borderRadius: 6,
-            padding: '3px 8px',
-            border: '1px solid #1e3a6a',
-            color: '#93c5fd',
-            background: '#0f172a',
-          }}
-        >
-          Invited{sentAt ? ` ${sentAt}` : ''}
-        </span>
-      )
-    }
+  if (!isElite) {
     return (
-      <button
-        type="button"
-        onClick={() => sendInvite(m)}
-        disabled={inviting[m.id]}
-        style={{
-          background: '#0f172a',
-          border: '1px solid #1e3a6a',
-          borderRadius: 6,
-          color: '#93c5fd',
-          fontSize: 11,
-          fontWeight: 700,
-          padding: '5px 10px',
-          cursor: inviting[m.id] ? 'not-allowed' : 'pointer',
-          opacity: inviting[m.id] ? 0.6 : 1,
-          ...font,
-        }}
-      >
-        {inviting[m.id] ? 'Sending...' : 'Send Invite'}
-      </button>
-    )
-  }
-
-  const roleBadgeForMember = (m) => {
-    if (isOwnerRole(m.role)) {
-      return {
-        label: 'Owner',
-        style: {
-          color: PAGE.green,
-          border: `1px solid ${PAGE.green}`,
-          background: PAGE.ownerTint,
-        },
-      }
-    }
-    if (isAdminLikeRole(m.role)) {
-      return {
-        label: m.role || 'Admin',
-        style: {
-          color: PAGE.green,
-          border: `1px solid ${PAGE.green}`,
-          background: PAGE.ownerTint,
-        },
-      }
-    }
-    return {
-      label: m.role || 'Member',
-      style: {
-        color: '#aaa',
-        border: `1px solid ${PAGE.innerBorder}`,
-        background: PAGE.inner,
-      },
-    }
-  }
-
-  const renderMemberRow = (m, { dimAvatar = false } = {}) => {
-    const rb = roleBadgeForMember(m)
-    const showRemove = !isOwnerRole(m.role)
-
-    return (
-      <div
-        key={m.id}
-        style={{
-          background: PAGE.inner,
-          border: `1px solid ${PAGE.innerBorder}`,
-          borderRadius: 10,
-          padding: 16,
-          marginBottom: 10,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 10,
-          boxSizing: 'border-box',
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          <div
-            style={{
-              width: 40,
-              height: 40,
-              borderRadius: '50%',
-              background: dimAvatar ? '#2a2a2a' : PAGE.green,
-              color: dimAvatar ? '#666' : '#000',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-              fontSize: 16,
-              flexShrink: 0,
-              ...font,
-            }}
-          >
-            {initials(m.name)}
-          </div>
-          <div style={{ flex: '1 1 160px', minWidth: 0 }}>
-            <div style={{ fontWeight: 700, color: '#fff', fontSize: 15, marginBottom: 2 }}>{m.name}</div>
-            <div style={{ color: PAGE.muted, fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              {m.email || '—'}
-            </div>
-          </div>
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              borderRadius: 6,
-              padding: '3px 10px',
-              flexShrink: 0,
-              ...rb.style,
-              ...font,
-            }}
-          >
-            {rb.label}
-          </span>
-          {m.status === 'inactive' ? (
-            <span
-              style={{
-                fontSize: 11,
-                fontWeight: 600,
-                borderRadius: 6,
-                padding: '3px 10px',
-                color: PAGE.dim,
-                border: `1px solid ${PAGE.innerBorder}`,
-                background: PAGE.card,
-                flexShrink: 0,
-              }}
-            >
-              Inactive
-            </span>
-          ) : null}
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              onClick={() => openEdit(m)}
-              style={{
-                background: 'none',
-                border: `1px solid ${PAGE.innerBorder}`,
-                color: '#aaa',
-                borderRadius: 6,
-                padding: '4px 10px',
-                fontSize: 12,
-                cursor: 'pointer',
-                ...font,
-              }}
-            >
-              Edit
-            </button>
-            <button
-              type="button"
-              onClick={() => toggleStatus(m)}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: PAGE.dim,
-                fontSize: 11,
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                ...font,
-              }}
-            >
-              {m.status === 'active' ? 'Deactivate' : 'Activate'}
-            </button>
-            {showRemove ? (
-              <button
-                type="button"
-                onClick={() => deleteMember(m.id)}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${PAGE.red}`,
-                  color: PAGE.red,
-                  borderRadius: 6,
-                  padding: '4px 10px',
-                  fontSize: 12,
-                  cursor: 'pointer',
-                  ...font,
-                }}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
+      <div style={styles.page}>
+        <div>
+          <h1 style={styles.title}>Team</h1>
+          <p style={styles.subtitle}>Invite team members to your studio.</p>
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, paddingTop: 2, borderTop: `1px solid ${PAGE.innerBorder}` }}>
-          {m.email ? (
-            <>
-              <InviteBadge m={m} />
-              {m.invite_status === 'sent' ? (
-                <button
-                  type="button"
-                  onClick={() => sendInvite(m)}
-                  disabled={inviting[m.id]}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: PAGE.dim,
-                    fontSize: 11,
-                    cursor: inviting[m.id] ? 'not-allowed' : 'pointer',
-                    textDecoration: 'underline',
-                    ...font,
-                  }}
-                >
-                  Resend
-                </button>
-              ) : null}
-              {m.invite_status === 'sent' && m.invite_token ? (
-                <button
-                  type="button"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(buildInviteUrl(m.invite_token))
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                  style={{
-                    background: 'none',
-                    border: `1px solid ${PAGE.innerBorder}`,
-                    color: PAGE.muted,
-                    borderRadius: 6,
-                    padding: '4px 10px',
-                    fontSize: 11,
-                    cursor: 'pointer',
-                    ...font,
-                  }}
-                >
-                  Copy invite link
-                </button>
-              ) : null}
-            </>
-          ) : (
-            <span style={{ fontSize: 11, color: PAGE.dim, fontStyle: 'italic' }}>Add email to send invite</span>
-          )}
+        <div style={styles.upgradeBox}>
+          <div style={{ fontSize: '32px' }}>👥</div>
+          <div style={styles.upgradeTitle}>Team management is an Elite feature</div>
+          <div style={styles.upgradeText}>
+            Upgrade to Elite to add up to 4 team members, create a Studio Profile, and manage your team's performance from one dashboard.
+          </div>
+          <Button variant="primary" onClick={() => window.location.href = '/pricing'}>
+            Upgrade to Elite
+          </Button>
         </div>
       </div>
     )
   }
 
   return (
-    <section
-      style={{
-        background: PAGE.bg,
-        minHeight: '100vh',
-        padding: 32,
-        color: PAGE.text,
-        ...font,
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <Link
-          to="/dashboard"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            marginBottom: 12,
-            fontSize: 13,
-            color: PAGE.green,
-            textDecoration: 'none',
-            fontWeight: 600,
-          }}
-        >
-          ← Back
-        </Link>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 24,
-          }}
-        >
-          <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#fff' }}>Team</h1>
-          <button
-            type="button"
-            onClick={openNew}
-            style={{
-              background: PAGE.green,
-              color: '#000',
-              fontWeight: 700,
-              borderRadius: 8,
-              padding: '8px 18px',
-              border: 'none',
-              cursor: 'pointer',
-              fontSize: 14,
-              ...font,
-            }}
-          >
-            + Invite Member
-          </button>
+    <div style={styles.page}>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.title}>Team</h1>
+          <p style={styles.subtitle}>Manage your studio team. Up to 4 additional members on your Elite subscription.</p>
         </div>
+        {availableSlots > 0 && (
+          <Button variant="primary" onClick={() => setShowInvite(true)}>+ Invite Member</Button>
+        )}
+      </div>
 
-        {/* Team Members card */}
-        <div
-          style={{
-            background: PAGE.card,
-            border: `1px solid ${PAGE.border}`,
-            borderRadius: 12,
-            padding: 24,
-            marginBottom: pendingInvites.length > 0 ? 24 : 0,
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 12,
-              flexWrap: 'wrap',
-              marginBottom: 16,
-            }}
-          >
-            <h2
-              style={{
-                margin: 0,
-                fontSize: 16,
-                fontWeight: 700,
-                color: '#fff',
-                borderLeft: `3px solid ${PAGE.green}`,
-                paddingLeft: 10,
-                lineHeight: 1.2,
-              }}
-            >
-              Team Members
-            </h2>
-            <span
-              style={{
-                background: PAGE.inner,
-                border: `1px solid ${PAGE.innerBorder}`,
-                borderRadius: 6,
-                padding: '4px 10px',
-                color: PAGE.muted,
-                fontSize: 12,
-              }}
-            >
-              ({activeRosterCount}/{MAX_TEAM})
-            </span>
-          </div>
-
-          {loading ? (
-            <p style={{ color: PAGE.muted, fontSize: 14, margin: 0, textAlign: 'center', padding: 40 }}>Loading...</p>
-          ) : rosterMembers.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: 40 }}>
-              <div style={{ fontSize: 32, marginBottom: 10 }}>👥</div>
-              <div style={{ color: '#fff', fontSize: 14 }}>No team members yet</div>
+      <div style={styles.slotsBar}>
+        <div style={styles.slotsInfo}>
+          <div style={styles.slotsTitle}>{usedSlots} of {totalSlots} slots used</div>
+          <div style={styles.slotsSubtitle}>{availableSlots} slot{availableSlots !== 1 ? 's' : ''} remaining</div>
+        </div>
+        <div style={styles.slotDots}>
+          {Array.from({ length: totalSlots }).map((_, i) => (
+            <div key={i} style={styles.slotDot(i < usedSlots)}>
+              {i < usedSlots ? '✓' : ''}
             </div>
-          ) : (
-            <>
-              {rosterMembers.filter((m) => m.status === 'active').map((m) => renderMemberRow(m))}
-              {rosterMembers.filter((m) => m.status === 'inactive').map((m) => renderMemberRow(m, { dimAvatar: true }))}
-            </>
-          )}
+          ))}
         </div>
+      </div>
 
-        {/* Pending Invitations */}
-        {pendingInvites.length > 0 ? (
-          <div
-            style={{
-              background: PAGE.card,
-              border: `1px solid ${PAGE.border}`,
-              borderRadius: 12,
-              padding: 24,
-            }}
-          >
-            <h2
-              style={{
-                margin: '0 0 16px',
-                fontSize: 16,
-                fontWeight: 700,
-                color: '#fff',
-                borderLeft: `3px solid ${PAGE.green}`,
-                paddingLeft: 10,
-                lineHeight: 1.2,
-              }}
-            >
-              Pending Invitations
-            </h2>
-            {pendingInvites.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: 12,
-                  flexWrap: 'wrap',
-                  background: PAGE.inner,
-                  border: `1px solid ${PAGE.innerBorder}`,
-                  borderRadius: 10,
-                  padding: '12px 16px',
-                  marginBottom: 10,
-                }}
-              >
-                <span style={{ color: '#aaa', fontSize: 14, wordBreak: 'break-all' }}>{m.email || m.name}</span>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginLeft: 'auto' }}>
-                  <span
-                    style={{
-                      fontSize: 11,
-                      fontWeight: 700,
-                      borderRadius: 6,
-                      padding: '3px 10px',
-                      color: PAGE.yellow,
-                      border: '1px solid rgba(250, 204, 21, 0.35)',
-                      background: 'rgba(250, 204, 21, 0.08)',
-                    }}
-                  >
-                    Pending
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => deleteMember(m.id)}
-                    style={{
-                      background: 'none',
-                      border: `1px solid ${PAGE.red}`,
-                      color: PAGE.red,
-                      borderRadius: 6,
-                      padding: '4px 10px',
-                      fontSize: 12,
-                      cursor: 'pointer',
-                      ...font,
-                    }}
-                  >
-                    Cancel
-                  </button>
+      {loading ? (
+        <div style={styles.emptyState}>Loading team…</div>
+      ) : (
+        <>
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Active Members ({members.length})</div>
+            {members.length === 0 ? (
+              <div style={styles.emptyState}>No active members yet. Invite your first team member.</div>
+            ) : members.map(member => (
+              <div key={member.id} style={styles.memberCard}>
+                <div style={styles.memberLeft}>
+                  <div style={styles.avatar}>
+                    {(member.name ?? member.email ?? 'M')[0].toUpperCase()}
+                  </div>
+                  <div>
+                    <div style={styles.memberName}>{member.name ?? member.email}</div>
+                    <div style={styles.memberEmail}>{member.email}</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <Badge variant="green" size="sm">Active</Badge>
+                  <Button variant="danger" size="sm" onClick={() => removeMember(member.id)}>Remove</Button>
                 </div>
               </div>
             ))}
           </div>
-        ) : null}
-      </div>
 
-      {showModal ? (
-        <div
-          role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.75)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: 16,
-            boxSizing: 'border-box',
-          }}
-          onClick={() => setShowModal(false)}
-          onKeyDown={(e) => e.key === 'Escape' && setShowModal(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="invite-modal-title"
-            style={{
-              background: PAGE.card,
-              border: `1px solid ${PAGE.border}`,
-              borderRadius: 14,
-              padding: 28,
-              width: 440,
-              maxWidth: '100%',
-              boxSizing: 'border-box',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h2 id="invite-modal-title" style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              {editing ? 'Edit Team Member' : 'Invite Team Member'}
-            </h2>
-
-            <label style={labelStyle}>Full name</label>
-            <input
-              style={{ ...inputStyle, marginBottom: 16 }}
-              placeholder="Alex Johnson"
-              value={form.name}
-              onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-            />
-
-            <label style={labelStyle}>Email Address</label>
-            <input
-              style={{ ...inputStyle, marginBottom: 16 }}
-              type="email"
-              placeholder="teammate@example.com"
-              value={form.email}
-              onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))}
-            />
-
-            <label style={labelStyle}>Role</label>
-            <select
-              style={{ ...inputStyle, marginBottom: editing ? 16 : 20, cursor: 'pointer' }}
-              value={form.role}
-              onChange={(e) => setForm((p) => ({ ...p, role: e.target.value }))}
-            >
-              {[...new Set([form.role, ...MODAL_ROLE_OPTIONS].filter(Boolean))].map((r) => (
-                <option key={r} value={r}>
-                  {r}
-                </option>
+          {invitations.length > 0 && (
+            <div style={styles.section}>
+              <div style={styles.sectionTitle}>Pending Invitations ({invitations.length})</div>
+              {invitations.map(inv => (
+                <div key={inv.id} style={styles.memberCard}>
+                  <div style={styles.memberLeft}>
+                    <div style={{ ...styles.avatar, background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', color: 'var(--text-muted)' }}>
+                      {(inv.email ?? 'M')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={styles.memberName}>{inv.email}</div>
+                      <div style={styles.memberEmail}>Invitation sent {new Date(inv.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <Badge variant="warning" size="sm">Pending</Badge>
+                    <Button variant="ghost" size="sm" onClick={() => cancelInvitation(inv.id)}>Cancel</Button>
+                  </div>
+                </div>
               ))}
-            </select>
-
-            {editing ? (
-              <>
-                <label style={labelStyle}>Status</label>
-                <select
-                  style={{ ...inputStyle, marginBottom: 20, cursor: 'pointer' }}
-                  value={form.status}
-                  onChange={(e) => setForm((p) => ({ ...p, status: e.target.value }))}
-                >
-                  <option value="active">Active</option>
-                  <option value="inactive">Inactive</option>
-                </select>
-              </>
-            ) : null}
-
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${PAGE.innerBorder}`,
-                  color: PAGE.muted,
-                  borderRadius: 8,
-                  padding: '9px 18px',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  ...font,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveMember}
-                style={{
-                  background: PAGE.green,
-                  border: 'none',
-                  color: '#000',
-                  fontWeight: 700,
-                  borderRadius: 8,
-                  padding: '9px 20px',
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  ...font,
-                }}
-              >
-                {editing ? 'Save' : 'Send Invite'}
-              </button>
             </div>
+          )}
+        </>
+      )}
+
+      <Modal isOpen={showInvite} onClose={() => { setShowInvite(false); setEmail('') }} title="Invite Team Member" size="sm">
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <Input
+            label="Email address"
+            type="email"
+            placeholder="teammate@example.com"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+          />
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
+            They'll receive an email with a link to join your team. Once accepted, their profile will be linked to your studio.
+          </div>
+          <div style={styles.modalActions}>
+            <Button variant="ghost" onClick={() => { setShowInvite(false); setEmail('') }}>Cancel</Button>
+            <Button variant="primary" disabled={saving || !email.trim()} onClick={sendInvite}>
+              {saving ? 'Sending…' : 'Send Invitation'}
+            </Button>
           </div>
         </div>
-      ) : null}
-    </section>
+      </Modal>
+    </div>
   )
 }

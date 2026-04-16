@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   ResponsiveContainer,
   LineChart,
@@ -10,6 +10,9 @@ import {
   Tooltip,
 } from 'recharts'
 import { supabase } from '../lib/supabaseClient.js'
+import { useSubscription } from '../hooks/useSubscription.js'
+import { normalizeSubscriptionTier } from '../lib/tierFeatures.js'
+import { FoundingMemberBadge } from '../components/FoundingMemberBadge.jsx'
 
 const PAGE = {
   bg: '#0a0a0f',
@@ -238,6 +241,8 @@ function IconInfo() {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { tier: hookTier, loading: hookTierLoading } = useSubscription()
   const [user, setUser] = useState(null)
   const [stats, setStats] = useState(null)
   /* eslint-disable no-unused-vars -- recent lists still loaded for parity with original dashboard fetches */
@@ -245,6 +250,18 @@ export default function DashboardPage() {
   const [recentInvoices, setRecentInvoices] = useState([])
   /* eslint-enable no-unused-vars */
   const [loading, setLoading] = useState(true)
+  const [checkoutSuccess, setCheckoutSuccess] = useState(false)
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search || '')
+    if (params.get('checkout') === 'success') {
+      setCheckoutSuccess(true)
+      params.delete('checkout')
+      const next = params.toString()
+      navigate(next ? `/dashboard?${next}` : '/dashboard', { replace: true })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user))
@@ -464,12 +481,6 @@ export default function DashboardPage() {
   const grid4 = { display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: 16 }
   const grid3 = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 16 }
 
-  const isFoundingMember = Boolean(
-    user?.user_metadata?.founding_member ??
-      user?.user_metadata?.is_founding_member ??
-      stats?.profile?.founding_member,
-  )
-
   const pvDelta =
     stats != null ? stats.profileViewsThisMonth - stats.profileViewsLastMonth : 0
   const pvSubColor = pvDelta > 0 ? PAGE.green : pvDelta < 0 ? '#f87171' : PAGE.muted
@@ -521,6 +532,10 @@ export default function DashboardPage() {
       ? Math.max(4, ...stats.bookingsTrend.map((d) => d.count))
       : 4
 
+  const displayTier = hookTierLoading
+    ? normalizeSubscriptionTier(stats?.subscriptionTier)
+    : hookTier
+
   if (loading || !stats) {
     return (
       <section style={shellStyle}>
@@ -533,6 +548,43 @@ export default function DashboardPage() {
 
   return (
     <section style={shellStyle}>
+      {checkoutSuccess ? (
+        <div
+          style={{
+            background: 'rgba(57, 255, 20, 0.08)',
+            border: '1px solid rgba(57, 255, 20, 0.35)',
+            borderRadius: 10,
+            padding: '12px 14px',
+            marginBottom: 16,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 12,
+            ...font,
+          }}
+        >
+          <div style={{ color: PAGE.text, fontSize: 13, fontWeight: 700 }}>
+            Welcome to LensTrybe! Your 14-day free trial has started.
+          </div>
+          <button
+            type="button"
+            onClick={() => setCheckoutSuccess(false)}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: PAGE.grey,
+              cursor: 'pointer',
+              fontWeight: 900,
+              fontSize: 14,
+              padding: 0,
+              ...font,
+            }}
+            aria-label="Dismiss"
+          >
+            ×
+          </button>
+        </div>
+      ) : null}
       <div
         style={{
           display: 'flex',
@@ -546,7 +598,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           <button
             type="button"
-            onClick={() => navigate(-1)}
+            onClick={() => navigate('/')}
             style={{
               background: 'transparent',
               border: 'none',
@@ -574,9 +626,29 @@ export default function DashboardPage() {
             ...font,
           }}
         >
-          View Profile
+          Edit profile
         </Link>
       </div>
+
+      {stats?.profile?.business_name ? (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            flexWrap: 'wrap',
+            marginBottom: 18,
+            ...font,
+          }}
+        >
+          <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{stats.profile.business_name}</span>
+          {stats?.profile?.founding_member === true ? <FoundingMemberBadge /> : null}
+        </div>
+      ) : stats?.profile?.founding_member === true ? (
+        <div style={{ marginBottom: 18, ...font }}>
+          <FoundingMemberBadge />
+        </div>
+      ) : null}
 
       <div style={grid4}>
         <div style={cardBase}>
@@ -631,46 +703,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {isFoundingMember ? (
-        <div
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 10,
-            marginTop: 16,
-            marginBottom: 4,
-            padding: '7px 16px',
-            borderRadius: 9999,
-            border: '1px solid rgba(255,255,255,0.28)',
-            background: 'transparent',
-            ...font,
-          }}
-        >
-          <span
-            style={{
-              width: 7,
-              height: 7,
-              borderRadius: '50%',
-              background: PAGE.green,
-              boxShadow: `0 0 8px ${PAGE.green}`,
-            }}
-          />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.14em',
-              color: PAGE.text,
-            }}
-          >
-            FOUNDING MEMBER
-          </span>
-        </div>
-      ) : (
-        <div style={{ height: 12 }} />
-      )}
-
-      <div style={{ ...grid4, marginTop: isFoundingMember ? 12 : 16 }}>
+      <div style={{ ...grid4, marginTop: 16 }}>
         <div style={cardBase}>
           <div style={{ position: 'absolute', top: 18, right: 18 }}>
             <IconBox borderColor={`${PAGE.green}55`}>
@@ -988,18 +1021,21 @@ export default function DashboardPage() {
             <IconBolt />
             <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Subscription &amp; Billing</span>
           </div>
-          <div
-            style={{
-              background: PAGE.green,
-              color: '#0a0a0f',
-              borderRadius: 20,
-              padding: '5px 14px',
-              fontSize: 11,
-              fontWeight: 700,
-              letterSpacing: '0.04em',
-            }}
-          >
-            {tierLabel(stats.subscriptionTier)}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+            <div
+              style={{
+                background: PAGE.green,
+                color: '#0a0a0f',
+                borderRadius: 20,
+                padding: '5px 14px',
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: '0.04em',
+              }}
+            >
+              {tierLabel(displayTier)}
+            </div>
+            {stats?.profile?.founding_member === true ? <FoundingMemberBadge /> : null}
           </div>
         </div>
 
@@ -1007,7 +1043,7 @@ export default function DashboardPage() {
           <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', marginBottom: 14 }}>Subscription Status</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              { k: 'Current Plan', v: planDisplayName(stats.subscriptionTier) },
+              { k: 'Current Plan', v: planDisplayName(displayTier) },
               {
                 k: 'Status',
                 v: statusActive ? 'Active' : String(stats.subscriptionStatus || '—'),
@@ -1047,7 +1083,7 @@ export default function DashboardPage() {
             Current Benefits
           </div>
           <ul style={{ margin: 0, padding: 0, listStyle: 'none' }}>
-            {tierBenefits(stats.subscriptionTier).map((line) => (
+            {tierBenefits(displayTier).map((line) => (
               <li
                 key={line}
                 style={{

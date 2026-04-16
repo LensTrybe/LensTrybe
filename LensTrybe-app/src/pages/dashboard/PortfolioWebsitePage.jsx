@@ -1,775 +1,231 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-
-const CATEGORIES = ['Wedding', 'Portrait', 'Commercial', 'Events', 'Landscape', 'Fashion', 'Street', 'Other']
-
-const PAGE = {
-  bg: '#0a0a0f',
-  text: 'rgb(242, 242, 242)',
-  card: '#13131a',
-  border: '#1e1e1e',
-  inner: '#1a1a24',
-  innerBorder: '#202027',
-  muted: '#888',
-  dim: '#555',
-  green: '#39ff14',
-  red: '#f87171',
-}
-
-const font = { fontFamily: 'Inter, sans-serif' }
-
-function slugFromUser(user) {
-  const email = user?.email
-  if (email && email.includes('@')) {
-    const local = email.split('@')[0] || ''
-    const s = local.replace(/[^a-z0-9-]/gi, '').toLowerCase()
-    if (s) return s
-  }
-  return user?.id ? String(user.id).replace(/-/g, '').slice(0, 12) : 'you'
-}
+import { useAuth } from '../../context/AuthContext'
+import { useSubscription } from '../../context/SubscriptionContext'
+import Button from '../../components/ui/Button'
+import Input from '../../components/ui/Input'
+import Badge from '../../components/ui/Badge'
 
 export default function PortfolioWebsitePage() {
-  const [user, setUser] = useState(null)
-  const [profile, setProfile] = useState(null)
-  const [items, setItems] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [uploading, setUploading] = useState(false)
-  const [showModal, setShowModal] = useState(false)
-  const [editing, setEditing] = useState(null)
+  const { user, profile } = useAuth()
+  const { tier } = useSubscription()
+  const [saving, setSaving] = useState(false)
+  const [saved, setSaved] = useState(false)
   const [form, setForm] = useState({
-    title: '',
-    description: '',
-    category: 'Wedding',
-    tags: '',
-    featured: false,
-    image_url: '',
+    subdomain: '',
+    headline: '',
+    tagline: '',
+    show_portfolio: true,
+    show_reviews: true,
+    show_contact: true,
+    show_services: true,
+    custom_domain: '',
   })
-  const [copied, setCopied] = useState(false)
-  const [portfolioActive, setPortfolioActive] = useState(true)
-  const [customDomain, setCustomDomain] = useState('')
-  const [domainSaving, setDomainSaving] = useState(false)
-  const [pendingDeleteId, setPendingDeleteId] = useState(null)
-  const fileRef = useRef(null)
+
+  const isExpert = tier === 'expert' || tier === 'elite'
+  const isElite = tier === 'elite'
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user))
-  }, [])
-
-  const fetchItems = useCallback(async () => {
-    if (!user?.id) return
-    setLoading(true)
-    const { data } = await supabase
-      .from('portfolio_items')
-      .select('*')
-      .eq('creative_id', user.id)
-      .order('sort_order', { ascending: true })
-    setItems(data || [])
-    setLoading(false)
-  }, [user])
-
-  const fetchProfile = useCallback(async () => {
-    if (!user?.id) return
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    setProfile(data || null)
-    if (data) {
-      if (typeof data.portfolio_website_active === 'boolean') {
-        setPortfolioActive(data.portfolio_website_active)
-      } else {
-        setPortfolioActive(true)
+    if (profile) {
+      const defaultSubdomain = (profile.business_name ?? '').toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      setForm(prev => ({
+        ...prev,
+        subdomain: defaultSubdomain,
+        headline: `Welcome to ${profile.business_name ?? 'my portfolio'}`,
+        tagline: profile.bio?.slice(0, 100) ?? '',
+        custom_domain: profile.custom_domain ?? '',
+      }))
+      const saved = localStorage.getItem(`website_settings_${profile.id}`)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        setForm(prev => ({ ...prev, ...parsed }))
       }
-      setCustomDomain(typeof data.portfolio_custom_domain === 'string' ? data.portfolio_custom_domain : '')
     }
-  }, [user])
+  }, [profile])
 
-  useEffect(() => {
-    if (!user) return
-    /* eslint-disable react-hooks/set-state-in-effect -- mount load */
-    fetchItems()
-    fetchProfile()
-    /* eslint-enable react-hooks/set-state-in-effect */
-  }, [user, fetchItems, fetchProfile])
-
-  const openNew = () => {
-    setEditing(null)
-    setForm({ title: '', description: '', category: 'Wedding', tags: '', featured: false, image_url: '' })
-    setShowModal(true)
+  async function save() {
+    setSaving(true)
+    localStorage.setItem(`website_settings_${user.id}`, JSON.stringify({
+      subdomain: form.subdomain,
+      headline: form.headline,
+      tagline: form.tagline,
+      show_portfolio: form.show_portfolio,
+      show_reviews: form.show_reviews,
+      show_contact: form.show_contact,
+      show_services: form.show_services,
+    }))
+    await supabase.from('profiles').update({
+      custom_domain: isElite ? form.custom_domain : null,
+      portfolio_website_active: true,
+    }).eq('id', user.id)
+    setSaving(false)
+    setSaved(true)
+    setTimeout(() => setSaved(false), 2000)
   }
 
-  const openEdit = (item) => {
-    setEditing(item)
-    setForm({
-      title: item.title || '',
-      description: item.description || '',
-      category: item.category || 'Wedding',
-      tags: (item.tags || []).join(', '),
-      featured: item.featured || false,
-      image_url: item.image_url || '',
-    })
-    setShowModal(true)
+  const previewUrl = `${form.subdomain}.lenstrybe.com`
+
+  const styles = {
+    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
+    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    upgradeBox: { padding: '40px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' },
+    layout: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', alignItems: 'start' },
+    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    sectionSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '-12px' },
+    urlPreview: { display: 'flex', alignItems: 'center', gap: '8px', padding: '12px 16px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)' },
+    urlPrefix: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' },
+    urlDomain: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' },
+    urlValue: { fontSize: '13px', color: 'var(--green)', fontFamily: 'var(--font-ui)', fontWeight: 500 },
+    toggle: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' },
+    toggleLabel: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+    toggleTrack: (on) => ({ width: '40px', height: '22px', borderRadius: 'var(--radius-full)', background: on ? 'var(--green)' : 'var(--border-strong)', position: 'relative', transition: 'background var(--transition-base)', cursor: 'pointer', flexShrink: 0 }),
+    toggleThumb: (on) => ({ position: 'absolute', top: '3px', left: on ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left var(--transition-base)' }),
+    preview: { background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
+    previewBar: { background: 'var(--bg-elevated)', border: '1px solid var(--border-subtle)', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: '8px' },
+    previewDot: (color) => ({ width: '10px', height: '10px', borderRadius: '50%', background: color }),
+    previewUrl: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', flex: 1, textAlign: 'center' },
+    previewBody: { padding: '32px 24px', display: 'flex', flexDirection: 'column', gap: '16px', alignItems: 'center', textAlign: 'center' },
+    previewAvatar: { width: '64px', height: '64px', borderRadius: 'var(--radius-full)', background: 'var(--green-dim)', border: '1px solid rgba(29,185,84,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' },
+    previewName: { fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 },
+    previewTagline: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', maxWidth: '280px', lineHeight: 1.6 },
+    previewSections: { display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' },
+    previewSection: { padding: '4px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-full)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    textarea: { width: '100%', minHeight: '80px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
+    eliteBadge: { padding: '14px 16px', background: 'rgba(234,179,8,0.08)', border: '1px solid rgba(234,179,8,0.2)', borderRadius: 'var(--radius-lg)', fontSize: '13px', color: '#EAB308', fontFamily: 'var(--font-ui)' },
+    actions: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
   }
 
-  const uploadImage = async (file) => {
-    setUploading(true)
-    const path = `${user.id}/${Date.now()}-${file.name}`
-    const { error } = await supabase.storage.from('portfolio').upload(path, file)
-    if (!error) {
-      const { data } = supabase.storage.from('portfolio').getPublicUrl(path)
-      setForm((p) => ({ ...p, image_url: data.publicUrl }))
-    }
-    setUploading(false)
-  }
-
-  const saveItem = async () => {
-    if (!form.title.trim()) return
-    const payload = {
-      ...form,
-      tags: form.tags ? form.tags.split(',').map((t) => t.trim()).filter(Boolean) : [],
-      creative_id: user.id,
-      sort_order: editing ? editing.sort_order : items.length,
-    }
-    delete payload.tags_raw
-    if (editing) {
-      const { data } = await supabase.from('portfolio_items').update(payload).eq('id', editing.id).select().single()
-      setItems((prev) => prev.map((i) => (i.id === editing.id ? data : i)))
-    } else {
-      const { data } = await supabase.from('portfolio_items').insert(payload).select().single()
-      setItems((prev) => [...prev, data])
-    }
-    setShowModal(false)
-  }
-
-  const deleteItem = async (id) => {
-    await supabase.from('portfolio_items').delete().eq('id', id)
-    setItems((prev) => prev.filter((i) => i.id !== id))
-    setPendingDeleteId(null)
-  }
-
-  const portfolioUrl = `${window.location.origin}/portfolio/${user?.id || ''}`
-  const defaultSubdomainHost = `${slugFromUser(user)}.lenstrybe.com`
-
-  const copyLink = () => {
-    navigator.clipboard.writeText(portfolioUrl)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const toggleSiteActive = async () => {
-    const next = !portfolioActive
-    setPortfolioActive(next)
-    await supabase.from('profiles').update({ portfolio_website_active: next }).eq('id', user.id)
-    fetchProfile()
-  }
-
-  const saveCustomDomain = async () => {
-    if (!user?.id) return
-    setDomainSaving(true)
-    await supabase.from('profiles').update({ portfolio_custom_domain: customDomain.trim() }).eq('id', user.id)
-    setDomainSaving(false)
-    fetchProfile()
-  }
-
-  const isElite = String(profile?.subscription_tier || '').toLowerCase() === 'elite'
-
-  const labelUpper = {
-    display: 'block',
-    color: PAGE.muted,
-    fontSize: 12,
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    letterSpacing: '0.06em',
-    marginBottom: 8,
-    ...font,
-  }
-
-  const inputStyle = {
-    width: '100%',
-    boxSizing: 'border-box',
-    background: PAGE.inner,
-    border: `1px solid ${PAGE.innerBorder}`,
-    borderRadius: 8,
-    padding: '10px 14px',
-    color: '#aaa',
-    fontSize: 14,
-    outline: 'none',
-    ...font,
+  if (!isExpert) {
+    return (
+      <div style={styles.page}>
+        <div>
+          <h1 style={styles.title}>Portfolio Website</h1>
+          <p style={styles.subtitle}>Your own website at name.lenstrybe.com</p>
+        </div>
+        <div style={styles.upgradeBox}>
+          <div style={{ fontSize: '32px' }}>🌐</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 }}>
+            Portfolio Website is an Expert feature
+          </div>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', maxWidth: '400px', lineHeight: 1.7 }}>
+            Upgrade to Expert to get your own portfolio website at <strong>yourname.lenstrybe.com</strong> — automatically built from your profile, portfolio and reviews.
+          </div>
+          <Button variant="primary" onClick={() => window.location.href = '/pricing'}>Upgrade to Expert</Button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <section
-      style={{
-        background: PAGE.bg,
-        minHeight: '100vh',
-        padding: 32,
-        color: PAGE.text,
-        ...font,
-        boxSizing: 'border-box',
-      }}
-    >
-      <div style={{ maxWidth: 800, margin: '0 auto' }}>
-        <Link
-          to="/dashboard"
-          style={{
-            display: 'inline-block',
-            marginBottom: 12,
-            fontSize: 13,
-            color: PAGE.green,
-            textDecoration: 'none',
-            fontWeight: 600,
-          }}
-        >
-          ← Back
-        </Link>
-
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            justifyContent: 'space-between',
-            gap: 16,
-            flexWrap: 'wrap',
-            marginBottom: 20,
-          }}
-        >
-          <div>
-            <h1 style={{ margin: '0 0 6px', fontSize: 24, fontWeight: 700, color: '#fff' }}>Portfolio Website</h1>
-            <p style={{ margin: 0, fontSize: 13, color: PAGE.muted }}>Manage your public portfolio presence</p>
-          </div>
-          <a
-            href={portfolioUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: 13,
-              fontWeight: 600,
-              color: PAGE.green,
-              textDecoration: 'none',
-            }}
-          >
-            View Profile ↗
-          </a>
+    <div style={styles.page}>
+      <div style={styles.pageHeader}>
+        <div>
+          <h1 style={styles.title}>Portfolio Website</h1>
+          <p style={styles.subtitle}>Your public portfolio site — automatically built from your profile.</p>
         </div>
-
-        <div
-          style={{
-            background: PAGE.card,
-            border: `1px solid ${PAGE.border}`,
-            borderRadius: 12,
-            padding: 24,
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              gap: 16,
-              marginBottom: 8,
-              flexWrap: 'wrap',
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Portfolio Website</div>
-              <div style={{ fontSize: 12, color: PAGE.dim, marginTop: 4 }}>Visibility &amp; domain</div>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>Active</span>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={portfolioActive}
-                onClick={() => user && toggleSiteActive()}
-                disabled={!user}
-                style={{
-                  width: 44,
-                  height: 24,
-                  borderRadius: 12,
-                  border: 'none',
-                  padding: 2,
-                  background: portfolioActive ? PAGE.green : '#2a2a2a',
-                  cursor: user ? 'pointer' : 'not-allowed',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: portfolioActive ? 'flex-end' : 'flex-start',
-                  transition: 'background 0.2s ease',
-                  flexShrink: 0,
-                }}
-              >
-                <span
-                  style={{
-                    width: 20,
-                    height: 20,
-                    borderRadius: '50%',
-                    background: '#fff',
-                    flexShrink: 0,
-                    transition: 'transform 0.2s ease',
-                  }}
-                />
-              </button>
-            </div>
-          </div>
-
-          <div
-            style={{
-              marginTop: 20,
-              marginBottom: 8,
-              borderLeft: `3px solid ${PAGE.green}`,
-              paddingLeft: 10,
-            }}
-          >
-            <h2 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: '#fff' }}>Domain Setup</h2>
-          </div>
-
-          <label style={{ ...labelUpper, marginTop: 20 }}>Default Subdomain</label>
-          <p style={{ margin: '0 0 10px', fontSize: 12, color: PAGE.dim }}>Your default portfolio URL</p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', marginBottom: 24 }}>
-            <input readOnly value={defaultSubdomainHost} style={{ ...inputStyle, flex: '1 1 200px', color: '#aaa', cursor: 'default' }} />
-            <a
-              href={portfolioUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                background: '#1e2a1e',
-                border: `1px solid ${PAGE.green}`,
-                color: PAGE.green,
-                borderRadius: 8,
-                padding: '8px 16px',
-                fontSize: 13,
-                fontWeight: 700,
-                textDecoration: 'none',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              Visit
-            </a>
-            <button
-              type="button"
-              onClick={copyLink}
-              title="Copy portfolio link"
-              aria-label="Copy link"
-              style={{
-                width: 44,
-                height: 40,
-                borderRadius: 8,
-                border: `1px solid ${PAGE.innerBorder}`,
-                background: PAGE.inner,
-                color: PAGE.muted,
-                cursor: 'pointer',
-                fontSize: 16,
-                flexShrink: 0,
-              }}
-            >
-              {copied ? '✓' : '⧉'}
-            </button>
-          </div>
-
-          <label style={labelUpper}>Custom Domain (Elite)</label>
-          {isElite ? (
-            <>
-              <input
-                placeholder="portfolio.example.com"
-                value={customDomain}
-                onChange={(e) => setCustomDomain(e.target.value)}
-                style={{ ...inputStyle, color: '#fff', marginBottom: 12 }}
-              />
-              <button
-                type="button"
-                onClick={saveCustomDomain}
-                disabled={domainSaving || !user}
-                style={{
-                  background: PAGE.green,
-                  color: '#000',
-                  fontWeight: 700,
-                  borderRadius: 8,
-                  padding: '9px 20px',
-                  border: 'none',
-                  fontSize: 14,
-                  cursor: domainSaving ? 'wait' : 'pointer',
-                  opacity: domainSaving ? 0.7 : 1,
-                }}
-              >
-                {domainSaving ? 'Saving…' : 'Save Domain'}
-              </button>
-            </>
-          ) : (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                padding: '14px 16px',
-                background: PAGE.inner,
-                border: `1px solid ${PAGE.innerBorder}`,
-                borderRadius: 8,
-                color: PAGE.muted,
-                fontSize: 13,
-              }}
-            >
-              <span style={{ fontSize: 20 }} aria-hidden>
-                🔒
-              </span>
-              Upgrade to Elite to connect a custom domain
-            </div>
-          )}
-
-          <div style={{ marginTop: 28, paddingTop: 20, borderTop: `1px solid ${PAGE.border}` }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>Portfolio works</span>
-              <button
-                type="button"
-                onClick={openNew}
-                style={{
-                  background: 'transparent',
-                  border: `1px solid ${PAGE.green}`,
-                  color: PAGE.green,
-                  borderRadius: 8,
-                  padding: '6px 14px',
-                  fontSize: 12,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                + Add Work
-              </button>
-            </div>
-
-            {loading ? (
-              <p style={{ color: PAGE.dim, margin: 0 }}>Loading…</p>
-            ) : items.length === 0 ? (
-              <p style={{ color: PAGE.dim, margin: 0, fontSize: 13 }}>No portfolio items yet. Add work to show on your public portfolio.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {items.map((item) => {
-                  const urlLine = item.image_url || item.title || '—'
-                  const active = !!item.featured
-                  return (
-                    <div
-                      key={item.id}
-                      style={{
-                        background: PAGE.inner,
-                        border: `1px solid ${PAGE.innerBorder}`,
-                        borderRadius: 10,
-                        padding: '14px 16px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between',
-                        gap: 12,
-                        flexWrap: 'wrap',
-                      }}
-                    >
-                      <div style={{ minWidth: 0, flex: '1 1 180px' }}>
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            color: '#fff',
-                            fontSize: 14,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                          }}
-                          title={urlLine}
-                        >
-                          {urlLine}
-                        </div>
-                        <div style={{ fontSize: 12, color: PAGE.muted, marginTop: 4 }}>{item.title || 'Untitled'}</div>
-                      </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                        <span
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 999,
-                            fontSize: 11,
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.04em',
-                            border: `1px solid ${active ? PAGE.green : '#555'}`,
-                            color: active ? PAGE.green : '#555',
-                            background: active ? `${PAGE.green}18` : 'transparent',
-                          }}
-                        >
-                          {active ? 'Active' : 'Inactive'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => openEdit(item)}
-                          style={{
-                            background: PAGE.inner,
-                            border: `1px solid ${PAGE.innerBorder}`,
-                            color: '#aaa',
-                            borderRadius: 6,
-                            padding: '4px 12px',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setPendingDeleteId(item.id)}
-                          style={{
-                            background: 'none',
-                            border: `1px solid ${PAGE.red}`,
-                            color: PAGE.red,
-                            borderRadius: 6,
-                            padding: '4px 12px',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-          </div>
+        <div style={{ display: 'flex', gap: '12px' }}>
+          <Button variant="secondary" onClick={() => window.open(`https://${previewUrl}`, '_blank')}>
+            View Live Site →
+          </Button>
+          <Button variant="primary" disabled={saving} onClick={save}>
+            {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Changes'}
+          </Button>
         </div>
       </div>
 
-      {showModal && (
-        <div
-          role="presentation"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.75)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 100,
-            padding: 16,
-            boxSizing: 'border-box',
-          }}
-          onClick={() => setShowModal(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            style={{
-              background: PAGE.inner,
-              border: `1px solid ${PAGE.innerBorder}`,
-              borderRadius: 16,
-              padding: 28,
-              width: 480,
-              maxWidth: '100%',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              ...font,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 style={{ margin: '0 0 20px', fontSize: 18, fontWeight: 700, color: '#fff' }}>{editing ? 'Edit Work' : 'Add Work'}</h3>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelUpper}>Image</label>
-              <button
-                type="button"
-                onClick={() => fileRef.current?.click()}
-                style={{
-                  width: '100%',
-                  height: 140,
-                  background: PAGE.card,
-                  border: `2px dashed ${PAGE.innerBorder}`,
-                  borderRadius: 10,
-                  cursor: 'pointer',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  padding: 0,
-                }}
-              >
-                {form.image_url ? (
-                  <img src={form.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                ) : (
-                  <div style={{ color: PAGE.dim, textAlign: 'center', paddingTop: 36 }}>
-                    <div style={{ fontSize: 28, marginBottom: 4 }}>⬆️</div>
-                    <div style={{ fontSize: 12 }}>Click to upload image</div>
-                  </div>
-                )}
-                {uploading && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'rgba(0,0,0,0.5)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 12,
-                      color: PAGE.green,
-                    }}
-                  >
-                    Uploading…
-                  </div>
-                )}
-              </button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                style={{ display: 'none' }}
-                onChange={(e) => e.target.files?.[0] && uploadImage(e.target.files[0])}
-              />
+      <div style={styles.layout}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          <div style={styles.card}>
+            <div style={styles.sectionTitle}>Your Website URL</div>
+            <div style={styles.urlPreview}>
+              <span style={styles.urlValue}>{form.subdomain}</span>
+              <span style={styles.urlDomain}>.lenstrybe.com</span>
             </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelUpper}>Title *</label>
-              <input
-                placeholder="Summer Wedding — Smith & Jones"
-                value={form.title}
-                onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                style={{ ...inputStyle, color: '#fff' }}
-              />
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelUpper}>Category</label>
-              <select
-                value={form.category}
-                onChange={(e) => setForm((p) => ({ ...p, category: e.target.value }))}
-                style={{ ...inputStyle, color: '#fff', cursor: 'pointer' }}
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelUpper}>Description</label>
-              <textarea
-                placeholder="A short description of this work…"
-                value={form.description}
-                onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-                style={{ ...inputStyle, color: '#fff', minHeight: 70, resize: 'vertical' }}
-              />
-            </div>
-            <div style={{ marginBottom: 14 }}>
-              <label style={labelUpper}>Tags (comma separated)</label>
-              <input
-                placeholder="outdoor, golden hour, candid"
-                value={form.tags}
-                onChange={(e) => setForm((p) => ({ ...p, tags: e.target.value }))}
-                style={{ ...inputStyle, color: '#fff' }}
-              />
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20 }}>
-              <input
-                type="checkbox"
-                id="featured"
-                checked={form.featured}
-                onChange={(e) => setForm((p) => ({ ...p, featured: e.target.checked }))}
-                style={{ width: 16, height: 16, accentColor: PAGE.green, cursor: 'pointer' }}
-              />
-              <label htmlFor="featured" style={{ fontSize: 13, color: '#aaa', cursor: 'pointer' }}>
-                Feature this on my portfolio homepage (shown as Active in list)
-              </label>
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setShowModal(false)}
-                style={{
-                  background: 'none',
-                  border: `1px solid ${PAGE.innerBorder}`,
-                  color: PAGE.muted,
-                  borderRadius: 8,
-                  padding: '9px 18px',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveItem}
-                style={{
-                  background: PAGE.green,
-                  border: 'none',
-                  color: '#000',
-                  borderRadius: 8,
-                  padding: '9px 20px',
-                  fontSize: 13,
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                {editing ? 'Save' : 'Add Work'}
-              </button>
-            </div>
+            <Input
+              label="Subdomain"
+              value={form.subdomain}
+              onChange={e => setForm(p => ({ ...p, subdomain: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') }))}
+              hint="Only lowercase letters, numbers and hyphens"
+            />
           </div>
-        </div>
-      )}
 
-      {pendingDeleteId && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.6)',
-            zIndex: 150,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-          }}
-          onClick={() => setPendingDeleteId(null)}
-          role="presentation"
-        >
-          <div
-            style={{
-              background: PAGE.card,
-              border: `1px solid ${PAGE.border}`,
-              borderRadius: 12,
-              padding: 20,
-              maxWidth: 360,
-              width: '100%',
-              ...font,
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <p style={{ margin: '0 0 16px', color: '#fff', fontWeight: 600 }}>Delete this portfolio item?</p>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button
-                type="button"
-                onClick={() => setPendingDeleteId(null)}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  border: `1px solid ${PAGE.innerBorder}`,
-                  background: 'transparent',
-                  color: PAGE.muted,
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={() => deleteItem(pendingDeleteId)}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: PAGE.red,
-                  color: '#fff',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                }}
-              >
-                Delete
-              </button>
+          <div style={styles.card}>
+            <div style={styles.sectionTitle}>Content</div>
+            <Input label="Headline" placeholder="Capturing your most important moments" value={form.headline} onChange={e => setForm(p => ({ ...p, headline: e.target.value }))} />
+            <div>
+              <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' }}>Tagline</label>
+              <textarea style={styles.textarea} placeholder="A short description shown under your headline…" value={form.tagline} onChange={e => setForm(p => ({ ...p, tagline: e.target.value }))} />
             </div>
           </div>
+
+          <div style={styles.card}>
+            <div style={styles.sectionTitle}>Sections</div>
+            <div style={styles.sectionSub}>Choose what appears on your website.</div>
+            {[
+              { key: 'show_portfolio', label: 'Portfolio gallery' },
+              { key: 'show_reviews', label: 'Client reviews' },
+              { key: 'show_services', label: 'Services & pricing' },
+              { key: 'show_contact', label: 'Contact form' },
+            ].map(item => (
+              <div key={item.key} style={styles.toggle}>
+                <span style={styles.toggleLabel}>{item.label}</span>
+                <div style={styles.toggleTrack(form[item.key])} onClick={() => setForm(p => ({ ...p, [item.key]: !p[item.key] }))}>
+                  <div style={styles.toggleThumb(form[item.key])} />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {isElite && (
+            <div style={styles.card}>
+              <div style={styles.sectionTitle}>Custom Domain</div>
+              <div style={styles.eliteBadge}>Elite feature — connect your own domain like yourname.com</div>
+              <Input
+                label="Custom domain"
+                placeholder="www.yourwebsite.com"
+                value={form.custom_domain}
+                onChange={e => setForm(p => ({ ...p, custom_domain: e.target.value }))}
+                hint="Add a CNAME record pointing to lenstrybe.com in your DNS settings"
+              />
+            </div>
+          )}
         </div>
-      )}
-    </section>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Preview</div>
+          <div style={styles.preview}>
+            <div style={styles.previewBar}>
+              <div style={styles.previewDot('#EF4444')} />
+              <div style={styles.previewDot('#EAB308')} />
+              <div style={styles.previewDot('#22C55E')} />
+              <div style={styles.previewUrl}>{previewUrl}</div>
+            </div>
+            <div style={styles.previewBody}>
+              <div style={styles.previewAvatar}>
+                {profile?.avatar_url
+                  ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  : '👤'
+                }
+              </div>
+              <div style={styles.previewName}>{form.headline || profile?.business_name}</div>
+              <div style={styles.previewTagline}>{form.tagline || 'Your tagline will appear here'}</div>
+              <div style={styles.previewSections}>
+                {form.show_portfolio && <div style={styles.previewSection}>Portfolio</div>}
+                {form.show_reviews && <div style={styles.previewSection}>Reviews</div>}
+                {form.show_services && <div style={styles.previewSection}>Services</div>}
+                {form.show_contact && <div style={styles.previewSection}>Contact</div>}
+              </div>
+            </div>
+          </div>
+
+          <div style={{ padding: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7 }}>
+            Your website automatically pulls your profile photo, bio, portfolio photos, reviews and contact details. Keep your profile updated and your website stays current.
+          </div>
+        </div>
+      </div>
+    </div>
   )
 }

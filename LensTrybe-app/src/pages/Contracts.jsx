@@ -480,9 +480,6 @@ function Contracts() {
     return { bg: '#2a2a2a', border: PAGE.label, color: PAGE.label }
   }
 
-  const myContractsList = contracts.filter((c) => String(c?.status ?? '').toLowerCase().trim() === 'sent')
-  const listForTab = mainTab === 'my' ? myContractsList : contracts
-
   const applyTemplate = (t) => {
     setForm((c) => ({ ...c, title: t.name || '', content: t.content || '' }))
     setCreateSubTab('write')
@@ -976,10 +973,10 @@ function Contracts() {
           <h2 style={{ ...sectionTitleStyle, marginTop: 0 }}>My Contracts</h2>
           {loading ? (
             <p style={{ color: PAGE.muted, margin: 0 }}>Loading contracts…</p>
-          ) : listForTab.length === 0 ? (
-            <p style={{ color: PAGE.muted, margin: 0 }}>No sent contracts yet.</p>
+          ) : contracts.length === 0 ? (
+            <p style={{ color: PAGE.muted, margin: 0 }}>No contracts yet.</p>
           ) : (
-            <div style={{ display: 'grid', gap: 12 }}>{listForTab.map((row) => renderContractCard(row, { showSend: false }))}</div>
+            <div style={{ display: 'grid', gap: 12 }}>{contracts.map((row) => renderContractCard(row, { showSend: true }))}</div>
           )}
         </div>
       )}
@@ -989,10 +986,10 @@ function Contracts() {
           <h2 style={{ ...sectionTitleStyle, marginTop: 0 }}>All Contracts</h2>
           {loading ? (
             <p style={{ color: PAGE.muted, margin: 0 }}>Loading contracts…</p>
-          ) : listForTab.length === 0 ? (
+          ) : contracts.length === 0 ? (
             <p style={{ color: PAGE.muted, margin: 0 }}>No contracts yet.</p>
           ) : (
-            <div style={{ display: 'grid', gap: 12 }}>{listForTab.map((row) => renderContractCard(row, { showSend: true }))}</div>
+            <div style={{ display: 'grid', gap: 12 }}>{contracts.map((row) => renderContractCard(row, { showSend: true }))}</div>
           )}
         </div>
       )}

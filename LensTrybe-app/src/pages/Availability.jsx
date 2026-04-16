@@ -525,12 +525,11 @@ function Availability() {
       return at.localeCompare(bt)
     })
 
-  const pageHeaderRow = (showViewProfile) => (
+  const pageHeaderRow = () => (
     <div
       style={{
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
         gap: 16,
         marginBottom: 20,
         flexWrap: 'wrap',
@@ -568,28 +567,6 @@ function Availability() {
           </div>
         </div>
       </div>
-      {showViewProfile ? (
-        <Link
-          to="/dashboard/profile/edit-profile"
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 6,
-            color: '#888',
-            fontSize: 13,
-            fontWeight: 600,
-            textDecoration: 'none',
-            fontFamily: 'Inter, sans-serif',
-            whiteSpace: 'nowrap',
-            flexShrink: 0,
-          }}
-        >
-          <span aria-hidden="true" style={{ fontSize: 14, opacity: 0.9 }}>
-            👁
-          </span>
-          View Profile
-        </Link>
-      ) : null}
     </div>
   )
 
@@ -597,7 +574,7 @@ function Availability() {
     return (
       <section style={shellStyle}>
         <div style={wrapStyle}>
-          {pageHeaderRow(false)}
+          {pageHeaderRow()}
           <div style={{ marginTop: 8, color: THEME.muted, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
             Loading session…
           </div>
@@ -610,7 +587,7 @@ function Availability() {
     return (
       <section style={shellStyle}>
         <div style={wrapStyle}>
-          {pageHeaderRow(false)}
+          {pageHeaderRow()}
           <div style={{ marginTop: 8, color: THEME.muted, fontSize: 13, fontFamily: 'Inter, sans-serif' }}>
             Sign in to manage your calendar.
           </div>
@@ -622,7 +599,7 @@ function Availability() {
   return (
     <section style={shellStyle}>
       <div style={wrapStyle}>
-        {pageHeaderRow(true)}
+        {pageHeaderRow()}
 
         {(errorMessage || statusMessage) && (
           <div
