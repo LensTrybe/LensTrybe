@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir -p \"C:\\\\Users\\\\evale\\\\OneDrive\\\\Desktop\\\\LensTrybe App Build\\\\LensTrybe-app\\\\src\\\\styles\")",
+      "Bash(mkdir -p \"C:\\\\Users\\\\evale\\\\OneDrive\\\\Desktop\\\\LensTrybe App Build\\\\LensTrybe-app\\\\src\\\\components\\\\ui\")"
+    ]
+  }
+}
