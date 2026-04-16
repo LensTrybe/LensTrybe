@@ -3,6 +3,18 @@ import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
 
+/** Post-OAuth / magic-link: optional `sessionStorage.returnTo` — never hijack portal or deliver links. */
+function consumeOAuthReturnRedirect() {
+  if (typeof window === 'undefined') return
+  const path = window.location.pathname
+  if (path.startsWith('/portal/') || path.startsWith('/deliver/')) return
+  const returnTo = sessionStorage.getItem('returnTo')
+  if (returnTo && !returnTo.startsWith('/portal') && !returnTo.startsWith('/deliver')) {
+    sessionStorage.removeItem('returnTo')
+    window.location.href = returnTo
+  }
+}
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null)
   const [profile, setProfile] = useState(null)
@@ -12,14 +24,18 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchUserData(session.user.id)
-      else setLoading(false)
+      if (session?.user) {
+        consumeOAuthReturnRedirect()
+        fetchUserData(session.user.id)
+      } else setLoading(false)
     })
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null)
-      if (session?.user) fetchUserData(session.user.id)
-      else { setProfile(null); setClientAccount(null); setLoading(false) }
+      if (session?.user) {
+        if (event === 'SIGNED_IN') consumeOAuthReturnRedirect()
+        fetchUserData(session.user.id)
+      } else { setProfile(null); setClientAccount(null); setLoading(false) }
     })
 
     return () => subscription.unsubscribe()
@@ -38,6 +54,15 @@ export function AuthProvider({ children }) {
       .select('*')
       .eq('id', userId)
       .maybeSingle()
+
+    // Link any message threads that were created with this client's email but no client_user_id
+    if (clientData) {
+      await supabase
+        .from('message_threads')
+        .update({ client_user_id: userId })
+        .eq('client_email', clientData.email)
+        .is('client_user_id', null)
+    }
 
     setProfile(profileData)
     setClientAccount(clientData)

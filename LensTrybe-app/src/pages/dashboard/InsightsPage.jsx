@@ -1,187 +1,138 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import { useSubscription } from '../../context/SubscriptionContext'
-import Badge from '../../components/ui/Badge'
 
-function StatCard({ label, value, sub, accent, prefix, suffix }) {
+function StatCard({ label, value, sub, icon, accent = '#1DB954' }) {
   return (
     <div style={{
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      padding: '24px',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
+      background: 'var(--bg-elevated)', border: '1px solid var(--border-default)',
+      borderRadius: '12px', padding: '24px 28px',
+      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
     }}>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '36px', color: accent ?? 'var(--text-primary)', lineHeight: 1 }}>
-        {prefix}{value}{suffix}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: '32px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1 }}>{value}</span>
+        {sub && <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{sub}</span>}
       </div>
-      {sub && <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{sub}</div>}
+      <div style={{ fontSize: '28px', opacity: 0.25 }}>{icon}</div>
     </div>
   )
 }
-
-function BarChart({ data, label }) {
-  const max = Math.max(...data.map(d => d.value), 1)
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{label}</div>
-      <div style={{ display: 'flex', alignItems: 'flex-end', gap: '8px', height: '120px' }}>
-        {data.map((d, i) => (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', height: '100%', justifyContent: 'flex-end' }}>
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{d.value}</div>
-            <div style={{
-              width: '100%',
-              height: `${Math.max(4, (d.value / max) * 100)}%`,
-              background: 'var(--green)',
-              borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
-              opacity: 0.8,
-              transition: 'height var(--transition-slow)',
-            }} />
-            <div style={{ fontSize: '10px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' }}>{d.label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
-const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 export default function InsightsPage() {
   const { user } = useAuth()
-  const { tier } = useSubscription()
+  const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [stats, setStats] = useState({
-    totalRevenue: 0,
-    revenueThisMonth: 0,
-    totalEnquiries: 0,
-    enquiriesThisMonth: 0,
-    totalBookings: 0,
-    avgProjectValue: 0,
-    totalReviews: 0,
-    avgRating: 0,
-    conversionRate: 0,
-    monthlyRevenue: [],
-    monthlyEnquiries: [],
-  })
 
-  useEffect(() => { loadStats() }, [user])
+  useEffect(() => { if (user) loadStats() }, [user])
 
   async function loadStats() {
-    if (!user) return
+    setLoading(true)
     const now = new Date()
-    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
 
-    const [invoices, threads, bookings, reviews] = await Promise.all([
+    const [
+      { data: invoices },
+      { data: threads },
+      { data: bookings },
+      { data: reviews },
+    ] = await Promise.all([
       supabase.from('invoices').select('amount, status, created_at').eq('creative_id', user.id),
-      supabase.from('message_threads').select('created_at').eq('creative_id', user.id),
-      supabase.from('bookings').select('id').eq('creative_id', user.id),
+      supabase.from('message_threads').select('id, created_at').eq('creative_id', user.id),
+      supabase.from('bookings').select('id, created_at, status').eq('creative_id', user.id),
       supabase.from('reviews').select('rating').eq('creative_id', user.id),
     ])
 
-    const allInvoices = invoices.data ?? []
-    const paidInvoices = allInvoices.filter(i => i.status === 'paid')
-    const totalRevenue = paidInvoices.reduce((s, i) => s + (i.amount ?? 0), 0)
-    const revenueThisMonth = paidInvoices
-      .filter(i => i.created_at >= monthStart)
-      .reduce((s, i) => s + (i.amount ?? 0), 0)
+    const paid = (invoices ?? []).filter(i => i.status === 'paid')
+    const thisMonthRevenue = paid.filter(i => i.created_at >= thisMonthStart).reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const ytdRevenue = paid.filter(i => i.created_at >= new Date(now.getFullYear(), 0, 1).toISOString()).reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const totalRevenue = paid.reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const thisMonthEnquiries = (threads ?? []).filter(t => t.created_at >= thisMonthStart).length
+    const lastMonthEnquiries = (threads ?? []).filter(t => t.created_at >= lastMonthStart && t.created_at < thisMonthStart).length
+    const activeEnquiries = (threads ?? []).length
+    const confirmedBookings = (bookings ?? []).filter(b => b.status === 'confirmed').length
+    const totalBookings = (bookings ?? []).length
+    const conversionRate = activeEnquiries > 0 ? Math.round((confirmedBookings / activeEnquiries) * 100) : 0
+    const avgRating = reviews?.length ? (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1) : '—'
+    const avgProjectValue = confirmedBookings > 0 ? (totalRevenue / confirmedBookings).toFixed(2) : '0.00'
 
-    const allThreads = threads.data ?? []
-    const enquiriesThisMonth = allThreads.filter(t => t.created_at >= monthStart).length
-
-    const allReviews = reviews.data ?? []
-    const avgRating = allReviews.length > 0
-      ? (allReviews.reduce((s, r) => s + (r.rating ?? 0), 0) / allReviews.length).toFixed(1)
-      : 0
-
-    const avgProjectValue = paidInvoices.length > 0
-      ? (totalRevenue / paidInvoices.length).toFixed(0)
-      : 0
-
-    const conversionRate = allThreads.length > 0
-      ? ((bookings.data?.length ?? 0) / allThreads.length * 100).toFixed(0)
-      : 0
-
-    const monthlyRevenue = MONTHS.map((label, i) => {
-      const value = paidInvoices
-        .filter(inv => new Date(inv.created_at).getMonth() === i && new Date(inv.created_at).getFullYear() === now.getFullYear())
-        .reduce((s, inv) => s + (inv.amount ?? 0), 0)
-      return { label, value: Math.round(value) }
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+      return { label: d.toLocaleString('default', { month: 'short' }), month: d.getMonth(), year: d.getFullYear() }
     })
 
-    const monthlyEnquiries = MONTHS.map((label, i) => {
-      const value = allThreads.filter(t => new Date(t.created_at).getMonth() === i && new Date(t.created_at).getFullYear() === now.getFullYear()).length
-      return { label, value }
-    })
+    const chartData = months.map(m => ({
+      name: m.label,
+      Bookings: (bookings ?? []).filter(b => { const d = new Date(b.created_at); return d.getMonth() === m.month && d.getFullYear() === m.year }).length,
+      Enquiries: (threads ?? []).filter(t => { const d = new Date(t.created_at); return d.getMonth() === m.month && d.getFullYear() === m.year }).length,
+    }))
 
-    setStats({
-      totalRevenue,
-      revenueThisMonth,
-      totalEnquiries: allThreads.length,
-      enquiriesThisMonth,
-      totalBookings: bookings.data?.length ?? 0,
-      avgProjectValue,
-      totalReviews: allReviews.length,
-      avgRating,
-      conversionRate,
-      monthlyRevenue,
-      monthlyEnquiries,
-    })
+    setStats({ thisMonthRevenue, ytdRevenue, thisMonthEnquiries, lastMonthEnquiries, activeEnquiries, confirmedBookings, totalBookings, conversionRate, avgRating, avgProjectValue, totalReviews: reviews?.length ?? 0, chartData })
     setLoading(false)
   }
 
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
-    chartGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' },
-    chartCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginBottom: '4px' },
-    sectionSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: '24px' },
-  }
+  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading insights…</div>
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading insights…</div>
+  const s = stats
 
   return (
-    <div style={styles.page}>
-      <div>
-        <h1 style={styles.title}>Insights</h1>
-        <p style={styles.subtitle}>Your business performance at a glance.</p>
+    <div style={{ padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: '20px', fontFamily: 'var(--font-ui)' }}>
+      <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 }}>Insights</div>
+
+      {/* Row 1 — 4 top stats */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <StatCard label="Total Bookings" value={s.totalBookings} icon="📅" />
+        <StatCard label="Active Enquiries" value={s.activeEnquiries} icon="💬" />
+        <StatCard label="Profile Views" value="0" icon="👁" />
+        <StatCard label="Platform Reviews" value={s.totalReviews} icon="⭐" />
       </div>
 
-      <div>
-        <div style={styles.sectionTitle}>Revenue</div>
-        <div style={styles.sectionSub}>Based on invoices marked as paid.</div>
-        <div style={styles.statsGrid}>
-          <StatCard label="Total Revenue" value={stats.totalRevenue.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} prefix="$" accent="var(--green)" sub="All time paid invoices" />
-          <StatCard label="This Month" value={stats.revenueThisMonth.toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} prefix="$" sub="Revenue this calendar month" />
-          <StatCard label="Avg Project Value" value={`$${Number(stats.avgProjectValue).toLocaleString()}`} sub="Per paid invoice" />
-          <StatCard label="Total Bookings" value={stats.totalBookings} sub="All time" />
-        </div>
+      {/* Row 2 — Revenue */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        <StatCard label="This Month Revenue" value={`AUD ${s.thisMonthRevenue.toFixed(2)}`} icon="💰" />
+        <StatCard label="YTD Revenue" value={`AUD ${s.ytdRevenue.toFixed(2)}`} icon="📈" />
+        <StatCard label="Enquiries This Month" value={s.thisMonthEnquiries} sub={`vs ${s.lastMonthEnquiries} last month`} icon="📥" />
+        <StatCard label="Conversion Rate" value={`${s.conversionRate}%`} icon="🎯" />
       </div>
 
-      <div>
-        <div style={styles.sectionTitle}>Enquiries</div>
-        <div style={styles.sectionSub}>Message threads from clients.</div>
-        <div style={styles.statsGrid}>
-          <StatCard label="Total Enquiries" value={stats.totalEnquiries} sub="All time" />
-          <StatCard label="This Month" value={stats.enquiriesThisMonth} sub="New enquiries this month" />
-          <StatCard label="Conversion Rate" value={stats.conversionRate} suffix="%" sub="Enquiries that became bookings" accent={stats.conversionRate > 20 ? 'var(--green)' : 'var(--text-primary)'} />
-          <StatCard label="Reviews" value={stats.totalReviews} sub={stats.avgRating > 0 ? `Avg rating: ${stats.avgRating} ★` : 'No reviews yet'} accent={stats.avgRating >= 4.5 ? 'var(--green)' : 'var(--text-primary)'} />
-        </div>
+      {/* Row 3 — Business metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <StatCard label="Most Enquired" value="N/A" icon="🏆" />
+        <StatCard label="Average Project Value" value={`AUD ${s.avgProjectValue}`} icon="💵" />
+        <StatCard label="Client Return Rate" value="0%" icon="🔄" />
       </div>
 
-      <div style={styles.chartGrid}>
-        <div style={styles.chartCard}>
-          <BarChart data={stats.monthlyRevenue} label={`Revenue by month — ${new Date().getFullYear()}`} />
+      {/* Row 4 — More metrics */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' }}>
+        <StatCard label="Profile Views This Month" value="0" sub="vs 0 last month" icon="👁" />
+        <StatCard label="Search Appearances" value="0" icon="🔍" />
+        <StatCard label="Total Clients" value={s.activeEnquiries} sub={`${s.totalBookings} total bookings`} icon="👥" />
+      </div>
+
+      {/* Chart */}
+      <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '24px' }}>
+        <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Bookings Trend (Last 6 Months)</div>
+        <div style={{ display: 'flex', gap: '20px', marginBottom: '16px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#1DB954' }} />
+            Bookings
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', color: 'var(--text-muted)' }}>
+            <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#a855f7' }} />
+            Enquiries
+          </div>
         </div>
-        <div style={styles.chartCard}>
-          <BarChart data={stats.monthlyEnquiries} label={`Enquiries by month — ${new Date().getFullYear()}`} />
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: '12px', height: '160px', padding: '0 8px' }}>
+          {s.chartData.map((d, i) => (
+            <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+              <div style={{ width: '100%', display: 'flex', gap: '2px', alignItems: 'flex-end', justifyContent: 'center', flex: 1 }}>
+                <div style={{ width: '40%', background: '#1DB954', borderRadius: '3px 3px 0 0', height: `${Math.max((d.Bookings / Math.max(...s.chartData.map(x => x.Bookings), 1)) * 100, d.Bookings > 0 ? 4 : 0)}%`, minHeight: d.Bookings > 0 ? '4px' : '0' }} />
+                <div style={{ width: '40%', background: '#a855f7', borderRadius: '3px 3px 0 0', height: `${Math.max((d.Enquiries / Math.max(...s.chartData.map(x => x.Enquiries), 1)) * 100, d.Enquiries > 0 ? 4 : 0)}%`, minHeight: d.Enquiries > 0 ? '4px' : '0' }} />
+              </div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{d.name}</div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

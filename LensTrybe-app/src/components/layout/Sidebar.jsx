@@ -9,7 +9,6 @@ const nav = [
   { label: 'Find a Creative', path: '/creatives', icon: '🔍', section: null },
   { label: 'Messages', path: '/dashboard/clients/messages', icon: '✉', section: 'Clients' },
   { label: 'CRM', path: '/dashboard/clients/crm', icon: '◈', section: 'Clients', feature: 'crm' },
-  { label: 'Client Portals', path: '/dashboard/clients/client-portals', icon: '⬡', section: 'Clients', feature: 'crm' },
   { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: '◎', section: 'Finance', feature: 'invoicing' },
   { label: 'Quotes', path: '/dashboard/finance/quotes', icon: '◌', section: 'Finance', feature: 'invoicing' },
   { label: 'Contracts', path: '/dashboard/finance/contracts', icon: '✦', section: 'Finance', feature: 'contracts' },

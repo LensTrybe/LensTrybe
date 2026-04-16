@@ -117,7 +117,12 @@ export default function PublicLayout() {
                     <div style={styles.dropdownName}>{displayName}</div>
                     <button
                       style={styles.dropdownItem}
-                      onClick={() => { setDropdownOpen(false); navigate(isCreative ? '/dashboard' : '/client-dashboard') }}
+                      onClick={() => {
+                        setDropdownOpen(false)
+                        const p = window.location.pathname
+                        if (p.startsWith('/portal/') || p.startsWith('/deliver/')) return
+                        navigate(isCreative ? '/dashboard' : '/client-dashboard')
+                      }}
                       onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
                       onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                     >

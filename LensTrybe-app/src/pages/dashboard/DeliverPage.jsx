@@ -12,7 +12,7 @@ function generatePassword() {
 }
 
 export default function DeliverPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { tier } = useSubscription()
   const [deliveries, setDeliveries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -90,8 +90,17 @@ export default function DeliverPage() {
       setUploading(false)
     }
 
+    const { data } = await supabase
+      .from('deliveries')
+      .select('*')
+      .eq('id', delivery.id)
+      .single()
+
     await supabase.functions.invoke('send-delivery', {
-      body: { deliveryId: delivery.id }
+      body: {
+        delivery: data ?? delivery,
+        profile,
+      },
     })
 
     await loadDeliveries()

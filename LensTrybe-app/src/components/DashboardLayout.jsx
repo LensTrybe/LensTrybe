@@ -31,7 +31,6 @@ const navSections = [
     links: [
       { label: 'Messages', to: '/dashboard/clients/messages' },
       { label: 'CRM', to: '/dashboard/clients/crm' },
-      { label: 'Client Portals', to: '/dashboard/clients/client-portals' },
     ],
   },
   {
@@ -69,7 +68,6 @@ const LINK_FEATURE_KEY = {
   '/dashboard': 'hasInsights',
   '/dashboard/finance/contracts': 'hasContracts',
   '/dashboard/clients/crm': 'hasCRM',
-  '/dashboard/clients/client-portals': 'hasClientPortal',
   '/dashboard/portfolio-design/brand-kit': 'hasBrandKit',
   '/dashboard/portfolio-design/portfolio-website': 'hasPortfolioWebsite',
   '/dashboard/portfolio-design/deliver': 'hasDeliver',

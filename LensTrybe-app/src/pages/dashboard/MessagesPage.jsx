@@ -13,7 +13,81 @@ export default function MessagesPage() {
   const [loading, setLoading] = useState(true)
   const [sending, setSending] = useState(false)
   const [editingNickname, setEditingNickname] = useState(false)
+  const [showNewMessage, setShowNewMessage] = useState(false)
+  const [sendingPortal, setSendingPortal] = useState(false)
+  const [newMessageEmail, setNewMessageEmail] = useState('')
+  const [newMessageName, setNewMessageName] = useState('')
+  const [newMessageText, setNewMessageText] = useState('')
+  const [toast, setToast] = useState(null)
   const bottomRef = useRef(null)
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  async function sendPortal() {
+    if (!newMessageEmail.trim() || !newMessageText.trim()) return
+    if (!profile?.id) { showToast('Only creatives can send new messages', 'error'); return }
+    setSendingPortal(true)
+    try {
+      const email = newMessageEmail.trim()
+
+      // Look up if client already has an account
+      const { data: clientAccount } = await supabase
+        .from('client_accounts')
+        .select('id, email')
+        .eq('email', email)
+        .maybeSingle()
+
+      // Create message thread
+      const { data: thread, error: threadError } = await supabase
+        .from('message_threads')
+        .insert({
+          creative_id: user.id,
+          client_user_id: clientAccount?.id ?? null,
+          client_name: newMessageName || email,
+          client_email: email,
+          subject: 'New Message',
+        })
+        .select()
+        .single()
+      if (threadError) throw threadError
+
+      // Insert message
+      const { error: msgError } = await supabase.from('messages').insert({
+        thread_id: thread.id,
+        sender_type: 'creative',
+        sender_name: profile?.business_name ?? user.email,
+        body: newMessageText.trim(),
+        creative_id: user.id,
+      })
+      if (msgError) throw msgError
+
+      // Send email notification
+      const { error: fnError } = await supabase.functions.invoke('send-message-notification', {
+        body: {
+          to: email,
+          toName: newMessageName || email,
+          fromName: profile?.business_name ?? user.email,
+          subject: `New message from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
+          messageBody: newMessageText.trim(),
+          threadSubject: 'New Message',
+        },
+      })
+      if (fnError) throw fnError
+
+      await loadThreads()
+      setShowNewMessage(false)
+      setNewMessageEmail('')
+      setNewMessageName('')
+      setNewMessageText('')
+      showToast('Message sent to ' + email)
+    } catch (err) {
+      showToast('Failed to send: ' + (err?.message ?? 'Unknown error'), 'error')
+    }
+    setSendingPortal(false)
+  }
 
   useEffect(() => { loadThreads() }, [user])
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
@@ -26,8 +100,16 @@ export default function MessagesPage() {
       .select('*')
       .eq('creative_id', user.id)
       .order('created_at', { ascending: false })
-    setThreads(data ?? [])
-    if (data?.length > 0 && !selected) setSelected(data[0])
+
+    // For each thread, check if latest message is from client and after last_read_at
+    const threadsWithUnread = (data ?? []).map(t => {
+      const lastRead = t.last_read_at ? new Date(t.last_read_at) : new Date(0)
+      const lastMsg = t.last_message_at ? new Date(t.last_message_at) : null
+      return { ...t, isUnread: lastMsg && lastMsg > lastRead }
+    })
+
+    setThreads(threadsWithUnread)
+    if (threadsWithUnread.length > 0 && !selected) setSelected(threadsWithUnread[0])
     setLoading(false)
   }
 
@@ -121,9 +203,22 @@ export default function MessagesPage() {
 
   return (
     <div>
-      <div style={{ marginBottom: '24px' }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 }}>Messages</h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' }}>Your client conversations.</p>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+        </div>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 24px 0', marginBottom: '16px' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 }}>Messages</div>
+        {profile && (
+          <button
+            type="button"
+            onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}
+            style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+          >
+            + New Message
+          </button>
+        )}
       </div>
 
       <div style={styles.page}>
@@ -136,11 +231,18 @@ export default function MessagesPage() {
               </div>
             ) : threads.map(t => (
               <div key={t.id} style={{ ...styles.thread(selected?.id === t.id), position: 'relative' }}
-                onClick={() => setSelected(t)}
+                onClick={async () => {
+                  setSelected(t)
+                  await supabase.from('message_threads').update({ last_read_at: new Date().toISOString() }).eq('id', t.id)
+                  setThreads(prev => prev.map(x => x.id === t.id ? { ...x, isUnread: false } : x))
+                }}
                 onMouseEnter={e => e.currentTarget.querySelector('.del-btn').style.opacity = '1'}
                 onMouseLeave={e => e.currentTarget.querySelector('.del-btn').style.opacity = '0'}
               >
-                <div style={styles.threadName}>{t.nickname ?? t.client_name ?? t.client_email ?? 'Client'}</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {t.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1DB954', flexShrink: 0 }} />}
+                  <div style={{ ...styles.threadName, color: t.isUnread ? 'var(--text-primary)' : undefined, fontWeight: t.isUnread ? 700 : undefined }}>{t.nickname ?? t.client_name ?? t.client_email ?? 'Client'}</div>
+                </div>
                 <div style={styles.threadPreview}>{t.subject ?? 'New enquiry'}</div>
                 <button
                   className="del-btn"
@@ -170,7 +272,7 @@ export default function MessagesPage() {
           ) : (
             <>
               <div style={styles.mainHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
                   {editingNickname ? (
                     <input
                       autoFocus
@@ -188,7 +290,7 @@ export default function MessagesPage() {
                   ) : (
                     <>
                       <span style={styles.mainName}>{selected?.nickname ?? selected?.client_name ?? selected?.client_email ?? 'Client'}</span>
-                      <button onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}>✎</button>
+                      <button type="button" onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}>✎</button>
                     </>
                   )}
                 </div>
@@ -232,6 +334,53 @@ export default function MessagesPage() {
           )}
         </div>
       </div>
+
+      {showNewMessage && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '8px' }}>New Message</div>
+            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', lineHeight: 1.6 }}>
+              {"Send a portal link to a client. Enter their email address and they'll receive a link to view their invoices, quotes, contracts and messages with you — no account needed."}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Name</label>
+                <input
+                  value={newMessageName}
+                  onChange={e => setNewMessageName(e.target.value)}
+                  placeholder="Jane Smith"
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Email</label>
+                <input
+                  type="email"
+                  value={newMessageEmail}
+                  onChange={e => setNewMessageEmail(e.target.value)}
+                  placeholder="jane@example.com"
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Message</label>
+                <textarea
+                  value={newMessageText}
+                  onChange={e => setNewMessageText(e.target.value)}
+                  placeholder="Write your message..."
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', minHeight: '100px', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText('') }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={sendPortal} disabled={sendingPortal || !newMessageEmail.trim() || !newMessageText.trim()} style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: sendingPortal || !newMessageEmail.trim() || !newMessageText.trim() ? 0.6 : 1 }}>
+                {sendingPortal ? 'Sending…' : 'Send Portal Link'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

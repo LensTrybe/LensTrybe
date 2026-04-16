@@ -6,18 +6,24 @@ import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 
 export default function ClientPortalsPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [portals, setPortals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(null)
+  const [toast, setToast] = useState(null)
   const [form, setForm] = useState({
     client_name: '',
     client_email: '',
   })
 
   useEffect(() => { loadPortals() }, [user])
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   async function loadPortals() {
     if (!user) return
@@ -36,16 +42,34 @@ export default function ClientPortalsPage() {
 
   async function createPortal() {
     setSaving(true)
-    const portal_token = crypto.randomUUID()
-    await supabase.from('client_portals').insert({
-      creative_id: user.id,
-      client_name: form.client_name,
-      client_email: form.client_email,
-      portal_token,
-    })
-    await loadPortals()
-    setShowCreate(false)
-    resetForm()
+    try {
+      const token = crypto.randomUUID()
+      const { error } = await supabase.from('client_portals').insert({
+        creative_id: user.id,
+        client_name: form.client_name,
+        client_email: form.client_email,
+        portal_token: token,
+      }).select().single()
+      if (error) throw error
+
+      const portalUrl = `https://app.lenstrybe.com/portal/${token}`
+
+      await supabase.functions.invoke('send-portal-link', {
+        body: {
+          to: form.client_email,
+          client_name: form.client_name,
+          creative_name: profile?.business_name ?? user.email,
+          portal_url: portalUrl,
+        },
+      })
+
+      await loadPortals()
+      setShowCreate(false)
+      resetForm()
+      showToast('Portal created and link sent to client')
+    } catch (err) {
+      showToast('Failed to create portal: ' + err.message, 'error')
+    }
     setSaving(false)
   }
 
@@ -87,6 +111,11 @@ export default function ClientPortalsPage() {
 
   return (
     <div style={styles.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+        </div>
+      )}
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Client Portals</h1>

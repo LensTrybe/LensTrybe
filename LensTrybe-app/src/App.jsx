@@ -14,7 +14,6 @@ import PortfolioPage from './pages/dashboard/PortfolioPage'
 import BrandKitPage from './pages/dashboard/BrandKitPage'
 import DeliverPage from './pages/dashboard/DeliverPage'
 import CRMPage from './pages/dashboard/CRMPage'
-import ClientPortalsPage from './pages/dashboard/ClientPortalsPage'
 import InsightsPage from './pages/dashboard/InsightsPage'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
@@ -27,7 +26,7 @@ import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
 import SignContract from './pages/SignContract'
 import PublicPortfolioPage from './pages/PortfolioPage'
-import ClientPortalPage from './pages/ClientPortalPage'
+import PublicPortalPage from './pages/public/PublicPortalPage'
 import DeliverDownloadPage from './pages/DeliverDownloadPage'
 import TeamAcceptPage from './pages/TeamAcceptPage'
 import BookingRequestsPage from './pages/dashboard/BookingRequestsPage'
@@ -90,7 +89,6 @@ export default function App() {
         <Route index element={<DashboardHome />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
-        <Route path="clients/client-portals" element={<ClientPortalsPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />
         <Route path="finance/quotes" element={<QuotesPage />} />
         <Route path="finance/contracts" element={<ContractsPage />} />
@@ -119,10 +117,10 @@ export default function App() {
       } />
 
 
-      {/* Token-based public pages — keep existing components */}
+      {/* Token-based public pages — no auth; must stay outside ProtectedRoute */}
       <Route path="/sign/:token" element={<SignContract />} />
       <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
-      <Route path="/portal/:token" element={<ClientPortalPage />} />
+      <Route path="/portal/:token" element={<PublicPortalPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
       <Route path="/team/accept/:token" element={<TeamAcceptPage />} />
 

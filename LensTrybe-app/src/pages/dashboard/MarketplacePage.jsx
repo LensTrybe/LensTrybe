@@ -1,292 +1,577 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import { useSubscription } from '../../context/SubscriptionContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Badge from '../../components/ui/Badge'
-import Modal from '../../components/ui/Modal'
 
-const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones & Accessories', 'Editing Hardware', 'Bags & Tripods', 'Miscellaneous']
+const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones', 'Editing Hardware', 'Bags & Tripods', 'Miscellaneous']
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair']
-const LIMITS = { basic: 0, pro: 5, expert: 15, elite: 999 }
 
 export default function MarketplacePage() {
   const { user } = useAuth()
-  const { tier } = useSubscription()
-  const [listings, setListings] = useState([])
-  const [allListings, setAllListings] = useState([])
-  const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState('browse')
+  const [listings, setListings] = useState([])
+  const [myListings, setMyListings] = useState([])
+  const [savedListings, setSavedListings] = useState([])
+  const [savedIds, setSavedIds] = useState(new Set())
   const [showCreate, setShowCreate] = useState(false)
-  const [showView, setShowView] = useState(null)
+  const [selected, setSelected] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [categoryFilter, setCategoryFilter] = useState('')
-  const limit = LIMITS[tier] ?? 0
-  const myListings = listings.filter(l => l.creative_id === user?.id)
+  const [toast, setToast] = useState(null)
+  const [search, setSearch] = useState('')
+  const [filterCat, setFilterCat] = useState('All')
+  const [form, setForm] = useState({ title: '', category: 'Camera Bodies', condition: 'Good', price: '', description: '', location: '', open_to_swaps: false })
+  const [uploadingPhotos, setUploadingPhotos] = useState(false)
+  const [photoFiles, setPhotoFiles] = useState([])
+  const [photoUrls, setPhotoUrls] = useState([])
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState({})
+  const [editPhotoUrls, setEditPhotoUrls] = useState([])
+  const [uploadingEditPhotos, setUploadingEditPhotos] = useState(false)
+  const [lightbox, setLightbox] = useState(null)
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    price: '',
-    condition: 'Good',
-    category: 'Camera Bodies',
-    location: '',
-    open_to_swap: false,
-  })
+  useEffect(() => { if (user) { loadListings(); loadMyListings(); loadSaved() } }, [user])
 
-  useEffect(() => { loadListings() }, [user])
-
-  async function loadListings() {
-    if (!user) return
-    const { data } = await supabase
-      .from('marketplace_listings')
-      .select('*')
-      .order('created_at', { ascending: false })
-    setAllListings(data ?? [])
-    setListings(data ?? [])
-    setLoading(false)
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
   }
 
-  function resetForm() {
-    setForm({ title: '', description: '', price: '', condition: 'Good', category: 'Camera Bodies', location: '', open_to_swap: false })
+  function closeCreateModal() {
+    setShowCreate(false)
+    setPhotoUrls([])
+    setPhotoFiles([])
+  }
+
+  async function loadListings() {
+    const { data } = await supabase.from('marketplace_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
+    setListings(data ?? [])
+  }
+
+  async function loadMyListings() {
+    const { data } = await supabase.from('marketplace_listings').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
+    setMyListings(data ?? [])
+  }
+
+  async function loadSaved() {
+    const { data } = await supabase.from('saved_listings').select('listing_id, marketplace_listings(*)').eq('user_id', user.id)
+    setSavedIds(new Set((data ?? []).map(s => s.listing_id)))
+    setSavedListings((data ?? []).map(s => s.marketplace_listings).filter(Boolean))
+  }
+
+  async function uploadPhotos(files) {
+    if (!files?.length || !user) return
+    setUploadingPhotos(true)
+    const urls = []
+    for (const file of files) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${user.id}/${Date.now()}_${safeName}`
+      const { error } = await supabase.storage.from('marketplace').upload(path, file)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl(path)
+        urls.push(publicUrl)
+      }
+    }
+    setPhotoUrls(prev => [...prev, ...urls])
+    setUploadingPhotos(false)
+  }
+
+  async function uploadEditPhotos(files) {
+    if (!files?.length || !user) return
+    setUploadingEditPhotos(true)
+    const urls = []
+    for (const file of files) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = `${user.id}/${Date.now()}_${safeName}`
+      const { error } = await supabase.storage.from('marketplace').upload(path, file)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl(path)
+        urls.push(publicUrl)
+      }
+    }
+    setEditPhotoUrls(prev => [...prev, ...urls])
+    setUploadingEditPhotos(false)
+  }
+
+  async function saveEdit() {
+    if (!selected) return
+    setSaving(true)
+    const { error } = await supabase.from('marketplace_listings').update({
+      title: editForm.title,
+      category: editForm.category,
+      condition: editForm.condition,
+      price: parseFloat(editForm.price),
+      description: editForm.description || null,
+      location: editForm.location || null,
+      open_to_swaps: editForm.open_to_swaps,
+      photos: editPhotoUrls,
+    }).eq('id', selected.id)
+    if (!error) {
+      await loadListings()
+      await loadMyListings()
+      setSelected(prev => ({ ...prev, ...editForm, price: parseFloat(editForm.price), photos: editPhotoUrls }))
+      setEditing(false)
+      showToast('Listing updated')
+    } else {
+      showToast(error.message, 'error')
+    }
+    setSaving(false)
   }
 
   async function createListing() {
-    if (myListings.length >= limit) return
+    if (!form.title || !form.price) { showToast('Title and price are required', 'error'); return }
     setSaving(true)
-    await supabase.from('marketplace_listings').insert({
+    const payload = {
       creative_id: user.id,
       title: form.title,
-      description: form.description,
-      price: parseFloat(form.price) || 0,
-      condition: form.condition,
       category: form.category,
-      location: form.location,
-      open_to_swap: form.open_to_swap,
+      condition: form.condition,
+      price: parseFloat(form.price),
+      description: form.description || null,
+      location: form.location || null,
+      open_to_swaps: form.open_to_swaps,
       status: 'active',
-    })
-    await loadListings()
-    setShowCreate(false)
-    resetForm()
+      photos: photoUrls,
+    }
+    console.log('Creating listing:', payload)
+    const { data, error } = await supabase.from('marketplace_listings').insert(payload).select()
+    console.log('Result:', data, error)
+    if (!error) {
+      await loadListings()
+      await loadMyListings()
+      closeCreateModal()
+      setForm({ title: '', category: 'Camera Bodies', condition: 'Good', price: '', description: '', location: '', open_to_swaps: false })
+      showToast('Listing posted')
+    } else {
+      showToast(error.message, 'error')
+    }
     setSaving(false)
   }
 
   async function deleteListing(id) {
+    if (!window.confirm('Delete this listing?')) return
     await supabase.from('marketplace_listings').delete().eq('id', id)
-    await loadListings()
-    setShowView(null)
+    setMyListings(prev => prev.filter(l => l.id !== id))
+    setListings(prev => prev.filter(l => l.id !== id))
+    if (selected?.id === id) {
+      setSelected(null)
+      setEditing(false)
+    }
+    showToast('Listing deleted')
   }
 
-  const filtered = allListings.filter(l =>
-    (!categoryFilter || l.category === categoryFilter)
-  )
-
-  const conditionVariant = (c) => {
-    if (c === 'New') return 'green'
-    if (c === 'Like New') return 'info'
-    if (c === 'Good') return 'default'
-    return 'warning'
+  async function toggleSave(listingId, e) {
+    e.stopPropagation()
+    if (savedIds.has(listingId)) {
+      await supabase.from('saved_listings').delete().eq('user_id', user.id).eq('listing_id', listingId)
+      setSavedIds(prev => { const next = new Set(prev); next.delete(listingId); return next })
+      setSavedListings(prev => prev.filter(l => l.id !== listingId))
+    } else {
+      await supabase.from('saved_listings').insert({ user_id: user.id, listing_id: listingId })
+      setSavedIds(prev => new Set([...prev, listingId]))
+      await loadSaved()
+    }
   }
 
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', width: 'fit-content' },
-    tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    toolbar: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-    select: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--text-secondary)', outline: 'none', cursor: 'pointer' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '20px', display: 'flex', flexDirection: 'column', gap: '12px', cursor: 'pointer', transition: 'border-color var(--transition-fast)' },
-    cardTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    cardPrice: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--green)' },
-    cardMeta: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' },
-    cardDesc: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-    cardLocation: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' },
-    formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
-    textarea: { width: '100%', minHeight: '80px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
-    toggle: { display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' },
-    toggleTrack: (on) => ({ width: '40px', height: '22px', borderRadius: 'var(--radius-full)', background: on ? 'var(--green)' : 'var(--border-strong)', position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0 }),
-    toggleThumb: (on) => ({ position: 'absolute', top: '3px', left: on ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left var(--transition-base)' }),
-    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    myListingsHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    limitNote: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-    viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+  const filtered = listings.filter(l => {
+    const matchSearch = l.title?.toLowerCase().includes(search.toLowerCase()) || l.description?.toLowerCase().includes(search.toLowerCase())
+    const matchCat = filterCat === 'All' || l.category === filterCat
+    return matchSearch && matchCat
+  })
+
+  const s = {
+    page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
+    header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
+    title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px' },
+    tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s', fontFamily: 'var(--font-ui)' }),
+    postBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
+    filters: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' },
+    searchInput: { flex: 1, minWidth: '200px', padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    select: { padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
+    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px', cursor: 'pointer', position: 'relative', transition: 'border-color 0.15s' },
+    cardTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' },
+    cardPrice: { fontSize: '16px', fontWeight: 700, color: '#1DB954', marginBottom: '6px' },
+    cardMeta: { fontSize: '12px', color: 'var(--text-muted)' },
+    saveBtn: { position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '2px' },
+    empty: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    modalBody: { padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
+    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
+    input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
+    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+    actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--border-subtle)' },
+    cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.title}>Marketplace</h1>
-          <p style={styles.subtitle}>Buy, swap and sell photography and video gear with other creatives.</p>
-        </div>
-        {tab === 'my-listings' && limit > 0 && (
-          <Button variant="primary" disabled={myListings.length >= limit} onClick={() => setShowCreate(true)}>
-            + Post Listing
-          </Button>
-        )}
-      </div>
-
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
-        <div style={styles.tabs}>
-          <button style={styles.tab(tab === 'browse')} onClick={() => setTab('browse')}>Browse All</button>
-          <button style={styles.tab(tab === 'my-listings')} onClick={() => setTab('my-listings')}>My Listings ({myListings.length})</button>
-        </div>
-        {tab === 'browse' && (
-          <select style={styles.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-            <option value="">All categories</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
-        )}
-      </div>
-
-      {tab === 'browse' ? (
-        loading ? (
-          <div style={styles.emptyState}>Loading listings…</div>
-        ) : filtered.length === 0 ? (
-          <div style={styles.emptyState}>No listings yet. Be the first to post gear for sale.</div>
-        ) : (
-          <div style={styles.grid}>
-            {filtered.map(listing => (
-              <div
-                key={listing.id}
-                style={styles.card}
-                onClick={() => setShowView(listing)}
-                onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-              >
-                <div style={styles.cardTitle}>{listing.title}</div>
-                <div style={styles.cardPrice}>${listing.price?.toLocaleString()}</div>
-                <div style={styles.cardMeta}>
-                  <Badge variant={conditionVariant(listing.condition)} size="sm">{listing.condition}</Badge>
-                  <Badge variant="default" size="sm">{listing.category}</Badge>
-                  {listing.open_to_swap && <Badge variant="info" size="sm">Open to swap</Badge>}
-                </div>
-                {listing.description && <div style={styles.cardDesc}>{listing.description}</div>}
-                {listing.location && <div style={styles.cardLocation}>📍 {listing.location}</div>}
-              </div>
-            ))}
-          </div>
-        )
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={styles.myListingsHeader}>
-            <div style={styles.limitNote}>
-              {limit === 0 ? 'Upgrade to Pro or above to post listings.' : `${myListings.length} / ${limit === 999 ? '∞' : limit} active listings`}
-            </div>
-          </div>
-          {myListings.length === 0 ? (
-            <div style={styles.emptyState}>
-              {limit === 0 ? 'Upgrade your plan to post gear for sale.' : 'You have no active listings. Post your first one.'}
-            </div>
-          ) : (
-            <div style={styles.grid}>
-              {myListings.map(listing => (
-                <div
-                  key={listing.id}
-                  style={styles.card}
-                  onClick={() => setShowView(listing)}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-                >
-                  <div style={styles.cardTitle}>{listing.title}</div>
-                  <div style={styles.cardPrice}>${listing.price?.toLocaleString()}</div>
-                  <div style={styles.cardMeta}>
-                    <Badge variant={conditionVariant(listing.condition)} size="sm">{listing.condition}</Badge>
-                    <Badge variant="default" size="sm">{listing.category}</Badge>
-                  </div>
-                  {listing.description && <div style={styles.cardDesc}>{listing.description}</div>}
-                </div>
-              ))}
-            </div>
-          )}
+    <div style={s.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
         </div>
       )}
 
-      <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="Post a Listing" size="lg">
-        <div style={styles.formSection}>
-          <Input label="Title" placeholder="Sony A7III Body — Excellent condition" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
-          <div style={styles.formRow}>
-            <div>
-              <label style={styles.label}>Category</label>
-              <select style={{ ...styles.select, width: '100%' }} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+      <div style={s.header}>
+        <div style={s.title}>Marketplace</div>
+        <button type="button" style={s.postBtn} onClick={() => setShowCreate(true)}>+ Post Listing</button>
+      </div>
+
+      <div style={s.tabs}>
+        <button type="button" style={s.tab(tab === 'browse')} onClick={() => setTab('browse')}>Browse ({listings.length})</button>
+        <button type="button" style={s.tab(tab === 'my')} onClick={() => setTab('my')}>My Listings ({myListings.length})</button>
+        <button type="button" style={s.tab(tab === 'saved')} onClick={() => setTab('saved')}>Saved ({savedListings.length})</button>
+      </div>
+
+      {tab === 'browse' && (
+        <>
+          <div style={s.filters}>
+            <input style={s.searchInput} placeholder="Search listings…" value={search} onChange={e => setSearch(e.target.value)} />
+            <select style={s.select} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+              <option value="All">All Categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          {filtered.length === 0
+            ? <div style={s.empty}>No listings found.</div>
+            : <div style={s.grid}>{filtered.map(l => (
+              <div
+                key={l.id}
+                style={s.card}
+                onClick={() => setSelected(l)}
+                onMouseEnter={e => e.currentTarget.style.borderColor = '#1DB954'}
+                onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+              >
+                <button type="button" style={{ ...s.saveBtn, color: savedIds.has(l.id) ? '#1DB954' : 'var(--text-muted)' }} onClick={e => toggleSave(l.id, e)}>
+                  {savedIds.has(l.id) ? '★' : '☆'}
+                </button>
+                {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
+                <div style={s.cardPrice}>AUD {Number(l.price).toFixed(2)}</div>
+                <div style={s.cardTitle}>{l.title}</div>
+                <div style={s.cardMeta}>{l.category} · {l.condition}</div>
+                {l.location && <div style={s.cardMeta}>{l.location}</div>}
+                {l.open_to_swaps && <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '6px', fontWeight: 600 }}>Open to swaps</div>}
+              </div>
+            ))}</div>
+          }
+        </>
+      )}
+
+      {tab === 'my' && (
+        myListings.length === 0
+          ? <div style={s.empty}>{"You haven't posted any listings yet."}</div>
+          : <div style={s.grid}>
+              {myListings.map(l => (
+                <div key={l.id} style={{ position: 'relative' }}>
+                  <div
+                    style={s.card}
+                    onClick={() => setSelected(l)}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = '#1DB954'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+                  >
+                    {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
+                    <div style={s.cardPrice}>AUD {Number(l.price).toFixed(2)}</div>
+                    <div style={s.cardTitle}>{l.title}</div>
+                    <div style={s.cardMeta}>{l.category} · {l.condition}</div>
+                    {l.location && <div style={s.cardMeta}>{l.location}</div>}
+                    {l.open_to_swaps && <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '6px', fontWeight: 600 }}>Open to swaps</div>}
+                  </div>
+                  <button type="button" onClick={() => deleteListing(l.id)} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '4px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#ef4444', fontSize: '11px', cursor: 'pointer' }}>Delete</button>
+                </div>
+              ))}
             </div>
-            <div>
-              <label style={styles.label}>Condition</label>
-              <select style={{ ...styles.select, width: '100%' }} value={form.condition} onChange={e => setForm(p => ({ ...p, condition: e.target.value }))}>
-                {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
+      )}
+
+      {tab === 'saved' && (
+        savedListings.length === 0
+          ? <div style={s.empty}>No saved listings yet. Browse and click ☆ to save listings.</div>
+          : <div style={s.grid}>{savedListings.map(l => (
+            <div
+              key={l.id}
+              style={s.card}
+              onClick={() => setSelected(l)}
+              onMouseEnter={e => e.currentTarget.style.borderColor = '#1DB954'}
+              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+            >
+              <button type="button" style={{ ...s.saveBtn, color: savedIds.has(l.id) ? '#1DB954' : 'var(--text-muted)' }} onClick={e => toggleSave(l.id, e)}>
+                {savedIds.has(l.id) ? '★' : '☆'}
+              </button>
+              {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
+              <div style={s.cardPrice}>AUD {Number(l.price).toFixed(2)}</div>
+              <div style={s.cardTitle}>{l.title}</div>
+              <div style={s.cardMeta}>{l.category} · {l.condition}</div>
+              {l.location && <div style={s.cardMeta}>{l.location}</div>}
+              {l.open_to_swaps && <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '6px', fontWeight: 600 }}>Open to swaps</div>}
             </div>
-          </div>
-          <div style={styles.formRow}>
-            <Input label="Price (AUD)" type="number" placeholder="1200" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} />
-            <Input label="Location" placeholder="Brisbane, QLD" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} />
-          </div>
-          <div>
-            <label style={styles.label}>Description</label>
-            <textarea style={styles.textarea} placeholder="Describe the item, what's included, any flaws…" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
-          </div>
-          <div style={styles.toggle} onClick={() => setForm(p => ({ ...p, open_to_swap: !p.open_to_swap }))}>
-            <div style={styles.toggleTrack(form.open_to_swap)}>
-              <div style={styles.toggleThumb(form.open_to_swap)} />
+          ))}</div>
+      )}
+
+      {/* Create Modal */}
+      {showCreate && (
+        <div style={s.modal}>
+          <div style={s.modalBox}>
+            <div style={s.modalHeader}>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>Post a Listing</span>
+              <button type="button" onClick={closeCreateModal} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
             </div>
-            <span style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>Open to swaps</span>
-          </div>
-          <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Button>
-            <Button variant="primary" disabled={saving || !form.title || !form.price} onClick={createListing}>
-              {saving ? 'Posting…' : 'Post Listing'}
-            </Button>
+            <div style={s.modalBody}>
+              <div>
+                <label style={s.label}>Title *</label>
+                <input style={s.input} value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} placeholder="e.g. Sony A7III Body" />
+              </div>
+              <div style={s.grid2}>
+                <div>
+                  <label style={s.label}>Category</label>
+                  <select style={{ ...s.input }} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
+                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={s.label}>Condition</label>
+                  <select style={{ ...s.input }} value={form.condition} onChange={e => setForm(p => ({ ...p, condition: e.target.value }))}>
+                    {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div style={s.grid2}>
+                <div>
+                  <label style={s.label}>Price (AUD) *</label>
+                  <input type="number" style={s.input} value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} placeholder="0.00" />
+                </div>
+                <div>
+                  <label style={s.label}>Location</label>
+                  <input style={s.input} value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} placeholder="e.g. Brisbane, QLD" />
+                </div>
+              </div>
+              <div>
+                <label style={s.label}>Description</label>
+                <textarea style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Describe the item, include any accessories..." />
+              </div>
+              <div>
+                <label style={s.label}>Photos (optional, up to 5)</label>
+                <div
+                  style={{ border: '2px dashed var(--border-default)', borderRadius: '10px', padding: '20px', textAlign: 'center', cursor: 'pointer' }}
+                  onClick={() => document.getElementById('marketplace-photo-input')?.click()}
+                >
+                  {uploadingPhotos ? (
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Uploading...</div>
+                  ) : (
+                    <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Click to add photos</div>
+                  )}
+                  <input
+                    id="marketplace-photo-input"
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    style={{ display: 'none' }}
+                    onChange={e => {
+                      const picked = Array.from(e.target.files || []).slice(0, 5 - photoUrls.length)
+                      setPhotoFiles(picked)
+                      uploadPhotos(picked)
+                      e.target.value = ''
+                    }}
+                  />
+                </div>
+                {photoUrls.length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
+                    {photoUrls.map((url, i) => (
+                      <div key={i} style={{ position: 'relative' }}>
+                        <img src={url} alt="" style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-default)' }} />
+                        <button
+                          type="button"
+                          onClick={e => { e.stopPropagation(); setPhotoUrls(prev => prev.filter((_, j) => j !== i)) }}
+                          style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#fff', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                        >✕</button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+                <input type="checkbox" checked={form.open_to_swaps} onChange={e => setForm(p => ({ ...p, open_to_swaps: e.target.checked }))} />
+                Open to swaps
+              </label>
+            </div>
+            <div style={s.actions}>
+              <button type="button" style={s.cancelBtn} onClick={closeCreateModal}>Cancel</button>
+              <button type="button" style={{ ...s.postBtn, opacity: saving || !form.title || !form.price ? 0.5 : 1 }} disabled={saving || !form.title || !form.price} onClick={createListing}>
+                {saving ? 'Posting…' : 'Post Listing'}
+              </button>
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
 
-      {showView && (
-        <Modal isOpen={!!showView} onClose={() => setShowView(null)} title={showView.title} size="md">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '32px', color: 'var(--green)' }}>${showView.price?.toLocaleString()}</div>
-            <div style={styles.viewGrid}>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Category</div>
-                <div style={styles.viewValue}>{showView.category}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Condition</div>
-                <Badge variant={conditionVariant(showView.condition)}>{showView.condition}</Badge>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Location</div>
-                <div style={styles.viewValue}>{showView.location || '—'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Swap</div>
-                <div style={styles.viewValue}>{showView.open_to_swap ? 'Open to swaps' : 'Not swapping'}</div>
+      {/* View / Edit Listing Modal */}
+      {selected && (
+        <div style={s.modal}>
+          <div style={{ ...s.modalBox, maxWidth: '520px' }}>
+            <div style={s.modalHeader}>
+              <span style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                {editing ? 'Edit Listing' : selected.title}
+              </span>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {selected.creative_id === user.id && !editing && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditing(true)
+                      setEditForm({
+                        title: selected.title,
+                        category: selected.category,
+                        condition: selected.condition,
+                        price: String(selected.price),
+                        description: selected.description ?? '',
+                        location: selected.location ?? '',
+                        open_to_swaps: selected.open_to_swaps ?? false,
+                      })
+                      setEditPhotoUrls(selected.photos ?? [])
+                    }}
+                    style={{ padding: '6px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                  >✎ Edit</button>
+                )}
+                <button type="button" onClick={() => { setSelected(null); setEditing(false) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
-            {showView.description && (
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Description</div>
-                <div style={{ ...styles.viewValue, lineHeight: 1.7, color: 'var(--text-secondary)' }}>{showView.description}</div>
-              </div>
-            )}
-            <div style={styles.modalActions}>
-              {showView.creative_id === user?.id && (
-                <Button variant="danger" size="sm" onClick={() => deleteListing(showView.id)}>Delete Listing</Button>
+
+            <div style={{ padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {!editing ? (
+                <>
+                  {selected.photos?.length > 0 && (
+                    <div style={{ display: 'flex', gap: '8px', overflowX: 'auto' }}>
+                      {selected.photos.map((url, i) => (
+                        <img
+                          key={i}
+                          src={url}
+                          alt=""
+                          onClick={e => { e.stopPropagation(); setLightbox(url) }}
+                          style={{ width: '120px', height: '120px', objectFit: 'cover', borderRadius: '8px', flexShrink: 0, cursor: 'zoom-in', transition: 'opacity 0.15s' }}
+                          onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+                          onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  <div style={{ fontSize: '28px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(selected.price).toFixed(2)}</div>
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                    <span style={{ padding: '4px 10px', background: 'var(--bg-base)', borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.category}</span>
+                    <span style={{ padding: '4px 10px', background: 'var(--bg-base)', borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.condition}</span>
+                    {selected.open_to_swaps && <span style={{ padding: '4px 10px', background: 'rgba(168,85,247,0.1)', borderRadius: '999px', fontSize: '12px', color: '#a855f7', fontWeight: 600 }}>Open to swaps</span>}
+                  </div>
+                  {selected.location && <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>📍 {selected.location}</div>}
+                  {selected.description && <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{selected.description}</div>}
+                </>
+              ) : (
+                <>
+                  <div>
+                    <label style={s.label}>Title *</label>
+                    <input style={s.input} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} />
+                  </div>
+                  <div style={s.grid2}>
+                    <div>
+                      <label style={s.label}>Category</label>
+                      <select style={{ ...s.input }} value={editForm.category} onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}>
+                        {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={s.label}>Condition</label>
+                      <select style={{ ...s.input }} value={editForm.condition} onChange={e => setEditForm(p => ({ ...p, condition: e.target.value }))}>
+                        {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div style={s.grid2}>
+                    <div>
+                      <label style={s.label}>Price (AUD) *</label>
+                      <input type="number" style={s.input} value={editForm.price} onChange={e => setEditForm(p => ({ ...p, price: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label style={s.label}>Location</label>
+                      <input style={s.input} value={editForm.location} onChange={e => setEditForm(p => ({ ...p, location: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div>
+                    <label style={s.label}>Description</label>
+                    <textarea style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} value={editForm.description} onChange={e => setEditForm(p => ({ ...p, description: e.target.value }))} />
+                  </div>
+                  <div>
+                    <label style={s.label}>Photos</label>
+                    <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
+                      {editPhotoUrls.map((url, i) => (
+                        <div key={i} style={{ position: 'relative' }}>
+                          <img src={url} alt="" style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-default)' }} />
+                          <button type="button" onClick={() => setEditPhotoUrls(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#fff', fontSize: '10px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                      ))}
+                      {editPhotoUrls.length < 5 && (
+                        <div
+                          onClick={() => document.getElementById('edit-photo-input')?.click()}
+                          style={{ width: '72px', height: '72px', border: '2px dashed var(--border-default)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '24px', color: 'var(--text-muted)' }}
+                        >+</div>
+                      )}
+                      <input
+                        id="edit-photo-input"
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={e => {
+                          const picked = Array.from(e.target.files || []).slice(0, 5 - editPhotoUrls.length)
+                          uploadEditPhotos(picked)
+                          e.target.value = ''
+                        }}
+                      />
+                    </div>
+                    {uploadingEditPhotos && <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Uploading...</div>}
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+                    <input type="checkbox" checked={editForm.open_to_swaps} onChange={e => setEditForm(p => ({ ...p, open_to_swaps: e.target.checked }))} />
+                    Open to swaps
+                  </label>
+                </>
+              )}
+            </div>
+
+            <div style={s.actions}>
+              {editing ? (
+                <>
+                  <button type="button" style={s.cancelBtn} onClick={() => setEditing(false)}>Cancel</button>
+                  <button type="button" style={{ ...s.postBtn, opacity: saving ? 0.5 : 1 }} disabled={saving} onClick={saveEdit}>
+                    {saving ? 'Saving…' : 'Save Changes'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  {selected.creative_id === user.id && (
+                    <button type="button" onClick={() => deleteListing(selected.id)} style={{ padding: '9px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Delete</button>
+                  )}
+                  <button type="button" style={s.cancelBtn} onClick={() => { setSelected(null); setEditing(false) }}>Close</button>
+                </>
               )}
             </div>
           </div>
-        </Modal>
+        </div>
+      )}
+
+      {lightbox && (
+        <div
+          onClick={() => setLightbox(null)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            style={{ position: 'absolute', top: '20px', right: '24px', background: 'none', border: 'none', color: '#fff', fontSize: '28px', cursor: 'pointer', lineHeight: 1 }}
+          >✕</button>
+          <img
+            src={lightbox}
+            alt=""
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }}
+          />
+        </div>
       )}
     </div>
   )

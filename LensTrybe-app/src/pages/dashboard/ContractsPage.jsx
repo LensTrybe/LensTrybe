@@ -1,225 +1,453 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Badge from '../../components/ui/Badge'
-import Modal from '../../components/ui/Modal'
-
-function statusVariant(status) {
-  if (status === 'signed') return 'green'
-  if (status === 'sent') return 'info'
-  if (status === 'expired') return 'error'
-  if (status === 'viewed') return 'warning'
-  return 'default'
-}
 
 export default function ContractsPage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [contracts, setContracts] = useState([])
-  const [loading, setLoading] = useState(true)
+  const [templates, setTemplates] = useState([])
+  const [tab, setTab] = useState('contracts')
   const [showCreate, setShowCreate] = useState(false)
   const [showView, setShowView] = useState(null)
   const [saving, setSaving] = useState(false)
-  const [sending, setSending] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false)
+  const [templateName, setTemplateName] = useState('')
+  const fileInputRef = useRef()
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadForm, setUploadForm] = useState({ client_name: '', client_email: '', project_name: '' })
+  const [uploadFile, setUploadFile] = useState(null)
+
   const [form, setForm] = useState({
-    client_name: '',
-    client_email: '',
-    project_name: '',
-    project_date: '',
-    content: '',
+    client_name: '', client_email: '', project_name: '',
+    project_date: '', content: '', notes: '', contract_type: 'written',
   })
 
-  useEffect(() => { loadContracts() }, [user])
+  useEffect(() => { if (user) { loadContracts(); loadTemplates() } }, [user])
+
+  function showToast(message, type = 'success') {
+    setToast({ message, type })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   async function loadContracts() {
-    if (!user) return
-    const { data } = await supabase
-      .from('contracts')
-      .select('*')
-      .eq('creative_id', user.id)
-      .order('created_at', { ascending: false })
+    const { data } = await supabase.from('contracts').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
     setContracts(data ?? [])
-    setLoading(false)
   }
 
-  function resetForm() {
-    setForm({ client_name: '', client_email: '', project_name: '', project_date: '', content: '' })
+  async function loadTemplates() {
+    const { data } = await supabase.from('contract_templates').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
+    setTemplates(data ?? [])
   }
 
-  async function createContract() {
+  async function createContract(send = false) {
     setSaving(true)
-    const { error } = await supabase.from('contracts').insert({
-      creative_id: user.id,
-      client_name: form.client_name,
-      client_email: form.client_email,
-      project_name: form.project_name,
-      project_date: form.project_date || null,
-      content: form.content,
-      status: 'draft',
-    })
-    if (!error) {
+    try {
+      const { data, error } = await supabase.from('contracts').insert({
+        creative_id: user.id,
+        client_name: form.client_name,
+        client_email: form.client_email,
+        title: form.project_name || 'Contract',
+        project_name: form.project_name || null,
+        project_date: form.project_date || null,
+        content: form.content,
+        notes: form.notes || null,
+        status: send ? 'sent' : 'draft',
+        download_token: crypto.randomUUID(),
+        contract_type: 'written',
+      }).select().single()
+      if (error) throw error
       await loadContracts()
+      if (send && data) await sendContract(data)
       setShowCreate(false)
       resetForm()
+      showToast(send ? 'Contract sent successfully' : 'Contract saved as draft')
+    } catch (err) {
+      showToast('Failed to save contract: ' + err.message, 'error')
     }
     setSaving(false)
   }
 
   async function sendContract(contract) {
-    setSending(true)
-    await supabase.functions.invoke('send-contract', {
-      body: { contractId: contract.id }
+    try {
+      await supabase.functions.invoke('send-contract', {
+        body: { contract, profile }
+      })
+      await supabase.from('contracts').update({ status: 'sent' }).eq('id', contract.id)
+      await loadContracts()
+      if (showView) setShowView(prev => ({ ...prev, status: 'sent' }))
+      showToast('Contract sent successfully')
+    } catch (err) {
+      showToast('Failed to send contract', 'error')
+    }
+  }
+
+  async function uploadContract() {
+    if (!uploadFile) return
+    setSaving(true)
+    try {
+      const path = `contracts/${user.id}/${Date.now()}_${uploadFile.name}`
+      const { error: uploadError } = await supabase.storage.from('contracts').upload(path, uploadFile)
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(path)
+      const publicUrl = urlData.publicUrl
+      console.log('Contract public URL:', publicUrl)
+      const { error } = await supabase.from('contracts').insert({
+        creative_id: user.id,
+        client_name: uploadForm.client_name,
+        client_email: uploadForm.client_email,
+        title: uploadForm.project_name || uploadFile.name,
+        project_name: uploadForm.project_name || null,
+        contract_file_url: publicUrl,
+        status: 'draft',
+        download_token: crypto.randomUUID(),
+        contract_type: 'uploaded',
+      })
+      if (error) throw error
+      await loadContracts()
+      showToast('Contract uploaded successfully')
+      setShowUpload(false)
+      setUploadForm({ client_name: '', client_email: '', project_name: '' })
+      setUploadFile(null)
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error')
+    }
+    setSaving(false)
+  }
+
+  async function saveAsTemplate() {
+    if (!templateName.trim()) return
+    setSavingTemplate(true)
+    await supabase.from('contract_templates').insert({
+      creative_id: user.id,
+      name: templateName.trim(),
+      content: showView ? showView.content : form.content,
     })
-    await supabase.from('contracts').update({ status: 'sent' }).eq('id', contract.id)
-    await loadContracts()
-    setSending(false)
-    setShowView(null)
+    await loadTemplates()
+    setSavingTemplate(false)
+    setShowSaveTemplate(false)
+    setTemplateName('')
+    showToast('Template saved')
   }
 
   async function deleteContract(id) {
     await supabase.from('contracts').delete().eq('id', id)
-    await loadContracts()
+    setContracts(prev => prev.filter(c => c.id !== id))
     setShowView(null)
+    showToast('Contract deleted')
   }
 
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
-    formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    disclaimer: { padding: '14px 16px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)', borderRadius: 'var(--radius-lg)', fontSize: '12px', color: 'var(--warning)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
-    textarea: { width: '100%', minHeight: '200px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '12px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
-    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '8px' },
-    viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' },
-    viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-    viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    contractContent: { padding: '20px', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-lg)', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.8, whiteSpace: 'pre-wrap', maxHeight: '300px', overflowY: 'auto' },
+  async function deleteTemplate(id) {
+    await supabase.from('contract_templates').delete().eq('id', id)
+    setTemplates(prev => prev.filter(t => t.id !== id))
+    showToast('Template deleted')
+  }
+
+  function useTemplate(template) {
+    setForm(prev => ({ ...prev, content: template.content }))
+    setShowCreate(true)
+  }
+
+  function resetForm() {
+    setForm({ client_name: '', client_email: '', project_name: '', project_date: '', content: '', notes: '', contract_type: 'written' })
+  }
+
+  const statusColor = { draft: '#6b7280', sent: '#3b82f6', signed: '#1DB954', expired: '#ef4444' }
+
+  const s = {
+    page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
+    header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
+    title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '24px' },
+    tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s' }),
+    btn: (variant = 'primary') => ({ padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: variant === 'primary' ? '#1DB954' : variant === 'danger' ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)', color: variant === 'primary' ? '#000' : variant === 'danger' ? '#ef4444' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }),
+    table: { width: '100%', borderCollapse: 'collapse' },
+    th: { textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-subtle)' },
+    td: { padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    modalBody: { padding: '28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' },
+    input: { padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', width: '100%', boxSizing: 'border-box' },
+    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', display: 'block' },
+    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+    editor: { padding: '12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', minHeight: '280px', resize: 'vertical', width: '100%', boxSizing: 'border-box', lineHeight: 1.6 },
+    badge: (status) => ({ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', background: `${statusColor[status] ?? '#6b7280'}22`, color: statusColor[status] ?? '#6b7280' }),
+    templateCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    emptyState: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
   }
 
   return (
-    <div style={styles.page}>
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.title}>Contracts</h1>
-          <p style={styles.subtitle}>Create and send contracts for your clients to sign digitally.</p>
+    <div style={s.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.message}
         </div>
-        <Button variant="primary" onClick={() => setShowCreate(true)}>+ New Contract</Button>
+      )}
+
+      <div style={s.header}>
+        <div style={s.title}>Contracts</div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button style={s.btn('secondary')} onClick={() => setShowUpload(true)}>⬆ Upload Contract</button>
+          <button style={s.btn('primary')} onClick={() => setShowCreate(true)}>+ New Contract</button>
+          <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => setUploadFile(e.target.files[0])} />
+        </div>
       </div>
 
-      <div style={styles.tableWrap}>
-        <div style={styles.tableHeader}>
-          <span>Client</span>
-          <span>Project</span>
-          <span>Project Date</span>
-          <span>Status</span>
-          <span>Actions</span>
-        </div>
-        {loading ? (
-          <div style={styles.emptyState}>Loading…</div>
-        ) : contracts.length === 0 ? (
-          <div style={styles.emptyState}>No contracts yet. Create your first one.</div>
-        ) : contracts.map((c, i) => (
-          <div
-            key={c.id}
-            style={{ ...styles.tableRow, borderBottom: i === contracts.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}
-            onClick={() => setShowView(c)}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-overlay)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{c.client_name}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{c.client_email}</div>
-            </div>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{c.project_name ?? '—'}</span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {c.project_date ? new Date(c.project_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
-            </span>
-            <Badge variant={statusVariant(c.status)} size="sm">{c.status}</Badge>
-            <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setShowView(c) }}>View</Button>
-          </div>
-        ))}
+      <div style={s.tabs}>
+        <button style={s.tab(tab === 'contracts')} onClick={() => setTab('contracts')}>My Contracts {contracts.length > 0 && `(${contracts.length})`}</button>
+        <button style={s.tab(tab === 'templates')} onClick={() => setTab('templates')}>Templates {templates.length > 0 && `(${templates.length})`}</button>
       </div>
 
-      {/* Create Modal */}
-      <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="New Contract" size="lg">
-        <div style={styles.formSection}>
-          <div style={styles.disclaimer}>
-            LensTrybe provides tools to create and send contracts but does not provide legal advice or templates. You are responsible for the content of your contracts. We recommend consulting a legal professional if unsure.
-          </div>
-          <div style={styles.formRow}>
-            <Input label="Client name" placeholder="Jane Smith" value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} />
-            <Input label="Client email" type="email" placeholder="jane@example.com" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} />
-          </div>
-          <div style={styles.formRow}>
-            <Input label="Project name" placeholder="Wedding Photography — Smith/Jones" value={form.project_name} onChange={e => setForm(p => ({ ...p, project_name: e.target.value }))} />
-            <Input label="Project date" type="date" value={form.project_date} onChange={e => setForm(p => ({ ...p, project_date: e.target.value }))} />
-          </div>
-          <div>
-            <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' }}>Contract content</label>
-            <textarea
-              style={styles.textarea}
-              placeholder="Write your contract terms here…"
-              value={form.content}
-              onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-            />
-          </div>
-          <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Button>
-            <Button variant="primary" disabled={saving || !form.client_name || !form.client_email} onClick={createContract}>
-              {saving ? 'Saving…' : 'Create Contract'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
+      {tab === 'contracts' && (
+        contracts.length === 0 ? (
+          <div style={s.emptyState}>No contracts yet. Create your first contract or upload an existing one.</div>
+        ) : (
+          <table style={s.table}>
+            <thead>
+              <tr>
+                <th style={s.th}>Client</th>
+                <th style={s.th}>Project</th>
+                <th style={s.th}>Type</th>
+                <th style={s.th}>Status</th>
+                <th style={s.th}>Date</th>
+                <th style={s.th}></th>
+              </tr>
+            </thead>
+            <tbody>
+              {contracts.map(c => (
+                <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setShowView(c)}>
+                  <td style={s.td}>{c.client_name}</td>
+                  <td style={s.td}>{c.project_name ?? c.title ?? '—'}</td>
+                  <td style={s.td}>{c.contract_type === 'uploaded' ? '📎 Uploaded' : '✍ Written'}</td>
+                  <td style={s.td}><span style={s.badge(c.status)}>{c.status}</span></td>
+                  <td style={s.td}>{new Date(c.created_at).toLocaleDateString('en-AU')}</td>
+                  <td style={s.td} onClick={e => e.stopPropagation()}>
+                    <button style={{ ...s.btn('danger'), padding: '5px 10px', fontSize: '12px' }} onClick={() => deleteContract(c.id)}>Delete</button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )
+      )}
 
-      {/* View Modal */}
-      {showView && (
-        <Modal isOpen={!!showView} onClose={() => setShowView(null)} title="Contract Details" size="lg">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={styles.viewGrid}>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Client</div>
-                <div style={styles.viewValue}>{showView.client_name}</div>
+      {tab === 'templates' && (
+        templates.length === 0 ? (
+          <div style={s.emptyState}>No templates saved yet. Create a contract and save it as a template for reuse.</div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {templates.map(t => (
+              <div key={t.id} style={s.templateCard}>
+                <div>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{t.name}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(t.created_at).toLocaleDateString('en-AU')}</div>
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <button style={s.btn('secondary')} onClick={() => useTemplate(t)}>Use Template</button>
+                  <button style={s.btn('danger')} onClick={() => deleteTemplate(t.id)}>Delete</button>
+                </div>
               </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Email</div>
-                <div style={styles.viewValue}>{showView.client_email}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Project</div>
-                <div style={styles.viewValue}>{showView.project_name ?? '—'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Status</div>
-                <Badge variant={statusVariant(showView.status)}>{showView.status}</Badge>
+            ))}
+          </div>
+        )
+      )}
+
+      {/* Create Contract Modal */}
+      {showCreate && (
+        <div style={s.modal}>
+          <div style={s.modalBox}>
+            <div style={s.modalHeader}>
+              <span style={{ fontSize: '15px', fontWeight: 600 }}>New Contract</span>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button
+                  style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }}
+                  onClick={() => setShowSaveTemplate(true)}
+                >
+                  💾 Save as Template
+                </button>
+                <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(false)} disabled={saving}>
+                  {saving ? 'Saving…' : 'Save Draft'}
+                </button>
+                <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(true)} disabled={saving || !form.client_email}>
+                  {saving ? 'Sending…' : 'Send to Client'}
+                </button>
+                <button onClick={() => { setShowCreate(false); resetForm() }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
-
-            {showView.content && (
+            <div style={s.modalBody}>
+              <div style={s.grid2}>
+                <div>
+                  <label style={s.label}>Client Name</label>
+                  <input style={s.input} value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" />
+                </div>
+                <div>
+                  <label style={s.label}>Client Email</label>
+                  <input style={s.input} value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} placeholder="client@email.com" />
+                </div>
+              </div>
+              <div style={s.grid2}>
+                <div>
+                  <label style={s.label}>Project Name</label>
+                  <input style={s.input} value={form.project_name} onChange={e => setForm(p => ({ ...p, project_name: e.target.value }))} placeholder="e.g. Wedding Photography" />
+                </div>
+                <div>
+                  <label style={s.label}>Project Date (optional)</label>
+                  <input type="date" style={s.input} value={form.project_date} onChange={e => setForm(p => ({ ...p, project_date: e.target.value }))} />
+                </div>
+              </div>
               <div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Contract Content</div>
-                <div style={styles.contractContent}>{showView.content}</div>
+                <label style={s.label}>Contract Content</label>
+                <textarea
+                  style={{ ...s.editor, outline: 'none' }}
+                  value={form.content}
+                  onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
+                  placeholder="Write your contract terms here…"
+                />
               </div>
-            )}
-
-            <div style={styles.modalActions}>
-              <Button variant="danger" size="sm" onClick={() => deleteContract(showView.id)}>Delete</Button>
-              {(showView.status === 'draft' || showView.status === 'sent') && (
-                <Button variant="primary" size="sm" disabled={sending} onClick={() => sendContract(showView)}>
-                  {sending ? 'Sending…' : showView.status === 'draft' ? 'Send to Client' : 'Resend'}
-                </Button>
-              )}
+              <div>
+                <label style={s.label}>Notes (optional)</label>
+                <textarea style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." />
+              </div>
+              <div style={{ padding: '12px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', fontSize: '12px', color: '#ef4444' }}>
+                ⚠ LensTrybe provides tools to create and send contracts but does not provide legal advice. You are responsible for your contract content. Consult a legal professional if unsure.
+              </div>
             </div>
           </div>
-        </Modal>
+        </div>
+      )}
+
+      {/* View Contract Modal */}
+      {showView && (
+        <div style={s.modal}>
+          <div style={{ ...s.modalBox, maxWidth: '680px' }}>
+            <div style={s.modalHeader}>
+              <span style={{ fontSize: '15px', fontWeight: 600 }}>Contract</span>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>💾 Save as Template</button>
+                {showView.status !== 'signed' && (
+                  <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => sendContract(showView)}>
+                    {showView.status === 'sent' ? 'Resend' : 'Send to Client'}
+                  </button>
+                )}
+                <button style={{ ...s.btn('danger'), fontSize: '12px', padding: '6px 12px' }} onClick={() => deleteContract(showView.id)}>Delete</button>
+                <button onClick={() => setShowView(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+              </div>
+            </div>
+            <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
+                <div>
+                  <div style={{ fontSize: '26px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{profile?.business_name ?? 'Creative'}</div>
+                  <div style={{ fontSize: '13px', color: '#666' }}>{profile?.business_email}</div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: '30px', fontWeight: 800, color: '#111' }}>CONTRACT</div>
+                  <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
+                  <div style={{ fontSize: '13px', color: '#666' }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                </div>
+              </div>
+              <div style={{ marginBottom: '24px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Between</div>
+                <div style={{ fontSize: '15px', fontWeight: 600 }}>{profile?.business_name}</div>
+                <div style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>and</div>
+                <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '8px' }}>{showView.client_name}</div>
+                <div style={{ fontSize: '13px', color: '#666' }}>{showView.client_email}</div>
+              </div>
+              {showView.project_name && (
+                <div style={{ marginBottom: '24px', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project: </span>
+                  <span style={{ fontSize: '14px', color: '#111' }}>{showView.project_name}</span>
+                  {showView.project_date && <span style={{ fontSize: '13px', color: '#666', marginLeft: '12px' }}>· {new Date(showView.project_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+                </div>
+              )}
+              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginBottom: '32px' }}>
+                <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#111' }}>{showView.content}</div>
+              </div>
+              {showView.notes && (
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Notes</div>
+                  <div style={{ fontSize: '13px', color: '#374151' }}>{showView.notes}</div>
+                </div>
+              )}
+              <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+                This contract was created via LensTrybe · {profile?.business_name}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Save as Template Modal */}
+      {showSaveTemplate && (
+        <div style={{ ...s.modal, zIndex: 1100 }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Save as Template</div>
+            <label style={s.label}>Template Name</label>
+            <input
+              style={{ ...s.input, marginBottom: '16px' }}
+              value={templateName}
+              onChange={e => setTemplateName(e.target.value)}
+              placeholder="e.g. Wedding Photography Contract"
+              autoFocus
+            />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button style={s.btn('secondary')} onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}>Cancel</button>
+              <button style={s.btn('primary')} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
+                {savingTemplate ? 'Saving…' : 'Save Template'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showUpload && (
+        <div style={s.modal}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Upload Contract</div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
+              <div>
+                <label style={s.label}>Client Name</label>
+                <input style={s.input} value={uploadForm.client_name} onChange={e => setUploadForm(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" />
+              </div>
+              <div>
+                <label style={s.label}>Client Email</label>
+                <input style={s.input} value={uploadForm.client_email} onChange={e => setUploadForm(p => ({ ...p, client_email: e.target.value }))} placeholder="client@email.com" />
+              </div>
+              <div>
+                <label style={s.label}>Project Name (optional)</label>
+                <input style={s.input} value={uploadForm.project_name} onChange={e => setUploadForm(p => ({ ...p, project_name: e.target.value }))} placeholder="e.g. Wedding Photography" />
+              </div>
+              <div>
+                <label style={s.label}>Contract File (PDF, DOC, DOCX)</label>
+                <div
+                  style={{ border: '2px dashed var(--border-default)', borderRadius: '10px', padding: '24px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}
+                  onClick={() => fileInputRef.current?.click()}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#1DB954' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
+                >
+                  {uploadFile ? (
+                    <div style={{ fontSize: '14px', color: '#1DB954', fontWeight: 600 }}>✓ {uploadFile.name}</div>
+                  ) : (
+                    <>
+                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>📎</div>
+                      <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Click to select a file</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>PDF, DOC or DOCX</div>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button style={s.btn('secondary')} onClick={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ client_name: '', client_email: '', project_name: '' }) }}>Cancel</button>
+              <button style={s.btn('primary')} onClick={uploadContract} disabled={saving || !uploadFile || !uploadForm.client_name}>
+                {saving ? 'Uploading…' : 'Upload Contract'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )
