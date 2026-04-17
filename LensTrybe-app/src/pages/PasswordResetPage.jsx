@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
@@ -11,21 +11,6 @@ export default function PasswordResetPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    // Supabase implicit flow sets the session automatically from the URL hash
-    // Just check if we have a valid session after a short delay
-    const timer = setTimeout(async () => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (session) {
-        setReady(true)
-      } else {
-        setError('This link has expired. Please request a new password reset.')
-      }
-    }, 1000)
-    return () => clearTimeout(timer)
-  }, [])
 
   async function handleReset() {
     if (!password || password.length < 6) { setError('Password must be at least 6 characters.'); return }
@@ -37,7 +22,6 @@ export default function PasswordResetPage() {
       setError(error.message)
     } else {
       setSuccess(true)
-      await supabase.auth.signOut()
       setTimeout(() => navigate('/login'), 2000)
     }
     setLoading(false)
@@ -51,16 +35,9 @@ export default function PasswordResetPage() {
         <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', marginBottom: '20px' }}>Reset Password</div>
         {success ? (
           <div style={{ color: '#1DB954', fontSize: '15px', fontWeight: 600 }}>✓ Password updated! Redirecting…</div>
-        ) : error ? (
-          <div>
-            <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>
-            <a href="/login" style={{ color: '#1DB954', fontSize: '14px' }}>Back to login</a>
-          </div>
-        ) : !ready ? (
-          <div style={{ color: '#666', fontSize: '14px' }}>Verifying your reset link…</div>
         ) : (
           <>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px' }}>Enter your new password below.</p>
+            {error && <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>}
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#888', display: 'block', marginBottom: '6px' }}>New Password</label>
               <div style={{ position: 'relative' }}>
