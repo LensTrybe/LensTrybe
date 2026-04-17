@@ -20,6 +20,9 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [exitReason, setExitReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const [newEmail, setNewEmail] = useState('')
+  const [emailLoading, setEmailLoading] = useState(false)
+  const [emailMsg, setEmailMsg] = useState(null)
 
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
@@ -78,6 +81,19 @@ export default function SettingsPage() {
     setLoading(false)
   }
 
+  async function updateEmail() {
+    if (!newEmail || !newEmail.includes('@')) { setEmailMsg({ text: 'Please enter a valid email.', error: true }); return }
+    setEmailLoading(true)
+    const { error } = await supabase.auth.updateUser({ email: newEmail })
+    if (error) {
+      setEmailMsg({ text: error.message, error: true })
+    } else {
+      setEmailMsg({ text: 'Confirmation sent to your new email address. Click the link to confirm the change.', error: false })
+      setNewEmail('')
+    }
+    setEmailLoading(false)
+  }
+
   const styles = {
     page: { display: 'flex', flexDirection: 'column', gap: '32px' },
     title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
@@ -120,7 +136,7 @@ export default function SettingsPage() {
       <div style={styles.tabs}>
         {['subscription', 'password', 'danger'].map(t => (
           <button key={t} style={styles.tab(activeTab === t)} onClick={() => setActiveTab(t)}>
-            {t === 'danger' ? 'Danger Zone' : t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'danger' ? 'Danger Zone' : (t === 'password' ? 'Email & Password' : t.charAt(0).toUpperCase() + t.slice(1))}
           </button>
         ))}
       </div>
@@ -189,23 +205,51 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'password' && (
-        <div style={styles.card}>
-          <div style={styles.sectionTitle}>Change Password</div>
-          <div style={styles.sectionSub}>Send a password reset link to your email address.</div>
-          <div style={styles.row}>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {user?.email}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
+            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Update Email</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>A confirmation link will be sent to your new email address.</div>
+            {emailMsg && (
+              <div style={{ fontSize: '13px', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', background: emailMsg.error ? 'rgba(239,68,68,0.1)' : 'rgba(29,185,84,0.1)', color: emailMsg.error ? '#ef4444' : '#1DB954' }}>
+                {emailMsg.text}
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="New email address"
+                type="email"
+                style={{ flex: 1, padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
+              />
+              <button
+                onClick={updateEmail}
+                disabled={emailLoading}
+                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: emailLoading ? 0.6 : 1 }}
+              >
+                {emailLoading ? 'Sending…' : 'Update Email'}
+              </button>
             </div>
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={async () => {
-                await supabase.auth.resetPasswordForEmail(user.email)
-                alert('Password reset email sent. Check your inbox.')
-              }}
-            >
-              Send Reset Email
-            </Button>
+          </div>
+
+          <div style={styles.card}>
+            <div style={styles.sectionTitle}>Change Password</div>
+            <div style={styles.sectionSub}>Send a password reset link to your email address.</div>
+            <div style={styles.row}>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+                {user?.email}
+              </div>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={async () => {
+                  await supabase.auth.resetPasswordForEmail(user.email)
+                  alert('Password reset email sent. Check your inbox.')
+                }}
+              >
+                Send Reset Email
+              </Button>
+            </div>
           </div>
         </div>
       )}
