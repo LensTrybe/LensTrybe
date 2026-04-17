@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 
@@ -11,6 +11,26 @@ export default function PasswordResetPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [success, setSuccess] = useState(false)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    async function verify() {
+      const params = new URLSearchParams(window.location.search)
+      const tokenHash = params.get('token_hash')
+      const type = params.get('type')
+      if (tokenHash && type === 'recovery') {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: 'recovery' })
+        if (error) {
+          setError('Link has expired. Please request a new one.')
+        } else {
+          setReady(true)
+        }
+      } else {
+        setError('Invalid reset link. Please request a new one.')
+      }
+    }
+    verify()
+  }, [])
 
   async function handleReset() {
     if (!password || password.length < 6) { setError('Password must be at least 6 characters.'); return }
@@ -35,6 +55,8 @@ export default function PasswordResetPage() {
         <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', marginBottom: '20px' }}>Reset Password</div>
         {success ? (
           <div style={{ color: '#1DB954', fontSize: '15px', fontWeight: 600 }}>✓ Password updated! Redirecting…</div>
+        ) : !ready && !error ? (
+          <div style={{ color: '#666', fontSize: '14px' }}>Verifying your reset link…</div>
         ) : (
           <>
             {error && <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>}
