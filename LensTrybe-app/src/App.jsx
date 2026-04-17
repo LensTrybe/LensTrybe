@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import HomePage from './pages/public/HomePage'
@@ -62,6 +63,13 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  useEffect(() => {
+    const hash = window.location.hash
+    if (hash && hash.includes('type=recovery')) {
+      window.location.replace('/reset-password' + hash)
+    }
+  }, [])
+
   return (
     <Routes>
       <Route path="/reset-password" element={<PasswordResetPage />} />
