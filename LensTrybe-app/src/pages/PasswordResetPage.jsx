@@ -14,14 +14,6 @@ export default function PasswordResetPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Listen for PASSWORD_RECOVERY event from Supabase
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setReady(true)
-      }
-    })
-
-    // Also check if we already have a recovery session in the URL hash
     const hash = window.location.hash.substring(1)
     const params = new URLSearchParams(hash)
     const type = params.get('type')
@@ -29,15 +21,28 @@ export default function PasswordResetPage() {
     const refreshToken = params.get('refresh_token')
 
     if (type === 'recovery' && accessToken) {
-      supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken ?? '',
-      }).then(({ error }) => {
-        if (!error) setReady(true)
+      // Small delay to let Supabase auth listener settle
+      setTimeout(async () => {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken ?? '',
+        })
+        console.log('setSession result:', data, error)
+        if (data?.session) {
+          setReady(true)
+        } else {
+          setError('Link has expired. Please request a new password reset.')
+        }
+      }, 500)
+    } else {
+      // Also listen for PASSWORD_RECOVERY event
+      const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+        console.log('Auth event:', event, session)
+        if (event === 'PASSWORD_RECOVERY') setReady(true)
       })
+      setError('Invalid reset link. Please request a new one.')
+      return () => subscription.unsubscribe()
     }
-
-    return () => subscription.unsubscribe()
   }, [])
 
   async function handleReset() {
