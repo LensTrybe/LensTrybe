@@ -21,8 +21,18 @@ export default function DeliverPage() {
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(null)
+  const [toast, setToast] = useState(null)
+  const [editingDelivery, setEditingDelivery] = useState(null)
+  const [editForm, setEditForm] = useState({})
+  const [editFiles, setEditFiles] = useState([])
+  const [uploadingEditFiles, setUploadingEditFiles] = useState(false)
 
   const storageLimit = tier === 'elite' ? 200 : 50
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
 
   const [form, setForm] = useState({
     title: '',
@@ -136,14 +146,59 @@ export default function DeliverPage() {
     return Math.ceil((new Date(expiresAt) - Date.now()) / (1000 * 60 * 60 * 24))
   }
 
+  async function resendDelivery(delivery) {
+    const { error } = await supabase.functions.invoke('send-delivery', {
+      body: { delivery, profile },
+    })
+    if (!error) showToast('Delivery resent to ' + delivery.client_email)
+    else showToast('Failed to resend', 'error')
+  }
+
+  async function saveEditDelivery() {
+    const { error } = await supabase.from('deliveries').update({
+      title: editForm.title,
+      client_name: editForm.client_name,
+      client_email: editForm.client_email,
+      message: editForm.notes || null,
+      files: editFiles,
+    }).eq('id', editingDelivery.id)
+    if (!error) {
+      await loadDeliveries()
+      setEditingDelivery(null)
+      setEditFiles([])
+      showToast('Delivery updated')
+    } else {
+      showToast(error.message, 'error')
+    }
+  }
+
+  async function uploadEditFiles(newFiles) {
+    if (!user || !editingDelivery || !newFiles?.length) return
+    setUploadingEditFiles(true)
+    try {
+      const uploaded = []
+      for (const file of newFiles) {
+        const path = `deliveries/${user.id}/${Date.now()}_${file.name}`
+        const { error } = await supabase.storage.from('deliveries').upload(path, file)
+        if (!error) {
+          const { data: { publicUrl } } = supabase.storage.from('deliveries').getPublicUrl(path)
+          uploaded.push({ name: file.name, url: publicUrl, type: file.type, size: file.size })
+        }
+      }
+      setEditFiles(prev => [...prev, ...uploaded])
+    } finally {
+      setUploadingEditFiles(false)
+    }
+  }
+
   const styles = {
     page: { display: 'flex', flexDirection: 'column', gap: '32px' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
     title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
@@ -173,6 +228,11 @@ export default function DeliverPage() {
 
   return (
     <div style={styles.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', fontFamily: 'var(--font-ui)' }}>
+          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+        </div>
+      )}
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>LensTrybe Deliver</h1>
@@ -220,7 +280,27 @@ export default function DeliverPage() {
             <span style={{ fontSize: '12px', color: daysUntilExpiry(d.expires_at) <= 5 ? 'var(--warning)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
               {daysUntilExpiry(d.expires_at) > 0 ? `${daysUntilExpiry(d.expires_at)}d` : 'Expired'}
             </span>
-            <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setShowView(d) }}>View</Button>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => resendDelivery(d)}
+                style={{ padding: '5px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                Resend
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setEditingDelivery(d)
+                  setEditForm({ title: d.title, client_name: d.client_name, client_email: d.client_email, notes: d.notes ?? d.message ?? '' })
+                  setEditFiles(d.files ?? [])
+                }}
+                style={{ padding: '5px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                Edit
+              </button>
+              <Button variant="ghost" size="sm" onClick={() => setShowView(d)}>View</Button>
+            </div>
           </div>
         ))}
       </div>
@@ -260,10 +340,20 @@ export default function DeliverPage() {
 
           {form.files.length > 0 && (
             <div style={styles.fileList}>
-              {form.files.map((f, i) => (
-                <div key={i} style={styles.fileItem}>
-                  <span>{f.name}</span>
-                  <span>{(f.size / 1024 / 1024).toFixed(1)} MB</span>
+              {form.files.map((file, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: '8px', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span style={{ fontSize: '18px' }}>{file.type?.startsWith('image') ? '🖼️' : file.type?.startsWith('video') ? '🎬' : '📄'}</span>
+                    <div>
+                      <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{file.name}</div>
+                      <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</div>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setForm(prev => ({ ...prev, files: prev.files.filter((_, j) => j !== i) }))}
+                    style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#ef4444', fontSize: '12px', padding: '4px 10px', cursor: 'pointer' }}
+                  >Remove</button>
                 </div>
               ))}
             </div>
@@ -330,6 +420,61 @@ export default function DeliverPage() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {editingDelivery && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Edit Delivery</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Project Name</label>
+                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Name</label>
+                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_name} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Email</label>
+                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_email} onChange={e => setEditForm(p => ({ ...p, client_email: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Notes to Client</label>
+                <textarea style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', minHeight: '80px', resize: 'vertical' }} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Files ({editFiles.length})</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px', maxHeight: '200px', overflowY: 'auto' }}>
+                  {editFiles.map((f, i) => (
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '6px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+                        <span style={{ fontSize: '12px', flexShrink: 0 }}>{f.type?.startsWith('image') ? '🖼️' : f.type?.startsWith('video') ? '🎬' : '📄'}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setEditFiles(prev => prev.filter((_, j) => j !== i))}
+                        style={{ padding: '2px 6px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '4px', color: '#ef4444', fontSize: '10px', cursor: 'pointer', flexShrink: 0, marginLeft: '4px' }}
+                      >✕</button>
+                    </div>
+                  ))}
+                </div>
+                <div
+                  onClick={() => document.getElementById('edit-delivery-files').click()}
+                  style={{ border: '2px dashed var(--border-default)', borderRadius: '8px', padding: '14px', textAlign: 'center', cursor: 'pointer', fontSize: '13px', color: 'var(--text-muted)' }}
+                >
+                  {uploadingEditFiles ? 'Uploading...' : '+ Add more files'}
+                </div>
+                <input id="edit-delivery-files" type="file" multiple style={{ display: 'none' }} onChange={e => { uploadEditFiles(Array.from(e.target.files || [])); e.target.value = '' }} />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+              <button type="button" onClick={() => { setEditingDelivery(null); setEditFiles([]) }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={saveEditDelivery} style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Save Changes</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

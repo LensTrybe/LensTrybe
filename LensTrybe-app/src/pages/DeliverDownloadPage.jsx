@@ -12,6 +12,20 @@ export default function DeliverDownloadPage() {
   const [passwordError, setPasswordError] = useState(false)
   const [unlocked, setUnlocked] = useState(false)
 
+  async function downloadFile(url, name) {
+    try {
+      const res = await fetch(url)
+      const blob = await res.blob()
+      const a = document.createElement('a')
+      a.href = URL.createObjectURL(blob)
+      a.download = name || 'file'
+      a.click()
+      URL.revokeObjectURL(a.href)
+    } catch {
+      window.open(url, '_blank')
+    }
+  }
+
   useEffect(() => { fetchDelivery() }, [token])
 
   async function fetchDelivery() {
@@ -110,6 +124,23 @@ export default function DeliverDownloadPage() {
           </div>
         )}
 
+        {files.length > 0 && unlocked && (
+          <div style={{ marginBottom: '32px' }}>
+            <button
+              type="button"
+              onClick={async () => {
+                for (const f of files) {
+                  await downloadFile(f.url, f.name)
+                  await new Promise(r => setTimeout(r, 500))
+                }
+              }}
+              style={{ padding: '12px 28px', background: accent, border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
+            >
+              ⬇ Download All ({files.length} files)
+            </button>
+          </div>
+        )}
+
         {/* Photos */}
         {photos.length > 0 && (
           <div style={{ marginBottom: '40px' }}>
@@ -118,12 +149,15 @@ export default function DeliverDownloadPage() {
               {photos.map((f, i) => (
                 <div key={i} style={{ position: 'relative', borderRadius: '10px', overflow: 'hidden', background: '#13131f', aspectRatio: '4/3' }}>
                   <img src={f.url} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  <a href={f.url} download={f.name} target="_blank" rel="noreferrer" style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'all 0.15s', textDecoration: 'none' }}
+                  <button
+                    type="button"
+                    onClick={() => downloadFile(f.url, f.name)}
+                    style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0)', display: 'flex', alignItems: 'center', justifyContent: 'center', opacity: 0, transition: 'all 0.15s', border: 'none', cursor: 'pointer', padding: 0 }}
                     onMouseEnter={e => { e.currentTarget.style.background = 'rgba(0,0,0,0.6)'; e.currentTarget.style.opacity = '1' }}
                     onMouseLeave={e => { e.currentTarget.style.background = 'rgba(0,0,0,0)'; e.currentTarget.style.opacity = '0' }}
                   >
                     <span style={{ background: accent, color: '#000', padding: '8px 16px', borderRadius: '6px', fontSize: '12px', fontWeight: 700 }}>Download</span>
-                  </a>
+                  </button>
                 </div>
               ))}
             </div>
@@ -140,7 +174,7 @@ export default function DeliverDownloadPage() {
                   <video src={f.url} controls style={{ width: '100%', display: 'block' }} />
                   <div style={{ padding: '10px 14px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '12px', color: '#666', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
-                    <a href={f.url} download={f.name} target="_blank" rel="noreferrer" style={{ fontSize: '12px', color: accent, fontWeight: 600, textDecoration: 'none', flexShrink: 0, marginLeft: '8px' }}>Download</a>
+                    <button type="button" onClick={() => downloadFile(f.url, f.name)} style={{ fontSize: '12px', color: accent, fontWeight: 600, textDecoration: 'none', flexShrink: 0, marginLeft: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Download</button>
                   </div>
                 </div>
               ))}
@@ -156,7 +190,7 @@ export default function DeliverDownloadPage() {
               {others.map((f, i) => (
                 <div key={i} style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '10px', padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span style={{ fontSize: '14px', color: '#ccc' }}>{f.name}</span>
-                  <a href={f.url} download={f.name} target="_blank" rel="noreferrer" style={{ fontSize: '13px', color: accent, fontWeight: 600, textDecoration: 'none' }}>Download</a>
+                  <button type="button" onClick={() => downloadFile(f.url, f.name)} style={{ fontSize: '13px', color: accent, fontWeight: 600, textDecoration: 'none', background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>Download</button>
                 </div>
               ))}
             </div>
