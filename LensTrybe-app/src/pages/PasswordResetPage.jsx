@@ -14,20 +14,28 @@ export default function PasswordResetPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    // Check if we already have a recovery session captured globally
-    if (window._passwordRecoverySession) {
-      setReady(true)
-      return
-    }
+    async function checkSession() {
+      // Supabase PKCE automatically processes the token and sets the session
+      // We just need to check if we have a valid session
+      const { data: { session } } = await supabase.auth.getSession()
+      console.log('Current session:', session)
 
-    // Otherwise listen for it
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        window._passwordRecoverySession = session
+      if (session?.user) {
         setReady(true)
+      } else {
+        // Wait a moment and try again — PKCE processing may take a tick
+        setTimeout(async () => {
+          const { data: { session: session2 } } = await supabase.auth.getSession()
+          console.log('Second session check:', session2)
+          if (session2?.user) {
+            setReady(true)
+          } else {
+            setError('Link has expired. Please request a new password reset.')
+          }
+        }, 1500)
       }
-    })
-    return () => subscription.unsubscribe()
+    }
+    checkSession()
   }, [])
 
   async function handleReset() {
