@@ -14,28 +14,17 @@ export default function PasswordResetPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
-    async function checkSession() {
-      // Supabase PKCE automatically processes the token and sets the session
-      // We just need to check if we have a valid session
+    // Supabase implicit flow sets the session automatically from the URL hash
+    // Just check if we have a valid session after a short delay
+    const timer = setTimeout(async () => {
       const { data: { session } } = await supabase.auth.getSession()
-      console.log('Current session:', session)
-
-      if (session?.user) {
+      if (session) {
         setReady(true)
       } else {
-        // Wait a moment and try again — PKCE processing may take a tick
-        setTimeout(async () => {
-          const { data: { session: session2 } } = await supabase.auth.getSession()
-          console.log('Second session check:', session2)
-          if (session2?.user) {
-            setReady(true)
-          } else {
-            setError('Link has expired. Please request a new password reset.')
-          }
-        }, 1500)
+        setError('This link has expired. Please request a new password reset.')
       }
-    }
-    checkSession()
+    }, 1000)
+    return () => clearTimeout(timer)
   }, [])
 
   async function handleReset() {
@@ -49,35 +38,29 @@ export default function PasswordResetPage() {
     } else {
       setSuccess(true)
       await supabase.auth.signOut()
-      setTimeout(() => navigate('/login'), 2500)
+      setTimeout(() => navigate('/login'), 2000)
     }
     setLoading(false)
   }
 
-  const inputStyle = {
-    width: '100%', padding: '11px 14px', background: '#0a0a0f',
-    border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px',
-    color: '#fff', fontSize: '14px', fontFamily: 'Inter, sans-serif',
-    outline: 'none', boxSizing: 'border-box', paddingRight: '44px',
-  }
+  const inputStyle = { width: '100%', padding: '11px 14px', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', paddingRight: '44px' }
 
   return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '420px' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', marginBottom: '8px' }}>Reset Password</div>
-
+        <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', marginBottom: '20px' }}>Reset Password</div>
         {success ? (
-          <div style={{ color: '#1DB954', fontSize: '15px', fontWeight: 600 }}>✓ Password updated! Redirecting to login…</div>
-        ) : !ready ? (
-          <div style={{ color: '#666', fontSize: '14px' }}>
-            Verifying your reset link…
-            <br /><br />
-            <a href="/login" style={{ color: '#1DB954', fontSize: '13px' }}>Back to login</a>
+          <div style={{ color: '#1DB954', fontSize: '15px', fontWeight: 600 }}>✓ Password updated! Redirecting…</div>
+        ) : error ? (
+          <div>
+            <div style={{ color: '#ef4444', fontSize: '14px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>
+            <a href="/login" style={{ color: '#1DB954', fontSize: '14px' }}>Back to login</a>
           </div>
+        ) : !ready ? (
+          <div style={{ color: '#666', fontSize: '14px' }}>Verifying your reset link…</div>
         ) : (
           <>
-            <p style={{ color: '#666', fontSize: '14px', marginBottom: '28px' }}>Enter your new password below.</p>
-            {error && <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>}
+            <p style={{ color: '#666', fontSize: '14px', marginBottom: '24px' }}>Enter your new password below.</p>
             <div style={{ marginBottom: '14px' }}>
               <label style={{ fontSize: '12px', fontWeight: 600, color: '#888', display: 'block', marginBottom: '6px' }}>New Password</label>
               <div style={{ position: 'relative' }}>
@@ -92,7 +75,7 @@ export default function PasswordResetPage() {
                 <button onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px', padding: 0 }}>{showConfirm ? '🙈' : '👁'}</button>
               </div>
             </div>
-            <button onClick={handleReset} disabled={loading} style={{ width: '100%', padding: '12px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '15px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif', opacity: loading ? 0.6 : 1 }}>
+            <button onClick={handleReset} disabled={loading} style={{ width: '100%', padding: '12px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '15px', fontWeight: 700, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'Updating…' : 'Set New Password'}
             </button>
           </>
