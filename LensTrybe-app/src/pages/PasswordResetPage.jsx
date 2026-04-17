@@ -14,9 +14,16 @@ export default function PasswordResetPage() {
   const [ready, setReady] = useState(false)
 
   useEffect(() => {
+    // Check if we already have a recovery session captured globally
+    if (window._passwordRecoverySession) {
+      setReady(true)
+      return
+    }
+
+    // Otherwise listen for it
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log('Auth state change:', event, session)
       if (event === 'PASSWORD_RECOVERY') {
+        window._passwordRecoverySession = session
         setReady(true)
       }
     })

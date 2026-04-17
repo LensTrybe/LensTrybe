@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
+import { supabase } from './lib/supabaseClient'
 import HomePage from './pages/public/HomePage'
 import LoginPage from './pages/public/LoginPage'
 import PricingPage from './pages/public/PricingPage'
@@ -63,11 +64,23 @@ function ProtectedRoute({ children }) {
 }
 
 export default function App() {
+  const navigate = useNavigate()
+
   useEffect(() => {
     const hash = window.location.hash
     if (hash && hash.includes('type=recovery')) {
       window.location.replace('/reset-password' + hash)
     }
+  }, [])
+
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        window._passwordRecoverySession = session
+        navigate('/reset-password')
+      }
+    })
+    return () => subscription.unsubscribe()
   }, [])
 
   return (
