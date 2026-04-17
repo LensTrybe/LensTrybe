@@ -37,6 +37,9 @@ import ClientDashboardPage from './pages/ClientDashboardPage'
 import ExplorePage from './pages/public/ExplorePage'
 import PublicProfilePage from './pages/public/PublicProfilePage'
 import PasswordResetPage from './pages/PasswordResetPage'
+import TermsPage from './pages/legal/TermsPage'
+import PrivacyPage from './pages/legal/PrivacyPage'
+import CookiesPage from './pages/legal/CookiesPage'
 
 function ComingSoon({ page }) {
   return (
@@ -98,6 +101,9 @@ export default function App() {
         <Route path="/join/client" element={<ClientSignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/jobs" element={<JobBoardPage />} />
+        <Route path="/terms" element={<TermsPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
+        <Route path="/cookies" element={<CookiesPage />} />
       </Route>
 
       {/* Protected dashboard routes with sidebar */}

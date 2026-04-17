@@ -162,6 +162,17 @@ export default function PublicLayout() {
       <main style={{ minHeight: 'calc(100vh - 64px)', background: 'var(--bg-base)' }}>
         <Outlet />
       </main>
+
+      <footer style={{ background: '#0a0a0f', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '28px 40px' }}>
+        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
+          <div style={{ color: '#666', fontSize: '13px', fontFamily: 'Inter, sans-serif' }}>© 2026 LensTrybe</div>
+          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
+            <a href="/terms" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Terms & Conditions</a>
+            <a href="/privacy" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Privacy Policy</a>
+            <a href="/cookies" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Cookies Policy</a>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
