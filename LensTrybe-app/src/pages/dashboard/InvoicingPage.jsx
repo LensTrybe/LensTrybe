@@ -72,7 +72,10 @@ export default function InvoicingPage() {
     lines: [{ ...EMPTY_LINE }],
   })
 
-  useEffect(() => { loadInvoices() }, [user])
+  useEffect(() => {
+    loadInvoices()
+    loadBrandKit()
+  }, [user])
 
   useEffect(() => {
     if (profile) {
@@ -84,10 +87,6 @@ export default function InvoicingPage() {
       })
     }
   }, [profile])
-
-  useEffect(() => {
-    loadBrandKit()
-  }, [user])
 
   async function loadInvoices() {
     if (!user) return
@@ -334,8 +333,10 @@ export default function InvoicingPage() {
   }
 
   const total = calcTotal(form.lines)
-  const brandColor = brandKit?.primary_color || '#1DB954'
+  const brandColor = brandKit?.primary_color ?? '#1DB954'
   const brandLogo = brandKit?.logo_url || ''
+  const brandFont = brandKit?.font ?? 'Inter'
+  const brandHeaderBg = { background: brandKit?.primary_color ?? '#1DB954' }
 
   return (
     <>
@@ -474,17 +475,19 @@ export default function InvoicingPage() {
             <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
 
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', paddingBottom: '16px', borderBottom: `3px solid ${brandColor}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                  {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
-                  <div>
-                  <div style={{ fontSize: '28px', fontWeight: 800, color: '#111', letterSpacing: '-0.5px', marginBottom: '4px' }}>{profile?.business_name ?? 'Your Business'}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{profile?.business_email ?? user?.email}</div>
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                      <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: brandColor, letterSpacing: '-1px' }}>INVOICE</div>
-                  <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFont }}>INVOICE</div>
+                    <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                  </div>
                 </div>
               </div>
 
@@ -649,18 +652,20 @@ export default function InvoicingPage() {
             <div ref={invoicePrintRef} id="invoice-print-area" style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
 
               {/* Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', paddingBottom: '16px', borderBottom: `3px solid ${brandColor}` }}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-                  {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
-                  <div>
-                  <div style={{ fontSize: '28px', fontWeight: 800, color: '#111', letterSpacing: '-0.5px', marginBottom: '4px' }}>{profile?.business_name ?? 'Your Business'}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{profile?.business_email ?? user?.email}</div>
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
+                    <div>
+                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                      <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
+                    </div>
                   </div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '32px', fontWeight: 800, color: brandColor, letterSpacing: '-1px' }}>INVOICE</div>
-                  <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFont }}>INVOICE</div>
+                    <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
+                    <div style={{ fontSize: '13px', opacity: 0.85 }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                  </div>
                 </div>
               </div>
 

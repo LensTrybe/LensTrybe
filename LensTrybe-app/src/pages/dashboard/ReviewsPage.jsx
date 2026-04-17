@@ -76,11 +76,6 @@ export default function ReviewsPage() {
     setSaving(false)
   }
 
-  async function deleteReview(id) {
-    await supabase.from('reviews').delete().eq('id', id)
-    await loadReviews()
-  }
-
   const avgRating = reviews.length > 0
     ? (reviews.reduce((s, r) => s + (r.rating ?? 0), 0) / reviews.length).toFixed(1)
     : null
@@ -194,12 +189,9 @@ export default function ReviewsPage() {
                   <div style={styles.reviewerName}>{review.reviewer_name}</div>
                   <StarRating value={review.rating} readonly />
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  {review.source === 'imported' && (
-                    <Badge variant="default" size="sm">Imported</Badge>
-                  )}
-                  <Button variant="danger" size="sm" onClick={() => deleteReview(review.id)}>×</Button>
-                </div>
+                {review.source === 'imported' && (
+                  <Badge variant="default" size="sm">Imported</Badge>
+                )}
               </div>
               {review.body && <div style={styles.reviewBody}>"{review.body}"</div>}
               <div style={styles.reviewMeta}>

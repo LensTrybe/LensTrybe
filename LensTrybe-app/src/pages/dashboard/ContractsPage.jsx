@@ -18,13 +18,14 @@ export default function ContractsPage() {
   const [showUpload, setShowUpload] = useState(false)
   const [uploadForm, setUploadForm] = useState({ client_name: '', client_email: '', project_name: '' })
   const [uploadFile, setUploadFile] = useState(null)
+  const [brandKit, setBrandKit] = useState(null)
 
   const [form, setForm] = useState({
     client_name: '', client_email: '', project_name: '',
     project_date: '', content: '', notes: '', contract_type: 'written',
   })
 
-  useEffect(() => { if (user) { loadContracts(); loadTemplates() } }, [user])
+  useEffect(() => { if (user) { loadContracts(); loadTemplates(); loadBrandKit() } }, [user])
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -39,6 +40,12 @@ export default function ContractsPage() {
   async function loadTemplates() {
     const { data } = await supabase.from('contract_templates').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
     setTemplates(data ?? [])
+  }
+
+  async function loadBrandKit() {
+    if (!user) return
+    const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
+    setBrandKit(data ?? null)
   }
 
   async function createContract(send = false) {
@@ -153,7 +160,13 @@ export default function ContractsPage() {
     setForm({ client_name: '', client_email: '', project_name: '', project_date: '', content: '', notes: '', contract_type: 'written' })
   }
 
+  const contractBrandFont = brandKit?.font ?? 'Inter'
+  const contractHeaderBg = { background: brandKit?.primary_color ?? '#1DB954' }
+  const contractBrandLogo = brandKit?.logo_url || ''
+
   const statusColor = { draft: '#6b7280', sent: '#3b82f6', signed: '#1DB954', expired: '#ef4444' }
+
+  const viewContractUrl = showView ? (showView.file_url ?? showView.contract_file_url ?? showView.content) : null
 
   const s = {
     page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
@@ -336,15 +349,20 @@ export default function ContractsPage() {
               </div>
             </div>
             <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px' }}>
-                <div>
-                  <div style={{ fontSize: '26px', fontWeight: 800, color: '#111', marginBottom: '4px' }}>{profile?.business_name ?? 'Creative'}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{profile?.business_email}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div style={{ fontSize: '30px', fontWeight: 800, color: '#111' }}>CONTRACT</div>
-                  <div style={{ fontSize: '13px', color: '#666', marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
-                  <div style={{ fontSize: '13px', color: '#666' }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...contractHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+                    {contractBrandLogo && <img src={contractBrandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
+                    <div>
+                      <div style={{ fontSize: '26px', fontWeight: 800, marginBottom: '4px', fontFamily: contractBrandFont }}>{profile?.business_name ?? 'Creative'}</div>
+                      <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email}</div>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '30px', fontWeight: 800, fontFamily: contractBrandFont }}>CONTRACT</div>
+                    <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
+                    <div style={{ fontSize: '13px', opacity: 0.85 }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                  </div>
                 </div>
               </div>
               <div style={{ marginBottom: '24px' }}>
@@ -362,7 +380,45 @@ export default function ContractsPage() {
                 </div>
               )}
               <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginBottom: '32px' }}>
-                <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#111' }}>{showView.content}</div>
+                {showView.contract_type === 'uploaded' && !viewContractUrl ? (
+                  <div style={{ fontSize: '14px', color: '#666' }}>No document link is stored for this contract.</div>
+                ) : showView.contract_type === 'uploaded' && viewContractUrl ? (
+                  <div style={{ marginTop: '16px' }}>
+                    <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Uploaded Document</div>
+                    {viewContractUrl.match(/\.(pdf)$/i) ? (
+                      <>
+                        <iframe
+                          src={viewContractUrl}
+                          style={{ width: '100%', height: '500px', border: '1px solid var(--border-default)', borderRadius: '8px' }}
+                          title="Contract document"
+                        />
+                        <a
+                          href={viewContractUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#1DB954', textDecoration: 'none', fontFamily: 'var(--font-ui)' }}
+                        >
+                          ↗ Open full screen
+                        </a>
+                      </>
+                    ) : (
+                      <div style={{ padding: '20px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📄</div>
+                        <div style={{ fontSize: '14px', color: '#374151', marginBottom: '16px' }}>This document cannot be previewed in the browser.</div>
+                        <a
+                          href={viewContractUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          style={{ padding: '10px 20px', background: '#1DB954', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                        >
+                          Open Document
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '14px', lineHeight: 1.8, color: '#111' }}>{showView.content}</div>
+                )}
               </div>
               {showView.notes && (
                 <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>

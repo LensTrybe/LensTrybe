@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
+import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
 
 const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
 
@@ -15,16 +16,23 @@ function daysLeft(expiresAt) {
 }
 
 export default function JobBoardPage() {
-  const { user } = useAuth()
+  const { user, profile, clientAccount } = useAuth()
   const { tier } = useSubscription()
   const navigate = useNavigate()
   const [jobs, setJobs] = useState([])
   const [myApplications, setMyApplications] = useState([])
+  const [myPostedJobs, setMyPostedJobs] = useState([])
+  const [expandedPostedJob, setExpandedPostedJob] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [tab, setTab] = useState('browse')
+  const [activeTab, setActiveTab] = useState('browse')
   const [selected, setSelected] = useState(null)
   const [showPost, setShowPost] = useState(false)
-  const [applying, setApplying] = useState(false)
+  const [showApplyModal, setShowApplyModal] = useState(false)
+  const [applyingJob, setApplyingJob] = useState(null)
+  const [applyForm, setApplyForm] = useState({ price: '', description: '', includes: '' })
+  const [submittingApply, setSubmittingApply] = useState(false)
+  const [applyToast, setApplyToast] = useState(null)
+  const [toast, setToast] = useState(null)
   const [saving, setSaving] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('')
   const canApply = tier !== 'basic'
@@ -38,34 +46,140 @@ export default function JobBoardPage() {
     budget: '',
   })
 
-  useEffect(() => { loadJobs() }, [user])
+  useEffect(() => {
+    void loadJobs()
+    if (user) {
+      void loadMyApplications()
+      void loadMyPostedJobs()
+    }
+  }, [user])
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  async function acceptApplication(app, job) {
+    await acceptJobApplication({
+      app,
+      job,
+      user,
+      profile,
+      clientAccount,
+      showToast,
+      reloadPostedJobs: loadMyPostedJobs,
+      reloadBrowseJobs: loadJobs,
+    })
+  }
+
+  async function declineApplication(app) {
+    await declineJobApplication({ app, showToast, reloadPostedJobs: loadMyPostedJobs })
+  }
 
   async function loadJobs() {
-    const [jobsRes, appsRes] = await Promise.all([
-      supabase.from('job_listings').select('*').eq('status', 'active').order('created_at', { ascending: false }),
-      user
-        ? supabase.from('job_applications').select('job_id').eq('creative_id', user.id)
-        : Promise.resolve({ data: [] }),
-    ])
-    setJobs(jobsRes.data ?? [])
-    setMyApplications(appsRes.data?.map(a => a.job_id) ?? [])
+    const { data } = await supabase.from('job_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
+    setJobs(data ?? [])
     setLoading(false)
+  }
+
+  async function loadMyApplications() {
+    if (!user) {
+      setMyApplications([])
+      return
+    }
+    const { data } = await supabase
+      .from('job_applications')
+      .select('*, job_listings(title, location, budget_range)')
+      .eq('creative_id', user.id)
+      .order('created_at', { ascending: false })
+    setMyApplications(data ?? [])
+  }
+
+  async function loadMyPostedJobs() {
+    if (!user) {
+      setMyPostedJobs([])
+      return
+    }
+    const { data } = await supabase
+      .from('job_listings')
+      .select('*, job_applications(*)')
+      .eq('posted_by', user.id)
+      .order('created_at', { ascending: false })
+    setMyPostedJobs(data ?? [])
   }
 
   function resetForm() {
     setForm({ title: '', description: '', creative_types: [], location: '', job_date: '', budget: '' })
   }
 
-  async function applyToJob(jobId) {
-    if (!canApply) return
-    setApplying(true)
-    await supabase.from('job_applications').insert({
-      job_id: jobId,
+  async function submitApplication() {
+    if (!user || !applyingJob) return
+    if (!applyForm.price || !applyForm.description) return
+    setSubmittingApply(true)
+
+    const { data: jobListing } = await supabase
+      .from('job_listings')
+      .select('title, posted_by, poster_email, poster_name')
+      .eq('id', applyingJob.id)
+      .maybeSingle()
+
+    let posterProfile = null
+    let posterClient = null
+    if (jobListing?.posted_by) {
+      const [profRes, clientRes] = await Promise.all([
+        supabase.from('profiles').select('business_email, business_name, full_name').eq('id', jobListing.posted_by).maybeSingle(),
+        supabase.from('client_accounts').select('email, first_name, last_name').eq('id', jobListing.posted_by).maybeSingle(),
+      ])
+      posterProfile = profRes.data
+      posterClient = clientRes.data
+    }
+
+    const clientDisplayName = posterClient
+      ? `${[posterClient.first_name, posterClient.last_name].filter(Boolean).join(' ')}`.trim() || posterClient.email
+      : null
+
+    const posterEmail = jobListing?.poster_email ?? posterProfile?.business_email ?? posterClient?.email ?? null
+    const posterName = jobListing?.poster_name ?? posterProfile?.business_name ?? posterProfile?.full_name ?? clientDisplayName ?? 'there'
+
+    const { error } = await supabase.from('job_applications').insert({
+      job_id: applyingJob.id,
       creative_id: user.id,
+      creative_name: profile?.business_name ?? user.email,
+      price: parseFloat(applyForm.price),
+      description: applyForm.description,
+      includes: applyForm.includes || null,
+      message: applyForm.description,
+      status: 'pending',
     })
-    setMyApplications(prev => [...prev, jobId])
-    setApplying(false)
-    setSelected(null)
+
+    if (!error) {
+      if (posterEmail) {
+        try {
+          await supabase.functions.invoke('send-message-notification', {
+            body: {
+              to: posterEmail,
+              toName: posterName,
+              fromName: profile?.business_name ?? user.email,
+              subject: `New application for your job: ${jobListing?.title ?? applyingJob.title}`,
+              messageBody: `${profile?.business_name ?? user.email} has applied for your job "${jobListing?.title ?? applyingJob.title}".\n\nOffer: AUD ${applyForm.price}\nWhat's included: ${applyForm.includes || '—'}\n\nCover message: ${applyForm.description}\n\nLog in to LensTrybe to view all applications.`,
+              threadSubject: 'Job Application',
+            },
+          })
+        } catch {
+          /* non-blocking */
+        }
+      }
+      await loadMyApplications()
+      setShowApplyModal(false)
+      setApplyingJob(null)
+      setApplyForm({ price: '', description: '', includes: '' })
+      setApplyToast('Application submitted!')
+      setTimeout(() => setApplyToast(null), 3000)
+    } else {
+      setApplyToast('Failed: ' + error.message)
+      setTimeout(() => setApplyToast(null), 3000)
+    }
+    setSubmittingApply(false)
   }
 
   async function postJob() {
@@ -81,8 +195,11 @@ export default function JobBoardPage() {
       budget_range: form.budget || null,
       status: 'active',
       expires_at: expiresAt,
+      poster_email: profile?.business_email ?? user?.email ?? null,
+      poster_name: profile?.business_name ?? profile?.full_name ?? user?.email ?? null,
     })
     await loadJobs()
+    await loadMyPostedJobs()
     setShowPost(false)
     resetForm()
     setSaving(false)
@@ -136,6 +253,17 @@ export default function JobBoardPage() {
 
   return (
     <div style={styles.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
+          {toast.msg}
+        </div>
+      )}
+      {applyToast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9998, background: applyToast.startsWith('Failed') ? '#ef4444' : '#1DB954', color: applyToast.startsWith('Failed') ? '#fff' : '#000', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
+          {applyToast}
+        </div>
+      )}
+
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Job Board</h1>
@@ -144,12 +272,21 @@ export default function JobBoardPage() {
         <Button variant="secondary" onClick={() => user ? setShowPost(true) : navigate('/join/client')}>+ Post a Job</Button>
       </div>
 
+      <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px', width: 'fit-content', flexWrap: 'wrap' }}>
+        {['browse', 'my-applications', 'my-posted'].map(t => (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setActiveTab(t)}
+            style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: activeTab === t ? 'var(--bg-base)' : 'transparent', color: activeTab === t ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}
+          >
+            {t === 'browse' ? 'Browse Jobs' : t === 'my-applications' ? `My Applications (${myApplications.length})` : 'My Posted Jobs'}
+          </button>
+        ))}
+      </div>
+
       <div style={styles.toolbar}>
-        <div style={styles.tabs}>
-          <button style={styles.tab(tab === 'browse')} onClick={() => setTab('browse')}>Browse Jobs ({filtered.length})</button>
-          <button style={styles.tab(tab === 'applied')} onClick={() => setTab('applied')}>Applied ({myApplications.length})</button>
-        </div>
-        {tab === 'browse' && (
+        {activeTab === 'browse' && (
           <select style={styles.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             <option value="">All categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
@@ -157,7 +294,7 @@ export default function JobBoardPage() {
         )}
       </div>
 
-      {tab === 'browse' ? (
+      {activeTab === 'browse' ? (
         loading ? (
           <div style={styles.emptyState}>Loading jobs…</div>
         ) : filtered.length === 0 ? (
@@ -165,7 +302,7 @@ export default function JobBoardPage() {
         ) : (
           <div style={styles.grid}>
             {filtered.map(job => {
-              const applied = myApplications.includes(job.id)
+              const applied = myApplications.some(a => a.job_id === job.id)
               const days = daysLeft(job.expires_at)
               return (
                 <div
@@ -190,25 +327,116 @@ export default function JobBoardPage() {
             })}
           </div>
         )
-      ) : (
-        <div style={styles.grid}>
-          {jobs.filter(j => myApplications.includes(j.id)).length === 0 ? (
-            <div style={{ ...styles.emptyState, gridColumn: '1 / -1' }}>You haven't applied to any jobs yet.</div>
-          ) : jobs.filter(j => myApplications.includes(j.id)).map(job => (
-            <div key={job.id} style={styles.jobCard} onClick={() => setSelected(job)}
-              onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-              onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-            >
-              <div style={styles.jobTitle}>{job.title}</div>
-              <div style={styles.jobMeta}>
-                {(job.creative_types ?? []).map(c => <Badge key={c} variant="default" size="sm">{c}</Badge>)}
-                <Badge variant="green" size="sm">Applied</Badge>
+      ) : activeTab === 'my-applications' ? (
+        <div>
+          {myApplications.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t applied to any jobs yet.</div>
+          ) : (
+            myApplications.map(app => (
+              <div key={app.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{app.job_listings?.title ?? 'Job'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{app.job_listings?.location ?? '—'} · Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                  </div>
+                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
+                </div>
+                {app.includes && <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}><strong>Includes:</strong> {app.includes}</div>}
               </div>
-              <div style={styles.jobLocation}>{job.location || 'Location flexible'}</div>
-            </div>
-          ))}
+            ))
+          )}
         </div>
-      )}
+      ) : activeTab === 'my-posted' ? (
+        <div>
+          {myPostedJobs.length === 0 ? (
+            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t posted any jobs yet.</div>
+          ) : (
+            myPostedJobs.map(job => (
+              <div key={job.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+                <div
+                  style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                  onClick={() => setExpandedPostedJob(expandedPostedJob === job.id ? null : job.id)}
+                >
+                  <div>
+                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{job.title}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{job.location} · {job.budget_range}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ padding: '4px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                      {job.job_applications?.length ?? 0} application{job.job_applications?.length !== 1 ? 's' : ''}
+                    </span>
+                    <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>{expandedPostedJob === job.id ? '▲' : '▼'}</span>
+                  </div>
+                </div>
+                {expandedPostedJob === job.id && (
+                  <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 20px' }}>
+                    {!job.job_applications?.length ? (
+                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '16px 0' }}>No applications yet.</div>
+                    ) : (
+                      job.job_applications.map(app => (
+                        <div key={app.id} style={{ padding: '16px', background: 'var(--bg-base)', borderRadius: '10px', marginBottom: '10px', border: '1px solid var(--border-default)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                            <div>
+                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{app.creative_name}</div>
+                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                            </div>
+                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
+                          </div>
+                          {app.includes && (
+                            <div style={{ marginBottom: '8px' }}>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>What&apos;s included</div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.includes}</div>
+                            </div>
+                          )}
+                          {app.description && (
+                            <div>
+                              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Cover message</div>
+                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.description}</div>
+                            </div>
+                          )}
+                          {isApplicationPending(app) && (
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); void acceptApplication(app, job) }}
+                                style={{ padding: '8px 20px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                              >
+                                ✓ Accept
+                              </button>
+                              <button
+                                type="button"
+                                onClick={e => { e.stopPropagation(); void declineApplication(app) }}
+                                style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+                          {app.status === 'accepted' && (
+                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                              ✓ Accepted — message thread created
+                            </div>
+                          )}
+                          {app.status === 'declined' && (
+                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#ef4444' }}>
+                              Declined
+                            </div>
+                          )}
+                          {app.status === 'closed' && (
+                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                              Position filled
+                            </div>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      ) : null}
 
       {selected && (
         <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected.title} size="md">
@@ -254,15 +482,77 @@ export default function JobBoardPage() {
             <div style={styles.modalActions}>
               <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
               {canApply && (
-                myApplications.includes(selected.id)
+                myApplications.some(a => a.job_id === selected.id)
                   ? <Badge variant="green">Already Applied</Badge>
-                  : <Button variant="primary" disabled={applying} onClick={() => user ? applyToJob(selected.id) : navigate('/join/client')}>
-                    {applying ? 'Applying…' : 'Apply for This Job'}
-                  </Button>
+                  : user
+                    ? (
+                      <button
+                        type="button"
+                        onClick={() => { setApplyingJob(selected); setShowApplyModal(true) }}
+                        style={{ padding: '8px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                      >
+                        Apply
+                      </button>
+                    )
+                    : (
+                      <Button variant="primary" onClick={() => navigate('/join/client')}>Apply</Button>
+                    )
               )}
             </div>
           </div>
         </Modal>
+      )}
+
+      {showApplyModal && applyingJob && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Apply for this job</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{applyingJob.title}</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Your Price (AUD) *</label>
+                <input
+                  type="number"
+                  value={applyForm.price}
+                  onChange={e => setApplyForm(p => ({ ...p, price: e.target.value }))}
+                  placeholder="e.g. 850"
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>What&apos;s included in your price *</label>
+                <textarea
+                  value={applyForm.includes}
+                  onChange={e => setApplyForm(p => ({ ...p, includes: e.target.value }))}
+                  placeholder="e.g. 4 hours on-site, 50 edited photos delivered within 7 days, 1 round of revisions..."
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '80px', resize: 'vertical' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Cover message *</label>
+                <textarea
+                  value={applyForm.description}
+                  onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Introduce yourself and explain why you're the right creative for this job..."
+                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '100px', resize: 'vertical' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null) }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => void submitApplication()}
+                disabled={submittingApply || !applyForm.price || !applyForm.description}
+                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: submittingApply || !applyForm.price || !applyForm.description ? 0.5 : 1 }}
+              >
+                {submittingApply ? 'Submitting…' : 'Submit Application'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <Modal isOpen={showPost} onClose={() => { setShowPost(false); resetForm() }} title="Post a Job" size="lg">

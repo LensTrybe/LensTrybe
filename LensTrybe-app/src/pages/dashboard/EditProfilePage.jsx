@@ -9,15 +9,52 @@ const SKILL_TYPES = [
   'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator'
 ]
 
-const SPECIALTIES = {
-  'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture'],
-  'Videographer': ['Wedding', 'Brand Film', 'Documentary', 'Events', 'Music Video', 'Social Media', 'Corporate', 'Sport'],
-  'Drone Pilot': ['Real Estate', 'Cinematic', 'Surveying', 'Events', 'Agriculture', 'Construction', 'Infrastructure'],
-  'Video Editor': ['Colour Grading', 'Short-form/Reels', 'Wedding Films', 'VFX', 'Motion Graphics', 'Corporate', 'Music Video'],
-  'Photo Editor': ['Retouching', 'Culling', 'Compositing', 'Product Editing', 'Restoration', 'Fashion'],
-  'Social Media Manager': ['Instagram & TikTok', 'Reels & Short-form', 'Brand Content', 'Content Strategy', 'YouTube Management', 'LinkedIn', 'Facebook & Meta'],
-  'Hair & Makeup Artist': ['Bridal & Wedding', 'Editorial & Fashion', 'Commercial', 'Film & TV', 'Portrait & Headshots', 'Special Effects', 'Hair Styling', 'Airbrush', 'Natural & Lifestyle', 'Events'],
-  'UGC Creator': ['E-commerce & Product', 'App & Software', 'Food & Beverage', 'Beauty & Skincare', 'Health & Fitness', 'Travel & Lifestyle', 'Fashion & Apparel', 'Home & Interiors', 'Unboxing & Reviews', 'Paid Ad Creative'],
+const SPECIALTIES_MAP = {
+  Photographer: [
+    'Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion',
+    'Product', 'Sports', 'Street', 'Architecture', 'Food', 'Newborn & Family',
+    'Maternity', 'Boudoir', 'Pet', 'School', 'Headshots', 'Documentary',
+    'Travel', 'Fine Art', 'Aerial', 'Night & Astro', 'Corporate',
+  ],
+  Videographer: [
+    'Wedding', 'Brand Film', 'Documentary', 'Events', 'Music Video',
+    'Social Media', 'Corporate', 'Sport', 'Real Estate', 'Travel',
+    'Short Film', 'Commercial', 'Aerial', 'News & Journalism',
+  ],
+  'Drone Pilot': [
+    'Real Estate', 'Cinematic', 'Surveying', 'Events', 'Agriculture',
+    'Construction', 'Infrastructure', 'Mapping', 'Search & Rescue',
+    'Film & TV', 'Sport', 'Inspection',
+  ],
+  'Video Editor': [
+    'Colour Grading', 'Short-form / Reels', 'Wedding Films', 'VFX',
+    'Motion Graphics', 'Corporate', 'Music Video', 'Documentary',
+    'Social Media', 'Podcast', 'YouTube', 'Commercial',
+  ],
+  'Photo Editor': [
+    'Retouching', 'Culling', 'Compositing', 'Product Editing',
+    'Restoration', 'Fashion', 'Real Estate', 'Wedding', 'Colour Correction',
+    'Background Removal', 'Skin Retouching',
+  ],
+  'Social Media Manager': [
+    'Instagram & TikTok', 'Reels & Short-form', 'Brand Content',
+    'Content Strategy', 'Content Scheduling', 'Visual Storytelling',
+    'YouTube Management', 'LinkedIn Visual Content', 'Facebook & Meta Content',
+    'Community Management', 'Influencer Outreach', 'Analytics & Reporting',
+  ],
+  'Hair & Makeup Artist': [
+    'Bridal & Wedding', 'Editorial & Fashion', 'Commercial & Advertising',
+    'Film & TV', 'Portrait & Headshots', 'Special Effects (SFX)',
+    'Hair Styling', 'Airbrush', 'Natural & Lifestyle', 'Events & Occasions',
+    'Theatre & Performance', "Men's Grooming",
+  ],
+  'UGC Creator': [
+    'E-commerce & Product', 'App & Software Demos', 'Food & Beverage',
+    'Beauty & Skincare', 'Health & Fitness', 'Travel & Lifestyle',
+    'Fashion & Apparel', 'Home & Interiors', 'Pet Products',
+    'Unboxing & Reviews', 'Paid Ad Creative', 'Testimonial Style',
+    'Tech & Gadgets', 'Gaming', 'Finance & Fintech',
+  ],
 }
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
@@ -29,6 +66,25 @@ export default function EditProfilePage() {
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [activeTab, setActiveTab] = useState('basics')
+  const [portfolioItems, setPortfolioItems] = useState([])
+  const [uploadingPortfolio, setUploadingPortfolio] = useState(false)
+  const [otherCredentialName, setOtherCredentialName] = useState('')
+
+  const [credentials, setCredentials] = useState({
+    abn: '',
+    has_insurance: false,
+    has_blue_card: false,
+    has_police_check: false,
+    has_wwvp: false,
+    has_drone_licence: false,
+    has_other: false,
+    insurance_url: null,
+    blue_card_url: null,
+    police_check_url: null,
+    wwvp_url: null,
+    drone_licence_url: null,
+    other_url: null,
+  })
 
   const [form, setForm] = useState({
     business_name: '',
@@ -40,6 +96,7 @@ export default function EditProfilePage() {
     tiktok: '',
     linkedin: '',
     facebook: '',
+    twitter: '',
     city: '',
     state: '',
     country: 'Australia',
@@ -60,6 +117,7 @@ export default function EditProfilePage() {
         tiktok: profile.tiktok_url ?? '',
         linkedin: profile.linkedin_url ?? '',
         facebook: profile.facebook_url ?? '',
+        twitter: profile.twitter_url ?? '',
         city: profile.city ?? '',
         state: profile.state ?? '',
         country: profile.country ?? 'Australia',
@@ -67,9 +125,62 @@ export default function EditProfilePage() {
         specialties: profile.specialties ?? [],
         avatar_url: profile.avatar_url ?? null,
       })
+      setCredentials({
+        abn: profile.abn ?? '',
+        has_insurance: profile.has_insurance ?? false,
+        has_blue_card: profile.has_blue_card ?? false,
+        has_police_check: profile.has_police_check ?? false,
+        has_wwvp: profile.has_wwvp ?? false,
+        has_drone_licence: profile.has_drone_licence ?? false,
+        has_other: profile.has_other ?? false,
+        insurance_url: profile.insurance_url ?? null,
+        blue_card_url: profile.blue_card_url ?? null,
+        police_check_url: profile.police_check_url ?? null,
+        wwvp_url: profile.wwvp_url ?? null,
+        drone_licence_url: profile.drone_licence_url ?? null,
+        other_url: profile.other_url ?? null,
+      })
+      setOtherCredentialName(profile.other_credential_name ?? '')
       setLoading(false)
+      void loadPortfolio()
     }
   }, [profile])
+
+  async function loadPortfolio() {
+    if (!user) return
+    const { data } = await supabase.from('portfolio_items').select('*').eq('creative_id', user.id).order('sort_order', { ascending: true })
+    setPortfolioItems(data ?? [])
+  }
+
+  async function uploadPortfolioFiles(files) {
+    if (!user) return
+    setUploadingPortfolio(true)
+    const list = Array.from(files)
+    for (const file of list) {
+      const isVideo = file.type.startsWith('video')
+      const path = `${user.id}/${Date.now()}_${file.name}`
+      const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
+      const { error } = await supabase.storage.from(bucket).upload(path, file)
+      if (!error) {
+        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
+        await supabase.from('portfolio_items').insert({
+          creative_id: user.id,
+          user_id: user.id,
+          file_url: publicUrl,
+          image_url: publicUrl,
+          file_type: isVideo ? 'video' : 'image',
+          sort_order: portfolioItems.length,
+        })
+      }
+    }
+    await loadPortfolio()
+    setUploadingPortfolio(false)
+  }
+
+  async function deletePortfolioItem(id) {
+    await supabase.from('portfolio_items').delete().eq('id', id)
+    setPortfolioItems(prev => prev.filter(p => p.id !== id))
+  }
 
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
@@ -96,6 +207,16 @@ export default function EditProfilePage() {
     setUploading(false)
   }
 
+  async function uploadCredential(file, field) {
+    if (!user) return
+    const path = `credentials/${user.id}/${field}_${Date.now()}`
+    const { error } = await supabase.storage.from('credentials').upload(path, file, { upsert: true })
+    if (!error) {
+      const { data: { publicUrl } } = supabase.storage.from('credentials').getPublicUrl(path)
+      setCredentials(prev => ({ ...prev, [`${field}_url`]: publicUrl, [`has_${field}`]: true }))
+    }
+  }
+
   async function saveProfile() {
     setSaving(true)
     await supabase.from('profiles').update({
@@ -108,12 +229,27 @@ export default function EditProfilePage() {
       tiktok_url: form.tiktok,
       linkedin_url: form.linkedin,
       facebook_url: form.facebook,
+      twitter_url: form.twitter,
       city: form.city,
       state: form.state,
       country: form.country,
       skill_types: form.skill_types,
       specialties: form.specialties,
       avatar_url: form.avatar_url,
+      abn: credentials.abn || null,
+      has_insurance: credentials.has_insurance,
+      has_blue_card: credentials.has_blue_card,
+      has_police_check: credentials.has_police_check,
+      has_wwvp: credentials.has_wwvp,
+      has_drone_licence: credentials.has_drone_licence,
+      has_other: credentials.has_other,
+      insurance_url: credentials.insurance_url,
+      blue_card_url: credentials.blue_card_url,
+      police_check_url: credentials.police_check_url,
+      wwvp_url: credentials.wwvp_url,
+      drone_licence_url: credentials.drone_licence_url,
+      other_url: credentials.other_url,
+      other_credential_name: otherCredentialName || null,
     }).eq('id', user.id)
     await fetchUserData(user.id)
     setSaving(false)
@@ -121,7 +257,7 @@ export default function EditProfilePage() {
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const availableSpecialties = form.skill_types.flatMap(s => SPECIALTIES[s] ?? [])
+  const availableSpecialties = form.skill_types.flatMap(s => SPECIALTIES_MAP[s] ?? [])
   const uniqueSpecialties = [...new Set(availableSpecialties)]
 
   const styles = {
@@ -182,9 +318,9 @@ export default function EditProfilePage() {
       </div>
 
       <div style={styles.tabs}>
-        {['basics', 'skills', 'location', 'social'].map(t => (
-          <button key={t} style={styles.tab(activeTab === t)} onClick={() => setActiveTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+        {['basics', 'skills', 'location', 'social', 'credentials', 'portfolio'].map(t => (
+          <button key={t} type="button" style={styles.tab(activeTab === t)} onClick={() => setActiveTab(t)}>
+            {t === 'credentials' ? 'Credentials' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -263,7 +399,115 @@ export default function EditProfilePage() {
           <Input label="TikTok" placeholder="@yourhandle" value={form.tiktok} onChange={e => update('tiktok', e.target.value)} />
           <Input label="LinkedIn" placeholder="linkedin.com/in/yourprofile" value={form.linkedin} onChange={e => update('linkedin', e.target.value)} />
           <Input label="Facebook" placeholder="facebook.com/yourpage" value={form.facebook} onChange={e => update('facebook', e.target.value)} />
+          <Input label="X / Twitter" value={form.twitter} onChange={e => update('twitter', e.target.value)} placeholder="https://x.com/yourusername" />
           <Input label="Phone (optional)" placeholder="0400 000 000" value={form.phone} onChange={e => update('phone', e.target.value)} />
+        </div>
+      )}
+
+      {activeTab === 'credentials' && (
+        <div style={styles.card}>
+          <div style={styles.sectionTitle}>Trust & Credentials</div>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+            These documents are private — only the badges display publicly on your profile. Clients cannot view or download the actual files.
+          </p>
+
+          <Input label="ABN / ACN" value={credentials.abn} onChange={e => setCredentials(p => ({ ...p, abn: e.target.value }))} placeholder="12 345 678 901" />
+
+          {[
+            { key: 'insurance', label: 'Public Liability Insurance', desc: 'Upload your certificate of currency' },
+            { key: 'blue_card', label: 'Blue Card / Working with Children Check', desc: 'Upload your blue card or WWCC' },
+            { key: 'police_check', label: 'Police Check', desc: 'Upload your national police certificate' },
+            { key: 'wwvp', label: 'Working with Vulnerable People (WWVP)', desc: 'Upload your WWVP card or certificate' },
+            { key: 'drone_licence', label: 'CASA Drone Licence / ReOC', desc: 'Upload your Remote Pilot Licence or ReOC certificate' },
+            { key: 'other', label: 'Other Credential', desc: 'Any other professional licence or certification' },
+          ].map(({ key, label, desc }) => (
+            <div key={key} style={{ marginBottom: '20px', padding: '16px', background: 'var(--bg-elevated)', borderRadius: '10px', border: '1px solid var(--border-default)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                <div>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{desc}</div>
+                </div>
+                {credentials[`has_${key}`] && (
+                  <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.15)', border: '1px solid rgba(29,185,84,0.3)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954' }}>✓ Uploaded</span>
+                )}
+              </div>
+              {key === 'other' && (
+                <div style={{ marginBottom: '10px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Credential Name</label>
+                  <input
+                    value={otherCredentialName}
+                    onChange={e => setOtherCredentialName(e.target.value)}
+                    placeholder="e.g. CASA Remote Pilot Licence, First Aid Certificate..."
+                    style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                  />
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: '8px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => document.getElementById(`cred-${key}`).click()}
+                  style={{ padding: '7px 14px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '7px', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                >
+                  {credentials[`has_${key}`] ? 'Replace File' : 'Upload File'}
+                </button>
+                {credentials[`has_${key}`] && (
+                  <button
+                    type="button"
+                    onClick={() => setCredentials(p => ({ ...p, [`has_${key}`]: false, [`${key}_url`]: null }))}
+                    style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '7px', color: '#ef4444', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                  >Remove</button>
+                )}
+                <input id={`cred-${key}`} type="file" accept=".pdf,.jpg,.jpeg,.png" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) uploadCredential(f, key); e.target.value = '' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {activeTab === 'portfolio' && (
+        <div style={styles.card}>
+          <div style={styles.sectionTitle}>Portfolio</div>
+          <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
+            Photos and videos uploaded here appear on your public profile.
+          </p>
+          <div
+            onClick={() => document.getElementById('portfolio-upload').click()}
+            style={{ border: '2px dashed var(--border-default)', borderRadius: '10px', padding: '24px', textAlign: 'center', cursor: 'pointer', marginBottom: '20px', color: 'var(--text-muted)', fontSize: '14px' }}
+          >
+            {uploadingPortfolio ? 'Uploading...' : '+ Click to upload photos or videos'}
+          </div>
+          <input
+            id="portfolio-upload"
+            type="file"
+            accept="image/*,video/*"
+            multiple
+            style={{ display: 'none' }}
+            onChange={e => {
+              const f = e.target.files
+              if (f?.length) void uploadPortfolioFiles(Array.from(f))
+              e.target.value = ''
+            }}
+          />
+          {portfolioItems.length > 0 && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+              {portfolioItems.map(item => (
+                <div key={item.id} style={{ position: 'relative', borderRadius: '8px', overflow: 'hidden', aspectRatio: '1', background: 'var(--bg-base)' }}>
+                  {item.file_type === 'video'
+                    ? <video src={item.file_url ?? item.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
+                    : <img src={item.file_url ?? item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  }
+                  <button
+                    type="button"
+                    onClick={() => deletePortfolioItem(item.id)}
+                    style={{ position: 'absolute', top: '6px', right: '6px', background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: '24px', height: '24px', color: '#fff', fontSize: '12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                  >✕</button>
+                </div>
+              ))}
+            </div>
+          )}
+          {portfolioItems.length === 0 && !uploadingPortfolio && (
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', padding: '20px' }}>No portfolio items yet.</div>
+          )}
         </div>
       )}
 

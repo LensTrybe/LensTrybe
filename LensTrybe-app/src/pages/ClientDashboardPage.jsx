@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 
 export default function ClientDashboardPage() {
-  const { user, clientAccount } = useAuth()
+  const { user, clientAccount, profile } = useAuth()
   const navigate = useNavigate()
   const [threads, setThreads] = useState([])
   const [selected, setSelected] = useState(null)
@@ -12,6 +13,8 @@ export default function ClientDashboardPage() {
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
   const [jobs, setJobs] = useState([])
+  const [expandedJob, setExpandedJob] = useState(null)
+  const [toast, setToast] = useState(null)
   const [creatives, setCreatives] = useState([])
   const [view, setView] = useState('messages')
   const [editingNickname, setEditingNickname] = useState(false)
@@ -89,12 +92,35 @@ export default function ClientDashboardPage() {
   }
 
   async function loadJobs() {
+    if (!user) return
     const { data } = await supabase
       .from('job_listings')
-      .select('*')
+      .select('*, job_applications(*)')
       .eq('posted_by', user.id)
       .order('created_at', { ascending: false })
     setJobs(data ?? [])
+  }
+
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  async function acceptApplication(app, job) {
+    await acceptJobApplication({
+      app,
+      job,
+      user,
+      profile,
+      clientAccount,
+      showToast,
+      reloadPostedJobs: loadJobs,
+      reloadThreads: loadThreads,
+    })
+  }
+
+  async function declineApplication(app) {
+    await declineJobApplication({ app, showToast, reloadPostedJobs: loadJobs })
   }
 
   async function sendReply() {
@@ -202,6 +228,11 @@ export default function ClientDashboardPage() {
 
   return (
     <div style={s.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
+          {toast.msg}
+        </div>
+      )}
       <nav style={s.nav}>
         <div style={s.logo} onClick={() => navigate('/')}>LensTrybe</div>
         <div style={s.navRight}>
@@ -328,11 +359,89 @@ export default function ClientDashboardPage() {
               <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>My Jobs</h2>
               <button style={s.postBtn} onClick={() => navigate('/jobs')}>+ Post a Job</button>
               {jobs.length === 0 ? (
-                <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>You haven't posted any jobs yet.</div>
-              ) : jobs.map(j => (
-                <div key={j.id} style={s.jobCard}>
-                  <div style={s.jobTitle}>{j.title}</div>
-                  <div style={s.jobMeta}>{j.location} · {j.budget_range} · {new Date(j.created_at).toLocaleDateString()}</div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t posted any jobs yet.</div>
+              ) : jobs.map(job => (
+                <div key={job.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+                  <div
+                    style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
+                    onClick={() => setExpandedJob(expandedJob === job.id ? null : job.id)}
+                  >
+                    <div>
+                      <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{job.title}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{job.location} · {job.budget_range}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      <span style={{ padding: '4px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                        {job.job_applications?.length ?? 0} application{job.job_applications?.length !== 1 ? 's' : ''}
+                      </span>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>{expandedJob === job.id ? '▲' : '▼'}</span>
+                    </div>
+                  </div>
+
+                  {expandedJob === job.id && (
+                    <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 20px' }}>
+                      {!job.job_applications?.length ? (
+                        <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '16px 0' }}>No applications yet.</div>
+                      ) : (
+                        job.job_applications.map(app => (
+                          <div key={app.id} style={{ padding: '16px', background: 'var(--bg-base)', borderRadius: '10px', marginBottom: '10px', border: '1px solid var(--border-default)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
+                              <div>
+                                <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{app.creative_name}</div>
+                                <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                              </div>
+                              <div style={{ fontSize: '18px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
+                            </div>
+                            {app.includes && (
+                              <div style={{ marginBottom: '8px' }}>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>What&apos;s included</div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.includes}</div>
+                              </div>
+                            )}
+                            {app.description && (
+                              <div>
+                                <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Cover message</div>
+                                <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.description}</div>
+                              </div>
+                            )}
+                            {isApplicationPending(app) && (
+                              <div style={{ display: 'flex', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
+                                <button
+                                  type="button"
+                                  onClick={e => { e.stopPropagation(); void acceptApplication(app, job) }}
+                                  style={{ padding: '8px 20px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                                >
+                                  ✓ Accept
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={e => { e.stopPropagation(); void declineApplication(app) }}
+                                  style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                                >
+                                  Decline
+                                </button>
+                              </div>
+                            )}
+                            {app.status === 'accepted' && (
+                              <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                                ✓ Accepted — message thread created
+                              </div>
+                            )}
+                            {app.status === 'declined' && (
+                              <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#ef4444' }}>
+                                Declined
+                              </div>
+                            )}
+                            {app.status === 'closed' && (
+                              <div style={{ marginTop: '12px', padding: '8px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                                Position filled
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

@@ -21,7 +21,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const params = useParams()
   const id = previewId ?? params.id
   const navigate = useNavigate()
-  const { user, isCreative } = useAuth()
+  const { user } = useAuth()
   const [profile, setProfile] = useState(null)
   const [portfolioItems, setPortfolioItems] = useState([])
   const [reviews, setReviews] = useState([])
@@ -32,19 +32,49 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [sent, setSent] = useState(false)
   const [enquiry, setEnquiry] = useState({ subject: '', message: '' })
   const [lightbox, setLightbox] = useState(null)
+  const [blockedDates, setBlockedDates] = useState([])
+  const [showReview, setShowReview] = useState(false)
+  const [showAllReviews, setShowAllReviews] = useState(false)
+  const [reviewForm, setReviewForm] = useState({ rating: 5, body: '', reviewer_name: '' })
+  const [submittingReview, setSubmittingReview] = useState(false)
+  const [reviewSent, setReviewSent] = useState(false)
 
   useEffect(() => { loadProfile() }, [id])
 
   async function loadProfile() {
-    const [profileRes, portfolioRes, reviewsRes] = await Promise.all([
+    const [profileRes, portfolioRes, reviewsRes, availabilityRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
       supabase.from('reviews').select('*').eq('creative_id', id).order('created_at', { ascending: false }),
+      supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),
     ])
     setProfile(profileRes.data)
     setPortfolioItems(portfolioRes.data ?? [])
     setReviews(reviewsRes.data ?? [])
+    setBlockedDates(availabilityRes.data ?? [])
     setLoading(false)
+  }
+
+  async function submitReview() {
+    if (!reviewForm.reviewer_name || !reviewForm.body) return
+    setSubmittingReview(true)
+    console.log('Submitting review:', reviewForm, 'for creative:', id)
+    const { data, error } = await supabase.from('reviews').insert({
+      creative_id: id,
+      reviewer_name: reviewForm.reviewer_name,
+      client_name: reviewForm.reviewer_name,
+      rating: reviewForm.rating,
+      body: reviewForm.body,
+      comment: reviewForm.body,
+      source: 'platform',
+    }).select()
+    console.log('Review result:', data, error)
+    if (!error) {
+      setReviewSent(true)
+      await loadProfile()
+      setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)
+    }
+    setSubmittingReview(false)
   }
 
   async function sendEnquiry() {
@@ -131,12 +161,30 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     portfolioGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' },
     portfolioItem: { borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', transition: 'transform var(--transition-base)' },
     portfolioImg: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-    reviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' },
-    reviewCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' },
-    reviewerName: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    reviewBody: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, fontStyle: 'italic' },
+    reviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' },
+    reviewCard: {
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: '10px',
+      padding: '14px 16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '6px',
+    },
+    reviewerName: {
+      fontSize: '13px',
+      fontWeight: 600,
+      color: 'var(--text-primary)',
+      fontFamily: 'var(--font-ui)',
+    },
+    reviewBody: {
+      fontSize: '13px',
+      color: 'var(--text-secondary)',
+      fontFamily: 'var(--font-ui)',
+      lineHeight: 1.5,
+      fontStyle: 'italic',
+    },
     specialtySection: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-    socialRow: { display: 'flex', gap: '12px', flexWrap: 'wrap' },
     socialLink: { fontSize: '13px', color: 'var(--green)', fontFamily: 'var(--font-ui)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' },
     lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '40px' },
     lightboxImg: { maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' },
@@ -173,6 +221,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
             <div style={styles.skillRow}>
               {(profile.skill_types ?? []).map((s, i) => <Badge key={i} variant="green" size="sm">{s}</Badge>)}
+              {profile.abn && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ ABN</span>}
+              {profile.has_insurance && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ Insured</span>}
+              {profile.has_blue_card && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ Blue Card</span>}
+              {profile.has_police_check && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ Police Checked</span>}
+              {profile.has_wwvp && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ WWVP</span>}
+              {profile.has_drone_licence && <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>✓ CASA Licence</span>}
+              {profile.has_other && (
+                <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>
+                  ✓ {profile.other_credential_name ?? 'Other Credential'}
+                </span>
+              )}
             </div>
 
             {profile.bio && <p style={styles.bio}>{profile.bio}</p>}
@@ -191,17 +250,93 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                   Enquire Now
                 </Button>
               )}
-              {profile.website && (
-                <Button variant="secondary" size="md" onClick={() => window.open(profile.website, '_blank')}>
-                  Visit Website
-                </Button>
+              {user?.id !== id && (
+                <button
+                  type="button"
+                  onClick={() => (user ? setShowReview(true) : setShowAuthGate(true))}
+                  style={{ padding: '10px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                >
+                  ★ Leave a Review
+                </button>
               )}
             </div>
+            {(profile.instagram_url || profile.tiktok_url || profile.linkedin_url || profile.facebook_url || profile.website || profile.twitter_url) && (
+              <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
+                {profile.website && <a href={profile.website} target="_blank" rel="noreferrer" style={styles.socialLink}>🌐 Website</a>}
+                {profile.instagram_url && <a href={`https://instagram.com/${profile.instagram_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>📷 Instagram</a>}
+                {profile.tiktok_url && <a href={`https://tiktok.com/${profile.tiktok_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>🎵 TikTok</a>}
+                {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={styles.socialLink}>💼 LinkedIn</a>}
+                {profile.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer" style={styles.socialLink}>👥 Facebook</a>}
+                {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={styles.socialLink}>𝕏 Twitter</a>}
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       <div style={styles.body}>
+        {(profile.specialties ?? []).length > 0 && (
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Specialties</div>
+            <div style={styles.specialtySection}>
+              {profile.specialties.map((s, i) => <Badge key={i} variant="default">{s}</Badge>)}
+            </div>
+          </div>
+        )}
+
+        {blockedDates.length > 0 && (
+          <div style={styles.section}>
+            <div style={styles.sectionTitle}>Availability</div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {blockedDates.slice(0, 12).map((block, i) => (
+                <div key={i} style={{ padding: '6px 14px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '999px', fontSize: '13px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>
+                  ✕ {new Date(block.date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                  {!block.all_day && block.start_time && ` ${block.start_time}–${block.end_time}`}
+                </div>
+              ))}
+            </div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '10px', fontFamily: 'var(--font-ui)' }}>
+              Dates shown in red are unavailable. Contact the creative for other dates.
+            </div>
+          </div>
+        )}
+
+        <div style={styles.section}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
+            <div style={{ ...styles.sectionTitle, marginBottom: 0 }}>Reviews</div>
+            {reviews.length > 5 && (
+              <button
+                type="button"
+                onClick={() => setShowAllReviews(!showAllReviews)}
+                style={{ background: 'none', border: '1px solid var(--border-default)', borderRadius: '8px', padding: '6px 14px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                {showAllReviews ? 'Show less' : `Show all ${reviews.length} reviews`}
+              </button>
+            )}
+          </div>
+          {reviews.length === 0 ? (
+            <div style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '20px 0' }}>No reviews yet.</div>
+          ) : (
+            <div style={styles.reviewGrid}>
+              {(showAllReviews ? reviews : reviews.slice(0, 5)).map(review => (
+                <div key={review.id} style={styles.reviewCard}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={styles.reviewerName}>{review.reviewer_name ?? review.client_name}</div>
+                    <div style={{ transform: 'scale(0.85)', transformOrigin: 'right center' }}>
+                      <StarRating value={review.rating} />
+                    </div>
+                  </div>
+                  {(review.body ?? review.comment) && <div style={styles.reviewBody}>"{review.body ?? review.comment}"</div>}
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                    {review.project_type && <Badge variant="default" size="sm">{review.project_type}</Badge>}
+                    {review.source === 'imported' && <Badge variant="default" size="sm">Imported review</Badge>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {portfolioItems.length > 0 && (
           <div style={styles.section}>
             <div style={styles.sectionTitle}>Portfolio</div>
@@ -220,50 +355,60 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             </div>
           </div>
         )}
+      </div>
 
-        {(profile.specialties ?? []).length > 0 && (
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Specialties</div>
-            <div style={styles.specialtySection}>
-              {profile.specialties.map((s, i) => <Badge key={i} variant="default">{s}</Badge>)}
-            </div>
-          </div>
-        )}
-
-        {(profile.instagram_url || profile.tiktok_url || profile.linkedin_url || profile.facebook_url || profile.website) && (
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Links</div>
-            <div style={styles.socialRow}>
-              {profile.website && <a href={profile.website} target="_blank" rel="noreferrer" style={styles.socialLink}>🌐 Website</a>}
-              {profile.instagram_url && <a href={`https://instagram.com/${profile.instagram_url.replace('@','')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>📷 Instagram</a>}
-              {profile.tiktok_url && <a href={`https://tiktok.com/${profile.tiktok_url.replace('@','')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>🎵 TikTok</a>}
-              {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={styles.socialLink}>💼 LinkedIn</a>}
-              {profile.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer" style={styles.socialLink}>👥 Facebook</a>}
-            </div>
-          </div>
-        )}
-
-        {reviews.length > 0 && (
-          <div style={styles.section}>
-            <div style={styles.sectionTitle}>Reviews</div>
-            <div style={styles.reviewGrid}>
-              {reviews.map(review => (
-                <div key={review.id} style={styles.reviewCard}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={styles.reviewerName}>{review.reviewer_name}</div>
-                    <StarRating value={review.rating} />
+      {showReview && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+            {reviewSent ? (
+              <div style={{ textAlign: 'center', padding: '24px', color: '#1DB954', fontSize: '16px', fontWeight: 600 }}>✓ Review submitted! Thank you.</div>
+            ) : (
+              <>
+                <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Leave a Review for {displayName}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Your Name *</label>
+                    <input
+                      value={reviewForm.reviewer_name}
+                      onChange={e => setReviewForm(p => ({ ...p, reviewer_name: e.target.value }))}
+                      placeholder="Jane Smith"
+                      style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                    />
                   </div>
-                  {review.body && <div style={styles.reviewBody}>"{review.body}"</div>}
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                    {review.project_type && <Badge variant="default" size="sm">{review.project_type}</Badge>}
-                    {review.source === 'imported' && <Badge variant="default" size="sm">Imported review</Badge>}
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Rating *</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <button key={s} type="button" onClick={() => setReviewForm(p => ({ ...p, rating: s }))} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: s <= reviewForm.rating ? '#EAB308' : 'var(--border-strong)', padding: '0' }}>★</button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Review *</label>
+                    <textarea
+                      value={reviewForm.body}
+                      onChange={e => setReviewForm(p => ({ ...p, body: e.target.value }))}
+                      placeholder="Share your experience working with this creative..."
+                      style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '100px', resize: 'vertical' }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
+                  <button type="button" onClick={() => setShowReview(false)} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+                  <button
+                    type="button"
+                    onClick={() => void submitReview()}
+                    disabled={submittingReview || !reviewForm.reviewer_name || !reviewForm.body}
+                    style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: submittingReview || !reviewForm.reviewer_name || !reviewForm.body ? 0.5 : 1 }}
+                  >
+                    {submittingReview ? 'Submitting…' : 'Submit Review'}
+                  </button>
+                </div>
+              </>
+            )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {lightbox && (
         <div style={styles.lightboxOverlay} onClick={() => setLightbox(null)}>

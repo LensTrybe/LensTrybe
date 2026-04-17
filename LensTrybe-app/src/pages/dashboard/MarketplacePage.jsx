@@ -6,7 +6,7 @@ const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones', 'E
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair']
 
 export default function MarketplacePage() {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const [tab, setTab] = useState('browse')
   const [listings, setListings] = useState([])
   const [myListings, setMyListings] = useState([])
@@ -27,6 +27,9 @@ export default function MarketplacePage() {
   const [editPhotoUrls, setEditPhotoUrls] = useState([])
   const [uploadingEditPhotos, setUploadingEditPhotos] = useState(false)
   const [lightbox, setLightbox] = useState(null)
+  const [showContactSeller, setShowContactSeller] = useState(false)
+  const [contactMessage, setContactMessage] = useState('')
+  const [sendingContact, setSendingContact] = useState(false)
 
   useEffect(() => { if (user) { loadListings(); loadMyListings(); loadSaved() } }, [user])
 
@@ -171,6 +174,85 @@ export default function MarketplacePage() {
     }
   }
 
+  async function contactSeller() {
+    if (!contactMessage.trim() || !selected || !user?.id) return
+    setSendingContact(true)
+    try {
+      const subject = `Marketplace: ${selected.title}`
+      const isCreative = !!profile
+
+      let existingQuery = supabase
+        .from('message_threads')
+        .select('id')
+        .eq('creative_id', selected.creative_id)
+        .eq('subject', subject)
+
+      if (isCreative) {
+        existingQuery = existingQuery.eq('client_email', user.email ?? '')
+      } else {
+        existingQuery = existingQuery.eq('client_user_id', user.id)
+      }
+
+      const { data: existingThread } = await existingQuery.maybeSingle()
+
+      let threadId = existingThread?.id
+
+      if (!threadId) {
+        const { data: thread } = await supabase.from('message_threads').insert({
+          creative_id: selected.creative_id,
+          client_user_id: user.id,
+          client_name: profile?.business_name ?? user.email,
+          client_email: user.email,
+          subject,
+        }).select().single()
+        threadId = thread?.id
+      }
+
+      if (!threadId) {
+        showToast('Could not create message thread', 'error')
+        return
+      }
+
+      const msgRow = {
+        thread_id: threadId,
+        sender_type: 'client',
+        sender_name: profile?.business_name ?? user.email,
+        body: contactMessage.trim(),
+      }
+      if (isCreative) {
+        msgRow.creative_id = user.id
+      }
+
+      await supabase.from('messages').insert(msgRow)
+
+      const { data: sellerProfile } = await supabase
+        .from('profiles')
+        .select('business_email, business_name')
+        .eq('id', selected.creative_id)
+        .maybeSingle()
+
+      if (sellerProfile?.business_email) {
+        await supabase.functions.invoke('send-message-notification', {
+          body: {
+            to: sellerProfile.business_email,
+            toName: sellerProfile.business_name ?? 'there',
+            fromName: profile?.business_name ?? user.email,
+            subject: `New message about your listing: ${selected.title}`,
+            messageBody: contactMessage.trim(),
+            threadSubject: subject,
+          },
+        })
+      }
+
+      setContactMessage('')
+      setShowContactSeller(false)
+      showToast('Message sent to seller')
+    } catch (err) {
+      showToast('Failed to send: ' + err.message, 'error')
+    }
+    setSendingContact(false)
+  }
+
   const filtered = listings.filter(l => {
     const matchSearch = l.title?.toLowerCase().includes(search.toLowerCase()) || l.description?.toLowerCase().includes(search.toLowerCase())
     const matchCat = filterCat === 'All' || l.category === filterCat
@@ -277,7 +359,9 @@ export default function MarketplacePage() {
                     {l.location && <div style={s.cardMeta}>{l.location}</div>}
                     {l.open_to_swaps && <div style={{ fontSize: '11px', color: '#a855f7', marginTop: '6px', fontWeight: 600 }}>Open to swaps</div>}
                   </div>
-                  <button type="button" onClick={() => deleteListing(l.id)} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '4px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#ef4444', fontSize: '11px', cursor: 'pointer' }}>Delete</button>
+                  {l.creative_id === user?.id && (
+                    <button type="button" onClick={() => deleteListing(l.id)} style={{ position: 'absolute', bottom: '10px', right: '10px', padding: '4px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#ef4444', fontSize: '11px', cursor: 'pointer' }}>Delete</button>
+                  )}
                 </div>
               ))}
             </div>
@@ -412,7 +496,7 @@ export default function MarketplacePage() {
                 {editing ? 'Edit Listing' : selected.title}
               </span>
               <div style={{ display: 'flex', gap: '8px' }}>
-                {selected.creative_id === user.id && !editing && (
+                {selected?.creative_id === user?.id && !editing && (
                   <button
                     type="button"
                     onClick={() => {
@@ -544,12 +628,47 @@ export default function MarketplacePage() {
                 </>
               ) : (
                 <>
-                  {selected.creative_id === user.id && (
+                  {selected?.creative_id !== user?.id && !editing && (
+                    <button
+                      type="button"
+                      onClick={() => setShowContactSeller(true)}
+                      style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                    >
+                      💬 Contact Seller
+                    </button>
+                  )}
+                  {selected?.creative_id === user?.id && (
                     <button type="button" onClick={() => deleteListing(selected.id)} style={{ padding: '9px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Delete</button>
                   )}
                   <button type="button" style={s.cancelBtn} onClick={() => { setSelected(null); setEditing(false) }}>Close</button>
                 </>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showContactSeller && selected && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '460px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Contact Seller</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>About: {selected.title}</div>
+            <textarea
+              value={contactMessage}
+              onChange={e => setContactMessage(e.target.value)}
+              placeholder="Hi, I'm interested in your listing. Is it still available?"
+              style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '100px', resize: 'vertical', marginBottom: '16px' }}
+            />
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => { setShowContactSeller(false); setContactMessage('') }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button
+                type="button"
+                onClick={() => void contactSeller()}
+                disabled={sendingContact || !contactMessage.trim()}
+                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: sendingContact || !contactMessage.trim() ? 0.5 : 1 }}
+              >
+                {sendingContact ? 'Sending…' : 'Send Message'}
+              </button>
             </div>
           </div>
         </div>

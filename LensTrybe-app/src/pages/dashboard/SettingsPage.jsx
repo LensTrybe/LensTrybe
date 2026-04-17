@@ -34,12 +34,26 @@ export default function SettingsPage() {
   ]
 
   async function openBillingPortal() {
+    if (!user?.id) return
     setLoading(true)
-    const { data } = await supabase.functions.invoke('create-stripe-portal', {
-      body: { userId: user.id }
-    })
-    if (data?.url) window.location.href = data.url
-    setLoading(false)
+    try {
+      const { data, error } = await supabase.functions.invoke('create-stripe-portal', {
+        body: {
+          userId: user.id,
+          email: user.email,
+          name: profile?.business_name ?? user.email,
+          returnUrl: 'https://app.lenstrybe.com/dashboard/settings',
+        },
+      })
+      console.log('Portal response:', data, error)
+      if (data?.url) {
+        window.location.href = data.url
+      } else {
+        alert('Error: ' + (data?.error ?? JSON.stringify(data) ?? error?.message ?? 'Unknown'))
+      }
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function cancelSubscription() {
@@ -124,11 +138,6 @@ export default function SettingsPage() {
               {tier !== 'elite' && (
                 <Button variant="primary" size="sm" onClick={() => navigate('/pricing')}>Upgrade Plan</Button>
               )}
-              {tier !== 'basic' && (
-                <Button variant="secondary" size="sm" disabled={loading} onClick={openBillingPortal}>
-                  {loading ? 'Loading…' : 'Manage Billing'}
-                </Button>
-              )}
             </div>
           </div>
 
@@ -156,9 +165,23 @@ export default function SettingsPage() {
                   <div style={styles.sectionTitle}>Billing</div>
                   <div style={styles.sectionSub}>Manage your payment method, invoices and billing details.</div>
                 </div>
-                <Button variant="secondary" size="sm" disabled={loading} onClick={openBillingPortal}>
-                  {loading ? 'Loading…' : 'Open Billing Portal'}
-                </Button>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    disabled={loading}
+                    onClick={() => void openBillingPortal()}
+                    style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-ui)', opacity: loading ? 0.7 : 1 }}
+                  >
+                    {loading ? 'Loading…' : 'Manage Billing'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard/settings/subscription')}
+                    style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                  >
+                    Change Plan
+                  </button>
+                </div>
               </div>
             </div>
           )}

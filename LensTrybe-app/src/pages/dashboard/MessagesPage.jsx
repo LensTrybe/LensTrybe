@@ -89,27 +89,65 @@ export default function MessagesPage() {
     setSendingPortal(false)
   }
 
-  useEffect(() => { loadThreads() }, [user])
+  useEffect(() => { loadThreads() }, [user, profile?.id])
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
   async function loadThreads() {
     if (!user) return
-    const { data } = await supabase
+    const { data: asOwner } = await supabase
       .from('message_threads')
       .select('*')
       .eq('creative_id', user.id)
       .order('created_at', { ascending: false })
 
+    let asClient = []
+    if (profile) {
+      const { data: clientRows } = await supabase
+        .from('message_threads')
+        .select('*')
+        .eq('client_user_id', user.id)
+        .neq('creative_id', user.id)
+        .order('created_at', { ascending: false })
+      asClient = clientRows ?? []
+    }
+
+    const byId = new Map()
+    for (const t of [...(asOwner ?? []), ...asClient]) {
+      if (!byId.has(t.id)) byId.set(t.id, t)
+    }
+    const merged = Array.from(byId.values()).sort(
+      (a, b) => new Date(b.created_at) - new Date(a.created_at),
+    )
+
+    const otherCreativeIds = [...new Set(merged.filter(t => t.creative_id !== user.id).map(t => t.creative_id))]
+    let nameByCreativeId = {}
+    if (otherCreativeIds.length > 0) {
+      const { data: sellers } = await supabase
+        .from('profiles')
+        .select('id, business_name')
+        .in('id', otherCreativeIds)
+      for (const p of sellers ?? []) {
+        nameByCreativeId[p.id] = p.business_name
+      }
+    }
+
     // For each thread, check if latest message is from client and after last_read_at
-    const threadsWithUnread = (data ?? []).map(t => {
+    const threadsWithUnread = merged.map(t => {
       const lastRead = t.last_read_at ? new Date(t.last_read_at) : new Date(0)
       const lastMsg = t.last_message_at ? new Date(t.last_message_at) : null
-      return { ...t, isUnread: lastMsg && lastMsg > lastRead }
+      const peerDisplayName = t.creative_id === user.id
+        ? (t.client_name ?? t.client_email ?? 'Client')
+        : (nameByCreativeId[t.creative_id] ?? 'Creative')
+      return { ...t, peerDisplayName, isUnread: lastMsg && lastMsg > lastRead }
     })
 
     setThreads(threadsWithUnread)
-    if (threadsWithUnread.length > 0 && !selected) setSelected(threadsWithUnread[0])
+    setSelected(prev => {
+      if (threadsWithUnread.length === 0) return null
+      if (!prev) return threadsWithUnread[0]
+      return threadsWithUnread.find(t => t.id === prev.id) ?? threadsWithUnread[0]
+    })
     setLoading(false)
   }
 
@@ -125,29 +163,58 @@ export default function MessagesPage() {
   async function sendReply() {
     if (!reply.trim() || !selected) return
     setSending(true)
-    await supabase.from('messages').insert({
-      thread_id: selected.id,
-      sender_type: 'creative',
-      sender_name: 'creative',
-      body: reply.trim(),
-      creative_id: user.id,
-    })
-    // Email notification to client
-    if (selected?.client_email) {
-      console.log('Sending email to:', selected.client_email)
-      const { data, error } = await supabase.functions.invoke('send-message-notification', {
-        body: {
-          to: selected.client_email,
-          toName: selected.client_name ?? selected.client_email,
-          fromName: profile?.business_name ?? user.email,
-          subject: `Reply from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
-          messageBody: reply.trim(),
-          threadSubject: selected.subject ?? 'your enquiry',
-          profileUrl: 'https://lens-trybe.vercel.app',
-        }
+    const imListingCreative = selected.creative_id === user.id
+
+    if (imListingCreative) {
+      await supabase.from('messages').insert({
+        thread_id: selected.id,
+        sender_type: 'creative',
+        sender_name: profile?.business_name ?? user.email,
+        body: reply.trim(),
+        creative_id: user.id,
       })
-      console.log('Email result:', data, error)
+      if (selected?.client_email) {
+        const { data, error } = await supabase.functions.invoke('send-message-notification', {
+          body: {
+            to: selected.client_email,
+            toName: selected.client_name ?? selected.client_email,
+            fromName: profile?.business_name ?? user.email,
+            subject: `Reply from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
+            messageBody: reply.trim(),
+            threadSubject: selected.subject ?? 'your enquiry',
+            profileUrl: 'https://lens-trybe.vercel.app',
+          },
+        })
+        console.log('Email result:', data, error)
+      }
+    } else {
+      const msgPayload = {
+        thread_id: selected.id,
+        sender_type: 'client',
+        sender_name: profile?.business_name ?? user.email,
+        body: reply.trim(),
+        creative_id: user.id,
+      }
+      await supabase.from('messages').insert(msgPayload)
+      const { data: sellerProfile } = await supabase
+        .from('profiles')
+        .select('business_email, business_name')
+        .eq('id', selected.creative_id)
+        .maybeSingle()
+      if (sellerProfile?.business_email) {
+        await supabase.functions.invoke('send-message-notification', {
+          body: {
+            to: sellerProfile.business_email,
+            toName: sellerProfile.business_name ?? 'there',
+            fromName: profile?.business_name ?? user.email,
+            subject: `Reply from ${profile?.business_name ?? user.email} on LensTrybe`,
+            messageBody: reply.trim(),
+            threadSubject: selected.subject ?? 'your enquiry',
+          },
+        })
+      }
     }
+
     await supabase.from('message_threads').update({ updated_at: new Date().toISOString() }).eq('id', selected.id)
     setReply('')
     await loadMessages(selected.id)
@@ -241,7 +308,7 @@ export default function MessagesPage() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   {t.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1DB954', flexShrink: 0 }} />}
-                  <div style={{ ...styles.threadName, color: t.isUnread ? 'var(--text-primary)' : undefined, fontWeight: t.isUnread ? 700 : undefined }}>{t.nickname ?? t.client_name ?? t.client_email ?? 'Client'}</div>
+                  <div style={{ ...styles.threadName, color: t.isUnread ? 'var(--text-primary)' : undefined, fontWeight: t.isUnread ? 700 : undefined }}>{t.nickname ?? t.peerDisplayName}</div>
                 </div>
                 <div style={styles.threadPreview}>{t.subject ?? 'New enquiry'}</div>
                 <button
@@ -276,7 +343,7 @@ export default function MessagesPage() {
                   {editingNickname ? (
                     <input
                       autoFocus
-                      defaultValue={selected?.nickname ?? selected?.client_name ?? ''}
+                      defaultValue={selected?.nickname ?? selected?.peerDisplayName ?? ''}
                       style={{ background: 'var(--bg-base)', border: '1px solid var(--green)', borderRadius: '6px', padding: '4px 8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)' }}
                       onBlur={async e => {
                         const nickname = e.target.value.trim()
@@ -289,7 +356,7 @@ export default function MessagesPage() {
                     />
                   ) : (
                     <>
-                      <span style={styles.mainName}>{selected?.nickname ?? selected?.client_name ?? selected?.client_email ?? 'Client'}</span>
+                      <span style={styles.mainName}>{selected?.nickname ?? selected?.peerDisplayName ?? 'Client'}</span>
                       <button type="button" onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}>✎</button>
                     </>
                   )}

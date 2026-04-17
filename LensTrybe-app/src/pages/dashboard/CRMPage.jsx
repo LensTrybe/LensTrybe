@@ -13,6 +13,10 @@ export default function CRMPage() {
   const [selected, setSelected] = useState(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
+  const [showBookingDate, setShowBookingDate] = useState(false)
+  const [bookingDateContact, setBookingDateContact] = useState(null)
+  const [bookingDate, setBookingDate] = useState('')
+  const [bookingService, setBookingService] = useState('')
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', status: 'Lead', notes: '' })
 
   useEffect(() => { if (user) loadContacts() }, [user])
@@ -59,11 +63,44 @@ export default function CRMPage() {
   async function updateContact(id, updates) {
     const { error } = await supabase.from('crm_contacts').update(updates).eq('id', id)
     if (!error) {
+      if (updates.status === 'Booked') {
+        let contact = contacts.find(c => c.id === id) ?? selected
+        if (!contact) {
+          const { data } = await supabase.from('crm_contacts').select('*').eq('id', id).single()
+          contact = data
+        }
+        if (contact) {
+          setBookingDateContact({ ...contact, ...updates })
+          setBookingDate('')
+          setBookingService('')
+          setShowBookingDate(true)
+        }
+      }
       await loadContacts()
       if (selected?.id === id) setSelected(prev => ({ ...prev, ...updates }))
       showToast('Saved')
     } else {
       showToast(error.message, 'error')
+    }
+  }
+
+  async function confirmBooking() {
+    if (!bookingDateContact) return
+    const { data, error } = await supabase.from('bookings').insert({
+      creative_id: user.id,
+      client_name: bookingDateContact.name,
+      client_email: bookingDateContact.email ?? null,
+      status: 'confirmed',
+      booking_date: bookingDate || null,
+      service: bookingService || null,
+      notes: `Created from CRM${bookingDateContact.company ? ' — ' + bookingDateContact.company : ''}`,
+    }).select()
+    if (error) {
+      showToast('Failed to create booking: ' + error.message, 'error')
+    } else {
+      setShowBookingDate(false)
+      setBookingDateContact(null)
+      showToast('Booking created')
     }
   }
 
@@ -180,6 +217,21 @@ export default function CRMPage() {
                   <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{c.name}</div>
                   {c.company && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.company}</div>}
                   {c.email && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.email}</div>}
+                  <div style={{ marginTop: '10px' }} onClick={e => e.stopPropagation()}>
+                    <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '4px' }}>Stage</label>
+                    <select
+                      value={c.status}
+                      onChange={e => {
+                        e.stopPropagation()
+                        void updateContact(c.id, { status: e.target.value })
+                      }}
+                      style={{ ...s.input, padding: '6px 8px', fontSize: '12px', cursor: 'pointer' }}
+                    >
+                      {STAGES.map(st => (
+                        <option key={st} value={st}>{st}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
               ))}
             </div>
@@ -273,6 +325,53 @@ export default function CRMPage() {
             <div style={s.actions}>
               <button onClick={() => deleteContact(selected.id)} style={{ padding: '9px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Delete</button>
               <button style={s.cancelBtn} onClick={() => setSelected(null)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showBookingDate && bookingDateContact && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '420px', padding: '28px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Create Booking</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{bookingDateContact.name} has been moved to Booked.</div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Job Date</label>
+                <input
+                  type="date"
+                  value={bookingDate}
+                  onChange={e => setBookingDate(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Service / Job Type</label>
+                <input
+                  value={bookingService}
+                  onChange={e => setBookingService(e.target.value)}
+                  placeholder="e.g. Wedding Photography, Brand Shoot..."
+                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
+              <button
+                type="button"
+                onClick={() => { setShowBookingDate(false); setBookingDateContact(null); setBookingDate(''); setBookingService('') }}
+                style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                Skip
+              </button>
+              <button
+                type="button"
+                onClick={() => void confirmBooking()}
+                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+              >
+                Create Booking
+              </button>
             </div>
           </div>
         </div>

@@ -1,11 +1,16 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+
+const TIMES = [
+  '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
+  '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
+  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'
+]
 
 export default function AvailabilityPage() {
   const { user } = useAuth()
@@ -13,180 +18,196 @@ export default function AvailabilityPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [currentMonth, setCurrentMonth] = useState(new Date())
+  const [selectedDate, setSelectedDate] = useState(null)
+  const [showTimeModal, setShowTimeModal] = useState(false)
+  const [timeForm, setTimeForm] = useState({ all_day: true, start_time: '09:00', end_time: '17:00', notes: '' })
+  const [toast, setToast] = useState(null)
 
   useEffect(() => { loadAvailability() }, [user])
 
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 3000)
+  }
+
   async function loadAvailability() {
     if (!user) return
-    const { data } = await supabase
-      .from('availability')
-      .select('*')
-      .eq('creative_id', user.id)
-    setBlockedDates(data?.map(d => d.date) ?? [])
+    const { data } = await supabase.from('availability').select('*').eq('creative_id', user.id)
+    setBlockedDates(data ?? [])
     setLoading(false)
   }
 
-  async function toggleDate(dateStr) {
+  function getBlockForDate(dateStr) {
+    return blockedDates.find(d => d.date === dateStr)
+  }
+
+  async function blockDate(dateStr) {
     setSaving(true)
-    const isBlocked = blockedDates.includes(dateStr)
-    if (isBlocked) {
-      await supabase.from('availability').delete().eq('creative_id', user.id).eq('date', dateStr)
-      setBlockedDates(prev => prev.filter(d => d !== dateStr))
+    const payload = {
+      creative_id: user.id,
+      date: dateStr,
+      is_available: false,
+      all_day: timeForm.all_day,
+      start_time: timeForm.all_day ? null : timeForm.start_time,
+      end_time: timeForm.all_day ? null : timeForm.end_time,
+      notes: timeForm.notes || null,
+    }
+    const { data, error } = await supabase.from('availability').insert(payload).select().single()
+    if (!error) {
+      setBlockedDates(prev => [...prev, data])
+      showToast('Date blocked')
     } else {
-      await supabase.from('availability').insert({ creative_id: user.id, date: dateStr, available: false })
-      setBlockedDates(prev => [...prev, dateStr])
+      showToast(error.message, 'error')
+    }
+    setShowTimeModal(false)
+    setSaving(false)
+  }
+
+  async function unblockDate(dateStr) {
+    setSaving(true)
+    const { error } = await supabase.from('availability').delete().eq('creative_id', user.id).eq('date', dateStr)
+    if (!error) {
+      setBlockedDates(prev => prev.filter(d => d.date !== dateStr))
+      showToast('Date unblocked')
     }
     setSaving(false)
   }
 
-  function getDaysInMonth(year, month) {
-    return new Date(year, month + 1, 0).getDate()
+  function handleDayClick(dateStr, isPast) {
+    if (isPast) return
+    const existing = getBlockForDate(dateStr)
+    if (existing) {
+      unblockDate(dateStr)
+    } else {
+      setSelectedDate(dateStr)
+      setTimeForm({ all_day: true, start_time: '09:00', end_time: '17:00', notes: '' })
+      setShowTimeModal(true)
+    }
   }
 
-  function getFirstDayOfMonth(year, month) {
-    return new Date(year, month, 1).getDay()
-  }
-
-  function formatDate(year, month, day) {
-    return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
-  }
+  function getDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate() }
+  function getFirstDayOfMonth(year, month) { return new Date(year, month, 1).getDay() }
+  function formatDate(year, month, day) { return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` }
 
   const year = currentMonth.getFullYear()
   const month = currentMonth.getMonth()
   const daysInMonth = getDaysInMonth(year, month)
   const firstDay = getFirstDayOfMonth(year, month)
   const today = new Date().toISOString().split('T')[0]
+  const upcomingBlocked = blockedDates.filter(d => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))
 
-  function prevMonth() {
-    setCurrentMonth(new Date(year, month - 1, 1))
-  }
-
-  function nextMonth() {
-    setCurrentMonth(new Date(year, month + 1, 1))
-  }
-
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+  const s = {
+    page: { padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)' },
     title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    layout: { display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px', alignItems: 'start' },
-    calendarCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
-    calendarHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    monthTitle: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', fontWeight: 400 },
-    navBtn: { background: 'none', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-md)', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all var(--transition-fast)' },
-    dayHeaders: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' },
-    dayHeader: { textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontWeight: 600, letterSpacing: '0.06em', padding: '4px 0' },
-    calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
+    layout: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' },
+    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '24px' },
+    navBtn: { background: 'none', border: '1px solid var(--border-default)', borderRadius: '6px', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     dayCell: (isBlocked, isToday, isPast, isEmpty) => ({
-      aspectRatio: '1',
-      borderRadius: 'var(--radius-md)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '13px',
-      fontFamily: 'var(--font-ui)',
-      cursor: isEmpty || isPast ? 'default' : 'pointer',
-      background: isEmpty ? 'transparent' : isBlocked ? 'rgba(239,68,68,0.15)' : isToday ? 'var(--green-dim)' : 'var(--bg-subtle)',
-      color: isEmpty ? 'transparent' : isBlocked ? 'var(--error)' : isToday ? 'var(--green)' : isPast ? 'var(--text-muted)' : 'var(--text-secondary)',
+      aspectRatio: '1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: '13px', cursor: isEmpty || isPast ? 'default' : 'pointer',
+      background: isEmpty ? 'transparent' : isBlocked ? 'rgba(239,68,68,0.15)' : isToday ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)',
+      color: isEmpty ? 'transparent' : isBlocked ? '#ef4444' : isToday ? '#1DB954' : isPast ? 'var(--text-muted)' : 'var(--text-secondary)',
       border: isEmpty ? 'none' : isToday ? '1px solid rgba(29,185,84,0.3)' : isBlocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid transparent',
+      opacity: isPast && !isEmpty ? 0.4 : 1,
       fontWeight: isToday ? 600 : 400,
-      opacity: isPast ? 0.4 : 1,
-      transition: 'all var(--transition-fast)',
-      userSelect: 'none',
+      transition: 'all 0.1s',
     }),
-    legendCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
-    legendTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    legendItem: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    legendDot: (color, bg) => ({ width: '16px', height: '16px', borderRadius: 'var(--radius-sm)', background: bg, border: `1px solid ${color}`, flexShrink: 0 }),
-    blockedList: { display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' },
-    blockedItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-lg)', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    infoBox: { padding: '14px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' },
+    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
+    select: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
+    input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
   }
-
-  const upcomingBlocked = blockedDates
-    .filter(d => d >= today)
-    .sort()
 
   return (
-    <div style={styles.page}>
+    <div style={s.page}>
+      {toast && (
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
+          {toast.msg}
+        </div>
+      )}
+
       <div>
-        <h1 style={styles.title}>Availability</h1>
-        <p style={styles.subtitle}>Block dates you are unavailable. Clients won't see you in search results for blocked dates.</p>
+        <h1 style={s.title}>Availability</h1>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>Block dates or time slots you're unavailable. Clients won't see you in search results for blocked dates.</p>
       </div>
 
-      <div style={styles.layout}>
-        <div style={styles.calendarCard}>
-          <div style={styles.calendarHeader}>
-            <button style={styles.navBtn} onClick={prevMonth}>‹</button>
-            <div style={styles.monthTitle}>{MONTHS[month]} {year}</div>
-            <button style={styles.navBtn} onClick={nextMonth}>›</button>
+      <div style={s.layout}>
+        {/* Calendar */}
+        <div style={s.card}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+            <button type="button" style={s.navBtn} onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>‹</button>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-primary)' }}>{MONTHS[month]} {year}</div>
+            <button type="button" style={s.navBtn} onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>›</button>
           </div>
-
-          <div>
-            <div style={styles.dayHeaders}>
-              {DAYS.map(d => <div key={d} style={styles.dayHeader}>{d}</div>)}
-            </div>
-            <div style={styles.calendarGrid}>
-              {Array.from({ length: firstDay }).map((_, i) => (
-                <div key={`empty-${i}`} style={styles.dayCell(false, false, false, true)}>·</div>
-              ))}
-              {Array.from({ length: daysInMonth }).map((_, i) => {
-                const day = i + 1
-                const dateStr = formatDate(year, month, day)
-                const isBlocked = blockedDates.includes(dateStr)
-                const isToday = dateStr === today
-                const isPast = dateStr < today
-                return (
-                  <div
-                    key={day}
-                    style={styles.dayCell(isBlocked, isToday, isPast, false)}
-                    onClick={() => !isPast && toggleDate(dateStr)}
-                    onMouseEnter={e => { if (!isPast) e.currentTarget.style.opacity = '0.75' }}
-                    onMouseLeave={e => { e.currentTarget.style.opacity = isPast ? '0.4' : '1' }}
-                  >
-                    {day}
-                  </div>
-                )
-              })}
-            </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' }}>
+            {DAYS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, padding: '4px 0' }}>{d}</div>)}
           </div>
-
-          <div style={styles.infoBox}>
-            Click any future date to block or unblock it. Blocked dates are shown in red. Clients searching for a specific date will not see your profile if that date is blocked.
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
+            {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} style={s.dayCell(false, false, false, true)} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const day = i + 1
+              const dateStr = formatDate(year, month, day)
+              const block = getBlockForDate(dateStr)
+              const isBlocked = !!block
+              const isToday = dateStr === today
+              const isPast = dateStr < today
+              return (
+                <div
+                  key={day}
+                  style={{ ...s.dayCell(isBlocked, isToday, isPast, false), position: 'relative' }}
+                  onClick={() => handleDayClick(dateStr, isPast)}
+                  title={block ? (block.all_day ? 'Blocked all day' : `Blocked ${block.start_time} – ${block.end_time}`) : ''}
+                >
+                  {day}
+                  {isBlocked && !block.all_day && <div style={{ position: 'absolute', bottom: '2px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', borderRadius: '50%', background: '#ef4444' }} />}
+                </div>
+              )
+            })}
+          </div>
+          <div style={{ marginTop: '16px', padding: '12px 14px', background: 'var(--bg-base)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+            Click a date to block it. Click a blocked date (red) to unblock it.
           </div>
         </div>
 
+        {/* Sidebar */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={styles.legendCard}>
-            <div style={styles.legendTitle}>Legend</div>
-            <div style={styles.legendItem}>
-              <div style={styles.legendDot('rgba(29,185,84,0.3)', 'var(--green-dim)')} />
-              Today
-            </div>
-            <div style={styles.legendItem}>
-              <div style={styles.legendDot('rgba(239,68,68,0.3)', 'rgba(239,68,68,0.15)')} />
-              Blocked — unavailable
-            </div>
-            <div style={styles.legendItem}>
-              <div style={styles.legendDot('transparent', 'var(--bg-subtle)')} />
-              Available
-            </div>
+          {/* Legend */}
+          <div style={s.card}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Legend</div>
+            {[
+              { color: 'rgba(29,185,84,0.3)', bg: 'rgba(29,185,84,0.1)', label: 'Today' },
+              { color: 'rgba(239,68,68,0.3)', bg: 'rgba(239,68,68,0.15)', label: 'Blocked' },
+              { color: 'transparent', bg: 'var(--bg-base)', label: 'Available' },
+            ].map(({ color, bg, label }) => (
+              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
+                <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: bg, border: `1px solid ${color}`, flexShrink: 0 }} />
+                {label}
+              </div>
+            ))}
           </div>
 
-          <div style={styles.legendCard}>
-            <div style={styles.legendTitle}>
-              Blocked Dates ({upcomingBlocked.length})
-            </div>
+          {/* Blocked list */}
+          <div style={s.card}>
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Blocked ({upcomingBlocked.length})</div>
             {upcomingBlocked.length === 0 ? (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
-                No dates blocked. You appear as available to all clients.
-              </div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No dates blocked.</div>
             ) : (
-              <div style={styles.blockedList}>
-                {upcomingBlocked.map(date => (
-                  <div key={date} style={styles.blockedItem}>
-                    <span>{new Date(date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                    <Button variant="ghost" size="sm" onClick={() => toggleDate(date)}>×</Button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
+                {upcomingBlocked.map(block => (
+                  <div key={block.id} style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
+                          {new Date(block.date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                          {block.all_day ? 'All day' : `${block.start_time} – ${block.end_time}`}
+                        </div>
+                        {block.notes && <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{block.notes}</div>}
+                      </div>
+                      <button type="button" onClick={() => unblockDate(block.date)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '16px', cursor: 'pointer', padding: '0 4px' }}>×</button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -194,6 +215,63 @@ export default function AvailabilityPage() {
           </div>
         </div>
       </div>
+
+      {/* Time block modal */}
+      {showTimeModal && selectedDate && (
+        <div style={s.modal}>
+          <div style={s.modalBox}>
+            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Block Date</div>
+            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
+              {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+            </div>
+
+            <div style={{ marginBottom: '16px' }}>
+              <label style={s.label}>Block type</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={() => setTimeForm(p => ({ ...p, all_day: true }))}
+                  style={{ flex: 1, padding: '9px', borderRadius: '8px', border: `1px solid ${timeForm.all_day ? '#1DB954' : 'var(--border-default)'}`, background: timeForm.all_day ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)', color: timeForm.all_day ? '#1DB954' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 600 }}
+                >All Day</button>
+                <button
+                  type="button"
+                  onClick={() => setTimeForm(p => ({ ...p, all_day: false }))}
+                  style={{ flex: 1, padding: '9px', borderRadius: '8px', border: `1px solid ${!timeForm.all_day ? '#1DB954' : 'var(--border-default)'}`, background: !timeForm.all_day ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)', color: !timeForm.all_day ? '#1DB954' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 600 }}
+                >Time Slot</button>
+              </div>
+            </div>
+
+            {!timeForm.all_day && (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <div>
+                  <label style={s.label}>Start time</label>
+                  <select style={s.select} value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>
+                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={s.label}>End time</label>
+                  <select style={s.select} value={timeForm.end_time} onChange={e => setTimeForm(p => ({ ...p, end_time: e.target.value }))}>
+                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginBottom: '20px' }}>
+              <label style={s.label}>Notes (optional)</label>
+              <input style={s.input} value={timeForm.notes} onChange={e => setTimeForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Holiday, existing booking..." />
+            </div>
+
+            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
+              <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ padding: '9px 18px', background: '#ef4444', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: saving ? 0.6 : 1 }}>
+                {saving ? 'Blocking…' : 'Block Date'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -2,11 +2,10 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
 
 const FONTS = [
   'Inter', 'Geist', 'Playfair Display', 'Instrument Serif',
-  'Montserrat', 'Raleway', 'Lato', 'Nunito', 'DM Sans', 'Libre Baskerville'
+  'Montserrat', 'Raleway', 'Lato', 'Nunito', 'DM Sans', 'Libre Baskerville',
 ]
 
 export default function BrandKitPage() {
@@ -18,22 +17,29 @@ export default function BrandKitPage() {
   const [form, setForm] = useState({
     logo_url: null,
     primary_color: '#1DB954',
+    secondary_color: '#ffffff',
+    accent_color: '#0a0a0f',
     font: 'Inter',
   })
+
+  useEffect(() => {
+    const link = document.createElement('link')
+    link.rel = 'stylesheet'
+    link.href = 'https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Instrument+Serif&family=Montserrat:wght@400;600;700&family=Raleway:wght@400;600;700&family=Lato:wght@400;700&family=Nunito:wght@400;600;700&family=DM+Sans:wght@400;600;700&family=Libre+Baskerville:wght@400;700&display=swap'
+    document.head.appendChild(link)
+  }, [])
 
   useEffect(() => { loadBrandKit() }, [user])
 
   async function loadBrandKit() {
     if (!user) return
-    const { data } = await supabase
-      .from('brand_kit')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle()
+    const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
     if (data) {
       setForm({
         logo_url: data.logo_url ?? null,
         primary_color: data.primary_color ?? '#1DB954',
+        secondary_color: data.secondary_color ?? '#ffffff',
+        accent_color: data.accent_color ?? '#0a0a0f',
         font: data.font ?? 'Inter',
       })
     }
@@ -54,167 +60,127 @@ export default function BrandKitPage() {
 
   async function saveBrandKit() {
     setSaving(true)
-    const { data: existing } = await supabase
-      .from('brand_kit')
-      .select('id')
-      .eq('user_id', user.id)
-      .maybeSingle()
-
+    const payload = {
+      logo_url: form.logo_url,
+      primary_color: form.primary_color,
+      secondary_color: form.secondary_color,
+      accent_color: form.accent_color,
+      font: form.font,
+    }
+    const { data: existing } = await supabase.from('brand_kit').select('id').eq('creative_id', user.id).maybeSingle()
     if (existing) {
-      await supabase.from('brand_kit').update({
-        logo_url: form.logo_url,
-        primary_color: form.primary_color,
-        font: form.font,
-      }).eq('user_id', user.id)
+      await supabase.from('brand_kit').update(payload).eq('creative_id', user.id)
     } else {
-      await supabase.from('brand_kit').insert({
-        user_id: user.id,
-        logo_url: form.logo_url,
-        primary_color: form.primary_color,
-        font: form.font,
-      })
+      await supabase.from('brand_kit').insert({ creative_id: user.id, user_id: user.id, ...payload })
     }
     setSaving(false)
     setSaved(true)
     setTimeout(() => setSaved(false), 2000)
   }
 
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+  const s = {
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', padding: '32px 40px', fontFamily: 'var(--font-ui)' },
     title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    subtitle: { fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' },
     grid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' },
-    section: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    sectionSubtitle: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '-8px' },
-    logoUpload: {
-      border: '2px dashed var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      padding: '32px',
-      textAlign: 'center',
-      cursor: 'pointer',
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      gap: '12px',
-      transition: 'border-color var(--transition-base)',
-      background: 'var(--bg-elevated)',
-    },
-    logoPreview: { maxWidth: '160px', maxHeight: '80px', objectFit: 'contain' },
-    colorRow: { display: 'flex', alignItems: 'center', gap: '16px' },
-    colorSwatch: { width: '48px', height: '48px', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)', cursor: 'pointer', flexShrink: 0 },
-    colorInput: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', flex: 1 },
+    section: { display: 'flex', flexDirection: 'column', gap: '12px' },
+    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' },
+    sectionSub: { fontSize: '12px', color: 'var(--text-muted)', marginTop: '-6px' },
+    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px' },
+    logoUpload: { border: '2px dashed var(--border-default)', borderRadius: '12px', padding: '28px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', background: 'var(--bg-elevated)' },
+    colorRow: { display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' },
+    colorSwatch: { width: '40px', height: '40px', borderRadius: '8px', border: 'none', cursor: 'pointer', flexShrink: 0, padding: 0 },
+    colorInput: { flex: 1, padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    colorLabel: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px' },
     fontGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' },
-    fontOption: (selected) => ({
-      padding: '12px 16px',
-      borderRadius: 'var(--radius-lg)',
-      border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`,
-      background: selected ? 'var(--green-dim)' : 'var(--bg-elevated)',
-      cursor: 'pointer',
-      transition: 'all var(--transition-base)',
-      fontSize: '13px',
-      color: selected ? 'var(--green)' : 'var(--text-secondary)',
-      fontFamily: 'var(--font-ui)',
-    }),
-    preview: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      overflow: 'hidden',
-    },
-    previewHeader: (color) => ({
-      background: color,
-      padding: '20px 24px',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '12px',
-    }),
-    previewBody: { padding: '24px', display: 'flex', flexDirection: 'column', gap: '8px' },
-    previewTitle: (font) => ({ fontFamily: font, fontSize: '18px', fontWeight: 600, color: 'var(--text-primary)' }),
-    previewText: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
-    actions: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
+    fontOption: (sel) => ({ padding: '10px 14px', borderRadius: '8px', border: `1px solid ${sel ? '#1DB954' : 'var(--border-default)'}`, background: sel ? 'rgba(29,185,84,0.1)' : 'var(--bg-elevated)', cursor: 'pointer', fontSize: '13px', color: sel ? '#1DB954' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }),
+    actions: { display: 'flex', justifyContent: 'flex-end' },
   }
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading brand kit…</div>
+  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading brand kit…</div>
 
   return (
-    <div style={styles.page}>
+    <div style={s.page}>
       <div>
-        <h1 style={styles.title}>Brand Kit</h1>
-        <p style={styles.subtitle}>Your logo, colours and fonts applied automatically across invoices, portals and galleries.</p>
+        <h1 style={s.title}>Brand Kit</h1>
+        <p style={s.subtitle}>Your logo, colours and font — applied automatically to invoices, quotes, contracts and delivery galleries.</p>
       </div>
 
-      <div style={styles.grid}>
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>Logo</div>
-          <div style={styles.sectionSubtitle}>Appears on invoices, client portals and Deliver galleries.</div>
-          <div style={styles.logoUpload} onClick={() => document.getElementById('logo-upload').click()}>
+      <div style={s.grid}>
+        {/* Logo */}
+        <div style={s.section}>
+          <div style={s.sectionTitle}>Logo</div>
+          <div style={s.sectionSub}>Appears on all client-facing documents and galleries.</div>
+          <div style={s.logoUpload} onClick={() => document.getElementById('logo-upload').click()}>
             {form.logo_url
-              ? <img src={form.logo_url} alt="Logo" style={styles.logoPreview} />
+              ? <img src={form.logo_url} alt="Logo" style={{ maxWidth: '160px', maxHeight: '80px', objectFit: 'contain' }} />
               : <div style={{ fontSize: '28px' }}>🏷</div>
             }
-            <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {uploading ? 'Uploading…' : form.logo_url ? 'Click to replace logo' : 'Click to upload logo'}
+            <div style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+              {uploading ? 'Uploading…' : form.logo_url ? 'Click to replace' : 'Click to upload logo'}
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>PNG or SVG recommended, transparent background</div>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>PNG or SVG, transparent background recommended</div>
           </div>
           <input id="logo-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={handleLogoUpload} />
         </div>
 
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>Primary Colour</div>
-          <div style={styles.sectionSubtitle}>Used for buttons, accents and highlights in your branded outputs.</div>
-          <div style={styles.colorRow}>
-            <input
-              type="color"
-              value={form.primary_color}
-              onChange={e => setForm(p => ({ ...p, primary_color: e.target.value }))}
-              style={{ ...styles.colorSwatch, padding: 0, border: 'none' }}
-            />
-            <input
-              type="text"
-              value={form.primary_color}
-              onChange={e => setForm(p => ({ ...p, primary_color: e.target.value }))}
-              style={styles.colorInput}
-              placeholder="#1DB954"
-            />
+        {/* Colours */}
+        <div style={s.section}>
+          <div style={s.sectionTitle}>Colours</div>
+          <div style={s.sectionSub}>Used across invoices, quotes, contracts and galleries.</div>
+          <div style={s.card}>
+            {[
+              { key: 'primary_color', label: 'Primary Colour', hint: 'Headers, buttons, accents' },
+              { key: 'secondary_color', label: 'Secondary Colour', hint: 'Text and highlights' },
+            ].map(({ key, label, hint }) => (
+              <div key={key} style={{ marginBottom: '16px' }}>
+                <div style={s.colorLabel}>{label} <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>— {hint}</span></div>
+                <div style={s.colorRow}>
+                  <input type="color" value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} style={s.colorSwatch} />
+                  <input type="text" value={form[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} style={s.colorInput} placeholder="#000000" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>Font</div>
-          <div style={styles.sectionSubtitle}>Applied to documents, portals and your portfolio website.</div>
-          <div style={styles.fontGrid}>
+        {/* Font */}
+        <div style={s.section}>
+          <div style={s.sectionTitle}>Font</div>
+          <div style={s.sectionSub}>Applied to all documents and your portfolio website.</div>
+          <div style={s.fontGrid}>
             {FONTS.map(font => (
-              <div key={font} style={styles.fontOption(form.font === font)} onClick={() => setForm(p => ({ ...p, font }))}>
+              <div key={font} style={s.fontOption(form.font === font)} onClick={() => setForm(p => ({ ...p, font }))}>
                 {font}
               </div>
             ))}
           </div>
         </div>
 
-        <div style={styles.section}>
-          <div style={styles.sectionTitle}>Preview</div>
-          <div style={styles.sectionSubtitle}>How your brand looks on client-facing outputs.</div>
-          <div style={styles.preview}>
-            <div style={styles.previewHeader(form.primary_color)}>
+        {/* Preview */}
+        <div style={s.section}>
+          <div style={s.sectionTitle}>Preview</div>
+          <div style={s.sectionSub}>How your brand looks on client documents.</div>
+          <div style={{ background: form.accent_color, borderRadius: '12px', overflow: 'hidden', border: '1px solid var(--border-default)' }}>
+            <div style={{ background: form.primary_color, padding: '16px 20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
               {form.logo_url
-                ? <img src={form.logo_url} alt="Logo" style={{ height: '32px', objectFit: 'contain' }} />
-                : <div style={{ fontSize: '14px', fontWeight: 700, color: '#fff', fontFamily: form.font }}>Your Business Name</div>
+                ? <img src={form.logo_url} alt="Logo" style={{ height: '28px', objectFit: 'contain' }} />
+                : <div style={{ fontSize: '14px', fontWeight: 700, color: form.secondary_color, fontFamily: form.font }}>Your Business</div>
               }
             </div>
-            <div style={styles.previewBody}>
-              <div style={styles.previewTitle(form.font)}>Invoice #001</div>
-              <div style={styles.previewText}>Due: 30 April 2026 · Amount: $1,200.00</div>
-              <div style={{ marginTop: '8px', padding: '8px 12px', background: form.primary_color, borderRadius: 'var(--radius-md)', display: 'inline-block', fontSize: '12px', color: '#fff', fontFamily: 'var(--font-ui)', fontWeight: 600 }}>
-                View Invoice
+            <div style={{ padding: '20px' }}>
+              <div style={{ fontFamily: form.font, fontSize: '16px', fontWeight: 700, color: form.secondary_color, marginBottom: '4px' }}>Invoice #001</div>
+              <div style={{ fontSize: '13px', color: form.secondary_color, opacity: 0.6, marginBottom: '16px' }}>Due: 30 April 2026 · $1,200.00</div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <div style={{ padding: '8px 16px', background: form.primary_color, borderRadius: '6px', fontSize: '12px', fontWeight: 700, color: form.accent_color, fontFamily: form.font }}>Pay Now</div>
+                <div style={{ padding: '8px 16px', border: `1px solid ${form.primary_color}`, borderRadius: '6px', fontSize: '12px', color: form.primary_color, fontFamily: form.font }}>View Invoice</div>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div style={styles.actions}>
+      <div style={s.actions}>
         <Button variant="primary" disabled={saving} onClick={saveBrandKit}>
           {saved ? '✓ Saved' : saving ? 'Saving…' : 'Save Brand Kit'}
         </Button>

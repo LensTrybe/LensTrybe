@@ -23,12 +23,16 @@ export default function MyBookingsPage() {
   useEffect(() => { loadBookings() }, [user])
 
   async function loadBookings() {
-    if (!user) return
+    if (!user) {
+      setBookings([])
+      setLoading(false)
+      return
+    }
     const { data } = await supabase
       .from('bookings')
       .select('*')
       .eq('creative_id', user.id)
-      .order('date', { ascending: true })
+      .order('booking_date', { ascending: true, nullsFirst: false })
     setBookings(data ?? [])
     setLoading(false)
   }
@@ -39,11 +43,18 @@ export default function MyBookingsPage() {
     setSelected(prev => prev ? { ...prev, status } : null)
   }
 
+  function bookingSortDate(b) {
+    const raw = b.booking_date ?? b.date
+    if (raw == null || raw === '') return null
+    const d = new Date(raw)
+    return Number.isNaN(d.getTime()) ? null : d
+  }
+
   const now = new Date()
   const filtered = bookings.filter(b => {
-    const bookingDate = new Date(b.date)
-    if (filter === 'upcoming') return bookingDate >= now && b.status !== 'cancelled'
-    if (filter === 'past') return bookingDate < now || b.status === 'completed'
+    const d = bookingSortDate(b)
+    if (filter === 'upcoming') return b.status === 'confirmed'
+    if (filter === 'past') return b.status === 'completed' || (d != null && d < now)
     if (filter === 'cancelled') return b.status === 'cancelled'
     return true
   })
@@ -111,9 +122,12 @@ export default function MyBookingsPage() {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{b.client_email}</div>
             </div>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {b.date ? new Date(b.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+              {(() => {
+                const raw = b.booking_date ?? b.date
+                return raw ? new Date(raw).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
+              })()}
             </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{b.type ?? '—'}</span>
+            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{b.service ?? b.type ?? '—'}</span>
             <Badge variant={statusVariant(b.status)} size="sm">{b.status}</Badge>
             <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelected(b) }}>View</Button>
           </div>
@@ -135,12 +149,15 @@ export default function MyBookingsPage() {
               <div style={styles.viewField}>
                 <div style={styles.viewLabel}>Date</div>
                 <div style={styles.viewValue}>
-                  {selected.date ? new Date(selected.date).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'}
+                  {(() => {
+                    const raw = selected.booking_date ?? selected.date
+                    return raw ? new Date(raw).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'
+                  })()}
                 </div>
               </div>
               <div style={styles.viewField}>
                 <div style={styles.viewLabel}>Type</div>
-                <div style={styles.viewValue}>{selected.type ?? '—'}</div>
+                <div style={styles.viewValue}>{selected.service ?? selected.type ?? '—'}</div>
               </div>
               <div style={styles.viewField}>
                 <div style={styles.viewLabel}>Status</div>
