@@ -14,12 +14,13 @@ function StatCard({ label, value, sub, accent }) {
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
       padding: '24px',
+      minWidth: 0,
       display: 'flex',
       flexDirection: 'column',
       gap: '8px',
     },
     label: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.05em', textTransform: 'uppercase' },
-    value: { fontFamily: 'var(--font-display)', fontSize: '36px', color: accent ?? 'var(--text-primary)', lineHeight: 1 },
+    value: { fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 36px)', color: accent ?? 'var(--text-primary)', lineHeight: 1 },
     sub: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
   }
   return (
@@ -49,10 +50,12 @@ function QuickAction({ icon, label, path, navigate }) {
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
+        minWidth: 0,
+        justifyContent: 'center',
       }}
     >
       <span style={{ fontSize: '18px' }}>{icon}</span>
-      <span style={{ fontSize: '13px', fontWeight: 500, color: hovered ? 'var(--green)' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{label}</span>
+      <span style={{ fontSize: '13px', fontWeight: 500, color: hovered ? 'var(--green)' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
     </div>
   )
 }
@@ -109,11 +112,11 @@ export default function DashboardHome() {
     greeting: { display: 'flex', flexDirection: 'column', gap: '8px' },
     greetingTop: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
     name: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '32px', color: 'var(--text-primary)', fontWeight: 400 },
-    statsGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '16px' },
+    statsGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' },
     section: { display: 'flex', flexDirection: 'column', gap: '16px' },
     sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    quickGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' },
+    quickGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '8px' : '12px' },
     tableWrap: {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',

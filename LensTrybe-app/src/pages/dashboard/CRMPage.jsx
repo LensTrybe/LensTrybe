@@ -153,6 +153,9 @@ export default function CRMPage() {
     grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' },
     actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' },
     cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
+    mobileCardList: { display: 'flex', flexDirection: 'column', gap: '12px' },
+    mobileCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' },
+    mobileCardRow: { display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' },
   }
 
   return (
@@ -185,6 +188,23 @@ export default function CRMPage() {
         filtered.length === 0 ? (
           <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>
             No clients yet. Click Add Client to get started.
+          </div>
+        ) : isMobile ? (
+          <div style={s.mobileCardList}>
+            {filtered.map((c) => (
+              <div key={c.id} style={s.mobileCard} onClick={() => setSelected(c)}>
+                <div style={s.mobileCardRow}>
+                  <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{c.name}</div>
+                  <span style={s.badge(c.status)}>{c.status}</span>
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>{c.email ?? '—'}</div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Company: {c.company ?? '—'}</div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Phone: {c.phone ?? '—'}</div>
+                <div style={{ display: 'flex', justifyContent: 'flex-end' }} onClick={(e) => e.stopPropagation()}>
+                  <button onClick={() => deleteContact(c.id)} style={{ padding: '4px 10px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '6px', color: '#ef4444', fontSize: '12px', cursor: 'pointer' }}>Delete</button>
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <table style={s.table}>

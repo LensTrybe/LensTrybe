@@ -171,7 +171,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     nameRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: isMobile ? 'center' : 'flex-start' },
     name: { fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 4vw, 40px)', color: 'var(--text-primary)', fontWeight: 400 },
     location: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: '12px' },
-    skillRow: { display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '6px', marginBottom: '16px', overflowX: isMobile ? 'auto' : 'visible', justifyContent: isMobile ? 'flex-start' : 'flex-start', paddingBottom: isMobile ? '4px' : '0' },
+    skillRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px', overflowX: 'visible', justifyContent: isMobile ? 'center' : 'flex-start', paddingBottom: '0' },
     bio: { fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '20px' },
     heroActions: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' },
     ratingRow: { display: 'flex', alignItems: 'center', gap: '8px' },

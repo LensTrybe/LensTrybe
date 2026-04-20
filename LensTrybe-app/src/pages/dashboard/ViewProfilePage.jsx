@@ -1,20 +1,32 @@
 import { useAuth } from '../../context/AuthContext'
 import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
 import PublicProfilePage from '../public/PublicProfilePage'
 import Button from '../../components/ui/Button'
 
 export default function ViewProfilePage() {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   return (
     <div>
       <div style={{
         display: 'flex',
-        alignItems: 'center',
+        alignItems: isMobile ? 'flex-start' : 'center',
         justifyContent: 'space-between',
+        flexDirection: isMobile ? 'column' : 'row',
+        gap: isMobile ? '12px' : '0',
         marginBottom: '24px',
-        padding: '16px 20px',
+        padding: isMobile ? '16px' : '16px 20px',
         background: 'var(--bg-elevated)',
         border: '1px solid var(--border-default)',
         borderRadius: 'var(--radius-xl)',
