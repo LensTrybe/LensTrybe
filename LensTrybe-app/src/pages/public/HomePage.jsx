@@ -476,23 +476,24 @@ export default function HomePage() {
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Browse by Specialty</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0 }}>Find exactly the creative talent you need for your project</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px', padding: isMobile ? '0' : '0 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', padding: isMobile ? '0' : '0 16px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px', padding: '24px 16px', cursor: 'pointer',
-                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff', minHeight: '44px',
+                borderRadius: '12px', padding: isMobile ? '16px 12px' : '24px 16px', cursor: 'pointer',
+                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff', minHeight: isMobile ? '150px' : '44px',
+                display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
               }}>
                 <div style={{
-                  width: '40px', height: '40px', borderRadius: '10px',
+                  width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px',
                   background: 'rgba(255,255,255,0.06)', display: 'flex',
                   alignItems: 'center', justifyContent: 'center',
-                  marginBottom: '14px', color: 'rgba(255,255,255,0.7)',
+                  marginBottom: isMobile ? '10px' : '14px', color: 'rgba(255,255,255,0.7)',
                 }}>
                   {CATEGORY_ICONS[cat.key]}
                 </div>
-                <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '4px' }}>{cat.label}</div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>Browse all →</div>
+                <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: '600', marginBottom: '4px', lineHeight: 1.35 }}>{cat.label}</div>
+                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: 'auto' }}>Browse all →</div>
               </button>
             ))}
           </div>
