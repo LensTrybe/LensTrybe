@@ -159,18 +159,36 @@ export default function SignupPage() {
     return true
   }
 
+  function isValidEmail(value) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value || '').trim())
+  }
+
   async function handleSubmit() {
     setLoading(true)
     setError('')
 
+    const email = String(form.email || '').trim()
+    const password = String(form.password || '')
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.')
+      setLoading(false)
+      return
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.')
+      setLoading(false)
+      return
+    }
+
     try {
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
+        email,
+        password,
       })
       if (authError) throw authError
 
-      const userId = authData.user.id
+      const userId = authData?.user?.id
+      if (!userId) throw new Error('Could not create user account.')
 
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
@@ -191,7 +209,7 @@ export default function SignupPage() {
         if (!priceId) {
           throw new Error(`Missing Stripe price ID for ${form.tier} (${form.billingInterval || 'monthly'})`)
         }
-        const requestBody = { priceId, userId, email: form.email }
+        const requestBody = { priceId, userId, email }
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
           body: requestBody
         })
