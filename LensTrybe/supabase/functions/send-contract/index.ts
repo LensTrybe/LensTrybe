@@ -27,7 +27,7 @@ function buildContractEmailHtml(params: {
   signingToken: string
 }): string {
   const { businessName, contractTitle, clientName, signingToken } = params
-  const signUrl = `https://app.lenstrybe.com/sign/${encodeURIComponent(signingToken)}`
+  const signUrl = `https://lenstrybe.com/sign/${encodeURIComponent(signingToken)}`
 
   return `<!DOCTYPE html>
 <html lang="en">

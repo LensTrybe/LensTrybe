@@ -595,7 +595,16 @@ export default function PortfolioWebsitePage() {
             </button>
           </div>
         </div>
-        {published && publicSiteHref ? <a href={publicSiteHref} target="_blank" rel="noopener noreferrer" style={{ fontSize: '14px', color: '#1DB954', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}>{publicSiteHref.replace(/^https:\/\//, '')}</a> : null}
+        {published && publicSiteHref ? (
+          <a
+            href={publicSiteHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontSize: '14px', color: '#1DB954', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}
+          >
+            {publicSiteHref}
+          </a>
+        ) : null}
         {publishSaved ? <p style={{ margin: 0, fontSize: '13px', color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</p> : null}
       </section>
 

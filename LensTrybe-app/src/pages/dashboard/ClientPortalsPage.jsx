@@ -60,7 +60,7 @@ export default function ClientPortalsPage() {
       }).select().single()
       if (error) throw error
 
-      const portalUrl = `https://app.lenstrybe.com/portal/${token}`
+      const portalUrl = `https://lenstrybe.com/portal/${token}`
 
       await supabase.functions.invoke('send-portal-link', {
         body: {

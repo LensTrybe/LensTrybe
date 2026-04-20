@@ -84,7 +84,7 @@ export default function SubscriptionPage() {
         userId: user.id,
         email: user.email,
         name: profile?.business_name ?? user.email,
-        successUrl: 'https://app.lenstrybe.com/dashboard/settings?upgraded=true',
+        successUrl: 'https://lenstrybe.com/dashboard/settings?upgraded=true',
         cancelUrl: window.location.href,
       },
     })

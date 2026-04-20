@@ -95,7 +95,7 @@ serve(async (req) => {
           ? `<p style="color:#888;font-size:13px;margin:0 0 8px">Click the button below to download your contract.</p>${downloadSection}`
           : `<p style="color:#888;font-size:13px;margin:0 0 8px">The contract is attached to this email. Open it in your browser and press <strong style="color:#fff">Ctrl+P</strong> (or Cmd+P on Mac) then select <strong style="color:#fff">Save as PDF</strong> to download it.</p>`
         }
-        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://app.lenstrybe.com" style="color:#1DB954">app.lenstrybe.com</a></p>
+        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
       </div>
     `
 

@@ -300,7 +300,7 @@ export default function SettingsPage() {
           userId: user.id,
           email: user.email,
           name: profile?.business_name ?? user.email,
-          returnUrl: 'https://app.lenstrybe.com/dashboard/settings',
+          returnUrl: 'https://lenstrybe.com/dashboard/settings',
         },
       })
       console.log('Portal response:', data, error)
