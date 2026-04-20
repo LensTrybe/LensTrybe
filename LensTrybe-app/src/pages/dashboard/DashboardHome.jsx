@@ -3,36 +3,34 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import Card from '../../components/ui/Card'
-import Badge from '../../components/ui/Badge'
 import Button from '../../components/ui/Button'
 
-function StatCard({ label, value, sub, accent }) {
-  const styles = {
-    card: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      padding: '24px',
-      minWidth: 0,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '8px',
-    },
-    label: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.05em', textTransform: 'uppercase' },
-    value: { fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 36px)', color: accent ?? 'var(--text-primary)', lineHeight: 1 },
-    sub: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-  }
+function StatCard({ label, value, sub, icon, compact }) {
   return (
-    <div style={styles.card}>
-      <div style={styles.label}>{label}</div>
-      <div style={styles.value}>{value}</div>
-      {sub && <div style={styles.sub}>{sub}</div>}
+    <div
+      style={{
+        background: 'var(--bg-elevated)',
+        border: '1px solid var(--border-default)',
+        borderRadius: '12px',
+        padding: compact ? '14px 14px' : '24px 28px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        minWidth: 0,
+        overflow: 'hidden',
+      }}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
+        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</span>
+        <span style={{ fontSize: compact ? 'clamp(20px, 5vw, 28px)' : '32px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1, wordBreak: 'break-word' }}>{value}</span>
+        {sub && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sub}</span>}
+      </div>
+      <div style={{ fontSize: compact ? '22px' : '28px', opacity: 0.25, flexShrink: 0 }}>{icon}</div>
     </div>
   )
 }
 
-function QuickAction({ icon, label, path, navigate }) {
+function QuickAction({ icon, label, path, navigate, compact }) {
   const [hovered, setHovered] = useState(false)
   return (
     <div
@@ -40,61 +38,35 @@ function QuickAction({ icon, label, path, navigate }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: '16px',
-        minHeight: '44px',
-        borderRadius: 'var(--radius-lg)',
-        border: `1px solid ${hovered ? 'var(--green)' : 'var(--border-default)'}`,
-        background: hovered ? 'var(--green-dim)' : 'var(--bg-elevated)',
+        padding: compact ? '10px 6px' : '16px',
+        borderRadius: '10px',
+        border: `1px solid ${hovered ? '#1DB954' : 'var(--border-default)'}`,
+        background: hovered ? 'rgba(29,185,84,0.08)' : 'var(--bg-elevated)',
         cursor: 'pointer',
-        transition: 'all var(--transition-base)',
+        transition: 'all 0.15s',
         display: 'flex',
         alignItems: 'center',
-        gap: '12px',
-        minWidth: 0,
         justifyContent: 'center',
+        gap: compact ? '4px' : '12px',
+        flex: compact ? 1 : undefined,
+        minWidth: 0,
+        flexDirection: compact ? 'column' : 'row',
       }}
     >
-      <span style={{ fontSize: '18px' }}>{icon}</span>
-      <span style={{ fontSize: '13px', fontWeight: 500, color: hovered ? 'var(--green)' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', textAlign: 'center', lineHeight: 1.3 }}>{label}</span>
+      <span style={{ fontSize: compact ? '16px' : '18px', lineHeight: 1 }}>{icon}</span>
+      <span style={{ fontSize: compact ? '11px' : '13px', fontWeight: 500, color: hovered ? '#1DB954' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', textAlign: 'center', lineHeight: 1.25 }}>{label}</span>
     </div>
   )
 }
 
 export default function DashboardHome() {
-  const { profile, user } = useAuth()
+  const { user, profile } = useAuth()
   const { tier } = useSubscription()
   const navigate = useNavigate()
-  const [stats, setStats] = useState({ invoices: 0, messages: 0, bookings: 0, reviews: 0 })
+  const [stats, setStats] = useState(null)
   const [recentInvoices, setRecentInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-
-  const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
-  const tierColor = tierColors[tier] ?? 'var(--text-muted)'
-
-  useEffect(() => {
-    async function load() {
-      if (!user) return
-      const id = user.id
-
-      const [inv, msg, book, rev] = await Promise.all([
-        supabase.from('invoices').select('id, amount, status, created_at').eq('creative_id', id).order('created_at', { ascending: false }).limit(5),
-        supabase.from('message_threads').select('id', { count: 'exact' }).eq('creative_id', id),
-        supabase.from('bookings').select('id', { count: 'exact' }).eq('creative_id', id),
-        supabase.from('reviews').select('id', { count: 'exact' }).eq('creative_id', id),
-      ])
-
-      setStats({
-        invoices: inv.data?.length ?? 0,
-        messages: msg.count ?? 0,
-        bookings: book.count ?? 0,
-        reviews: rev.count ?? 0,
-      })
-      setRecentInvoices(inv.data ?? [])
-      setLoading(false)
-    }
-    load()
-  }, [user])
 
   useEffect(() => {
     function handleResize() {
@@ -104,171 +76,259 @@ export default function DashboardHome() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  const displayName = profile?.business_name ?? profile?.full_name ?? user?.email ?? 'there'
-  const isFoundingMember = profile?.founding_member === true && profile?.show_founding_badge !== false
+  useEffect(() => {
+    if (user) loadStats()
+  }, [user])
 
-  const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '40px' },
-    greeting: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    greetingTop: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-    name: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '32px', color: 'var(--text-primary)', fontWeight: 400 },
-    statsGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '10px' : '16px' },
-    section: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    quickGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(4, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '8px' : '12px' },
-    tableWrap: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      overflowX: isMobile ? 'auto' : 'hidden',
-      overflowY: 'hidden',
-    },
-    tableHeader: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 120px 100px 100px',
-      padding: '12px 20px',
-      borderBottom: '1px solid var(--border-subtle)',
-      fontSize: '11px',
-      color: 'var(--text-muted)',
-      fontFamily: 'var(--font-ui)',
-      letterSpacing: '0.06em',
-      textTransform: 'uppercase',
-      minWidth: isMobile ? '560px' : 'auto',
-    },
-    tableRow: {
-      display: 'grid',
-      gridTemplateColumns: '1fr 120px 100px 100px',
-      padding: '14px 20px',
-      borderBottom: '1px solid var(--border-subtle)',
-      fontSize: '13px',
-      color: 'var(--text-secondary)',
-      fontFamily: 'var(--font-ui)',
-      alignItems: 'center',
-      minWidth: isMobile ? '560px' : 'auto',
-    },
-    emptyState: {
-      padding: '48px 24px',
-      textAlign: 'center',
-      color: 'var(--text-muted)',
-      fontSize: '14px',
-      fontFamily: 'var(--font-ui)',
-    },
-    profileBanner: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
-      padding: '20px 24px',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      gap: '16px',
-      flexDirection: isMobile ? 'column' : 'row',
-      alignItems: isMobile ? 'flex-start' : 'center',
-    },
-    bannerText: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+  async function loadStats() {
+    setLoading(true)
+    const now = new Date()
+    const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+    const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+
+    const [
+      { data: invoices },
+      { data: threads },
+      { data: bookings },
+      { data: reviews },
+    ] = await Promise.all([
+      supabase.from('invoices').select('amount, status, created_at').eq('creative_id', user.id),
+      supabase.from('message_threads').select('id, created_at').eq('creative_id', user.id),
+      supabase.from('bookings').select('id, created_at, status').eq('creative_id', user.id),
+      supabase.from('reviews').select('rating').eq('creative_id', user.id),
+    ])
+
+    const recent = await supabase.from('invoices').select('id, amount, status, created_at, client_name').eq('creative_id', user.id).order('created_at', { ascending: false }).limit(5)
+    setRecentInvoices(recent.data ?? [])
+
+    const paid = (invoices ?? []).filter((i) => i.status === 'paid')
+    const thisMonthRevenue = paid.filter((i) => i.created_at >= thisMonthStart).reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const ytdRevenue = paid.filter((i) => i.created_at >= new Date(now.getFullYear(), 0, 1).toISOString()).reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const totalRevenue = paid.reduce((s, i) => s + Number(i.amount ?? 0), 0)
+    const thisMonthEnquiries = (threads ?? []).filter((t) => t.created_at >= thisMonthStart).length
+    const lastMonthEnquiries = (threads ?? []).filter((t) => t.created_at >= lastMonthStart && t.created_at < thisMonthStart).length
+    const activeEnquiries = (threads ?? []).length
+    const confirmedBookings = (bookings ?? []).filter((b) => b.status === 'confirmed').length
+    const totalBookings = (bookings ?? []).length
+    const conversionRate = activeEnquiries > 0 ? Math.round((confirmedBookings / activeEnquiries) * 100) : 0
+    const avgProjectValue = confirmedBookings > 0 ? (totalRevenue / confirmedBookings).toFixed(2) : '0.00'
+    const totalReviews = reviews?.length ?? 0
+
+    const months = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
+      return { label: d.toLocaleString('default', { month: 'short' }), month: d.getMonth(), year: d.getFullYear() }
+    })
+    const chartData = months.map((m) => ({
+      name: m.label,
+      Bookings: (bookings ?? []).filter((b) => {
+        const d = new Date(b.created_at)
+        return d.getMonth() === m.month && d.getFullYear() === m.year
+      }).length,
+      Enquiries: (threads ?? []).filter((t) => {
+        const d = new Date(t.created_at)
+        return d.getMonth() === m.month && d.getFullYear() === m.year
+      }).length,
+    }))
+
+    setStats({
+      thisMonthRevenue,
+      ytdRevenue,
+      thisMonthEnquiries,
+      lastMonthEnquiries,
+      activeEnquiries,
+      confirmedBookings,
+      totalBookings,
+      conversionRate,
+      avgProjectValue,
+      totalReviews,
+      chartData,
+    })
+    setLoading(false)
   }
 
-  function statusVariant(status) {
-    if (status === 'paid') return 'green'
-    if (status === 'overdue') return 'error'
-    if (status === 'sent') return 'info'
-    return 'default'
+  const tierColors = { basic: 'var(--text-muted)', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
+  const tierColor = tierColors[tier] ?? 'var(--text-muted)'
+  const displayName = profile?.business_name ?? user?.email ?? 'there'
+  const isFoundingMember = profile?.founding_member === true && profile?.show_founding_badge !== false
+
+  function statusColor(status) {
+    if (status === 'paid') return '#1DB954'
+    if (status === 'overdue') return '#ef4444'
+    if (status === 'sent') return '#3b82f6'
+    return 'var(--text-muted)'
   }
 
   const quickActions = [
     { icon: '✉', label: 'New Message', path: '/dashboard/clients/messages' },
     { icon: '◎', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
-    { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio' },
+    { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
     { icon: '⬆', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
   ]
 
-  return (
-    <div style={styles.page}>
+  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading…</div>
 
+  const s = stats
+
+  const statGrid = {
+    display: 'grid',
+    gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)',
+    gap: isMobile ? '10px' : '16px',
+    width: '100%',
+    minWidth: 0,
+  }
+
+  return (
+    <div
+      style={{
+        padding: isMobile ? '20px 16px' : '32px 40px',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: isMobile ? '22px' : '28px',
+        fontFamily: 'var(--font-ui)',
+        width: '100%',
+        maxWidth: '100%',
+        minWidth: 0,
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
+      }}
+    >
       {/* Greeting */}
-      <div style={styles.greeting}>
-        <div style={styles.greetingTop}>
-          <h1 style={styles.name}>Good to see you, {displayName.split(' ')[0]}.</h1>
-          <Badge variant={tier === 'basic' ? 'default' : tier === 'pro' ? 'green' : tier === 'expert' ? 'default' : 'default'}>
-            <span style={{ color: tierColor }}>{tier.charAt(0).toUpperCase() + tier.slice(1)} Plan</span>
-          </Badge>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 'clamp(22px, 5vw, 28px)' : '32px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+            Good to see you, {displayName.split(' ')[0]}.
+          </h1>
+          <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: `${tierColor}22`, border: `1px solid ${tierColor}44`, color: tierColor }}>
+            {tier?.charAt(0).toUpperCase() + tier?.slice(1)} Plan
+          </span>
           {isFoundingMember && (
-            <span style={{
-              fontSize: '11px',
-              fontWeight: 600,
-              padding: '3px 10px',
-              borderRadius: 'var(--radius-full)',
-              background: 'linear-gradient(90deg, rgba(29,185,84,0.2), rgba(234,179,8,0.2))',
-              border: '1px solid rgba(234,179,8,0.4)',
-              color: '#EAB308',
-              fontFamily: 'var(--font-ui)',
-            }}>✦ Founding Member</span>
+            <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '999px', background: 'linear-gradient(90deg, rgba(29,185,84,0.2), rgba(234,179,8,0.2))', border: '1px solid rgba(234,179,8,0.4)', color: '#EAB308' }}>✦ Founding Member</span>
           )}
         </div>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
-          Here's what's happening with your business.
-        </p>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>Here's what's happening with your business.</p>
       </div>
 
-      {/* Stats */}
-      <div style={styles.statsGrid}>
-        <StatCard label="Invoices" value={loading ? '—' : stats.invoices} sub="Total created" />
-        <StatCard label="Messages" value={loading ? '—' : stats.messages} sub="Conversations" />
-        <StatCard label="Bookings" value={loading ? '—' : stats.bookings} sub="All time" />
-        <StatCard label="Reviews" value={loading ? '—' : stats.reviews} sub="On your profile" accent="var(--green)" />
+      {/* Quick Actions */}
+      <div
+        style={
+          isMobile
+            ? { display: 'flex', flexDirection: 'row', gap: '8px', width: '100%', minWidth: 0 }
+            : { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', width: '100%', minWidth: 0 }
+        }
+      >
+        {quickActions.map((a, i) => (
+          <QuickAction key={i} {...a} navigate={navigate} compact={isMobile} />
+        ))}
       </div>
 
-      {/* Quick actions */}
-      <div style={styles.section}>
-        <div style={styles.sectionTitle}>Quick actions</div>
-        <div style={styles.quickGrid}>
-          {quickActions.map((a, i) => (
-            <QuickAction key={i} {...a} navigate={navigate} />
-          ))}
+      {/* Row 1 — Core stats */}
+      <div style={statGrid}>
+        <StatCard label="Total Bookings" value={s.totalBookings} icon="📅" compact={isMobile} />
+        <StatCard label="Active Enquiries" value={s.activeEnquiries} icon="💬" compact={isMobile} />
+        <StatCard label="Platform Reviews" value={s.totalReviews} icon="⭐" compact={isMobile} />
+        <StatCard label="Conversion Rate" value={`${s.conversionRate}%`} icon="🎯" compact={isMobile} />
+      </div>
+
+      {/* Row 2 — Revenue (includes This Month + YTD in 2×2 on mobile) */}
+      <div style={statGrid}>
+        <StatCard label="This Month Revenue" value={`$${s.thisMonthRevenue.toFixed(2)}`} icon="💰" compact={isMobile} />
+        <StatCard label="YTD Revenue" value={`$${s.ytdRevenue.toFixed(2)}`} icon="📈" compact={isMobile} />
+        <StatCard label="Enquiries This Month" value={s.thisMonthEnquiries} sub={`vs ${s.lastMonthEnquiries} last month`} icon="📥" compact={isMobile} />
+        <StatCard label="Avg Project Value" value={`$${s.avgProjectValue}`} icon="💵" compact={isMobile} />
+      </div>
+
+      {/* Chart + Recent Invoices */}
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr',
+          gap: '20px',
+          width: '100%',
+          minWidth: 0,
+        }}
+      >
+        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: isMobile ? '16px' : '24px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Bookings & Enquiries (Last 6 Months)</div>
+          <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#1DB954' }} /> Bookings
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
+              <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#a855f7' }} /> Enquiries
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'flex-end', gap: isMobile ? '4px' : '8px', height: '140px', width: '100%', minWidth: 0 }}>
+            {s.chartData.map((d, i) => (
+              <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end', minWidth: 0 }}>
+                <div style={{ width: '100%', display: 'flex', gap: '2px', alignItems: 'flex-end', justifyContent: 'center', flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      width: '45%',
+                      background: '#1DB954',
+                      borderRadius: '3px 3px 0 0',
+                      height: `${Math.max((d.Bookings / Math.max(...s.chartData.map((x) => x.Bookings), 1)) * 100, d.Bookings > 0 ? 4 : 0)}%`,
+                      minHeight: d.Bookings > 0 ? '4px' : '0',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '45%',
+                      background: '#a855f7',
+                      borderRadius: '3px 3px 0 0',
+                      height: `${Math.max((d.Enquiries / Math.max(...s.chartData.map((x) => x.Enquiries), 1)) * 100, d.Enquiries > 0 ? 4 : 0)}%`,
+                      minHeight: d.Enquiries > 0 ? '4px' : '0',
+                    }}
+                  />
+                </div>
+                <div style={{ fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center' }}>{d.name}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      {/* Recent invoices */}
-      <div style={styles.section}>
-        <div style={styles.sectionHeader}>
-          <div style={styles.sectionTitle}>Recent invoices</div>
-          <Button variant="ghost" size="sm" style={{ minHeight: '44px' }} onClick={() => navigate('/dashboard/finance/invoicing')}>View all →</Button>
-        </div>
-        <div style={styles.tableWrap}>
-          <div style={styles.tableHeader}>
-            <span>Invoice</span>
-            <span>Amount</span>
-            <span>Status</span>
-            <span>Date</span>
+        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', overflow: 'hidden', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Recent Invoices</div>
+            <button type="button" onClick={() => navigate('/dashboard/finance/invoicing')} style={{ fontSize: '12px', color: '#1DB954', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>View all →</button>
           </div>
           {recentInvoices.length === 0 ? (
-            <div style={styles.emptyState}>No invoices yet — create your first one.</div>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No invoices yet.</div>
           ) : (
             recentInvoices.map((inv, i) => (
-              <div key={i} style={{ ...styles.tableRow, borderBottom: i === recentInvoices.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}>
-                <span style={{ color: 'var(--text-primary)', fontWeight: 500 }}>INV-{String(i + 1).padStart(3, '0')}</span>
-                <span>${inv.amount?.toFixed(2) ?? '0.00'}</span>
-                <Badge variant={statusVariant(inv.status)} size="sm">{inv.status ?? 'draft'}</Badge>
-                <span>{new Date(inv.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</span>
+              <div key={i} style={{ padding: '12px 20px', borderBottom: i < recentInvoices.length - 1 ? '1px solid var(--border-subtle)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{inv.client_name ?? 'Client'}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(inv.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>${inv.amount?.toFixed(2) ?? '0.00'}</span>
+                  <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, background: `${statusColor(inv.status)}22`, color: statusColor(inv.status), border: `1px solid ${statusColor(inv.status)}44` }}>{inv.status ?? 'draft'}</span>
+                </div>
               </div>
             ))
           )}
         </div>
       </div>
 
-      {/* Profile completion nudge */}
       {!profile?.bio && (
-        <div style={styles.profileBanner}>
-          <div style={styles.bannerText}>
-            Complete your profile to get discovered by more clients. Add a bio, portfolio photos and your specialties.
-          </div>
-          <Button variant="secondary" size="sm" style={{ minHeight: '44px' }} onClick={() => navigate('/dashboard/profile/edit-profile')}>
-            Complete Profile
-          </Button>
+        <div
+          style={{
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-default)',
+            borderRadius: '12px',
+            padding: '20px 24px',
+            display: 'flex',
+            alignItems: isMobile ? 'stretch' : 'center',
+            justifyContent: 'space-between',
+            gap: '16px',
+            flexDirection: isMobile ? 'column' : 'row',
+            minWidth: 0,
+          }}
+        >
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Complete your profile to get discovered by more clients. Add a bio, portfolio photos and your specialties.</div>
+          <Button variant="secondary" size="sm" onClick={() => navigate('/dashboard/profile/edit-profile')}>Complete Profile</Button>
         </div>
       )}
-
     </div>
   )
 }

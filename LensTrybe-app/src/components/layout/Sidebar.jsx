@@ -153,14 +153,19 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       style={isMobile ? {
         position: 'fixed',
         top: 0,
-        left: mobileOpen ? '0' : '-100vw',
-        width: '100vw',
-        height: '100vh',
+        left: 0,
+        width: '100%',
+        maxWidth: '100%',
+        height: '100dvh',
+        minHeight: '100dvh',
         zIndex: 1001,
-        transition: 'left 0.25s ease',
+        transition: 'transform 0.25s ease',
+        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
+        pointerEvents: mobileOpen ? 'auto' : 'none',
+        boxSizing: 'border-box',
       } : undefined}
     >
-      <aside style={{ ...styles.sidebar, width: isMobile ? '100vw' : styles.sidebar.width }}>
+      <aside style={{ ...styles.sidebar, width: isMobile ? '100%' : styles.sidebar.width, maxWidth: isMobile ? '100%' : undefined, boxSizing: 'border-box' }}>
           <div style={styles.logo} onClick={() => navigate('/')}>
             <span style={styles.logoText}>LensTrybe</span>
             {!isMobile && (

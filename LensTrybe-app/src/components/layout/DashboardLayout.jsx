@@ -17,7 +17,7 @@ export default function DashboardLayout() {
   }, [])
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)' }}>
+    <>
       {isMobile && (
         <button
           type="button"
@@ -51,25 +51,33 @@ export default function DashboardLayout() {
           style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 999 }}
         />
       )}
-      <Sidebar isMobile={isMobile} mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
-      <main style={{
-        flex: 1,
-        minWidth: 0,
-        display: 'flex',
-        flexDirection: 'column',
-        overflowX: 'hidden',
-      }} className="dashboard-main-content">
-        <div style={{
+      <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: 'var(--bg-base)', width: '100%' }}>
+        {!isMobile && <Sidebar isMobile={false} mobileOpen={false} onCloseMobile={() => setMobileSidebarOpen(false)} />}
+        <main style={{
           flex: 1,
-          padding: isMobile ? '72px 16px 24px' : '32px 40px',
-          maxWidth: '1280px',
+          minWidth: 0,
           width: '100%',
-          margin: '0 auto',
+          maxWidth: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          overflowX: 'hidden',
           boxSizing: 'border-box',
-        }} className="dash-main">
-          <Outlet />
-        </div>
-      </main>
-    </div>
+        }} className="dashboard-main-content">
+          <div style={{
+            flex: 1,
+            padding: isMobile ? '72px 16px 24px' : '32px 40px',
+            maxWidth: '1280px',
+            width: '100%',
+            margin: '0 auto',
+            boxSizing: 'border-box',
+          }} className="dash-main">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+      {isMobile && (
+        <Sidebar isMobile mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
+      )}
+    </>
   )
 }

@@ -14,7 +14,7 @@ import ContractsPage from './pages/dashboard/ContractsPage'
 import BrandKitPage from './pages/dashboard/BrandKitPage'
 import DeliverPage from './pages/dashboard/DeliverPage'
 import CRMPage from './pages/dashboard/CRMPage'
-import InsightsPage from './pages/dashboard/InsightsPage'
+import DashboardHome from './pages/dashboard/DashboardHome'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
 import TeamPage from './pages/dashboard/TeamPage'
@@ -118,7 +118,7 @@ export default function App() {
           <DashboardLayout />
         </ProtectedRoute>
       }>
-        <Route index element={<InsightsPage />} />
+        <Route index element={<DashboardHome />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />

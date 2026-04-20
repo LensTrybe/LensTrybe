@@ -176,7 +176,7 @@ export default function ExplorePage() {
     filterCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '20px' },
     filterSection: { display: 'flex', flexDirection: 'column', gap: '10px' },
     filterLabel: { fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    typeGrid: { display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '8px', overflowX: isMobile ? 'auto' : 'visible', paddingBottom: isMobile ? '4px' : '0' },
+    typeGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     typeChip: (selected) => ({
       padding: '7px 16px',
       borderRadius: 'var(--radius-full)',
@@ -212,17 +212,43 @@ export default function ExplorePage() {
         <div style={styles.filterCard}>
           <div style={styles.filterSection}>
             <div style={styles.filterLabel}>Creative Type — select one or more</div>
-            <div style={styles.typeGrid}>
-              {CATEGORIES.map(cat => (
-                <div
-                  key={cat.value}
-                  style={styles.typeChip(selectedTypes.includes(cat.value))}
-                  onClick={() => toggleType(cat.value)}
-                >
-                  {cat.label}
-                </div>
-              ))}
-            </div>
+            {isMobile ? (
+              <select
+                multiple
+                size={CATEGORIES.length}
+                value={selectedTypes}
+                onChange={(e) => {
+                  const next = Array.from(e.target.selectedOptions, (opt) => opt.value)
+                  setSelectedTypes(next)
+                  setFilters((prev) => ({ ...prev, specialty: '' }))
+                }}
+                aria-label="Creative types (select one or more)"
+                style={{
+                  ...styles.select,
+                  width: '100%',
+                  minHeight: '44px',
+                  padding: '8px 12px',
+                }}
+              >
+                {CATEGORIES.map((cat) => (
+                  <option key={cat.value} value={cat.value}>
+                    {cat.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div style={styles.typeGrid}>
+                {CATEGORIES.map((cat) => (
+                  <div
+                    key={cat.value}
+                    style={styles.typeChip(selectedTypes.includes(cat.value))}
+                    onClick={() => toggleType(cat.value)}
+                  >
+                    {cat.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           <div style={styles.filterRow}>

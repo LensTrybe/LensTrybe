@@ -558,7 +558,7 @@ export default function PortfolioWebsitePage() {
       <style>{`
         @media (max-width: 767px) {
           .portfolio-website-page h1, .portfolio-website-page h2 { font-size: 24px !important; }
-          .portfolio-website-page button { min-height: 44px; }
+          .portfolio-website-page button:not(.dash-switch) { min-height: 44px; }
           .portfolio-website-page input, .portfolio-website-page textarea, .portfolio-website-page select { width: 100% !important; font-size: 14px !important; }
           .portfolio-website-page .folder-grid-mobile { grid-template-columns: repeat(2, 1fr) !important; }
         }
@@ -572,8 +572,26 @@ export default function PortfolioWebsitePage() {
           <div><div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Your Website</div></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', fontFamily: 'var(--font-ui)', background: published ? 'rgba(29,185,84,0.15)' : 'rgba(156,163,175,0.12)', color: published ? '#1DB954' : 'var(--text-muted)', border: published ? '1px solid rgba(29,185,84,0.35)' : '1px solid var(--border-default)' }}>{published ? 'Live' : 'Offline'}</span>
-            <button type="button" role="switch" aria-checked={published} disabled={savingPublish} onClick={() => savePublish(!published)} style={{ width: 52, height: 28, borderRadius: 999, border: '1px solid var(--border-default)', background: published ? '#1DB954' : 'var(--bg-base)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }}>
-              <span style={{ position: 'absolute', top: 3, left: published ? 26 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.15s ease' }} />
+            <button
+              type="button"
+              className="dash-switch"
+              role="switch"
+              aria-checked={published}
+              disabled={savingPublish}
+              onClick={() => savePublish(!published)}
+              style={
+                isMobile
+                  ? { width: 40, height: 24, minHeight: 24, padding: 0, borderRadius: 999, border: '1px solid var(--border-default)', background: published ? '#1DB954' : 'var(--bg-base)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
+                  : { width: 52, height: 28, minHeight: 28, padding: 0, borderRadius: 999, border: '1px solid var(--border-default)', background: published ? '#1DB954' : 'var(--bg-base)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
+              }
+            >
+              <span
+                style={
+                  isMobile
+                    ? { position: 'absolute', top: 4, left: published ? 21 : 3, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s ease' }
+                    : { position: 'absolute', top: 3, left: published ? 26 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: 'left 0.15s ease' }
+                }
+              />
             </button>
           </div>
         </div>
@@ -638,12 +656,55 @@ export default function PortfolioWebsitePage() {
           { key: 'services_pricing', title: 'Services and pricing' },
           { key: 'contact_form', title: 'Contact form' },
           { key: 'content_gallery', title: 'Gallery' },
-        ].map(({ key, title }) => (
-          <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)' }}>
-            <span>{title}</span>
-            <input type="checkbox" checked={!!sections[key]} onChange={(e) => setSections((s) => ({ ...s, [key]: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#1DB954' }} />
-          </label>
-        ))}
+        ].map(({ key, title }) => {
+          const on = !!sections[key]
+          if (isMobile) {
+            return (
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)' }}>
+                <span>{title}</span>
+                <button
+                  type="button"
+                  className="dash-switch"
+                  role="switch"
+                  aria-checked={on}
+                  onClick={() => setSections((s) => ({ ...s, [key]: !s[key] }))}
+                  style={{
+                    width: 40,
+                    height: 22,
+                    minHeight: 22,
+                    padding: 0,
+                    borderRadius: 'var(--radius-full)',
+                    border: '1px solid var(--border-default)',
+                    background: on ? '#1DB954' : 'var(--bg-base)',
+                    position: 'relative',
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                    transition: 'background 0.15s ease',
+                  }}
+                >
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 3,
+                      left: on ? 21 : 3,
+                      width: 16,
+                      height: 16,
+                      borderRadius: '50%',
+                      background: '#fff',
+                      transition: 'left 0.15s ease',
+                    }}
+                  />
+                </button>
+              </div>
+            )
+          }
+          return (
+            <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)' }}>
+              <span>{title}</span>
+              <input type="checkbox" checked={on} onChange={(e) => setSections((s) => ({ ...s, [key]: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#1DB954' }} />
+            </label>
+          )
+        })}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           <Button variant="primary" onClick={saveSections} disabled={savingSections}>{savingSections ? 'Saving…' : 'Save sections'}</Button>
           {sectionsSaved ? <span style={{ fontSize: '13px', color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
