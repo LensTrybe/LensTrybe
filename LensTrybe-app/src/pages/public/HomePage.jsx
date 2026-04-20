@@ -476,7 +476,7 @@ export default function HomePage() {
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Browse by Specialty</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0 }}>Find exactly the creative talent you need for your project</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(170px, 1fr))', gap: '12px', padding: isMobile ? '0' : '0 16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px', padding: isMobile ? '0' : '0 16px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
