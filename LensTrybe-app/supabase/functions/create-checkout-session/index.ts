@@ -69,8 +69,8 @@ Deno.serve(async (req) => {
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: { trial_period_days: 14, metadata: { supabase_user_id: userId } },
-      success_url: 'http://localhost:5173/dashboard?checkout=success',
-      cancel_url: 'http://localhost:5173/pricing',
+      success_url: 'https://lenstrybe.com/dashboard?checkout=success',
+      cancel_url: 'https://lenstrybe.com/pricing',
       metadata: { supabase_user_id: userId, price_id: priceId },
     })
 

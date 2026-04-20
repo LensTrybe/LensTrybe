@@ -40,6 +40,15 @@ const SKILL_TYPE_LIMIT_BY_TIER = {
   elite: Infinity,
 }
 
+const PRICE_IDS = {
+  pro_monthly: 'price_1TGVFZHW7LVs8k6sElcIwbzg',
+  pro_annual: 'price_1T7V1rHW7LVs8k6sZjddvm2E',
+  expert_monthly: 'price_1TGVM3HW7LVs8k6szXy5QvSW',
+  expert_annual: 'price_1TJV35HW7LVs8k6s7CU1RBeu',
+  elite_monthly: 'price_1TGVMDHW7LVs8k6sKePKDibF',
+  elite_annual: 'price_1TJUfqHW7LVs8k6s0SdahBua',
+}
+
 function maxSkillTypesForTier(tierId) {
   const n = SKILL_TYPE_LIMIT_BY_TIER[tierId]
   return n === undefined ? Infinity : n
@@ -61,6 +70,11 @@ function skillTypeLimitHint(tierId) {
     return `Your ${tierName} plan includes up to ${max} skill types. Upgrade to Elite to add more.`
   }
   return `Your plan includes up to ${max} skill types.`
+}
+
+function getCheckoutPriceId(tierId, billingInterval = 'monthly') {
+  const interval = billingInterval === 'annual' ? 'annual' : 'monthly'
+  return PRICE_IDS[`${tierId}_${interval}`] || ''
 }
 
 export default function SignupPage() {
@@ -173,10 +187,22 @@ export default function SignupPage() {
       if (profileError) throw profileError
 
       if (form.tier !== 'basic') {
+        const priceId = getCheckoutPriceId(form.tier, form.billingInterval)
+        if (!priceId) {
+          throw new Error(`Missing Stripe price ID for ${form.tier} (${form.billingInterval || 'monthly'})`)
+        }
+        const requestBody = { priceId, userId, email: form.email }
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
-          body: { tier: form.tier, userId }
+          body: requestBody
         })
-        if (checkoutError) throw checkoutError
+        if (checkoutError) {
+          console.log('[SignupPage] create-checkout-session error', {
+            error: checkoutError,
+            data: checkoutData,
+            requestBody,
+          })
+          throw checkoutError
+        }
         if (checkoutData?.url) {
           window.location.href = checkoutData.url
           return
