@@ -32,12 +32,45 @@ const SPECIALTIES = {
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
+/** Maximum skill types per subscription tier (Elite: no limit). */
+const SKILL_TYPE_LIMIT_BY_TIER = {
+  basic: 1,
+  pro: 2,
+  expert: 4,
+  elite: Infinity,
+}
+
+function maxSkillTypesForTier(tierId) {
+  const n = SKILL_TYPE_LIMIT_BY_TIER[tierId]
+  return n === undefined ? Infinity : n
+}
+
+function skillTypeLimitHint(tierId) {
+  const tierName = TIERS.find((t) => t.id === tierId)?.name ?? 'Your'
+  if (tierId === 'elite') {
+    return 'Your Elite plan includes unlimited skill types.'
+  }
+  const max = maxSkillTypesForTier(tierId)
+  if (tierId === 'basic') {
+    return `Your ${tierName} plan includes up to ${max} skill type. Upgrade to Pro, Expert or Elite to add more.`
+  }
+  if (tierId === 'pro') {
+    return `Your ${tierName} plan includes up to ${max} skill types. Upgrade to Expert or Elite to add more.`
+  }
+  if (tierId === 'expert') {
+    return `Your ${tierName} plan includes up to ${max} skill types. Upgrade to Elite to add more.`
+  }
+  return `Your plan includes up to ${max} skill types.`
+}
+
 export default function SignupPage() {
   const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
   const [form, setForm] = useState({
     tier: 'pro',
@@ -70,6 +103,30 @@ export default function SignupPage() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  /** If the user changes plan, trim skill types so they never exceed the new tier limit. */
+  useEffect(() => {
+    const max = maxSkillTypesForTier(form.tier)
+    if (!Number.isFinite(max)) return
+    setForm((prev) => {
+      if (prev.skillTypes.length <= max) return prev
+      return { ...prev, skillTypes: prev.skillTypes.slice(0, max) }
+    })
+  }, [form.tier])
+
+  function toggleSkillType(skill) {
+    setForm((prev) => {
+      const has = prev.skillTypes.includes(skill)
+      if (has) {
+        return { ...prev, skillTypes: prev.skillTypes.filter((s) => s !== skill) }
+      }
+      const max = maxSkillTypesForTier(prev.tier)
+      if (Number.isFinite(max) && prev.skillTypes.length >= max) {
+        return prev
+      }
+      return { ...prev, skillTypes: [...prev.skillTypes, skill] }
+    })
+  }
 
   function toggleArray(field, value) {
     setForm(prev => ({
@@ -179,19 +236,34 @@ export default function SignupPage() {
     tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     tierDesc: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     skillGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' },
-    skillChip: (selected) => ({
+    skillChip: (selected, disabled) => ({
       padding: '10px 16px',
       borderRadius: 'var(--radius-lg)',
-      border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`,
-      background: selected ? 'var(--green-dim)' : 'var(--bg-elevated)',
-      color: selected ? 'var(--green)' : 'var(--text-secondary)',
+      border: `1px solid ${
+        disabled
+          ? 'var(--border-default)'
+          : selected
+            ? 'var(--green)'
+            : 'var(--border-default)'
+      }`,
+      background: disabled ? 'var(--bg-base)' : selected ? 'var(--green-dim)' : 'var(--bg-elevated)',
+      color: disabled ? 'var(--text-muted)' : selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '13px',
       fontWeight: selected ? 500 : 400,
-      cursor: 'pointer',
+      cursor: disabled ? 'not-allowed' : 'pointer',
+      opacity: disabled ? 0.55 : 1,
       transition: 'all var(--transition-base)',
       textAlign: 'center',
       fontFamily: 'var(--font-ui)',
     }),
+    skillLimitHint: {
+      fontSize: '13px',
+      color: 'var(--text-muted)',
+      fontFamily: 'var(--font-ui)',
+      lineHeight: 1.55,
+      margin: 0,
+      marginTop: '4px',
+    },
     specialtyWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     specialtyChip: (selected) => ({
       padding: '6px 14px',
@@ -230,6 +302,18 @@ export default function SignupPage() {
     },
     actions: { display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' },
     footerNote: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)' },
+    passwordToggleBtn: {
+      border: 'none',
+      background: 'transparent',
+      color: 'var(--text-muted)',
+      cursor: 'pointer',
+      fontFamily: 'var(--font-ui)',
+      fontSize: '12px',
+      fontWeight: 500,
+      padding: '2px 0',
+      minHeight: '32px',
+      lineHeight: 1,
+    },
   }
 
   const availableSpecialties = form.skillTypes.flatMap(s => SPECIALTIES[s] ?? [])
@@ -251,6 +335,7 @@ export default function SignupPage() {
       <style>{`
         @media (max-width: 767px) {
           .signup-page button { min-height: 44px; }
+          .signup-page button.password-field-toggle { min-height: 32px; }
           .signup-page input, .signup-page textarea, .signup-page select { width: 100% !important; font-size: 14px !important; }
           .signup-page [style*="height: 3px"] { min-height: 3px; }
           .signup-page [style*="justify-content: space-between"] > button { width: 100%; }
@@ -297,21 +382,75 @@ export default function SignupPage() {
                 <Input label="Last name" placeholder="Mitchell" value={form.lastName} onChange={e => update('lastName', e.target.value)} />
               </div>
               <Input label="Email address" type="email" placeholder="you@example.com" value={form.email} onChange={e => update('email', e.target.value)} />
-              <Input label="Password" type="password" placeholder="Min 8 characters" value={form.password} onChange={e => update('password', e.target.value)} />
-              <Input label="Confirm password" type="password" placeholder="Repeat your password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : ''} />
+              <Input
+                label="Password"
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Min 8 characters"
+                value={form.password}
+                onChange={e => update('password', e.target.value)}
+                suffix={(
+                  <button
+                    type="button"
+                    className="password-field-toggle"
+                    onClick={(e) => { e.preventDefault(); setShowPassword((v) => !v) }}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                    style={styles.passwordToggleBtn}
+                  >
+                    {showPassword ? 'Hide' : 'Show'}
+                  </button>
+                )}
+              />
+              <Input
+                label="Confirm password"
+                type={showConfirmPassword ? 'text' : 'password'}
+                placeholder="Repeat your password"
+                value={form.confirmPassword}
+                onChange={e => update('confirmPassword', e.target.value)}
+                error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : ''}
+                suffix={(
+                  <button
+                    type="button"
+                    className="password-field-toggle"
+                    onClick={(e) => { e.preventDefault(); setShowConfirmPassword((v) => !v) }}
+                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    style={styles.passwordToggleBtn}
+                  >
+                    {showConfirmPassword ? 'Hide' : 'Show'}
+                  </button>
+                )}
+              />
             </>
           )}
 
           {/* Step 2 — Skills */}
-          {step === 2 && (
-            <div style={styles.skillGrid}>
-              {SKILL_TYPES.map(skill => (
-                <div key={skill} style={styles.skillChip(form.skillTypes.includes(skill))} onClick={() => toggleArray('skillTypes', skill)}>
-                  {skill}
+          {step === 2 && (() => {
+            const maxSkills = maxSkillTypesForTier(form.tier)
+            const unlimited = !Number.isFinite(maxSkills)
+            const atSkillLimit = !unlimited && form.skillTypes.length >= maxSkills
+            return (
+              <>
+                <div style={styles.skillGrid}>
+                  {SKILL_TYPES.map((skill) => {
+                    const selected = form.skillTypes.includes(skill)
+                    const disabled = atSkillLimit && !selected
+                    return (
+                      <div
+                        key={skill}
+                        style={styles.skillChip(selected, disabled)}
+                        onClick={() => {
+                          if (disabled) return
+                          toggleSkillType(skill)
+                        }}
+                      >
+                        {skill}
+                      </div>
+                    )
+                  })}
                 </div>
-              ))}
-            </div>
-          )}
+                <p style={styles.skillLimitHint}>{skillTypeLimitHint(form.tier)}</p>
+              </>
+            )
+          })()}
 
           {/* Step 3 — Specialties */}
           {step === 3 && (
