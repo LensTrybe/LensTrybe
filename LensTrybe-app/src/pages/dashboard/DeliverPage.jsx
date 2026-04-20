@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
@@ -9,6 +9,24 @@ import Modal from '../../components/ui/Modal'
 function generatePassword() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
   return Array.from({ length: 10 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+}
+
+/** Per-document settings: `deliver` overrides `deliver_gallery` when both exist (Brand Kit tabs). */
+function mergeDeliverGalleryBrand(brandKit) {
+  const base = brandKit || {}
+  const raw = base.document_brand_settings
+  const docs = raw && typeof raw === 'object' ? raw : {}
+  const g = docs.deliver_gallery && typeof docs.deliver_gallery === 'object' ? docs.deliver_gallery : {}
+  const d = docs.deliver && typeof docs.deliver === 'object' ? docs.deliver : {}
+  const doc = { ...g, ...d }
+  const primary = doc.primary_colour ?? doc.primary_color ?? base.primary_color ?? '#1DB954'
+  const accent = '#ffffff'
+  const font = doc.font ?? base.font ?? 'Inter'
+  const logo = doc.logo_url || base.logo_url || ''
+  const secondary = base.secondary_color ?? '#ffffff'
+  const hasCustomTemplate = Boolean(doc.custom_template_url)
+  const fontStack = font.includes(' ') ? `"${font}", sans-serif` : `${font}, sans-serif`
+  return { primary, accent, font, logo, secondary, hasCustomTemplate, fontStack }
 }
 
 export default function DeliverPage() {
@@ -26,6 +44,7 @@ export default function DeliverPage() {
   const [editForm, setEditForm] = useState({})
   const [editFiles, setEditFiles] = useState([])
   const [uploadingEditFiles, setUploadingEditFiles] = useState(false)
+  const [brandKit, setBrandKit] = useState(null)
 
   const storageLimit = tier === 'elite' ? 200 : 50
 
@@ -44,7 +63,23 @@ export default function DeliverPage() {
     files: [],
   })
 
-  useEffect(() => { loadDeliveries() }, [user])
+  const loadBrandKit = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
+    setBrandKit(data ?? null)
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadDeliveries()
+      loadBrandKit()
+    }
+  }, [user, loadBrandKit])
+
+  useEffect(() => {
+    window.addEventListener('focus', loadBrandKit)
+    return () => window.removeEventListener('focus', loadBrandKit)
+  }, [loadBrandKit])
 
   async function loadDeliveries() {
     if (!user) return
@@ -226,6 +261,42 @@ export default function DeliverPage() {
   const storageUsedGB = totalStorageUsed / (1024 * 1024 * 1024)
   const storagePercent = Math.min(100, (storageUsedGB / storageLimit) * 100)
 
+  const deliverBrand = useMemo(() => mergeDeliverGalleryBrand(brandKit), [brandKit])
+  const deliverPrimary = deliverBrand.primary
+  const deliverAccent = deliverBrand.accent
+  const deliverFontStack = deliverBrand.fontStack
+  const deliverLogo = deliverBrand.logo
+  const deliverHeaderText = deliverBrand.secondary
+  const galleryPreviewCard = (
+    <div style={{ border: `1px solid ${deliverAccent}44`, borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', background: deliverPrimary, color: deliverHeaderText }}>
+        {deliverLogo ? <img src={deliverLogo} alt="" style={{ height: '36px', maxWidth: '120px', objectFit: 'contain' }} /> : null}
+        <span style={{ fontWeight: 700, fontFamily: deliverFontStack, fontSize: '14px' }}>Gallery preview</span>
+      </div>
+      <div style={{ padding: '14px 16px', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: deliverFontStack, borderTop: `3px solid ${deliverAccent}`, background: 'var(--bg-base)' }}>
+        Client-facing delivery pages use your Brand Kit colours, font and logo. This card shows how that header will look.
+      </div>
+    </div>
+  )
+  const customDeliverTemplateBanner = deliverBrand.hasCustomTemplate ? (
+    <div
+      role="status"
+      style={{
+        marginBottom: '12px',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        border: `1px solid ${deliverAccent}55`,
+        background: `${deliverAccent}12`,
+        fontSize: '12px',
+        color: 'var(--text-secondary)',
+        lineHeight: 1.45,
+        fontFamily: 'var(--font-ui)',
+      }}
+    >
+      A custom template is active for delivery galleries in Brand Kit. Colours and font still apply; the uploaded file is not previewed here.
+    </div>
+  ) : null
+
   return (
     <div style={styles.page}>
       {toast && (
@@ -247,7 +318,7 @@ export default function DeliverPage() {
           <span>{storageUsedGB.toFixed(2)} GB / {storageLimit} GB</span>
         </div>
         <div style={styles.storageTrack}>
-          <div style={{ height: '100%', width: `${storagePercent}%`, background: storagePercent > 90 ? 'var(--error)' : 'var(--green)', borderRadius: 'var(--radius-full)', transition: 'width var(--transition-base)' }} />
+          <div style={{ height: '100%', width: `${storagePercent}%`, background: storagePercent > 90 ? 'var(--error)' : deliverPrimary, borderRadius: 'var(--radius-full)', transition: 'width var(--transition-base)' }} />
         </div>
       </div>
 
@@ -308,15 +379,17 @@ export default function DeliverPage() {
       {/* Create Modal */}
       <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="New Delivery" size="lg">
         <div style={styles.formSection}>
+          {customDeliverTemplateBanner}
+          {galleryPreviewCard}
           <div style={styles.formRow}>
-            <Input label="Project title" placeholder="Wedding Photos — Smith/Jones" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
+            <Input label="Project title" placeholder="Wedding photos, Smith and Jones" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
             <Input label="Client name" placeholder="Jane Smith" value={form.client_name} onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))} />
           </div>
           <Input label="Client email" type="email" placeholder="jane@example.com" value={form.client_email} onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))} />
           <Input label="Message to client (optional)" placeholder="Here are your final photos! Password is below if required." value={form.message} onChange={e => setForm(p => ({ ...p, message: e.target.value }))} />
 
           <div style={styles.toggle} onClick={() => setForm(p => ({ ...p, password_protected: !p.password_protected, password: p.password_protected ? '' : generatePassword() }))}>
-            <div style={styles.toggleTrack(form.password_protected)}>
+            <div style={{ ...styles.toggleTrack(form.password_protected), background: form.password_protected ? deliverPrimary : styles.toggleTrack(false).background }}>
               <div style={styles.toggleThumb(form.password_protected)} />
             </div>
             <span style={styles.toggleLabel}>Password protect this gallery</span>
@@ -331,10 +404,15 @@ export default function DeliverPage() {
             </div>
           )}
 
-          <div style={styles.fileZone} onClick={() => document.getElementById('deliver-files').click()}>
+          <div
+            style={styles.fileZone}
+            onClick={() => document.getElementById('deliver-files').click()}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = deliverAccent }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
+          >
             <div style={{ fontSize: '24px' }}>📁</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>Click to select files to upload</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Photos, videos, ZIPs — any file type</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: deliverFontStack }}>Click to select files to upload</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: deliverFontStack }}>Photos, videos, ZIPs or any file type</div>
           </div>
           <input id="deliver-files" type="file" multiple style={{ display: 'none' }} onChange={handleFileSelect} />
 
@@ -372,6 +450,8 @@ export default function DeliverPage() {
       {showView && (
         <Modal isOpen={!!showView} onClose={() => setShowView(null)} title="Delivery Details" size="md">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+            {customDeliverTemplateBanner}
+            {galleryPreviewCard}
             <div style={styles.viewGrid}>
               <div style={styles.viewField}>
                 <div style={styles.viewLabel}>Project</div>
@@ -471,7 +551,7 @@ export default function DeliverPage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
               <button type="button" onClick={() => { setEditingDelivery(null); setEditFiles([]) }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
-              <button type="button" onClick={saveEditDelivery} style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Save Changes</button>
+              <button type="button" onClick={saveEditDelivery} style={{ padding: '9px 18px', background: deliverPrimary, border: 'none', borderRadius: '8px', color: deliverHeaderText, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Save Changes</button>
             </div>
           </div>
         </div>

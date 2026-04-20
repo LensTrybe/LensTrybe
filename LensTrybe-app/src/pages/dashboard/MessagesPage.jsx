@@ -6,6 +6,7 @@ import Input from '../../components/ui/Input'
 
 export default function MessagesPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [threads, setThreads] = useState([])
   const [selected, setSelected] = useState(null)
   const [messages, setMessages] = useState([])
@@ -92,6 +93,13 @@ export default function MessagesPage() {
   useEffect(() => { loadThreads() }, [user, profile?.id])
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadThreads() {
     if (!user) return
@@ -223,8 +231,8 @@ export default function MessagesPage() {
   }
 
   const styles = {
-    page: { display: 'flex', height: 'calc(100vh - 64px)', gap: '0', background: 'var(--bg-base)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-default)', overflow: 'hidden' },
-    sidebar: { width: '300px', borderRight: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', flexShrink: 0 },
+    page: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: isMobile ? 'auto' : 'calc(100vh - 64px)', minHeight: isMobile ? 'calc(100vh - 140px)' : 'auto', gap: '0', background: 'var(--bg-base)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--border-default)', overflow: 'hidden' },
+    sidebar: { width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid var(--border-default)', borderBottom: isMobile ? '1px solid var(--border-default)' : 'none', display: 'flex', flexDirection: 'column', flexShrink: 0, maxHeight: isMobile ? '280px' : 'none' },
     sidebarHeader: { padding: '20px', borderBottom: '1px solid var(--border-subtle)', fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     threadList: { flex: 1, overflowY: 'auto' },
     thread: (active) => ({
@@ -238,31 +246,31 @@ export default function MessagesPage() {
     threadName: { fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginBottom: '4px' },
     threadPreview: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
     main: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
-    mainHeader: { padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '12px' },
+    mainHeader: { padding: isMobile ? '14px 16px' : '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', gap: '12px' },
     mainName: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    messageList: { flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
+    messageList: { flex: 1, overflowY: 'auto', padding: isMobile ? '16px 10px' : '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
     message: (isCreative) => ({
       display: 'flex',
       justifyContent: isCreative ? 'flex-end' : 'flex-start',
       width: '100%',
-      padding: '2px 16px',
+      padding: isMobile ? '2px 4px' : '2px 16px',
       boxSizing: 'border-box',
     }),
     bubble: {
       padding: '10px 14px',
       borderRadius: '18px',
-      maxWidth: '55%',
-      minWidth: 'fit-content',
+      maxWidth: isMobile ? '88%' : '55%',
+      minWidth: 'auto',
       display: 'block',
-      wordBreak: 'normal',
-      whiteSpace: 'nowrap',
-      overflowWrap: 'normal',
+      wordBreak: 'break-word',
+      whiteSpace: 'normal',
+      overflowWrap: 'anywhere',
       lineHeight: 1.5,
       fontSize: '14px',
       fontFamily: 'var(--font-ui)',
     },
     bubbleTime: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px', textAlign: 'right' },
-    replyBar: { padding: '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '12px', alignItems: 'flex-end' },
+    replyBar: { padding: isMobile ? '12px 12px 14px' : '16px 24px', borderTop: '1px solid var(--border-subtle)', display: 'flex', gap: '12px', alignItems: 'flex-end' },
     emptyState: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
   }
 
@@ -275,13 +283,13 @@ export default function MessagesPage() {
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
         </div>
       )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '24px 24px 0', marginBottom: '16px' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 }}>Messages</div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '16px 12px 0' : '24px 24px 0', marginBottom: '16px', gap: '10px', flexWrap: 'wrap' }}>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '22px', color: 'var(--text-primary)', fontWeight: 400 }}>Messages</div>
         {profile && (
           <button
             type="button"
             onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}
-            style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+            style={{ padding: '9px 18px', minHeight: '44px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
           >
             + New Message
           </button>
@@ -393,7 +401,7 @@ export default function MessagesPage() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
                   />
                 </div>
-                <Button variant="primary" size="md" disabled={sending || !reply.trim()} onClick={sendReply}>
+                <Button variant="primary" size="md" style={{ minHeight: '44px' }} disabled={sending || !reply.trim()} onClick={sendReply}>
                   {sending ? 'Sending…' : 'Send'}
                 </Button>
               </div>

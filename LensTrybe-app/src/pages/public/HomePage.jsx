@@ -319,8 +319,16 @@ export default function HomePage() {
   const [featuredCreatives, setFeaturedCreatives] = useState([]);
   const [eliteCreatives, setEliteCreatives] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
 
   useEffect(() => { fetchCreatives(); }, []);
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768);
+    }
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const fetchCreatives = async () => {
     try {
@@ -370,13 +378,13 @@ export default function HomePage() {
   );
 
   return (
-    <div style={{ background: '#080810', color: '#fff', fontFamily: "'Geist', 'Inter', sans-serif" }}>
+    <div style={{ background: '#080810', color: '#fff', fontFamily: "'Geist', 'Inter', sans-serif", overflowX: 'hidden' }}>
 
       {/* HERO */}
       <section style={{
         display: 'flex', flexDirection: 'column',
         alignItems: 'center', justifyContent: 'center',
-        textAlign: 'center', padding: '72px 24px 56px',
+        textAlign: 'center', padding: isMobile ? '40px 16px 40px' : '72px 24px 56px',
         position: 'relative', overflow: 'hidden',
       }}>
         <div style={{
@@ -392,10 +400,10 @@ export default function HomePage() {
           pointerEvents: 'none',
         }} />
         <h1 style={{
-          fontSize: 'clamp(40px, 6vw, 68px)', fontWeight: '800',
+          fontSize: isMobile ? 'clamp(30px, 10vw, 38px)' : 'clamp(40px, 6vw, 68px)', fontWeight: '800',
           lineHeight: 1.05, margin: '0 0 24px', letterSpacing: '-0.02em',
           fontFamily: "'Instrument Serif', Georgia, serif",
-          whiteSpace: 'nowrap',
+          whiteSpace: isMobile ? 'normal' : 'nowrap',
         }}>
           <span style={{ color: '#E879F9' }}>Connect.</span>{' '}
           <span style={{ color: '#C0C8D8' }}>Capture.</span>{' '}
@@ -405,29 +413,32 @@ export default function HomePage() {
           Australia's home for photographers, videographers, and visual creatives.
           Showcase your work, connect with clients, and build a career on your own terms.
         </p>
-        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px' }}>
+        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px', width: isMobile ? '100%' : 'auto' }}>
           <button onClick={() => navigate('/join')} style={{
             background: '#1DB954', color: '#000', border: 'none',
             borderRadius: '100px', padding: '14px 28px', fontSize: '15px',
             fontWeight: '700', cursor: 'pointer', boxShadow: '0 0 20px rgba(29,185,84,0.3)',
+            minHeight: '44px', width: isMobile ? '100%' : 'auto',
           }}>Join as a Creative</button>
           <button onClick={() => navigate('/creatives')} style={{
             background: 'transparent', color: '#fff',
             border: '1px solid rgba(255,255,255,0.25)',
             borderRadius: '100px', padding: '14px 28px', fontSize: '15px',
             fontWeight: '600', cursor: 'pointer',
+            minHeight: '44px', width: isMobile ? '100%' : 'auto',
           }}>Find a Creative</button>
           <button onClick={() => navigate('/jobs')} style={{
             background: 'transparent', color: '#fff',
             border: '1px solid rgba(255,255,255,0.25)',
             borderRadius: '100px', padding: '14px 28px', fontSize: '15px',
             fontWeight: '600', cursor: 'pointer',
+            minHeight: '44px', width: isMobile ? '100%' : 'auto',
           }}>Post a Job</button>
         </div>
       </section>
 
       {/* FEATURED CREATIVES */}
-      <section style={{ padding: '56px 24px 64px' }}>
+      <section style={{ padding: isMobile ? '36px 16px' : '56px 24px 64px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Featured Creatives</h2>
@@ -438,7 +449,7 @@ export default function HomePage() {
       </section>
 
       {/* ELITE CREATIVES */}
-      <section style={{ padding: '36px 24px' }}>
+      <section style={{ padding: isMobile ? '36px 16px' : '36px 24px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Meet Our Elite Creatives</h2>
@@ -452,18 +463,18 @@ export default function HomePage() {
       </section>
 
       {/* BROWSE BY SPECIALTY */}
-      <section style={{ padding: '36px 24px' }}>
+      <section style={{ padding: isMobile ? '36px 16px' : '36px 24px' }}>
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Browse by Specialty</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0 }}>Find exactly the creative talent you need for your project</p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(130px, 1fr))', gap: '12px', padding: isMobile ? '0' : '0 16px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '12px', padding: '24px 16px', cursor: 'pointer',
-                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff',
+                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff', minHeight: '44px',
               }}>
                 <div style={{
                   width: '40px', height: '40px', borderRadius: '10px',
@@ -482,7 +493,7 @@ export default function HomePage() {
       </section>
 
       {/* FOOTER */}
-      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: '60px 24px 40px', textAlign: 'center' }}>
+      <footer style={{ borderTop: '1px solid rgba(255,255,255,0.06)', padding: isMobile ? '40px 16px 28px' : '60px 24px 40px', textAlign: 'center' }}>
         <div style={{ fontSize: '24px', fontWeight: '800', color: '#1DB954', marginBottom: '20px', fontFamily: "'Instrument Serif', Georgia, serif" }}>
           LensTrybe
         </div>
@@ -491,6 +502,7 @@ export default function HomePage() {
           background: 'transparent', border: '1px solid rgba(255,255,255,0.2)',
           borderRadius: '100px', padding: '10px 20px', color: 'rgba(255,255,255,0.8)',
           fontSize: '14px', cursor: 'pointer', marginBottom: '24px',
+          minHeight: '44px',
         }}>
           <IconMail /> Subscribe to The Trybe Edit
         </button>
@@ -509,8 +521,12 @@ export default function HomePage() {
             </a>
           ))}
         </div>
-        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>
+        <div style={{ display: 'flex', gap: '16px', justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center', fontSize: '13px', color: 'rgba(255,255,255,0.3)' }}>
           <span>© 2026 LensTrybe. All rights reserved.</span>
+          <span>·</span>
+          <a href="mailto:connect@lenstrybe.com" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>
+            connect@lenstrybe.com
+          </a>
           <span>·</span>
           <a href="/terms" style={{ color: 'rgba(255,255,255,0.3)', textDecoration: 'none' }}>Terms & Conditions</a>
           <span>·</span>
@@ -523,6 +539,11 @@ export default function HomePage() {
       <style>{`
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
+        @media (max-width: 767px) {
+          p, span, a, button, input, select, textarea, label, li, div {
+            font-size: max(14px, 0.875rem);
+          }
+        }
       `}</style>
     </div>
   );

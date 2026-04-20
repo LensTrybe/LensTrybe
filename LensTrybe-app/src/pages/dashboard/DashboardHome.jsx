@@ -40,6 +40,7 @@ function QuickAction({ icon, label, path, navigate }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         padding: '16px',
+        minHeight: '44px',
         borderRadius: 'var(--radius-lg)',
         border: `1px solid ${hovered ? 'var(--green)' : 'var(--border-default)'}`,
         background: hovered ? 'var(--green-dim)' : 'var(--bg-elevated)',
@@ -63,6 +64,7 @@ export default function DashboardHome() {
   const [stats, setStats] = useState({ invoices: 0, messages: 0, bookings: 0, reviews: 0 })
   const [recentInvoices, setRecentInvoices] = useState([])
   const [loading, setLoading] = useState(true)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
@@ -91,24 +93,33 @@ export default function DashboardHome() {
     load()
   }, [user])
 
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   const displayName = profile?.business_name ?? profile?.full_name ?? user?.email ?? 'there'
-  const isFoundingMember = profile?.founding_member === true
+  const isFoundingMember = profile?.founding_member === true && profile?.show_founding_badge !== false
 
   const styles = {
     page: { display: 'flex', flexDirection: 'column', gap: '40px' },
     greeting: { display: 'flex', flexDirection: 'column', gap: '8px' },
     greetingTop: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-    name: { fontFamily: 'var(--font-display)', fontSize: '32px', color: 'var(--text-primary)', fontWeight: 400 },
-    statsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
+    name: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '32px', color: 'var(--text-primary)', fontWeight: 400 },
+    statsGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '16px' },
     section: { display: 'flex', flexDirection: 'column', gap: '16px' },
     sectionHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    quickGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' },
+    quickGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' },
     tableWrap: {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
-      overflow: 'hidden',
+      overflowX: isMobile ? 'auto' : 'hidden',
+      overflowY: 'hidden',
     },
     tableHeader: {
       display: 'grid',
@@ -120,6 +131,7 @@ export default function DashboardHome() {
       fontFamily: 'var(--font-ui)',
       letterSpacing: '0.06em',
       textTransform: 'uppercase',
+      minWidth: isMobile ? '560px' : 'auto',
     },
     tableRow: {
       display: 'grid',
@@ -130,6 +142,7 @@ export default function DashboardHome() {
       color: 'var(--text-secondary)',
       fontFamily: 'var(--font-ui)',
       alignItems: 'center',
+      minWidth: isMobile ? '560px' : 'auto',
     },
     emptyState: {
       padding: '48px 24px',
@@ -147,6 +160,8 @@ export default function DashboardHome() {
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: '16px',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'flex-start' : 'center',
     },
     bannerText: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
   }
@@ -215,7 +230,7 @@ export default function DashboardHome() {
       <div style={styles.section}>
         <div style={styles.sectionHeader}>
           <div style={styles.sectionTitle}>Recent invoices</div>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/finance/invoicing')}>View all →</Button>
+          <Button variant="ghost" size="sm" style={{ minHeight: '44px' }} onClick={() => navigate('/dashboard/finance/invoicing')}>View all →</Button>
         </div>
         <div style={styles.tableWrap}>
           <div style={styles.tableHeader}>
@@ -245,7 +260,7 @@ export default function DashboardHome() {
           <div style={styles.bannerText}>
             Complete your profile to get discovered by more clients. Add a bio, portfolio photos and your specialties.
           </div>
-          <Button variant="secondary" size="sm" onClick={() => navigate('/dashboard/profile/edit-profile')}>
+          <Button variant="secondary" size="sm" style={{ minHeight: '44px' }} onClick={() => navigate('/dashboard/profile/edit-profile')}>
             Complete Profile
           </Button>
         </div>

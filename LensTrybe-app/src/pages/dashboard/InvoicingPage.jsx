@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import html2canvas from 'html2canvas'
 import { jsPDF } from 'jspdf'
 import { supabase } from '../../lib/supabaseClient'
@@ -28,6 +28,22 @@ const EMPTY_LINE = { description: '', quantity: 1, rate: '' }
 
 function getInvoiceItems(invoice) {
   return invoice?.line_items ?? invoice?.items ?? []
+}
+
+/** Merge `brand_kit` row with per-document `invoice` settings from `document_brand_settings` (on `brand_kit`). */
+function mergeInvoiceBrand(brandKit) {
+  const base = brandKit || {}
+  const raw = base.document_brand_settings
+  const docs = raw && typeof raw === 'object' ? raw : {}
+  const inv = docs.invoice && typeof docs.invoice === 'object' ? docs.invoice : {}
+  const primary = inv.primary_colour ?? inv.primary_color ?? base.primary_color ?? '#1DB954'
+  const accent = '#ffffff'
+  const font = inv.font ?? base.font ?? 'Inter'
+  const logo = inv.logo_url || base.logo_url || ''
+  const secondary = base.secondary_color ?? '#ffffff'
+  const hasCustomTemplate = Boolean(inv.custom_template_url)
+  const fontStack = font.includes(' ') ? `"${font}", sans-serif` : `${font}, sans-serif`
+  return { primary, accent, font, logo, secondary, hasCustomTemplate, fontStack }
 }
 
 export default function InvoicingPage() {
@@ -72,10 +88,25 @@ export default function InvoicingPage() {
     lines: [{ ...EMPTY_LINE }],
   })
 
+  const loadBrandKit = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('brand_kit')
+      .select('*')
+      .eq('creative_id', user.id)
+      .maybeSingle()
+    setBrandKit(data ?? null)
+  }, [user])
+
   useEffect(() => {
     loadInvoices()
     loadBrandKit()
-  }, [user])
+  }, [user, loadBrandKit])
+
+  useEffect(() => {
+    window.addEventListener('focus', loadBrandKit)
+    return () => window.removeEventListener('focus', loadBrandKit)
+  }, [loadBrandKit])
 
   useEffect(() => {
     if (profile) {
@@ -97,16 +128,6 @@ export default function InvoicingPage() {
       .order('created_at', { ascending: false })
     setInvoices(data ?? [])
     setLoading(false)
-  }
-
-  async function loadBrandKit() {
-    if (!user) return
-    const { data } = await supabase
-      .from('brand_kit')
-      .select('*')
-      .eq('creative_id', user.id)
-      .maybeSingle()
-    setBrandKit(data ?? null)
   }
 
   function updateLine(i, field, value) {
@@ -333,10 +354,31 @@ export default function InvoicingPage() {
   }
 
   const total = calcTotal(form.lines)
-  const brandColor = brandKit?.primary_color ?? '#1DB954'
-  const brandLogo = brandKit?.logo_url || ''
-  const brandFont = brandKit?.font ?? 'Inter'
-  const brandHeaderBg = { background: brandKit?.primary_color ?? '#1DB954' }
+  const invoiceBrand = useMemo(() => mergeInvoiceBrand(brandKit), [brandKit])
+  const brandColor = invoiceBrand.primary
+  const brandAccent = invoiceBrand.accent
+  const brandLogo = invoiceBrand.logo
+  const brandFontStack = invoiceBrand.fontStack
+  const brandHeaderBg = { background: invoiceBrand.primary }
+  const headerTextColor = invoiceBrand.secondary
+  const invoiceDocSurface = { padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: brandFontStack }
+  const customTemplateBanner = invoiceBrand.hasCustomTemplate ? (
+    <div
+      role="status"
+      style={{
+        marginBottom: '16px',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        border: `1px solid ${brandAccent}55`,
+        background: `${brandAccent}12`,
+        fontSize: '12px',
+        color: '#374151',
+        lineHeight: 1.45,
+      }}
+    >
+      A custom template is active for invoices in Brand Kit. Your colours and font still apply to this layout; the uploaded file is not shown here.
+    </div>
+  ) : null
 
   return (
     <>
@@ -370,7 +412,7 @@ export default function InvoicingPage() {
             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Payment Details</div>
             {!editingBank && (
               <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                {bankDetails.bank_account ? `${bankDetails.bank_name ? bankDetails.bank_name + ' · ' : ''}BSB ${bankDetails.bank_bsb} · Acct ${bankDetails.bank_account}${bankDetails.bank_account_name ? ' · ' + bankDetails.bank_account_name : ''}` : 'No bank details set — these appear on your invoices'}
+                {bankDetails.bank_account ? `${bankDetails.bank_name ? bankDetails.bank_name + ' · ' : ''}BSB ${bankDetails.bank_bsb} · Acct ${bankDetails.bank_account}${bankDetails.bank_account_name ? ' · ' + bankDetails.bank_account_name : ''}` : 'No bank details set. These details appear on your invoices.'}
               </div>
             )}
           </div>
@@ -429,7 +471,7 @@ export default function InvoicingPage() {
               <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{inv.client_email}</div>
             </div>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+              {inv.due_date ? new Date(inv.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not set'}
             </span>
             <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>${inv.amount?.toFixed(2)}</span>
             <Badge variant={statusVariant(inv.status)} size="sm">{inv.status}</Badge>
@@ -457,7 +499,7 @@ export default function InvoicingPage() {
                 <button
                   onClick={() => createInvoice('sent')}
                   disabled={saving || !newInvoice.client_name || !newInvoice.client_email}
-                  style={{ padding: '7px 14px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+                  style={{ padding: '7px 14px', background: brandColor, border: 'none', borderRadius: '8px', color: headerTextColor, fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
                 >
                   {saving ? 'Sending…' : 'Send Invoice'}
                 </button>
@@ -472,41 +514,42 @@ export default function InvoicingPage() {
             )}
 
             {/* Invoice document */}
-            <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
+            <div style={invoiceDocSurface}>
+              {customTemplateBanner}
 
               {/* Header */}
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                       <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFont }}>INVOICE</div>
+                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFontStack }}>INVOICE</div>
                     <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                   </div>
                 </div>
               </div>
 
               {/* Bill To */}
-              <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: brandColor, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
+              <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: `1px solid ${brandAccent}` }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <input value={newInvoice.client_name} onChange={e => setNewInvoice(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                  <input value={newInvoice.client_email} onChange={e => setNewInvoice(p => ({ ...p, client_email: e.target.value }))} placeholder="Client email" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                  <input value={newInvoice.client_phone} onChange={e => setNewInvoice(p => ({ ...p, client_phone: e.target.value }))} placeholder="Phone (optional)" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                  <input value={newInvoice.client_address} onChange={e => setNewInvoice(p => ({ ...p, client_address: e.target.value }))} placeholder="Address (optional)" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                  <input type="date" value={newInvoice.due_date} onChange={e => setNewInvoice(p => ({ ...p, due_date: e.target.value }))} style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '50%', boxSizing: 'border-box' }} />
+                  <input value={newInvoice.client_name} onChange={e => setNewInvoice(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" style={{ padding: '8px 12px', border: `1px solid ${brandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                  <input value={newInvoice.client_email} onChange={e => setNewInvoice(p => ({ ...p, client_email: e.target.value }))} placeholder="Client email" style={{ padding: '8px 12px', border: `1px solid ${brandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                  <input value={newInvoice.client_phone} onChange={e => setNewInvoice(p => ({ ...p, client_phone: e.target.value }))} placeholder="Phone (optional)" style={{ padding: '8px 12px', border: `1px solid ${brandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                  <input value={newInvoice.client_address} onChange={e => setNewInvoice(p => ({ ...p, client_address: e.target.value }))} placeholder="Address (optional)" style={{ padding: '8px 12px', border: `1px solid ${brandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                  <input type="date" value={newInvoice.due_date} onChange={e => setNewInvoice(p => ({ ...p, due_date: e.target.value }))} style={{ padding: '8px 12px', border: `1px solid ${brandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '50%', boxSizing: 'border-box' }} />
                 </div>
               </div>
 
               {/* Line items */}
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
                 <thead>
-                  <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandColor}18` }}>
+                  <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandAccent}33` }}>
                     <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
                     <th style={{ textAlign: 'center', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '80px' }}>Qty</th>
                     <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '100px' }}>Rate</th>
@@ -543,9 +586,9 @@ export default function InvoicingPage() {
               </table>
 
               {/* Total */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px', paddingTop: '16px', borderTop: `1px solid ${brandAccent}` }}>
                 <div style={{ width: '240px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '2px solid #111' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `2px solid ${brandAccent}` }}>
                     <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
                     <span style={{ fontSize: '16px', fontWeight: 800, color: brandColor }}>{formatMoney(newInvoice.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0))}</span>
                   </div>
@@ -554,8 +597,8 @@ export default function InvoicingPage() {
 
               {/* Payment details */}
               {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', borderLeft: `4px solid ${brandAccent}`, borderTop: `1px solid ${brandAccent}` }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
                   {bankDetails.bank_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div>}
                   {bankDetails.bank_account_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>}
                   {bankDetails.bank_bsb && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div>}
@@ -564,12 +607,12 @@ export default function InvoicingPage() {
               )}
 
               {/* Notes */}
-              <div>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
+              <div style={{ paddingTop: '20px', borderTop: `1px solid ${brandAccent}` }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
                 <textarea value={newInvoice.notes ?? ''} onChange={e => setNewInvoice(p => ({ ...p, notes: e.target.value }))} placeholder="Add notes, payment instructions..." style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', minHeight: '80px', resize: 'vertical', color: '#111', boxSizing: 'border-box' }} />
               </div>
 
-              <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+              <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: `1px solid ${brandAccent}`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
                 Thank you for your business
               </div>
             </div>
@@ -607,12 +650,13 @@ export default function InvoicingPage() {
                 <button onClick={() => {
                   const printContents = document.getElementById('invoice-print-area').innerHTML
                   const win = window.open('', '_blank')
+                  const safeFont = brandFontStack.replace(/</g, '')
                   win.document.write(`
                     <html>
                       <head>
                         <title>Invoice - ${showView.client_name}</title>
                         <style>
-                          body { font-family: Arial, sans-serif; margin: 0; padding: 40px; }
+                          body { font-family: ${safeFont}; margin: 0; padding: 40px; }
                           @media print { body { padding: 0; } }
                         </style>
                       </head>
@@ -631,7 +675,7 @@ export default function InvoicingPage() {
                   </button>
                 )}
                 {showView.status !== 'paid' && (
-                  <button type="button" disabled={sending} onClick={() => sendInvoice(showView)} style={{ padding: '7px 14px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.65 : 1 }}>
+                  <button type="button" disabled={sending} onClick={() => sendInvoice(showView)} style={{ padding: '7px 14px', background: brandColor, border: 'none', borderRadius: '8px', color: headerTextColor, fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.65 : 1 }}>
                     {sending ? 'Sending…' : showView.status === 'sent' ? 'Resend Invoice' : 'Send Invoice'}
                   </button>
                 )}
@@ -649,20 +693,21 @@ export default function InvoicingPage() {
             )}
 
             {/* Invoice document */}
-            <div ref={invoicePrintRef} id="invoice-print-area" style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
+            <div ref={invoicePrintRef} id="invoice-print-area" style={invoiceDocSurface}>
+              {customTemplateBanner}
 
               {/* Header */}
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>
-                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                      <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                       <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFont }}>INVOICE</div>
+                    <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFontStack }}>INVOICE</div>
                     <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
                     <div style={{ fontSize: '13px', opacity: 0.85 }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                   </div>
@@ -670,8 +715,8 @@ export default function InvoicingPage() {
               </div>
 
               {/* Bill to */}
-              <div style={{ marginBottom: '32px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: brandColor, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
+              <div style={{ marginBottom: '32px', paddingBottom: '16px', borderBottom: `1px solid ${brandAccent}` }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
                 {editingInvoice ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <input value={editForm.client_name} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111' }} placeholder="Client name" />
@@ -688,7 +733,7 @@ export default function InvoicingPage() {
               </div>
 
               {/* Status badge */}
-              <div style={{ marginBottom: '24px' }}>
+              <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: `1px solid ${brandAccent}` }}>
                 <span style={{ padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', background: showView.status === 'paid' ? '#dcfce7' : showView.status === 'overdue' ? '#fee2e2' : '#f3f4f6', color: showView.status === 'paid' ? '#166534' : showView.status === 'overdue' ? '#991b1b' : '#374151' }}>
                   {showView.status}
                 </span>
@@ -697,7 +742,7 @@ export default function InvoicingPage() {
               {/* Line items table */}
               <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
                 <thead>
-                  <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandColor}18` }}>
+                  <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandAccent}33` }}>
                     <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
                     <th style={{ textAlign: 'center', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '80px' }}>Qty</th>
                     <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '100px' }}>Rate</th>
@@ -744,9 +789,9 @@ export default function InvoicingPage() {
               </table>
 
               {/* Total */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px' }}>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px', paddingTop: '16px', borderTop: `1px solid ${brandAccent}` }}>
                 <div style={{ width: '240px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: `2px solid ${brandColor}` }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `2px solid ${brandAccent}` }}>
                     <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
                     <span style={{ fontSize: '16px', fontWeight: 800, color: brandColor }}>
                       {formatMoney(editingInvoice
@@ -759,8 +804,8 @@ export default function InvoicingPage() {
 
               {/* Payment details */}
               {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', borderLeft: `4px solid ${brandAccent}`, borderTop: `1px solid ${brandAccent}` }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
                   {bankDetails.bank_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div>}
                   {bankDetails.bank_account_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>}
                   {bankDetails.bank_bsb && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div>}
@@ -770,8 +815,8 @@ export default function InvoicingPage() {
 
               {/* Notes */}
               {(editingInvoice || showView.notes) && (
-                <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
+                <div style={{ borderTop: `1px solid ${brandAccent}`, paddingTop: '20px' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: brandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
                   {editingInvoice ? (
                     <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', minHeight: '80px', resize: 'vertical' }} placeholder="Add notes..." />
                   ) : showView.notes ? (
@@ -780,7 +825,7 @@ export default function InvoicingPage() {
                 </div>
               )}
 
-              <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+              <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${brandAccent}`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
                 Thank you for your business
               </div>
             </div>

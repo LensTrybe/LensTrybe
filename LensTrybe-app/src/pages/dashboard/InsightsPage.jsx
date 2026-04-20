@@ -94,7 +94,7 @@ export default function InsightsPage() {
   const tierColors = { basic: 'var(--text-muted)', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
   const displayName = profile?.business_name ?? user?.email ?? 'there'
-  const isFoundingMember = profile?.founding_member === true
+  const isFoundingMember = profile?.founding_member === true && profile?.show_founding_badge !== false
 
   function statusColor(status) {
     if (status === 'paid') return '#1DB954'

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -92,11 +92,20 @@ const tiers = [
 export default function PricingPage() {
   const navigate = useNavigate()
   const [annual, setAnnual] = useState(true)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const styles = {
-    page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px' },
+    page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px', overflowX: 'hidden' },
     header: {
-      padding: '80px 40px 48px',
+      padding: isMobile ? '48px 16px 32px' : '80px 40px 48px',
       maxWidth: '1280px',
       margin: '0 auto',
       textAlign: 'center',
@@ -114,7 +123,7 @@ export default function PricingPage() {
     },
     title: {
       fontFamily: 'var(--font-display)',
-      fontSize: 'clamp(36px, 5vw, 56px)',
+      fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 5vw, 56px)',
       color: 'var(--text-primary)',
       fontWeight: 400,
       maxWidth: '600px',
@@ -160,17 +169,17 @@ export default function PricingPage() {
     },
     grid: {
       display: 'grid',
-      gridTemplateColumns: 'repeat(4, 1fr)',
+      gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)',
       gap: '16px',
       maxWidth: '1280px',
       margin: '0 auto',
-      padding: '0 40px',
+      padding: isMobile ? '0 16px' : '0 40px',
     },
     card: (borderColor, hasBadge) => ({
       background: 'var(--bg-elevated)',
       border: `1px solid ${borderColor}`,
       borderRadius: 'var(--radius-xl)',
-      padding: `${hasBadge ? '44px' : '32px'} 28px 32px`,
+      padding: `${hasBadge ? (isMobile ? '40px' : '44px') : (isMobile ? '24px' : '32px')} ${isMobile ? '20px' : '28px'} ${isMobile ? '24px' : '32px'}`,
       display: 'flex',
       flexDirection: 'column',
       gap: '24px',
@@ -185,7 +194,7 @@ export default function PricingPage() {
       fontFamily: 'var(--font-ui)',
     },
     tierDesc: {
-      fontSize: '13px',
+      fontSize: '14px',
       color: 'var(--text-secondary)',
       fontFamily: 'var(--font-ui)',
       lineHeight: 1.5,
@@ -202,7 +211,7 @@ export default function PricingPage() {
       lineHeight: 1,
     },
     pricePeriod: {
-      fontSize: '13px',
+      fontSize: '14px',
       color: 'var(--text-muted)',
       fontFamily: 'var(--font-ui)',
     },
@@ -222,7 +231,7 @@ export default function PricingPage() {
       display: 'flex',
       alignItems: 'flex-start',
       gap: '10px',
-      fontSize: '13px',
+      fontSize: '14px',
       color: 'var(--text-secondary)',
       fontFamily: 'var(--font-ui)',
       lineHeight: 1.4,
@@ -239,10 +248,10 @@ export default function PricingPage() {
     },
     note: {
       textAlign: 'center',
-      fontSize: '13px',
+      fontSize: '14px',
       color: 'var(--text-muted)',
       fontFamily: 'var(--font-ui)',
-      padding: '32px 40px 0',
+      padding: isMobile ? '24px 16px 0' : '32px 40px 0',
       maxWidth: '1280px',
       margin: '0 auto',
     },
@@ -269,7 +278,7 @@ export default function PricingPage() {
           No commissions. No lead fees. Just a flat subscription that pays for itself with one booking.
         </p>
 
-        <div style={styles.toggle}>
+        <div style={{ ...styles.toggle, margin: '0 auto' }}>
           <button style={styles.toggleBtn(!annual)} onClick={() => setAnnual(false)}>
             Monthly
           </button>
@@ -333,6 +342,7 @@ export default function PricingPage() {
             <Button
               variant={tier.ctaVariant}
               size="md"
+              style={{ minHeight: '44px' }}
               onClick={() => navigate(tier.monthly === 0 ? '/join' : `/join?plan=${tier.name.toLowerCase()}`)}
             >
               {tier.cta}

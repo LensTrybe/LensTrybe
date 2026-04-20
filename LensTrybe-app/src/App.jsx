@@ -33,6 +33,7 @@ import TeamAcceptPage from './pages/TeamAcceptPage'
 import AvailabilityPage from './pages/dashboard/AvailabilityPage'
 import JobBoardPage from './pages/dashboard/JobBoardPage'
 import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage'
+import PublicPortfolioWebsitePage from './pages/public/PortfolioWebsitePage'
 import ClientDashboardPage from './pages/ClientDashboardPage'
 import ExplorePage from './pages/public/ExplorePage'
 import PublicProfilePage from './pages/public/PublicProfilePage'
@@ -40,6 +41,8 @@ import PasswordResetPage from './pages/PasswordResetPage'
 import TermsPage from './pages/legal/TermsPage'
 import PrivacyPage from './pages/legal/PrivacyPage'
 import CookiesPage from './pages/legal/CookiesPage'
+import TrybeEditPage from './pages/public/TrybeEditPage'
+import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 
 function ComingSoon({ page }) {
   return (
@@ -104,6 +107,9 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/the-trybe-edit" element={<TrybeEditPage />} />
+        <Route path="/the-trybe-edit/issue-01" element={<TrybeEditIssue01 />} />
+        <Route path="/trybe-edit" element={<Navigate to="/the-trybe-edit" replace />} />
       </Route>
 
       {/* Protected dashboard routes with sidebar */}
@@ -148,6 +154,9 @@ export default function App() {
       <Route path="/portal/:token" element={<PublicPortalPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
       <Route path="/team/accept/:token" element={<TeamAcceptPage />} />
+
+      {/* Public creative portfolio website (subdomain equivalent: /site/{custom_domain slug}) */}
+      <Route path="/site/:slug" element={<PublicPortfolioWebsitePage />} />
 
       {/* Fallback */}
       <Route path="*" element={<ComingSoon page="404 — Page Not Found" />} />

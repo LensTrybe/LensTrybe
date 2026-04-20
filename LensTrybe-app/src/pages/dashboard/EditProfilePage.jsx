@@ -59,6 +59,19 @@ const SPECIALTIES_MAP = {
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
+function profileWantsFoundingBadgeVisible(p) {
+  if (!p || p.show_founding_badge == null) return true
+  const v = p.show_founding_badge
+  if (v === false || v === 'false' || v === 0 || v === '0') return false
+  return true
+}
+
+function profileIsFoundingMember(p) {
+  if (!p) return false
+  const v = p.founding_member
+  return v === true || v === 'true' || v === 1 || v === '1' || v === 't'
+}
+
 export default function EditProfilePage() {
   const { user, profile, fetchUserData } = useAuth()
   const [loading, setLoading] = useState(true)
@@ -69,6 +82,8 @@ export default function EditProfilePage() {
   const [portfolioItems, setPortfolioItems] = useState([])
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false)
   const [otherCredentialName, setOtherCredentialName] = useState('')
+  const [showFoundingBadge, setShowFoundingBadge] = useState(true)
+  const [savingFoundingBadge, setSavingFoundingBadge] = useState(false)
 
   const [credentials, setCredentials] = useState({
     abn: '',
@@ -141,6 +156,7 @@ export default function EditProfilePage() {
         other_url: profile.other_url ?? null,
       })
       setOtherCredentialName(profile.other_credential_name ?? '')
+      setShowFoundingBadge(profileWantsFoundingBadgeVisible(profile))
       setLoading(false)
       void loadPortfolio()
     }
@@ -193,6 +209,26 @@ export default function EditProfilePage() {
         ? prev[field].filter(v => v !== value)
         : [...prev[field], value]
     }))
+  }
+
+  async function persistFoundingBadge(nextChecked) {
+    if (!user?.id || !profileIsFoundingMember(profile)) return
+    const prev = showFoundingBadge
+    setShowFoundingBadge(nextChecked)
+    setSavingFoundingBadge(true)
+    const { error } = await supabase.from('profiles').update({ show_founding_badge: nextChecked }).eq('id', user.id)
+    if (error) {
+      setShowFoundingBadge(prev)
+      setSavingFoundingBadge(false)
+      return
+    }
+    await fetchUserData(user.id)
+    setSavingFoundingBadge(false)
+  }
+
+  function handleFoundingBadgeChange(e) {
+    const next = e.target.checked
+    void persistFoundingBadge(next)
   }
 
   async function handleAvatarUpload(e) {
@@ -339,6 +375,77 @@ export default function EditProfilePage() {
               placeholder="I'm a Brisbane-based wedding photographer with 8 years of experience capturing authentic moments…"
             />
           </div>
+          {profileIsFoundingMember(profile) && (
+            <div style={{ marginTop: '8px', paddingTop: '20px', borderTop: '1px solid var(--border-default)' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '20px', flexWrap: 'wrap' }}>
+                <div style={{ flex: '1', minWidth: '200px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Founding Member Badge</div>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '6px 0 0', lineHeight: 1.5 }}>
+                    Show your Founding Member badge on your public and private profile.
+                  </p>
+                </div>
+                <label
+                  style={{
+                    position: 'relative',
+                    display: 'inline-block',
+                    width: '48px',
+                    height: '28px',
+                    flexShrink: 0,
+                    cursor: savingFoundingBadge ? 'wait' : 'pointer',
+                    opacity: savingFoundingBadge ? 0.7 : 1,
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    role="switch"
+                    aria-checked={showFoundingBadge}
+                    checked={showFoundingBadge}
+                    disabled={savingFoundingBadge}
+                    onChange={handleFoundingBadgeChange}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '48px',
+                      height: '28px',
+                      margin: 0,
+                      opacity: 0,
+                      cursor: savingFoundingBadge ? 'wait' : 'pointer',
+                      zIndex: 2,
+                    }}
+                  />
+                  <span
+                    aria-hidden
+                    style={{
+                      display: 'block',
+                      width: '48px',
+                      height: '28px',
+                      borderRadius: '14px',
+                      background: showFoundingBadge ? '#1DB954' : 'var(--border-default)',
+                      transition: 'background 0.2s',
+                      position: 'relative',
+                      pointerEvents: 'none',
+                    }}
+                  >
+                    <span
+                      aria-hidden
+                      style={{
+                        position: 'absolute',
+                        top: '3px',
+                        left: showFoundingBadge ? '23px' : '3px',
+                        width: '22px',
+                        height: '22px',
+                        borderRadius: '50%',
+                        background: '#fff',
+                        transition: 'left 0.2s',
+                        boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                        pointerEvents: 'none',
+                      }}
+                    />
+                  </span>
+                </label>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

@@ -38,8 +38,16 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [reviewForm, setReviewForm] = useState({ rating: 5, body: '', reviewer_name: '' })
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewSent, setReviewSent] = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => { loadProfile() }, [id])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadProfile() {
     const [profileRes, portfolioRes, reviewsRes, availabilityRes] = await Promise.all([
@@ -131,37 +139,51 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   const displayName = profile.business_name ?? 'Creative'
   const tier = profile.subscription_tier?.toLowerCase()
+
+  function profileVisitWebsiteHref() {
+    const vanity = (profile.portfolio_website_vanity_url ?? '').trim()
+    if (vanity) {
+      if (/^https?:\/\//i.test(vanity)) return vanity
+      return `https://${vanity}`
+    }
+    const slug = (profile.custom_domain ?? '').trim().toLowerCase()
+    if (profile.portfolio_website_active && slug && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug) && slug.length >= 2 && slug.length <= 63) {
+      return `https://${slug}.lenstrybe.com`
+    }
+    return null
+  }
+  const visitWebsiteHref = profileVisitWebsiteHref()
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating ?? 0), 0) / reviews.length).toFixed(1) : null
 
   const tierBadge = {
-    elite: { label: 'Elite', color: '#EAB308', bg: 'rgba(234,179,8,0.12)', border: 'rgba(234,179,8,0.3)' },
-    expert: { label: 'Expert', color: 'var(--green)', bg: 'var(--green-dim)', border: 'rgba(29,185,84,0.3)' },
-    pro: { label: 'Pro', color: 'var(--green)', bg: 'var(--green-dim)', border: 'rgba(29,185,84,0.3)' },
+    pro: { label: 'Pro', color: '#60A5FA', bg: 'rgba(59,130,246,0.14)', border: 'rgba(96,165,250,0.4)' },
+    expert: { label: 'Expert', color: '#A855F7', bg: 'rgba(168,85,247,0.14)', border: 'rgba(168,85,247,0.4)' },
+    elite: { label: 'Elite', color: '#1DB954', bg: 'rgba(29,185,84,0.14)', border: 'rgba(29,185,84,0.45)' },
   }
   const badge = tierBadge[tier]
 
   const styles = {
     page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px' },
-    hero: { background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-default)', padding: '48px 40px', maxWidth: '1280px', margin: '0 auto' },
-    heroInner: { display: 'flex', alignItems: 'flex-start', gap: '32px', flexWrap: 'wrap' },
+    hero: { background: 'var(--bg-elevated)', borderBottom: '1px solid var(--border-default)', padding: isMobile ? '32px 16px' : '48px 40px', maxWidth: '1280px', margin: '0 auto' },
+    heroInner: { display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', gap: '32px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
     avatar: { width: '120px', height: '120px', borderRadius: 'var(--radius-full)', objectFit: 'cover', border: '2px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' },
-    heroContent: { flex: 1, minWidth: 0 },
-    nameRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px' },
+    heroContent: { flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto', textAlign: isMobile ? 'center' : 'left' },
+    nameRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: isMobile ? 'center' : 'flex-start' },
     name: { fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 4vw, 40px)', color: 'var(--text-primary)', fontWeight: 400 },
     location: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: '12px' },
-    skillRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px' },
+    skillRow: { display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '6px', marginBottom: '16px', overflowX: isMobile ? 'auto' : 'visible', justifyContent: isMobile ? 'flex-start' : 'flex-start', paddingBottom: isMobile ? '4px' : '0' },
     bio: { fontSize: '15px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, maxWidth: '640px', marginBottom: '20px' },
-    heroActions: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center' },
+    heroActions: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' },
     ratingRow: { display: 'flex', alignItems: 'center', gap: '8px' },
     ratingNum: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)' },
     ratingCount: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    body: { maxWidth: '1280px', margin: '0 auto', padding: '40px' },
+    body: { maxWidth: '1280px', margin: '0 auto', padding: isMobile ? '24px 16px' : '40px' },
     section: { marginBottom: '48px' },
     sectionTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400, marginBottom: '24px' },
-    portfolioGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' },
+    portfolioGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' },
     portfolioItem: { borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', transition: 'transform var(--transition-base)' },
     portfolioImg: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-    reviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px' },
+    reviewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' },
     reviewCard: {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
@@ -185,7 +207,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       fontStyle: 'italic',
     },
     specialtySection: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-    socialLink: { fontSize: '13px', color: 'var(--green)', fontFamily: 'var(--font-ui)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' },
+    socialLink: { fontSize: '14px', color: 'var(--green)', fontFamily: 'var(--font-ui)', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' },
     lightboxOverlay: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '40px' },
     lightboxImg: { maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
@@ -193,7 +215,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="public-profile-page">
       <div style={styles.hero}>
         <div style={styles.heroInner}>
           {profile.avatar_url
@@ -208,7 +230,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                   {badge.label}
                 </div>
               )}
-              {profile.founding_member && (
+              {profile.founding_member === true && profile.show_founding_badge !== false && (
                 <div style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: 'var(--radius-full)', background: 'linear-gradient(90deg, rgba(29,185,84,0.15), rgba(234,179,8,0.15))', border: '1px solid rgba(234,179,8,0.3)', color: '#EAB308', fontFamily: 'var(--font-ui)' }}>
                   ✦ Founding Member
                 </div>
@@ -244,7 +266,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               </div>
             )}
 
-            <div style={styles.heroActions}>
+            <div style={styles.heroActions} className={isMobile ? 'public-profile-mobile-actions' : ''}>
+              {visitWebsiteHref && (
+                <Button
+                  variant="secondary"
+                  size="lg"
+                  type="button"
+                  onClick={() => window.open(visitWebsiteHref, '_blank', 'noopener,noreferrer')}
+                >
+                  Visit Website
+                </Button>
+              )}
               {!previewMode && (
                 <Button variant="primary" size="lg" onClick={() => user ? setShowEnquire(true) : setShowAuthGate(true)}>
                   Enquire Now
@@ -254,7 +286,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 <button
                   type="button"
                   onClick={() => (user ? setShowReview(true) : setShowAuthGate(true))}
-                  style={{ padding: '10px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                  style={{ padding: '10px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)', minHeight: '44px', width: isMobile ? '100%' : 'auto' }}
                 >
                   ★ Leave a Review
                 </button>
@@ -456,6 +488,27 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           </div>
         </div>
       </Modal>
+      <style>{`
+        @media (max-width: 767px) {
+          .public-profile-page {
+            overflow-x: hidden;
+          }
+          .public-profile-mobile-actions > * {
+            width: 100%;
+            min-height: 44px;
+          }
+          .public-profile-page p,
+          .public-profile-page span,
+          .public-profile-page a,
+          .public-profile-page button,
+          .public-profile-page input,
+          .public-profile-page textarea,
+          .public-profile-page label,
+          .public-profile-page div {
+            font-size: max(14px, 0.875rem);
+          }
+        }
+      `}</style>
     </div>
   )
 }

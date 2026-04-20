@@ -26,7 +26,7 @@ const nav = [
   { label: 'Settings', path: '/dashboard/settings', icon: '⚙', section: 'Account' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseMobile }) {
   const { profile, user } = useAuth()
   const { hasFeature, tier } = useSubscription()
   const navigate = useNavigate()
@@ -148,70 +148,102 @@ export default function Sidebar() {
   let currentSection = null
 
   return (
-    <aside style={styles.sidebar}>
-      <div style={styles.logo} onClick={() => navigate('/')}>
-        <span style={styles.logoText}>LensTrybe</span>
-        <button style={styles.collapseBtn} onClick={e => { e.stopPropagation(); setCollapsed(p => !p) }}>
-          {collapsed ? '→' : '←'}
-        </button>
-      </div>
+    <div
+      className={isMobile ? '' : `sidebar-drawer${mobileOpen ? ' open' : ''}`}
+      style={isMobile ? {
+        position: 'fixed',
+        top: 0,
+        left: mobileOpen ? '0' : '-100vw',
+        width: '100vw',
+        height: '100vh',
+        zIndex: 1001,
+        transition: 'left 0.25s ease',
+      } : undefined}
+    >
+      <aside style={{ ...styles.sidebar, width: isMobile ? '100vw' : styles.sidebar.width }}>
+          <div style={styles.logo} onClick={() => navigate('/')}>
+            <span style={styles.logoText}>LensTrybe</span>
+            {!isMobile && (
+              <button style={styles.collapseBtn} onClick={e => { e.stopPropagation(); setCollapsed(p => !p) }}>
+                {collapsed ? '→' : '←'}
+              </button>
+            )}
+          </div>
 
-      <nav style={styles.nav}>
-        {nav.map((item, i) => {
-          const locked = item.feature ? !hasFeature(item.feature) : false
-          const showSection = item.section !== currentSection
-          if (showSection) currentSection = item.section
+          <nav style={styles.nav}>
+            {nav.map((item, i) => {
+              const locked = item.feature ? !hasFeature(item.feature) : false
+              const showSection = item.section !== currentSection
+              if (showSection) currentSection = item.section
 
-          return (
-            <div key={i}>
-              {showSection && item.section && (
-                <span style={styles.sectionLabel}>{collapsed ? '·' : item.section}</span>
-              )}
-              {locked ? (
-                <div style={styles.navItem(false, true)}>
-                  <span style={styles.icon}>{item.icon}</span>
-                  <span style={styles.label}>{item.label}</span>
-                  <span style={styles.lockIcon}>🔒</span>
+              return (
+                <div key={i}>
+                  {showSection && item.section && (
+                    <span style={styles.sectionLabel}>{collapsed ? '·' : item.section}</span>
+                  )}
+                  {locked ? (
+                    <div style={styles.navItem(false, true)}>
+                      <span style={styles.icon}>{item.icon}</span>
+                      <span style={styles.label}>{item.label}</span>
+                      <span style={styles.lockIcon}>🔒</span>
+                    </div>
+                  ) : (
+                    <NavLink to={item.path} style={({ isActive }) => styles.navItem(isActive, false)} onClick={() => onCloseMobile?.()}>
+                      <span style={styles.icon}>{item.icon}</span>
+                      <span style={styles.label}>{item.label}</span>
+                    </NavLink>
+                  )}
                 </div>
-              ) : (
-                <NavLink to={item.path} style={({ isActive }) => styles.navItem(isActive, false)}>
-                  <span style={styles.icon}>{item.icon}</span>
-                  <span style={styles.label}>{item.label}</span>
-                </NavLink>
-              )}
-            </div>
-          )
-        })}
-      </nav>
+              )
+            })}
+          </nav>
 
-      <div style={styles.profile}>
-        <div style={styles.avatar}>
-          {profile?.avatar_url
-            ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()
-          }
-        </div>
-        <div style={styles.profileInfo}>
-          <div style={styles.profileName}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
-          <div style={styles.profileTier}>{tier} plan</div>
-        </div>
-      </div>
-      <div
-        onClick={async () => { await supabase.auth.signOut(); navigate('/') }}
-        style={{
-          padding: collapsed ? '12px 0' : '12px 20px',
-          display: 'flex', alignItems: 'center', gap: '10px',
-          justifyContent: collapsed ? 'center' : 'flex-start',
-          fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer',
-          fontFamily: 'var(--font-ui)', borderTop: '1px solid var(--border-subtle)',
-          transition: 'color var(--transition-fast)',
-        }}
-        onMouseEnter={e => e.currentTarget.style.color = 'var(--error)'}
-        onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
-      >
-        <span style={{ fontSize: '13px' }}>→</span>
-        {!collapsed && <span>Sign Out</span>}
-      </div>
-    </aside>
+          {profile && (
+            <div style={{ padding: collapsed ? '8px 0' : '8px 12px 16px', borderTop: '1px solid var(--border-subtle)' }}>
+              <NavLink
+                to="/the-trybe-edit"
+                style={({ isActive }) => ({
+                  ...styles.navItem(isActive, false),
+                  borderRadius: 'var(--radius-md)',
+                  margin: collapsed ? '0 8px' : '0 8px',
+                })}
+                onClick={() => onCloseMobile?.()}
+              >
+                <span style={styles.icon}>✎</span>
+                <span style={styles.label}>The Trybe Edit</span>
+              </NavLink>
+            </div>
+          )}
+
+          <div style={styles.profile}>
+            <div style={styles.avatar}>
+              {profile?.avatar_url
+                ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()
+              }
+            </div>
+            <div style={styles.profileInfo}>
+              <div style={styles.profileName}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
+              <div style={styles.profileTier}>{tier} plan</div>
+            </div>
+          </div>
+          <div
+            onClick={async () => { await supabase.auth.signOut(); onCloseMobile?.(); navigate('/') }}
+            style={{
+              padding: collapsed ? '12px 0' : '12px 20px',
+              display: 'flex', alignItems: 'center', gap: '10px',
+              justifyContent: collapsed ? 'center' : 'flex-start',
+              fontSize: '13px', color: 'var(--text-muted)', cursor: 'pointer',
+              fontFamily: 'var(--font-ui)', borderTop: '1px solid var(--border-subtle)',
+              transition: 'color var(--transition-fast)',
+            }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--error)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+          >
+            <span style={{ fontSize: '13px' }}>→</span>
+            {!collapsed && <span>Sign Out</span>}
+          </div>
+      </aside>
+    </div>
   )
 }

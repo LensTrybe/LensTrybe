@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Outlet, NavLink, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../ui/Button'
@@ -8,6 +8,8 @@ export default function PublicLayout() {
   const { user, profile, clientAccount, isCreative, loading } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const dropdownRef = useRef(null)
 
   useEffect(() => {
@@ -18,6 +20,14 @@ export default function PublicLayout() {
     }
     document.addEventListener('mousedown', handleClickOutside)
     return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   async function signOut() {
@@ -42,9 +52,66 @@ export default function PublicLayout() {
       display: 'flex', alignItems: 'center', gap: '8px',
     },
     tagline: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.05em' },
-    navLinks: { display: 'flex', alignItems: 'center', gap: '32px' },
-    navLink: { fontSize: 'var(--text-sm)', color: 'var(--text-secondary)', textDecoration: 'none', transition: 'color var(--transition-fast)', fontFamily: 'var(--font-ui)' },
     actions: { display: 'flex', alignItems: 'center', gap: '12px' },
+    mobileMenuButton: {
+      width: '44px',
+      height: '44px',
+      borderRadius: '10px',
+      border: '1px solid var(--border-default)',
+      background: 'transparent',
+      color: 'var(--text-primary)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      fontSize: '20px',
+      cursor: 'pointer',
+      flexShrink: 0,
+    },
+    mobileMenu: {
+      position: 'fixed',
+      inset: 0,
+      background: 'rgba(0,0,0,0.72)',
+      zIndex: 300,
+      display: 'flex',
+      justifyContent: 'flex-end',
+      flexDirection: 'column',
+      padding: '16px',
+      paddingTop: '80px',
+    },
+    mobileMenuPanel: {
+      background: 'var(--bg-overlay)',
+      border: '1px solid var(--border-default)',
+      borderRadius: '16px',
+      padding: '16px',
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '10px',
+      maxHeight: 'calc(100vh - 96px)',
+      overflowY: 'auto',
+    },
+    mobileMenuLink: {
+      width: '100%',
+      minHeight: '52px',
+      borderRadius: '10px',
+      border: '1px solid var(--border-default)',
+      background: 'var(--bg-elevated)',
+      color: 'var(--text-primary)',
+      fontSize: '16px',
+      fontFamily: 'var(--font-ui)',
+      textAlign: 'left',
+      padding: '12px 14px',
+      cursor: 'pointer',
+    },
+    mobileProfile: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '10px',
+      border: '1px solid var(--border-default)',
+      background: 'var(--bg-elevated)',
+      borderRadius: '12px',
+      padding: '10px 12px',
+      marginBottom: '4px',
+    },
     userBtn: {
       display: 'flex', alignItems: 'center', gap: '8px',
       padding: '6px 12px', borderRadius: 'var(--radius-lg)',
@@ -81,96 +148,173 @@ export default function PublicLayout() {
 
   return (
     <div>
-      <nav style={styles.nav}>
+      <nav style={{ ...styles.nav, padding: isMobile ? '0 16px' : styles.nav.padding, position: 'sticky' }}>
         <div style={styles.logo} onClick={() => navigate('/')}>
           <span>LensTrybe</span>
-          <span style={styles.tagline}>Connect. Capture. Create.</span>
+          {!isMobile && <span style={styles.tagline}>Connect. Capture. Create.</span>}
         </div>
 
-        <div style={styles.navLinks}>
-          <NavLink to="/creatives" style={styles.navLink}>Find a Creative</NavLink>
-          <NavLink to="/pricing" style={styles.navLink}>Pricing</NavLink>
-        </div>
+        {isMobile ? (
+          <button
+            type="button"
+            style={styles.mobileMenuButton}
+            onClick={() => setMobileMenuOpen(prev => !prev)}
+            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+          >
+            ☰
+          </button>
+        ) : (
+          <div style={styles.actions}>
+            {!loading && (
+              user ? (
+                <div style={{ position: 'relative' }} ref={dropdownRef}>
+                  <button
+                    style={styles.userBtn}
+                    onClick={() => setDropdownOpen(p => !p)}
+                    onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
+                    onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
+                  >
+                    <div style={styles.avatar}>
+                      {profile?.avatar_url
+                        ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                        : (displayName[0] ?? 'U').toUpperCase()
+                      }
+                    </div>
+                    <span>{shortName}</span>
+                    <span style={{ ...styles.chevron, transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
+                  </button>
 
-        <div style={styles.actions}>
-          {!loading && (
-            user ? (
-              <div style={{ position: 'relative' }} ref={dropdownRef}>
-                <button
-                  style={styles.userBtn}
-                  onClick={() => setDropdownOpen(p => !p)}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-                >
-                  <div style={styles.avatar}>
-                    {profile?.avatar_url
-                      ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
-                      : (displayName[0] ?? 'U').toUpperCase()
-                    }
-                  </div>
-                  <span>{shortName}</span>
-                  <span style={{ ...styles.chevron, transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)' }}>▾</span>
-                </button>
-
-                {dropdownOpen && (
-                  <div style={styles.dropdown}>
-                    <div style={styles.dropdownName}>{displayName}</div>
-                    <button
-                      style={styles.dropdownItem}
-                      onClick={() => {
-                        setDropdownOpen(false)
-                        const p = window.location.pathname
-                        if (p.startsWith('/portal/') || p.startsWith('/deliver/')) return
-                        navigate(isCreative ? '/dashboard' : '/client-dashboard')
-                      }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      ⊞ Dashboard
-                    </button>
-                    <button
-                      style={styles.dropdownItem}
-                      onClick={() => { setDropdownOpen(false); navigate('/dashboard/settings') }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      ⚙ Settings
-                    </button>
-                    <div style={styles.dropdownDivider} />
-                    <button
-                      style={{ ...styles.dropdownItem, color: 'var(--error)' }}
-                      onClick={signOut}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      → Sign Out
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log In</Button>
-                <Button variant="secondary" size="sm" onClick={() => navigate('/creatives')}>Find a Creative</Button>
-                <Button variant="primary" size="sm" onClick={() => navigate('/join')}>Join as a Creative</Button>
-              </>
-            )
-          )}
-        </div>
+                  {dropdownOpen && (
+                    <div style={styles.dropdown}>
+                      <div style={styles.dropdownName}>{displayName}</div>
+                      <button
+                        style={styles.dropdownItem}
+                        onClick={() => {
+                          setDropdownOpen(false)
+                          const p = window.location.pathname
+                          if (p.startsWith('/portal/') || p.startsWith('/deliver/')) return
+                          navigate(isCreative ? '/dashboard' : '/client-dashboard')
+                        }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        ⊞ Dashboard
+                      </button>
+                      <button
+                        style={styles.dropdownItem}
+                        onClick={() => { setDropdownOpen(false); navigate('/dashboard/settings') }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        ⚙ Settings
+                      </button>
+                      <div style={styles.dropdownDivider} />
+                      <button
+                        style={{ ...styles.dropdownItem, color: 'var(--error)' }}
+                        onClick={signOut}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-subtle)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                      >
+                        → Sign Out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log In</Button>
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/jobs')}>Post a Job</Button>
+                  <Button variant="secondary" size="sm" onClick={() => navigate('/pricing')}>Pricing For Creatives</Button>
+                  <Button variant="primary" size="sm" onClick={() => navigate('/join')}>Join as a Creative</Button>
+                </>
+              )
+            )}
+          </div>
+        )}
       </nav>
+      {isMobile && mobileMenuOpen && (
+        <div style={styles.mobileMenu} onClick={() => setMobileMenuOpen(false)}>
+          <div style={styles.mobileMenuPanel} onClick={e => e.stopPropagation()}>
+            {user && (
+              <div style={styles.mobileProfile}>
+                <div style={styles.avatar}>
+                  {profile?.avatar_url
+                    ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                    : (displayName[0] ?? 'U').toUpperCase()
+                  }
+                </div>
+                <div style={{ fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{shortName}</div>
+              </div>
+            )}
+            {[
+              { label: 'Home', path: '/' },
+              { label: 'Find Creatives', path: '/creatives' },
+              { label: 'Pricing', path: '/pricing' },
+              { label: 'Post a Job', path: '/jobs' },
+              { label: 'The Trybe Edit', path: '/the-trybe-edit' },
+              ...(user ? [
+                { label: 'Dashboard', path: isCreative ? '/dashboard' : '/client-dashboard' },
+                { label: 'Settings', path: '/dashboard/settings' },
+              ] : [
+                { label: 'Log In', path: '/login' },
+                { label: 'Sign Up', path: '/join' },
+              ]),
+            ].map((item) => (
+              <button
+                key={item.path + item.label}
+                type="button"
+                style={styles.mobileMenuLink}
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  navigate(item.path)
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+            {user && (
+              <button
+                type="button"
+                style={{ ...styles.mobileMenuLink, color: 'var(--error)' }}
+                onClick={() => {
+                  setMobileMenuOpen(false)
+                  signOut()
+                }}
+              >
+                Sign Out
+              </button>
+            )}
+          </div>
+        </div>
+      )}
 
       <main style={{ minHeight: 'calc(100vh - 64px)', background: 'var(--bg-base)' }}>
         <Outlet />
       </main>
 
-      <footer style={{ background: '#0a0a0f', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '28px 40px' }}>
-        <div style={{ maxWidth: '1280px', margin: '0 auto', display: 'flex', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <div style={{ color: '#666', fontSize: '13px', fontFamily: 'Inter, sans-serif' }}>© 2026 LensTrybe</div>
-          <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-            <a href="/terms" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Terms & Conditions</a>
-            <a href="/privacy" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Privacy Policy</a>
-            <a href="/cookies" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Cookies Policy</a>
-          </div>
+      <footer style={{ background: '#0a0a0f' }}>
+        <div style={{ 
+          display: 'flex', 
+          flexWrap: 'wrap', 
+          gap: '12px', 
+          justifyContent: 'center', 
+          alignItems: 'center',
+          padding: '24px 16px',
+          borderTop: '1px solid var(--border-default)',
+          fontSize: '13px',
+          color: 'var(--text-muted)'
+        }} className="public-footer">
+          <div>© 2026 LensTrybe</div>
+          <a
+            href="mailto:connect@lenstrybe.com"
+            style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}
+          >
+            connect@lenstrybe.com
+          </a>
+          <a href="/terms" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Terms & Conditions</a>
+          <a href="/privacy" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Privacy Policy</a>
+          <a href="/cookies" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>Cookies Policy</a>
+          <a href="/the-trybe-edit" style={{ color: '#666', fontSize: '13px', textDecoration: 'none' }}>The Trybe Edit</a>
         </div>
       </footer>
     </div>

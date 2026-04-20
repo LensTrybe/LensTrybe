@@ -1,6 +1,21 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+
+function mergeContractBrand(brandKit) {
+  const base = brandKit || {}
+  const raw = base.document_brand_settings
+  const docs = raw && typeof raw === 'object' ? raw : {}
+  const c = docs.contract && typeof docs.contract === 'object' ? docs.contract : {}
+  const primary = c.primary_colour ?? c.primary_color ?? base.primary_color ?? '#1DB954'
+  const accent = '#ffffff'
+  const font = c.font ?? base.font ?? 'Inter'
+  const logo = c.logo_url || base.logo_url || ''
+  const secondary = base.secondary_color ?? '#ffffff'
+  const hasCustomTemplate = Boolean(c.custom_template_url)
+  const fontStack = font.includes(' ') ? `"${font}", sans-serif` : `${font}, sans-serif`
+  return { primary, accent, font, logo, secondary, hasCustomTemplate, fontStack }
+}
 
 export default function ContractsPage() {
   const { user, profile } = useAuth()
@@ -15,7 +30,12 @@ export default function ContractsPage() {
   const [showSaveTemplate, setShowSaveTemplate] = useState(false)
   const [templateName, setTemplateName] = useState('')
   const fileInputRef = useRef()
+  const externalContractFileRef = useRef(null)
   const [showUpload, setShowUpload] = useState(false)
+  const [uploadedContracts, setUploadedContracts] = useState([])
+  const [externalContractClientName, setExternalContractClientName] = useState('')
+  const [externalContractFile, setExternalContractFile] = useState(null)
+  const [savingExternalContract, setSavingExternalContract] = useState(false)
   const [uploadForm, setUploadForm] = useState({ client_name: '', client_email: '', project_name: '' })
   const [uploadFile, setUploadFile] = useState(null)
   const [brandKit, setBrandKit] = useState(null)
@@ -25,7 +45,25 @@ export default function ContractsPage() {
     project_date: '', content: '', notes: '', contract_type: 'written',
   })
 
-  useEffect(() => { if (user) { loadContracts(); loadTemplates(); loadBrandKit() } }, [user])
+  const loadBrandKit = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
+    setBrandKit(data ?? null)
+  }, [user])
+
+  useEffect(() => {
+    if (user) {
+      loadContracts()
+      loadTemplates()
+      loadBrandKit()
+      loadUploadedContracts()
+    }
+  }, [user, loadBrandKit])
+
+  useEffect(() => {
+    window.addEventListener('focus', loadBrandKit)
+    return () => window.removeEventListener('focus', loadBrandKit)
+  }, [loadBrandKit])
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -42,10 +80,106 @@ export default function ContractsPage() {
     setTemplates(data ?? [])
   }
 
-  async function loadBrandKit() {
-    if (!user) return
-    const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
-    setBrandKit(data ?? null)
+  async function loadUploadedContracts() {
+    if (!user?.id) return
+    const { data, error } = await supabase
+      .from('uploaded_contracts')
+      .select('*')
+      .eq('creative_id', user.id)
+      .order('created_at', { ascending: false })
+    if (error) {
+      console.warn('uploaded_contracts:', error.message)
+      setUploadedContracts([])
+      return
+    }
+    setUploadedContracts(data ?? [])
+  }
+
+  function storagePathFromContractsPublicUrl(fileUrl) {
+    if (!fileUrl || typeof fileUrl !== 'string') return null
+    const marker = '/object/public/contracts/'
+    const i = fileUrl.indexOf(marker)
+    return i >= 0 ? decodeURIComponent(fileUrl.slice(i + marker.length).split('?')[0]) : null
+  }
+
+  function fileTypeFromName(name) {
+    const lower = (name || '').toLowerCase()
+    if (lower.endsWith('.docx')) return 'docx'
+    if (lower.endsWith('.pdf')) return 'pdf'
+    return null
+  }
+
+  async function uploadExternalContract() {
+    if (!user?.id || !externalContractFile || !externalContractClientName.trim()) return
+    const ft = fileTypeFromName(externalContractFile.name)
+    if (!ft) {
+      showToast('Please choose a PDF or Word (.docx) file.', 'error')
+      return
+    }
+    setSavingExternalContract(true)
+    try {
+      const safeName =
+        externalContractFile.name.replace(/[/\\]/g, '_').replace(/[^\w.\-()+ ]/g, '_').replace(/_+/g, '_').trim() ||
+        'document'
+      const path = `uploaded_contracts/${user.id}/${safeName}`
+      const { error: uploadError } = await supabase.storage
+        .from('contracts')
+        .upload(path, externalContractFile, { upsert: true })
+      if (uploadError) throw uploadError
+      const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(path)
+      const publicUrl = urlData.publicUrl
+      const { error } = await supabase.from('uploaded_contracts').insert({
+        creative_id: user.id,
+        file_url: publicUrl,
+        file_name: externalContractFile.name,
+        client_name: externalContractClientName.trim(),
+        file_type: ft,
+      })
+      if (error) throw error
+      await loadUploadedContracts()
+      setExternalContractClientName('')
+      setExternalContractFile(null)
+      if (externalContractFileRef.current) externalContractFileRef.current.value = ''
+      showToast('Contract file saved')
+    } catch (err) {
+      showToast('Upload failed: ' + err.message, 'error')
+    }
+    setSavingExternalContract(false)
+  }
+
+  async function deleteUploadedContract(row) {
+    const ok = window.confirm(
+      `Remove "${row.file_name}" from your uploaded contracts? This cannot be undone.`,
+    )
+    if (!ok) return
+    try {
+      const storagePath = storagePathFromContractsPublicUrl(row.file_url)
+      if (storagePath) {
+        const { error: rmErr } = await supabase.storage.from('contracts').remove([storagePath])
+        if (rmErr) console.warn('Storage remove:', rmErr.message)
+      }
+      const { error } = await supabase.from('uploaded_contracts').delete().eq('id', row.id).eq('creative_id', user.id)
+      if (error) throw error
+      setUploadedContracts((prev) => prev.filter((r) => r.id !== row.id))
+      showToast('Uploaded contract removed')
+    } catch (err) {
+      showToast('Delete failed: ' + err.message, 'error')
+    }
+  }
+
+  function downloadUploadedContract(row) {
+    try {
+      const a = document.createElement('a')
+      a.href = row.file_url
+      a.download = row.file_name || 'contract'
+      a.target = '_blank'
+      a.rel = 'noopener noreferrer'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+    } catch {
+      window.open(row.file_url, '_blank', 'noopener,noreferrer')
+    }
   }
 
   async function createContract(send = false) {
@@ -160,11 +294,33 @@ export default function ContractsPage() {
     setForm({ client_name: '', client_email: '', project_name: '', project_date: '', content: '', notes: '', contract_type: 'written' })
   }
 
-  const contractBrandFont = brandKit?.font ?? 'Inter'
-  const contractHeaderBg = { background: brandKit?.primary_color ?? '#1DB954' }
-  const contractBrandLogo = brandKit?.logo_url || ''
+  const contractMerged = useMemo(() => mergeContractBrand(brandKit), [brandKit])
+  const contractPrimary = contractMerged.primary
+  const contractAccent = contractMerged.accent
+  const contractBrandFontStack = contractMerged.fontStack
+  const contractHeaderBg = { background: contractPrimary }
+  const contractBrandLogo = contractMerged.logo
+  const contractHeaderTextColor = contractMerged.secondary
+  const contractDocSurface = { padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: contractBrandFontStack }
+  const customContractTemplateBanner = contractMerged.hasCustomTemplate ? (
+    <div
+      role="status"
+      style={{
+        marginBottom: '16px',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        border: `1px solid ${contractAccent}55`,
+        background: `${contractAccent}12`,
+        fontSize: '12px',
+        color: '#374151',
+        lineHeight: 1.45,
+      }}
+    >
+      A custom template is active for contracts in Brand Kit. Your colours and font still apply to this layout; the uploaded file is not shown here.
+    </div>
+  ) : null
 
-  const statusColor = { draft: '#6b7280', sent: '#3b82f6', signed: '#1DB954', expired: '#ef4444' }
+  const statusColor = { draft: '#6b7280', sent: '#3b82f6', signed: contractPrimary, expired: '#ef4444' }
 
   const viewContractUrl = showView ? (showView.file_url ?? showView.contract_file_url ?? showView.content) : null
 
@@ -189,6 +345,15 @@ export default function ContractsPage() {
     badge: (status) => ({ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', background: `${statusColor[status] ?? '#6b7280'}22`, color: statusColor[status] ?? '#6b7280' }),
     templateCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     emptyState: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
+    fileTypeBadge: (t) => ({
+      padding: '3px 10px',
+      borderRadius: '999px',
+      fontSize: '11px',
+      fontWeight: 700,
+      textTransform: 'uppercase',
+      background: t === 'pdf' ? 'rgba(239,68,68,0.15)' : 'rgba(59,130,246,0.15)',
+      color: t === 'pdf' ? '#ef4444' : '#3b82f6',
+    }),
   }
 
   return (
@@ -203,7 +368,7 @@ export default function ContractsPage() {
         <div style={s.title}>Contracts</div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button style={s.btn('secondary')} onClick={() => setShowUpload(true)}>⬆ Upload Contract</button>
-          <button style={s.btn('primary')} onClick={() => setShowCreate(true)}>+ New Contract</button>
+          <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={() => setShowCreate(true)}>+ New Contract</button>
           <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => setUploadFile(e.target.files[0])} />
         </div>
       </div>
@@ -211,6 +376,7 @@ export default function ContractsPage() {
       <div style={s.tabs}>
         <button style={s.tab(tab === 'contracts')} onClick={() => setTab('contracts')}>My Contracts {contracts.length > 0 && `(${contracts.length})`}</button>
         <button style={s.tab(tab === 'templates')} onClick={() => setTab('templates')}>Templates {templates.length > 0 && `(${templates.length})`}</button>
+        <button style={s.tab(tab === 'uploaded_contracts')} onClick={() => setTab('uploaded_contracts')}>Uploaded Contracts {uploadedContracts.length > 0 && `(${uploadedContracts.length})`}</button>
       </div>
 
       {tab === 'contracts' && (
@@ -232,7 +398,7 @@ export default function ContractsPage() {
               {contracts.map(c => (
                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setShowView(c)}>
                   <td style={s.td}>{c.client_name}</td>
-                  <td style={s.td}>{c.project_name ?? c.title ?? '—'}</td>
+                  <td style={s.td}>{c.project_name ?? c.title ?? 'Not set'}</td>
                   <td style={s.td}>{c.contract_type === 'uploaded' ? '📎 Uploaded' : '✍ Written'}</td>
                   <td style={s.td}><span style={s.badge(c.status)}>{c.status}</span></td>
                   <td style={s.td}>{new Date(c.created_at).toLocaleDateString('en-AU')}</td>
@@ -251,7 +417,7 @@ export default function ContractsPage() {
           <div style={s.emptyState}>No templates saved yet. Create a contract and save it as a template for reuse.</div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {templates.map(t => (
+            {templates.map((t) => (
               <div key={t.id} style={s.templateCard}>
                 <div>
                   <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>{t.name}</div>
@@ -265,6 +431,121 @@ export default function ContractsPage() {
             ))}
           </div>
         )
+      )}
+
+      {tab === 'uploaded_contracts' && (
+        <>
+          <div
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-default)',
+              borderRadius: '12px',
+              padding: '20px 24px',
+              marginBottom: '24px',
+            }}
+          >
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '14px', lineHeight: 1.5 }}>
+              Store agreements you prepared outside LensTrybe. Files are kept in your account for reference only. They are not sent to clients from here.
+            </div>
+            <div style={{ marginBottom: '12px' }}>
+              <label style={s.label}>Client name</label>
+              <input
+                style={s.input}
+                value={externalContractClientName}
+                onChange={(e) => setExternalContractClientName(e.target.value)}
+                placeholder="Who this agreement is for"
+              />
+            </div>
+            <div style={{ marginBottom: '16px' }}>
+              <label style={s.label}>Contract file</label>
+              <input
+                ref={externalContractFileRef}
+                type="file"
+                accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (!f) {
+                    setExternalContractFile(null)
+                    return
+                  }
+                  const lower = f.name.toLowerCase()
+                  if (!lower.endsWith('.pdf') && !lower.endsWith('.docx')) {
+                    showToast('Please choose a PDF or Word (.docx) file.', 'error')
+                    e.target.value = ''
+                    setExternalContractFile(null)
+                    return
+                  }
+                  setExternalContractFile(f)
+                }}
+              />
+              <button type="button" style={{ ...s.btn('secondary'), marginBottom: '10px' }} onClick={() => externalContractFileRef.current?.click()}>
+                Choose file
+              </button>
+              {externalContractFile ? (
+                <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>{externalContractFile.name}</div>
+              ) : (
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>PDF or Word (.docx) only</div>
+              )}
+            </div>
+            <button
+              type="button"
+              style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }}
+              onClick={uploadExternalContract}
+              disabled={savingExternalContract || !externalContractFile || !externalContractClientName.trim()}
+            >
+              {savingExternalContract ? 'Uploading…' : 'Upload'}
+            </button>
+          </div>
+
+          {uploadedContracts.length === 0 ? (
+            <div style={s.emptyState}>No uploaded contracts yet. Add a PDF or Word file above.</div>
+          ) : (
+            <table style={s.table}>
+              <thead>
+                <tr>
+                  <th style={s.th}>File name</th>
+                  <th style={s.th}>Client name</th>
+                  <th style={s.th}>Type</th>
+                  <th style={s.th}>Upload date</th>
+                  <th style={s.th}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {uploadedContracts.map((row) => (
+                  <tr key={row.id}>
+                    <td style={s.td}>{row.file_name}</td>
+                    <td style={s.td}>{row.client_name}</td>
+                    <td style={s.td}>
+                      <span style={s.fileTypeBadge(row.file_type === 'docx' ? 'docx' : 'pdf')}>
+                        {row.file_type === 'docx' ? 'Word' : 'PDF'}
+                      </span>
+                    </td>
+                    <td style={s.td}>{new Date(row.created_at).toLocaleDateString('en-AU')}</td>
+                    <td style={s.td}>
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <button
+                          type="button"
+                          style={{ ...s.btn('secondary'), padding: '5px 10px', fontSize: '12px' }}
+                          onClick={() => downloadUploadedContract(row)}
+                        >
+                          Download
+                        </button>
+                        <button
+                          type="button"
+                          style={{ ...s.btn('danger'), padding: '5px 10px', fontSize: '12px' }}
+                          onClick={() => deleteUploadedContract(row)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
       )}
 
       {/* Create Contract Modal */}
@@ -283,7 +564,7 @@ export default function ContractsPage() {
                 <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(false)} disabled={saving}>
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
-                <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(true)} disabled={saving || !form.client_email}>
+                <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px', background: contractPrimary, color: contractHeaderTextColor }} onClick={() => createContract(true)} disabled={saving || !form.client_email}>
                   {saving ? 'Sending…' : 'Send to Client'}
                 </button>
                 <button onClick={() => { setShowCreate(false); resetForm() }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
@@ -316,7 +597,7 @@ export default function ContractsPage() {
                   style={{ ...s.editor, outline: 'none' }}
                   value={form.content}
                   onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
-                  placeholder="Write your contract terms here…"
+                  placeholder="Write your contract terms here."
                 />
               </div>
               <div>
@@ -340,7 +621,7 @@ export default function ContractsPage() {
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>💾 Save as Template</button>
                 {showView.status !== 'signed' && (
-                  <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => sendContract(showView)}>
+                  <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px', background: contractPrimary, color: contractHeaderTextColor }} onClick={() => sendContract(showView)}>
                     {showView.status === 'sent' ? 'Resend' : 'Send to Client'}
                   </button>
                 )}
@@ -348,38 +629,39 @@ export default function ContractsPage() {
                 <button onClick={() => setShowView(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
-            <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...contractHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+            <div style={contractDocSurface}>
+              {customContractTemplateBanner}
+              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...contractHeaderBg, color: contractHeaderTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {contractBrandLogo && <img src={contractBrandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>
-                      <div style={{ fontSize: '26px', fontWeight: 800, marginBottom: '4px', fontFamily: contractBrandFont }}>{profile?.business_name ?? 'Creative'}</div>
+                      <div style={{ fontSize: '26px', fontWeight: 800, marginBottom: '4px', fontFamily: contractBrandFontStack }}>{profile?.business_name ?? 'Creative'}</div>
                       <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email}</div>
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '30px', fontWeight: 800, fontFamily: contractBrandFont }}>CONTRACT</div>
+                    <div style={{ fontSize: '30px', fontWeight: 800, fontFamily: contractBrandFontStack }}>CONTRACT</div>
                     <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
                     <div style={{ fontSize: '13px', opacity: 0.85 }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                   </div>
                 </div>
               </div>
               <div style={{ marginBottom: '24px' }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Between</div>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: contractAccent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Between</div>
                 <div style={{ fontSize: '15px', fontWeight: 600 }}>{profile?.business_name}</div>
                 <div style={{ fontSize: '13px', color: '#666', marginTop: '8px' }}>and</div>
                 <div style={{ fontSize: '15px', fontWeight: 600, marginTop: '8px' }}>{showView.client_name}</div>
                 <div style={{ fontSize: '13px', color: '#666' }}>{showView.client_email}</div>
               </div>
               {showView.project_name && (
-                <div style={{ marginBottom: '24px', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px' }}>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project: </span>
+                <div style={{ marginBottom: '24px', padding: '12px 16px', background: '#f9fafb', borderRadius: '8px', borderLeft: `4px solid ${contractAccent}` }}>
+                  <span style={{ fontSize: '12px', fontWeight: 700, color: contractAccent, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Project: </span>
                   <span style={{ fontSize: '14px', color: '#111' }}>{showView.project_name}</span>
                   {showView.project_date && <span style={{ fontSize: '13px', color: '#666', marginLeft: '12px' }}>· {new Date(showView.project_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
                 </div>
               )}
-              <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '24px', marginBottom: '32px' }}>
+              <div style={{ borderTop: `1px solid ${contractAccent}33`, paddingTop: '24px', marginBottom: '32px' }}>
                 {showView.contract_type === 'uploaded' && !viewContractUrl ? (
                   <div style={{ fontSize: '14px', color: '#666' }}>No document link is stored for this contract.</div>
                 ) : showView.contract_type === 'uploaded' && viewContractUrl ? (
@@ -396,7 +678,7 @@ export default function ContractsPage() {
                           href={viewContractUrl}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: '#1DB954', textDecoration: 'none', fontFamily: 'var(--font-ui)' }}
+                          style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: contractPrimary, textDecoration: 'none', fontFamily: 'var(--font-ui)' }}
                         >
                           ↗ Open full screen
                         </a>
@@ -409,7 +691,7 @@ export default function ContractsPage() {
                           href={viewContractUrl}
                           target="_blank"
                           rel="noreferrer"
-                          style={{ padding: '10px 20px', background: '#1DB954', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
+                          style={{ padding: '10px 20px', background: contractPrimary, borderRadius: '8px', color: contractHeaderTextColor, fontSize: '13px', fontWeight: 700, textDecoration: 'none', display: 'inline-block' }}
                         >
                           Open Document
                         </a>
@@ -421,12 +703,12 @@ export default function ContractsPage() {
                 )}
               </div>
               {showView.notes && (
-                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px', marginBottom: '24px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Notes</div>
+                <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px', marginBottom: '24px', borderLeft: `4px solid ${contractAccent}` }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: contractAccent, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '8px' }}>Notes</div>
                   <div style={{ fontSize: '13px', color: '#374151' }}>{showView.notes}</div>
                 </div>
               )}
-              <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+              <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${contractAccent}33`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
                 This contract was created via LensTrybe · {profile?.business_name}
               </div>
             </div>
@@ -449,7 +731,7 @@ export default function ContractsPage() {
             />
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button style={s.btn('secondary')} onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}>Cancel</button>
-              <button style={s.btn('primary')} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
+              <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
                 {savingTemplate ? 'Saving…' : 'Save Template'}
               </button>
             </div>
@@ -480,11 +762,11 @@ export default function ContractsPage() {
                 <div
                   style={{ border: '2px dashed var(--border-default)', borderRadius: '10px', padding: '24px', textAlign: 'center', cursor: 'pointer', transition: 'border-color 0.15s' }}
                   onClick={() => fileInputRef.current?.click()}
-                  onMouseEnter={e => { e.currentTarget.style.borderColor = '#1DB954' }}
+                  onMouseEnter={e => { e.currentTarget.style.borderColor = contractPrimary }}
                   onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
                 >
                   {uploadFile ? (
-                    <div style={{ fontSize: '14px', color: '#1DB954', fontWeight: 600 }}>✓ {uploadFile.name}</div>
+                    <div style={{ fontSize: '14px', color: contractPrimary, fontWeight: 600 }}>✓ {uploadFile.name}</div>
                   ) : (
                     <>
                       <div style={{ fontSize: '24px', marginBottom: '8px' }}>📎</div>
@@ -498,7 +780,7 @@ export default function ContractsPage() {
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button style={s.btn('secondary')} onClick={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ client_name: '', client_email: '', project_name: '' }) }}>Cancel</button>
-              <button style={s.btn('primary')} onClick={uploadContract} disabled={saving || !uploadFile || !uploadForm.client_name}>
+              <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={uploadContract} disabled={saving || !uploadFile || !uploadForm.client_name}>
                 {saving ? 'Uploading…' : 'Upload Contract'}
               </button>
             </div>

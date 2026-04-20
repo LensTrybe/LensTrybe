@@ -55,6 +55,7 @@ function CreativeCard({ profile, onClick }) {
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all var(--transition-base)',
+        minWidth: 0,
       }}
     >
       {profile.avatar_url
@@ -63,7 +64,7 @@ function CreativeCard({ profile, onClick }) {
       }
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{displayName}</div>
+          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
           {badge && (
             <div style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
               {badge.label}
@@ -71,7 +72,7 @@ function CreativeCard({ profile, onClick }) {
           )}
         </div>
         {(profile.city || profile.state) && (
-          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
+          <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             📍 {[profile.city, profile.state].filter(Boolean).join(', ')}
           </div>
         )}
@@ -79,7 +80,7 @@ function CreativeCard({ profile, onClick }) {
           {skills.slice(0, 2).map((s, i) => <Badge key={i} variant="default" size="sm">{s}</Badge>)}
           {skills.length > 2 && <Badge variant="default" size="sm">+{skills.length - 2}</Badge>}
         </div>
-        {profile.founding_member && (
+        {profile.founding_member && profile.show_founding_badge !== false && (
           <div style={{ fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: 'linear-gradient(90deg, rgba(29,185,84,0.15), rgba(234,179,8,0.15))', border: '1px solid rgba(234,179,8,0.3)', color: '#EAB308', fontFamily: 'var(--font-ui)', display: 'inline-block', width: 'fit-content' }}>
             ✦ Founding Member
           </div>
@@ -92,6 +93,7 @@ function CreativeCard({ profile, onClick }) {
 export default function ExplorePage() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [creatives, setCreatives] = useState([])
   const [loading, setLoading] = useState(false)
   const [searched, setSearched] = useState(false)
@@ -112,6 +114,14 @@ export default function ExplorePage() {
       setSelectedTypes([label])
       handleSearch([label], filters)
     }
+  }, [])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   function toggleType(value) {
@@ -159,33 +169,33 @@ export default function ExplorePage() {
 
   const styles = {
     page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px' },
-    inner: { maxWidth: '1280px', margin: '0 auto', padding: '0 40px' },
-    header: { padding: '48px 0 32px' },
+    inner: { maxWidth: '1280px', margin: '0 auto', padding: isMobile ? '0 16px' : '0 40px' },
+    header: { padding: isMobile ? '32px 0 24px' : '48px 0 32px' },
     title: { fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)', color: 'var(--text-primary)', fontWeight: 400, marginBottom: '8px' },
     subtitle: { fontSize: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    filterCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    filterCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '20px' },
     filterSection: { display: 'flex', flexDirection: 'column', gap: '10px' },
     filterLabel: { fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    typeGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
+    typeGrid: { display: 'flex', flexWrap: isMobile ? 'nowrap' : 'wrap', gap: '8px', overflowX: isMobile ? 'auto' : 'visible', paddingBottom: isMobile ? '4px' : '0' },
     typeChip: (selected) => ({
       padding: '7px 16px',
       borderRadius: 'var(--radius-full)',
       border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`,
       background: selected ? 'var(--green-dim)' : 'transparent',
       color: selected ? 'var(--green)' : 'var(--text-secondary)',
-      fontSize: '13px',
+      fontSize: '14px',
       fontWeight: selected ? 500 : 400,
       cursor: 'pointer',
       transition: 'all var(--transition-base)',
       fontFamily: 'var(--font-ui)',
     }),
-    filterRow: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'flex-end' },
+    filterRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'flex-end' },
     select: { background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', width: '100%' },
     textInput: { background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', boxSizing: 'border-box' },
     filterGroupInner: { display: 'flex', flexDirection: 'column', gap: '6px' },
-    resultsHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' },
+    resultsHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' },
     resultsCount: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
+    grid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(160px, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '12px' : '16px' },
     emptyState: { padding: '80px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' },
     emptyTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
     emptyText: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: '360px' },
@@ -245,7 +255,7 @@ export default function ExplorePage() {
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
             <Button variant="primary" onClick={() => handleSearch()} disabled={loading}>
               {loading ? 'Searching…' : 'Search'}
             </Button>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
@@ -15,6 +15,22 @@ function statusVariant(status) {
 
 function getQuoteItems(quote) {
   return quote?.line_items ?? quote?.items ?? []
+}
+
+/** Merge `brand_kit` with per-document `quote` settings from `document_brand_settings`. */
+function mergeQuoteBrand(brandKit) {
+  const base = brandKit || {}
+  const raw = base.document_brand_settings
+  const docs = raw && typeof raw === 'object' ? raw : {}
+  const q = docs.quote && typeof docs.quote === 'object' ? docs.quote : {}
+  const primary = q.primary_colour ?? q.primary_color ?? base.primary_color ?? '#1DB954'
+  const accent = '#ffffff'
+  const font = q.font ?? base.font ?? 'Inter'
+  const logo = q.logo_url || base.logo_url || ''
+  const secondary = base.secondary_color ?? '#ffffff'
+  const hasCustomTemplate = Boolean(q.custom_template_url)
+  const fontStack = font.includes(' ') ? `"${font}", sans-serif` : `${font}, sans-serif`
+  return { primary, accent, font, logo, secondary, hasCustomTemplate, fontStack }
 }
 
 export default function QuotesPage() {
@@ -50,10 +66,25 @@ export default function QuotesPage() {
     setTimeout(() => setToast(null), 3000)
   }
 
+  const loadBrandKit = useCallback(async () => {
+    if (!user) return
+    const { data } = await supabase
+      .from('brand_kit')
+      .select('*')
+      .eq('creative_id', user.id)
+      .maybeSingle()
+    setBrandKit(data ?? null)
+  }, [user])
+
   useEffect(() => {
     loadQuotes()
     loadBrandKit()
-  }, [user])
+  }, [user, loadBrandKit])
+
+  useEffect(() => {
+    window.addEventListener('focus', loadBrandKit)
+    return () => window.removeEventListener('focus', loadBrandKit)
+  }, [loadBrandKit])
 
   useEffect(() => {
     if (profile) {
@@ -75,16 +106,6 @@ export default function QuotesPage() {
       .order('created_at', { ascending: false })
     setQuotes(data ?? [])
     setLoading(false)
-  }
-
-  async function loadBrandKit() {
-    if (!user) return
-    const { data } = await supabase
-      .from('brand_kit')
-      .select('*')
-      .eq('creative_id', user.id)
-      .maybeSingle()
-    setBrandKit(data ?? null)
   }
 
   function formatMoney(amount) {
@@ -268,10 +289,31 @@ export default function QuotesPage() {
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
   }
 
-  const brandLogo = brandKit?.logo_url || ''
-  const quoteBrandColor = brandKit?.primary_color ?? '#1DB954'
-  const quoteBrandFont = brandKit?.font ?? 'Inter'
+  const quoteBrandMerged = useMemo(() => mergeQuoteBrand(brandKit), [brandKit])
+  const brandLogo = quoteBrandMerged.logo
+  const quoteBrandColor = quoteBrandMerged.primary
+  const quoteBrandAccent = quoteBrandMerged.accent
+  const quoteBrandFontStack = quoteBrandMerged.fontStack
+  const quoteHeaderTextColor = quoteBrandMerged.secondary
   const quoteHeaderBg = { background: quoteBrandColor }
+  const quoteDocSurface = { padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: quoteBrandFontStack }
+  const customQuoteTemplateBanner = quoteBrandMerged.hasCustomTemplate ? (
+    <div
+      role="status"
+      style={{
+        marginBottom: '16px',
+        padding: '10px 14px',
+        borderRadius: '8px',
+        border: `1px solid ${quoteBrandAccent}55`,
+        background: `${quoteBrandAccent}12`,
+        fontSize: '12px',
+        color: '#374151',
+        lineHeight: 1.45,
+      }}
+    >
+      A custom template is active for quotes in Brand Kit. Your colours and font still apply to this layout; the uploaded file is not shown here.
+    </div>
+  ) : null
 
   return (
     <>
@@ -305,14 +347,14 @@ export default function QuotesPage() {
               <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Payment Details</div>
               {!editingBank && (
                 <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>
-                  {bankDetails.bank_account ? `${bankDetails.bank_name ? bankDetails.bank_name + ' · ' : ''}BSB ${bankDetails.bank_bsb} · Acct ${bankDetails.bank_account}${bankDetails.bank_account_name ? ' · ' + bankDetails.bank_account_name : ''}` : 'No bank details set — these appear on your quotes'}
+                  {bankDetails.bank_account ? `${bankDetails.bank_name ? bankDetails.bank_name + ' · ' : ''}BSB ${bankDetails.bank_bsb} · Acct ${bankDetails.bank_account}${bankDetails.bank_account_name ? ' · ' + bankDetails.bank_account_name : ''}` : 'No bank details set. These details appear on your quotes.'}
                 </div>
               )}
             </div>
             <button
               type="button"
               onClick={() => editingBank ? saveBankDetails() : setEditingBank(true)}
-              style={{ padding: '7px 14px', background: editingBank ? quoteBrandColor : 'var(--bg-base)', border: `1px solid ${editingBank ? quoteBrandColor : 'var(--border-default)'}`, borderRadius: '8px', color: editingBank ? '#fff' : 'var(--text-secondary)', fontSize: '13px', fontWeight: editingBank ? 600 : 400, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
+              style={{ padding: '7px 14px', background: editingBank ? quoteBrandColor : 'var(--bg-base)', border: `1px solid ${editingBank ? quoteBrandColor : 'var(--border-default)'}`, borderRadius: '8px', color: editingBank ? quoteHeaderTextColor : 'var(--text-secondary)', fontSize: '13px', fontWeight: editingBank ? 600 : 400, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
             >
               {bankSaving ? 'Saving…' : editingBank ? 'Save Details' : '✎ Edit'}
             </button>
@@ -365,7 +407,7 @@ export default function QuotesPage() {
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{q.client_email}</div>
               </div>
               <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-                {q.due_date ? new Date(q.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                {q.due_date ? new Date(q.due_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : 'Not set'}
               </span>
               <span style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{formatMoney(q.amount)}</span>
               <Badge variant={statusVariant(q.status)} size="sm">{q.status}</Badge>
@@ -393,7 +435,7 @@ export default function QuotesPage() {
                     type="button"
                     onClick={() => createQuote('sent')}
                     disabled={saving || !newQuote.client_name || !newQuote.client_email}
-                    style={{ padding: '7px 14px', background: quoteBrandColor, border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
+                    style={{ padding: '7px 14px', background: quoteBrandColor, border: 'none', borderRadius: '8px', color: quoteHeaderTextColor, fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.6 : 1 }}
                   >
                     {saving ? 'Sending…' : 'Send Quote'}
                   </button>
@@ -407,38 +449,39 @@ export default function QuotesPage() {
                 </div>
               )}
 
-              <div style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
+              <div style={quoteDocSurface}>
+                {customQuoteTemplateBanner}
 
-                <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...quoteHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+                <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...quoteHeaderBg, color: quoteHeaderTextColor }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                       {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                       <div>
-                        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: quoteBrandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: quoteBrandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                         <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: quoteBrandFont }}>QUOTE</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: quoteBrandFontStack }}>QUOTE</div>
                       <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                     </div>
                   </div>
                 </div>
 
                 <div style={{ marginBottom: '24px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandColor, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <input value={newQuote.client_name} onChange={e => setNewQuote(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                    <input value={newQuote.client_email} onChange={e => setNewQuote(p => ({ ...p, client_email: e.target.value }))} placeholder="Client email" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                    <input value={newQuote.client_phone} onChange={e => setNewQuote(p => ({ ...p, client_phone: e.target.value }))} placeholder="Phone (optional)" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                    <input value={newQuote.client_address} onChange={e => setNewQuote(p => ({ ...p, client_address: e.target.value }))} placeholder="Address (optional)" style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
-                    <input type="date" value={newQuote.due_date} onChange={e => setNewQuote(p => ({ ...p, due_date: e.target.value }))} style={{ padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111', width: '50%', boxSizing: 'border-box' }} />
+                    <input value={newQuote.client_name} onChange={e => setNewQuote(p => ({ ...p, client_name: e.target.value }))} placeholder="Client name" style={{ padding: '8px 12px', border: `1px solid ${quoteBrandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                    <input value={newQuote.client_email} onChange={e => setNewQuote(p => ({ ...p, client_email: e.target.value }))} placeholder="Client email" style={{ padding: '8px 12px', border: `1px solid ${quoteBrandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                    <input value={newQuote.client_phone} onChange={e => setNewQuote(p => ({ ...p, client_phone: e.target.value }))} placeholder="Phone (optional)" style={{ padding: '8px 12px', border: `1px solid ${quoteBrandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                    <input value={newQuote.client_address} onChange={e => setNewQuote(p => ({ ...p, client_address: e.target.value }))} placeholder="Address (optional)" style={{ padding: '8px 12px', border: `1px solid ${quoteBrandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '100%', boxSizing: 'border-box' }} />
+                    <input type="date" value={newQuote.due_date} onChange={e => setNewQuote(p => ({ ...p, due_date: e.target.value }))} style={{ padding: '8px 12px', border: `1px solid ${quoteBrandAccent}40`, borderRadius: '6px', fontSize: '14px', color: '#111', width: '50%', boxSizing: 'border-box' }} />
                   </div>
                 </div>
 
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
                   <thead>
-                    <tr style={{ borderBottom: `2px solid ${quoteBrandColor}`, background: `${quoteBrandColor}22` }}>
+                    <tr style={{ borderBottom: `2px solid ${quoteBrandColor}`, background: `${quoteBrandColor}22`, boxShadow: `inset 0 -2px 0 0 ${quoteBrandAccent}66` }}>
                       <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
                       <th style={{ textAlign: 'center', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '80px' }}>Qty</th>
                       <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '100px' }}>Rate</th>
@@ -476,7 +519,7 @@ export default function QuotesPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
                   <div style={{ width: '240px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: '2px solid #111' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: `2px solid ${quoteBrandColor}`, borderBottom: `1px solid ${quoteBrandAccent}55` }}>
                       <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
                       <span style={{ fontSize: '16px', fontWeight: 800, color: quoteBrandColor }}>{formatMoney(newQuote.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0))}</span>
                     </div>
@@ -484,8 +527,8 @@ export default function QuotesPage() {
                 </div>
 
                 {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-                  <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
+                  <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', borderLeft: `4px solid ${quoteBrandAccent}` }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
                     {bankDetails.bank_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div>}
                     {bankDetails.bank_account_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>}
                     {bankDetails.bank_bsb && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div>}
@@ -494,11 +537,11 @@ export default function QuotesPage() {
                 )}
 
                 <div>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
-                  <textarea value={newQuote.notes ?? ''} onChange={e => setNewQuote(p => ({ ...p, notes: e.target.value }))} placeholder="Add notes, terms…" style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', minHeight: '80px', resize: 'vertical', color: '#111', boxSizing: 'border-box' }} />
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
+                  <textarea value={newQuote.notes ?? ''} onChange={e => setNewQuote(p => ({ ...p, notes: e.target.value }))} placeholder="Add notes or terms" style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', minHeight: '80px', resize: 'vertical', color: '#111', boxSizing: 'border-box' }} />
                 </div>
 
-                <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+                <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: `1px solid ${quoteBrandAccent}33`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
                   Thank you for your business
                 </div>
               </div>
@@ -541,12 +584,13 @@ export default function QuotesPage() {
                       if (!el) return
                       const printContents = el.innerHTML
                       const win = window.open('', '_blank')
+                      const safeFont = quoteBrandFontStack.replace(/</g, '')
                       win.document.write(`
                     <html>
                       <head>
                         <title>Quote - ${showView.client_name}</title>
                         <style>
-                          body { font-family: Arial, sans-serif; margin: 0; padding: 40px; }
+                          body { font-family: ${safeFont}; margin: 0; padding: 40px; }
                           @media print { body { padding: 0; } }
                         </style>
                       </head>
@@ -576,7 +620,7 @@ export default function QuotesPage() {
                   </>
                 )}
                   {(showView.status === 'draft' || showView.status === 'sent') && (
-                    <button type="button" disabled={sending} onClick={() => sendQuote(showView)} style={{ padding: '7px 14px', background: quoteBrandColor, border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.65 : 1 }}>
+                    <button type="button" disabled={sending} onClick={() => sendQuote(showView)} style={{ padding: '7px 14px', background: quoteBrandColor, border: 'none', borderRadius: '8px', color: quoteHeaderTextColor, fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)', cursor: sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.65 : 1 }}>
                       {sending ? 'Sending…' : showView.status === 'sent' ? 'Resend Quote' : 'Send Quote'}
                     </button>
                   )}
@@ -593,19 +637,20 @@ export default function QuotesPage() {
                 </div>
               )}
 
-              <div id="quote-print-area" style={{ padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111' }}>
+              <div id="quote-print-area" style={quoteDocSurface}>
+                {customQuoteTemplateBanner}
 
-                <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...quoteHeaderBg, color: brandKit?.secondary_color ?? '#ffffff' }}>
+                <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...quoteHeaderBg, color: quoteHeaderTextColor }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                       {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                       <div>
-                        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: quoteBrandFont }}>{profile?.business_name ?? 'Your Business'}</div>
+                        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: quoteBrandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                         <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: quoteBrandFont }}>QUOTE</div>
+                      <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: quoteBrandFontStack }}>QUOTE</div>
                       <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>#{showView.id.slice(0, 8).toUpperCase()}</div>
                       <div style={{ fontSize: '13px', opacity: 0.85 }}>{new Date(showView.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
                     </div>
@@ -613,7 +658,7 @@ export default function QuotesPage() {
                 </div>
 
                 <div style={{ marginBottom: '32px' }}>
-                  <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandColor, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
+                  <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Bill To</div>
                   {editingQuote ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                       <input value={editForm.client_name} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} style={{ padding: '6px 10px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '14px', color: '#111' }} placeholder="Client name" />
@@ -639,7 +684,7 @@ export default function QuotesPage() {
 
                 <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
                   <thead>
-                    <tr style={{ borderBottom: `2px solid ${quoteBrandColor}`, background: `${quoteBrandColor}22` }}>
+                    <tr style={{ borderBottom: `2px solid ${quoteBrandColor}`, background: `${quoteBrandColor}22`, boxShadow: `inset 0 -2px 0 0 ${quoteBrandAccent}66` }}>
                       <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
                       <th style={{ textAlign: 'center', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '80px' }}>Qty</th>
                       <th style={{ textAlign: 'right', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em', width: '100px' }}>Rate</th>
@@ -687,7 +732,7 @@ export default function QuotesPage() {
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px' }}>
                   <div style={{ width: '240px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: `2px solid ${quoteBrandColor}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderTop: `2px solid ${quoteBrandColor}`, borderBottom: `1px solid ${quoteBrandAccent}55` }}>
                       <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
                       <span style={{ fontSize: '16px', fontWeight: 800, color: quoteBrandColor }}>
                         {formatMoney(editingQuote
@@ -699,8 +744,8 @@ export default function QuotesPage() {
                 </div>
 
                 {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-                  <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
+                  <div style={{ background: '#f9fafb', borderRadius: '8px', padding: '16px 20px', marginBottom: '24px', borderLeft: `4px solid ${quoteBrandAccent}` }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '10px' }}>Payment Details</div>
                     {bankDetails.bank_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div>}
                     {bankDetails.bank_account_name && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>}
                     {bankDetails.bank_bsb && <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div>}
@@ -709,8 +754,8 @@ export default function QuotesPage() {
                 )}
 
                 {(editingQuote || showView.notes) && (
-                  <div style={{ borderTop: '1px solid #e5e7eb', paddingTop: '20px' }}>
-                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#999', letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
+                  <div style={{ borderTop: `1px solid ${quoteBrandAccent}33`, paddingTop: '20px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: quoteBrandAccent, letterSpacing: '0.08em', textTransform: 'uppercase', marginBottom: '8px' }}>Notes</div>
                     {editingQuote ? (
                       <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} style={{ width: '100%', padding: '8px 12px', border: '1px solid #d1d5db', borderRadius: '6px', fontSize: '13px', minHeight: '80px', resize: 'vertical' }} placeholder="Add notes..." />
                     ) : showView.notes ? (
@@ -719,7 +764,7 @@ export default function QuotesPage() {
                   </div>
                 )}
 
-                <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid #e5e7eb', fontSize: '12px', color: '#999', textAlign: 'center' }}>
+                <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: `1px solid ${quoteBrandAccent}33`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
                   Thank you for your business
                 </div>
               </div>

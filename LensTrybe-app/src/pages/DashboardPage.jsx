@@ -642,9 +642,9 @@ export default function DashboardPage() {
           }}
         >
           <span style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{stats.profile.business_name}</span>
-          {stats?.profile?.founding_member === true ? <FoundingMemberBadge /> : null}
+          {stats?.profile?.founding_member === true && stats?.profile?.show_founding_badge !== false ? <FoundingMemberBadge /> : null}
         </div>
-      ) : stats?.profile?.founding_member === true ? (
+      ) : stats?.profile?.founding_member === true && stats?.profile?.show_founding_badge !== false ? (
         <div style={{ marginBottom: 18, ...font }}>
           <FoundingMemberBadge />
         </div>
@@ -1035,7 +1035,7 @@ export default function DashboardPage() {
             >
               {tierLabel(displayTier)}
             </div>
-            {stats?.profile?.founding_member === true ? <FoundingMemberBadge /> : null}
+            {stats?.profile?.founding_member === true && stats?.profile?.show_founding_badge !== false ? <FoundingMemberBadge /> : null}
           </div>
         </div>
 
