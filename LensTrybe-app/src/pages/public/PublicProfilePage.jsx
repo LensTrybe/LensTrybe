@@ -51,7 +51,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   async function loadProfile() {
     const [profileRes, portfolioRes, reviewsRes, availabilityRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', id).eq('is_admin', false).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
       supabase.from('reviews').select('*').eq('creative_id', id).order('created_at', { ascending: false }),
       supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),

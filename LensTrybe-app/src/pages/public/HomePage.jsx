@@ -326,6 +326,7 @@ export default function HomePage() {
         .from('profiles')
         .select('id, business_name, subscription_tier, skill_types, city, state, bio, avatar_url, tagline')
         .in('subscription_tier', ['elite', 'expert'])
+        .eq('is_admin', false)
         .eq('subscription_status', 'active')
         .order('subscription_tier', { ascending: false });
 
@@ -481,8 +482,8 @@ export default function HomePage() {
               <button key={cat.key} onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
                 borderRadius: '12px', padding: isMobile ? '16px 12px' : '24px 16px', cursor: 'pointer',
-                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff', minHeight: isMobile ? '150px' : '44px',
-                display: 'flex', flexDirection: 'column', justifyContent: 'flex-start',
+                textAlign: 'left', transition: 'all 0.2s ease', color: '#fff', minHeight: isMobile ? '140px' : '160px',
+                display: 'flex', flexDirection: 'column',
               }}>
                 <div style={{
                   width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px',

@@ -84,6 +84,7 @@ export default function PortfolioWebsitePage() {
       .from('profiles')
       .select('*')
       .eq('custom_domain', slug)
+      .eq('is_admin', false)
       .maybeSingle()
 
     if (pErr || !prof || !prof.portfolio_website_active) {

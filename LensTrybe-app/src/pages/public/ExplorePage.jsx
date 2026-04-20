@@ -139,7 +139,7 @@ export default function ExplorePage() {
     setLoading(true)
     setSearched(true)
 
-    let query = supabase.from('profiles').select('*')
+    let query = supabase.from('profiles').select('*').eq('is_admin', false)
 
     if (types.length > 0) {
       query = query.overlaps('skill_types', types)
