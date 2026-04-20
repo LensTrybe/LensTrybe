@@ -84,6 +84,7 @@ export default function EditProfilePage() {
   const [otherCredentialName, setOtherCredentialName] = useState('')
   const [showFoundingBadge, setShowFoundingBadge] = useState(true)
   const [savingFoundingBadge, setSavingFoundingBadge] = useState(false)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const [credentials, setCredentials] = useState({
     abn: '',
@@ -161,6 +162,14 @@ export default function EditProfilePage() {
       void loadPortfolio()
     }
   }, [profile])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadPortfolio() {
     if (!user) return
@@ -326,7 +335,16 @@ export default function EditProfilePage() {
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading profile…</div>
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, overflowX: 'hidden' }} className="edit-profile-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .edit-profile-page { padding: 16px !important; }
+          .edit-profile-page h1, .edit-profile-page h2 { font-size: 24px !important; }
+          .edit-profile-page button { min-height: 44px; }
+          .edit-profile-page input, .edit-profile-page textarea, .edit-profile-page select { width: 100% !important; font-size: 14px !important; }
+          .edit-profile-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Edit Profile</h1>

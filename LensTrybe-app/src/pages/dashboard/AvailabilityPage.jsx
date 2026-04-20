@@ -14,6 +14,7 @@ const TIMES = [
 
 export default function AvailabilityPage() {
   const { user } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [blockedDates, setBlockedDates] = useState([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -24,6 +25,13 @@ export default function AvailabilityPage() {
   const [toast, setToast] = useState(null)
 
   useEffect(() => { loadAvailability() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -97,10 +105,10 @@ export default function AvailabilityPage() {
   const upcomingBlocked = blockedDates.filter(d => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))
 
   const s = {
-    page: { padding: '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    layout: { display: 'grid', gridTemplateColumns: '1fr 300px', gap: '24px', alignItems: 'start' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '24px' },
+    page: { padding: isMobile ? '16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    layout: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: '24px', alignItems: 'start' },
+    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px' },
     navBtn: { background: 'none', border: '1px solid var(--border-default)', borderRadius: '6px', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     dayCell: (isBlocked, isToday, isPast, isEmpty) => ({
       aspectRatio: '1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -112,15 +120,21 @@ export default function AvailabilityPage() {
       fontWeight: isToday ? 600 : 400,
       transition: 'all 0.1s',
     }),
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '440px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
     label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
     select: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
     input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
   }
 
   return (
-    <div style={s.page}>
+    <div style={s.page} className="availability-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .availability-page button { min-height: 44px; }
+          .availability-page input, .availability-page textarea, .availability-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
           {toast.msg}
@@ -227,7 +241,7 @@ export default function AvailabilityPage() {
 
             <div style={{ marginBottom: '16px' }}>
               <label style={s.label}>Block type</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
                 <button
                   type="button"
                   onClick={() => setTimeForm(p => ({ ...p, all_day: true }))}
@@ -242,7 +256,7 @@ export default function AvailabilityPage() {
             </div>
 
             {!timeForm.all_day && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
                   <label style={s.label}>Start time</label>
                   <select style={s.select} value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>

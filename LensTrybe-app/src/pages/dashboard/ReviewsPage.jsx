@@ -30,6 +30,7 @@ function StarRating({ value, onChange, readonly }) {
 
 export default function ReviewsPage() {
   const { user } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [reviews, setReviews] = useState([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -43,6 +44,13 @@ export default function ReviewsPage() {
   })
 
   useEffect(() => { loadReviews() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadReviews() {
     if (!user) return
@@ -84,9 +92,9 @@ export default function ReviewsPage() {
   const canAddMore = importedCount < 5
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     summaryCard: {
       background: 'var(--bg-elevated)',
@@ -96,15 +104,16 @@ export default function ReviewsPage() {
       display: 'flex',
       alignItems: 'center',
       gap: '32px',
+      flexDirection: isMobile ? 'column' : 'row',
     },
     avgRating: { fontFamily: 'var(--font-display)', fontSize: '56px', color: 'var(--text-primary)', lineHeight: 1 },
     ratingLabel: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     divider: { width: '1px', height: '60px', background: 'var(--border-default)' },
-    statsRow: { display: 'flex', gap: '32px' },
+    statsRow: { display: 'flex', gap: '32px', flexWrap: 'wrap' },
     statItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
     statValue: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)' },
     statLabel: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    reviewGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' },
+    reviewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px' },
     reviewCard: {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
@@ -130,7 +139,7 @@ export default function ReviewsPage() {
       borderRadius: 'var(--radius-xl)',
     },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
     textarea: { width: '100%', minHeight: '100px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
@@ -138,7 +147,13 @@ export default function ReviewsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="reviews-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .reviews-page button { min-height: 44px; }
+          .reviews-page input, .reviews-page textarea, .reviews-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Reviews</h1>

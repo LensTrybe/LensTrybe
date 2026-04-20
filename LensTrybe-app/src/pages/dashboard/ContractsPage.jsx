@@ -19,6 +19,7 @@ function mergeContractBrand(brandKit) {
 
 export default function ContractsPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [contracts, setContracts] = useState([])
   const [templates, setTemplates] = useState([])
   const [tab, setTab] = useState('contracts')
@@ -64,6 +65,14 @@ export default function ContractsPage() {
     window.addEventListener('focus', loadBrandKit)
     return () => window.removeEventListener('focus', loadBrandKit)
   }, [loadBrandKit])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -301,7 +310,7 @@ export default function ContractsPage() {
   const contractHeaderBg = { background: contractPrimary }
   const contractBrandLogo = contractMerged.logo
   const contractHeaderTextColor = contractMerged.secondary
-  const contractDocSurface = { padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: contractBrandFontStack }
+  const contractDocSurface = { padding: isMobile ? '16px' : '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: contractBrandFontStack }
   const customContractTemplateBanner = contractMerged.hasCustomTemplate ? (
     <div
       role="status"
@@ -325,25 +334,25 @@ export default function ContractsPage() {
   const viewContractUrl = showView ? (showView.file_url ?? showView.contract_file_url ?? showView.content) : null
 
   const s = {
-    page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
-    header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
+    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
     title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '24px' },
+    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '24px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
     tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s' }),
     btn: (variant = 'primary') => ({ padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: variant === 'primary' ? '#1DB954' : variant === 'danger' ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)', color: variant === 'primary' ? '#000' : variant === 'danger' ? '#ef4444' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }),
-    table: { width: '100%', borderCollapse: 'collapse' },
+    table: { width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '720px' : '100%' },
     th: { textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-subtle)' },
     td: { padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '780px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    modalHeader: { padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    modalBody: { padding: '28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '780px', maxHeight: isMobile ? '100vh' : '90vh', height: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: isMobile ? '12px 14px' : '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' },
+    modalBody: { padding: isMobile ? '16px' : '28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' },
     input: { padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', width: '100%', boxSizing: 'border-box' },
     label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', display: 'block' },
-    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+    grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
     editor: { padding: '12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', minHeight: '280px', resize: 'vertical', width: '100%', boxSizing: 'border-box', lineHeight: 1.6 },
     badge: (status) => ({ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', background: `${statusColor[status] ?? '#6b7280'}22`, color: statusColor[status] ?? '#6b7280' }),
-    templateCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
+    templateCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: isMobile ? '16px' : '20px 24px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
     emptyState: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
     fileTypeBadge: (t) => ({
       padding: '3px 10px',
@@ -357,7 +366,15 @@ export default function ContractsPage() {
   }
 
   return (
-    <div style={s.page}>
+    <div style={s.page} className="contracts-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .contracts-page button { min-height: 44px; }
+          .contracts-page input, .contracts-page textarea, .contracts-page select { width: 100% !important; font-size: 14px !important; }
+          .contracts-page table { display: block; overflow-x: auto; }
+          .contracts-page * { min-width: 0; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.message}
@@ -631,8 +648,8 @@ export default function ContractsPage() {
             </div>
             <div style={contractDocSurface}>
               {customContractTemplateBanner}
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...contractHeaderBg, color: contractHeaderTextColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...contractHeaderBg, color: contractHeaderTextColor }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : '0' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {contractBrandLogo && <img src={contractBrandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>

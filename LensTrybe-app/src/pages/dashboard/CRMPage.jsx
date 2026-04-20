@@ -6,6 +6,7 @@ const STAGES = ['Lead', 'In Discussion', 'Booked', 'Completed', 'Archived']
 
 export default function CRMPage() {
   const { user } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [contacts, setContacts] = useState([])
   const [view, setView] = useState('list')
   const [search, setSearch] = useState('')
@@ -20,6 +21,13 @@ export default function CRMPage() {
   const [form, setForm] = useState({ name: '', email: '', phone: '', company: '', status: 'Lead', notes: '' })
 
   useEffect(() => { if (user) loadContacts() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -119,14 +127,14 @@ export default function CRMPage() {
   )
 
   const s = {
-    page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
-    header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
+    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
     title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    row: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px' },
+    row: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexDirection: isMobile ? 'column' : 'row' },
     search: { flex: 1, padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
     viewBtn: (active) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', background: active ? 'var(--bg-elevated)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }),
     addBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
-    table: { width: '100%', borderCollapse: 'collapse' },
+    table: { width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '720px' : '100%' },
     th: { textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-subtle)' },
     td: { padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' },
     badge: (status) => {
@@ -134,21 +142,28 @@ export default function CRMPage() {
       const c = colors[status] ?? '#6b7280'
       return { padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: c + '22', color: c }
     },
-    pipeline: { display: 'flex', gap: '16px', overflowX: 'auto', paddingBottom: '16px' },
-    col: { minWidth: '220px', flex: 1 },
+    pipeline: { display: 'flex', gap: '16px', overflowX: isMobile ? 'hidden' : 'auto', paddingBottom: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    col: { minWidth: isMobile ? '100%' : '220px', flex: 1 },
     colHeader: { fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', padding: '0 4px' },
     card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '10px', padding: '14px', marginBottom: '10px', cursor: 'pointer', transition: 'border-color 0.15s' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '28px' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '520px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
     label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
     input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
-    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' },
+    grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' },
     actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' },
     cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
   }
 
   return (
-    <div style={s.page}>
+    <div style={s.page} className="crm-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .crm-page button { min-height: 44px; }
+          .crm-page input, .crm-page textarea, .crm-page select { width: 100% !important; font-size: 14px !important; }
+          .crm-page table { display: block; overflow-x: auto; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}

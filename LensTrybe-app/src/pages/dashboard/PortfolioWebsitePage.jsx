@@ -82,6 +82,7 @@ const emptyService = (sortOrder = 0) => ({ id: null, name: '', description: '', 
 
 export default function PortfolioWebsitePage() {
   const { user, profile, fetchUserData } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const { tier } = useSubscription()
   const hasAccess = tier === 'expert' || tier === 'elite'
   const isElite = profile?.subscription_tier?.toLowerCase() === 'elite'
@@ -195,6 +196,14 @@ export default function PortfolioWebsitePage() {
     }, 420)
     return () => clearTimeout(t)
   }, [subdomain, user?.id, hasAccess])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const folders = useMemo(() => contentRows.filter((r) => r.content_type === 'folder'), [contentRows])
   const files = useMemo(() => contentRows.filter((r) => r.content_type === 'file'), [contentRows])
@@ -545,7 +554,15 @@ export default function PortfolioWebsitePage() {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '28px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%', boxSizing: 'border-box' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: isMobile ? '16px' : '28px 24px 48px', maxWidth: 800, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }} className="portfolio-website-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .portfolio-website-page h1, .portfolio-website-page h2 { font-size: 24px !important; }
+          .portfolio-website-page button { min-height: 44px; }
+          .portfolio-website-page input, .portfolio-website-page textarea, .portfolio-website-page select { width: 100% !important; font-size: 14px !important; }
+          .portfolio-website-page .folder-grid-mobile { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
       <header>
         <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Portfolio website</h1>
       </header>
@@ -684,12 +701,12 @@ export default function PortfolioWebsitePage() {
           <Button variant="primary" type="button" onClick={createFolder} disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'Creating…' : 'Create folder'}</Button>
         </div>
         {loadingContent ? <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>Loading…</p> : (
-          <>
+          <div className="folder-grid-mobile" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: '12px' }}>
             <GeneralRow count={filesForFolder('general').length} manageOpen={manageTarget === 'general'} onManage={() => setManageTarget((t) => (t === 'general' ? null : 'general'))} onAddFiles={(fl) => uploadFilesToTarget(fl, 'general')} files={filesForFolder('general')} onDeleteFile={deleteFile} uploadingFiles={uploadingFiles} addFilesRef={addFilesRef} />
             {folders.map((folder) => (
               <FolderRow key={folder.id} folder={folder} fileCount={filesForFolder(folder.id).length} manageOpen={manageTarget === folder.id} onManage={() => setManageTarget((t) => (t === folder.id ? null : folder.id))} onDelete={() => deleteFolder(folder)} files={filesForFolder(folder.id)} onDeleteFile={deleteFile} onAddFiles={(fl) => uploadFilesToTarget(fl, folder.id)} uploadingFiles={uploadingFiles} />
             ))}
-          </>
+          </div>
         )}
       </section>
     </div>

@@ -9,6 +9,7 @@ import Modal from '../../components/ui/Modal'
 
 export default function TeamPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const { tier } = useSubscription()
   const [members, setMembers] = useState([])
   const [invitations, setInvitations] = useState([])
@@ -20,6 +21,13 @@ export default function TeamPage() {
   const maxMembers = 4
 
   useEffect(() => { loadTeam() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadTeam() {
     if (!user) return
@@ -59,12 +67,12 @@ export default function TeamPage() {
   const availableSlots = totalSlots - usedSlots
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
     upgradeBox: {
-      padding: '32px',
+      padding: isMobile ? '16px' : '32px',
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
@@ -80,11 +88,12 @@ export default function TeamPage() {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
-      padding: '24px',
+      padding: '16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: '24px',
+      flexDirection: isMobile ? 'column' : 'row',
     },
     slotsInfo: { display: 'flex', flexDirection: 'column', gap: '4px' },
     slotsTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
@@ -107,11 +116,13 @@ export default function TeamPage() {
       background: 'var(--bg-elevated)',
       border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
-      padding: '20px 24px',
+      padding: '16px',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: '16px',
+      flexDirection: isMobile ? 'column' : 'row',
+      alignItems: isMobile ? 'flex-start' : 'center',
     },
     memberLeft: { display: 'flex', alignItems: 'center', gap: '14px' },
     avatar: {
@@ -166,7 +177,13 @@ export default function TeamPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="team-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .team-page button { min-height: 44px; }
+          .team-page input, .team-page textarea, .team-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Team</h1>

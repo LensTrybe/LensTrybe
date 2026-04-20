@@ -10,6 +10,7 @@ const LIMITS = { basic: 5, pro: 20, expert: 40, elite: 999 }
 
 export default function PortfolioPage() {
   const { user } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const { tier } = useSubscription()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
@@ -20,6 +21,13 @@ export default function PortfolioPage() {
   const limit = LIMITS[tier] ?? 5
 
   useEffect(() => { loadItems() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadItems() {
     if (!user) return
@@ -80,16 +88,16 @@ export default function PortfolioPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    limitBar: { display: 'flex', alignItems: 'center', gap: '12px' },
+    limitBar: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
     limitTrack: { flex: 1, height: '4px', background: 'var(--border-default)', borderRadius: 'var(--radius-full)', overflow: 'hidden' },
     limitFill: { height: '100%', background: items.length >= limit ? 'var(--error)' : 'var(--green)', borderRadius: 'var(--radius-full)', transition: 'width var(--transition-base)' },
     limitText: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' },
-    uploadZone: { border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '48px', textAlign: 'center', cursor: 'pointer', transition: 'all var(--transition-base)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px' },
+    uploadZone: { border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '48px', textAlign: 'center', cursor: 'pointer', transition: 'all var(--transition-base)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
+    grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '12px' },
     gridItem: (sel) => ({ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', border: `2px solid ${sel ? 'var(--green)' : 'transparent'}`, transition: 'border-color var(--transition-fast)' }),
     img: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
     overlay: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0, transition: 'opacity var(--transition-fast)' },
@@ -103,7 +111,13 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="portfolio-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .portfolio-page button { min-height: 44px; }
+          .portfolio-page input, .portfolio-page textarea, .portfolio-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Portfolio</h1>

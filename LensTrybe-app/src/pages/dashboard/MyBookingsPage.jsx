@@ -15,12 +15,20 @@ function statusVariant(status) {
 
 export default function MyBookingsPage() {
   const { user } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [bookings, setBookings] = useState([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState(null)
   const [filter, setFilter] = useState('upcoming')
 
   useEffect(() => { loadBookings() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadBookings() {
     if (!user) {
@@ -60,16 +68,16 @@ export default function MyBookingsPage() {
   })
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', width: 'fit-content' },
+    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflowX: isMobile ? 'auto' : 'hidden', width: isMobile ? '100%' : 'fit-content' },
     tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '700px' : 'auto' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '700px' : 'auto' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
-    viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    viewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
     viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
@@ -78,7 +86,13 @@ export default function MyBookingsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="my-bookings-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .my-bookings-page button { min-height: 44px; }
+          .my-bookings-page input, .my-bookings-page textarea, .my-bookings-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       <div>
         <h1 style={styles.title}>My Bookings</h1>
         <p style={styles.subtitle}>All your confirmed and upcoming bookings.</p>

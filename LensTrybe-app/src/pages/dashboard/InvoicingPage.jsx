@@ -48,6 +48,7 @@ function mergeInvoiceBrand(brandKit) {
 
 export default function InvoicingPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const invoicePrintRef = useRef(null)
   const [invoices, setInvoices] = useState([])
   const [loading, setLoading] = useState(true)
@@ -107,6 +108,14 @@ export default function InvoicingPage() {
     window.addEventListener('focus', loadBrandKit)
     return () => window.removeEventListener('focus', loadBrandKit)
   }, [loadBrandKit])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (profile) {
@@ -332,13 +341,13 @@ export default function InvoicingPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 80px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '680px' : 'auto' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 100px 120px 80px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '680px' : 'auto' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
@@ -361,7 +370,7 @@ export default function InvoicingPage() {
   const brandFontStack = invoiceBrand.fontStack
   const brandHeaderBg = { background: invoiceBrand.primary }
   const headerTextColor = invoiceBrand.secondary
-  const invoiceDocSurface = { padding: '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: brandFontStack }
+  const invoiceDocSurface = { padding: isMobile ? '16px' : '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: brandFontStack }
   const customTemplateBanner = invoiceBrand.hasCustomTemplate ? (
     <div
       role="status"
@@ -382,7 +391,14 @@ export default function InvoicingPage() {
 
   return (
     <>
-      <style>{`@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }`}</style>
+      <style>{`
+        @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @media (max-width: 767px) {
+          .invoicing-page button { min-height: 44px; }
+          .invoicing-page input, .invoicing-page textarea, .invoicing-page select { width: 100% !important; font-size: 14px !important; }
+          .invoicing-page * { min-width: 0; }
+        }
+      `}</style>
       {toast && (
         <div style={{
           position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999,
@@ -397,7 +413,7 @@ export default function InvoicingPage() {
           {toast.type === 'success' ? '✓' : '✕'} {toast.message}
         </div>
       )}
-    <div style={styles.page}>
+    <div style={styles.page} className="invoicing-page">
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Invoicing</h1>
@@ -406,8 +422,8 @@ export default function InvoicingPage() {
         <Button variant="primary" onClick={() => setShowCreate(true)}>+ New Invoice</Button>
       </div>
 
-      <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '20px 24px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: editingBank ? '16px' : '0' }}>
+      <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: isMobile ? '16px' : '20px 24px', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: editingBank ? '16px' : '0', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' }}>
           <div>
             <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '2px' }}>Payment Details</div>
             {!editingBank && (
@@ -425,7 +441,7 @@ export default function InvoicingPage() {
         </div>
 
         {editingBank && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
             <div>
               <label style={{ fontSize: '12px', color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Bank Name</label>
               <input value={bankDetails.bank_name} onChange={e => setBankDetails(p => ({ ...p, bank_name: e.target.value }))} placeholder="e.g. Commonwealth Bank" style={{ width: '100%', padding: '8px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} />
@@ -482,11 +498,11 @@ export default function InvoicingPage() {
 
       {/* Create Modal */}
       {showCreate && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '680px', maxHeight: isMobile ? '100vh' : '90vh', height: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
             {/* Header */}
-            <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: isMobile ? '12px 14px' : '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '15px', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>New Invoice</span>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button
@@ -518,8 +534,8 @@ export default function InvoicingPage() {
               {customTemplateBanner}
 
               {/* Header */}
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : '0' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>
@@ -547,7 +563,8 @@ export default function InvoicingPage() {
               </div>
 
               {/* Line items */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: isMobile ? '560px' : '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandAccent}33` }}>
                     <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
@@ -584,6 +601,7 @@ export default function InvoicingPage() {
                   </tr>
                 </tbody>
               </table>
+              </div>
 
               {/* Total */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px', paddingTop: '16px', borderTop: `1px solid ${brandAccent}` }}>
@@ -622,11 +640,11 @@ export default function InvoicingPage() {
 
       {/* View Modal */}
       {showView && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '680px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '680px', maxHeight: isMobile ? '100vh' : '90vh', height: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
 
             {/* Modal header */}
-            <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
               <span style={{ fontSize: '15px', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>Invoice</span>
               <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
                 <button
@@ -697,8 +715,8 @@ export default function InvoicingPage() {
               {customTemplateBanner}
 
               {/* Header */}
-              <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+              <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '10px' : '0' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
                     {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />}
                     <div>
@@ -740,7 +758,8 @@ export default function InvoicingPage() {
               </div>
 
               {/* Line items table */}
-              <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
+              <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', minWidth: isMobile ? '560px' : '100%', borderCollapse: 'collapse', marginBottom: '24px' }}>
                 <thead>
                   <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandAccent}33` }}>
                     <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Description</th>
@@ -787,6 +806,7 @@ export default function InvoicingPage() {
                   )}
                 </tbody>
               </table>
+              </div>
 
               {/* Total */}
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '40px', paddingTop: '16px', borderTop: `1px solid ${brandAccent}` }}>

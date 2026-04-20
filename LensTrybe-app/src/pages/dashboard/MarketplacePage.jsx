@@ -7,6 +7,7 @@ const CONDITIONS = ['New', 'Like New', 'Good', 'Fair']
 
 export default function MarketplacePage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [tab, setTab] = useState('browse')
   const [listings, setListings] = useState([])
   const [myListings, setMyListings] = useState([])
@@ -32,6 +33,13 @@ export default function MarketplacePage() {
   const [sendingContact, setSendingContact] = useState(false)
 
   useEffect(() => { if (user) { loadListings(); loadMyListings(); loadSaved() } }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -260,35 +268,41 @@ export default function MarketplacePage() {
   })
 
   const s = {
-    page: { padding: '32px 40px', fontFamily: 'var(--font-ui)' },
-    header: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' },
+    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
     title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px' },
+    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
     tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s', fontFamily: 'var(--font-ui)' }),
     postBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
-    filters: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap' },
-    searchInput: { flex: 1, minWidth: '200px', padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    filters: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
+    searchInput: { flex: 1, minWidth: isMobile ? '100%' : '200px', padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
     select: { padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
+    grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '16px' },
     card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px', cursor: 'pointer', position: 'relative', transition: 'border-color 0.15s' },
     cardTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' },
     cardPrice: { fontSize: '16px', fontWeight: 700, color: '#1DB954', marginBottom: '6px' },
     cardMeta: { fontSize: '12px', color: 'var(--text-muted)' },
     saveBtn: { position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '2px' },
     empty: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '560px', maxHeight: '90vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    modalHeader: { padding: '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-    modalBody: { padding: '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
+    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '560px', maxHeight: isMobile ? '100vh' : '90vh', minHeight: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    modalBody: { padding: isMobile ? '16px' : '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
     label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
     input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
-    grid2: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+    grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
     actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--border-subtle)' },
     cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
   }
 
   return (
-    <div style={s.page}>
+    <div style={s.page} className="marketplace-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .marketplace-page button { min-height: 44px; }
+          .marketplace-page input, .marketplace-page textarea, .marketplace-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}

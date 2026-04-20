@@ -426,7 +426,15 @@ export default function BrandKitPage() {
 
   return (
     <>
+    <style>{`
+      @media (max-width: 767px) {
+        .brand-kit-page button { min-height: 44px; }
+        .brand-kit-page input, .brand-kit-page textarea, .brand-kit-page select { width: 100% !important; font-size: 14px !important; }
+        .brand-kit-page [data-font-selector] { flex-wrap: wrap !important; }
+      }
+    `}</style>
     <div
+      className="brand-kit-page"
       style={{
         display: 'flex',
         flexDirection: 'column',

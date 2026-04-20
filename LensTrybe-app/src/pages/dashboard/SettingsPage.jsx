@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
@@ -269,6 +269,15 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailMsg, setEmailMsg] = useState(null)
   const [pricingAnnual, setPricingAnnual] = useState(true)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
@@ -386,7 +395,17 @@ export default function SettingsPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={{ ...styles.page, padding: isMobile ? '16px' : styles.page.padding, overflowX: 'hidden' }} className="settings-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .settings-page { padding: 16px !important; }
+          .settings-page h1, .settings-page h2 { font-size: 24px !important; }
+          .settings-page button { min-height: 44px; }
+          .settings-page input, .settings-page textarea, .settings-page select { width: 100% !important; font-size: 14px !important; }
+          .settings-page [style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: 1fr !important; }
+          .settings-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
       <div>
         <h1 style={styles.title}>Settings</h1>
         <p style={styles.subtitle}>Manage your subscription, password and account.</p>

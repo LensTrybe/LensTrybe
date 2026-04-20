@@ -7,6 +7,7 @@ import Modal from '../../components/ui/Modal'
 
 export default function ClientPortalsPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [portals, setPortals] = useState([])
   const [loading, setLoading] = useState(true)
   const [showCreate, setShowCreate] = useState(false)
@@ -19,6 +20,13 @@ export default function ClientPortalsPage() {
   })
 
   useEffect(() => { loadPortals() }, [user])
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -89,28 +97,34 @@ export default function ClientPortalsPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    infoBox: { padding: '16px 20px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7 },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '16px' },
-    portalCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
+    infoBox: { padding: '16px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7 },
+    grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' },
+    portalCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' },
     cardHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' },
     clientName: { fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     clientEmail: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '2px' },
-    copyRow: { display: 'flex', gap: '8px', alignItems: 'center' },
-    copyInput: { flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
-    cardActions: { display: 'flex', gap: '8px', justifyContent: 'flex-end' },
+    copyRow: { display: 'flex', gap: '8px', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' },
+    copyInput: { flex: 1, width: '100%', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+    cardActions: { display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
     createdAt: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="client-portals-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .client-portals-page button { min-height: 44px; }
+          .client-portals-page input, .client-portals-page textarea, .client-portals-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}

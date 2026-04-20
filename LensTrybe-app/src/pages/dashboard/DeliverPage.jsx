@@ -31,6 +31,7 @@ function mergeDeliverGalleryBrand(brandKit) {
 
 export default function DeliverPage() {
   const { user, profile } = useAuth()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const { tier } = useSubscription()
   const [deliveries, setDeliveries] = useState([])
   const [loading, setLoading] = useState(true)
@@ -80,6 +81,14 @@ export default function DeliverPage() {
     window.addEventListener('focus', loadBrandKit)
     return () => window.removeEventListener('focus', loadBrandKit)
   }, [loadBrandKit])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function loadDeliveries() {
     if (!user) return
@@ -227,27 +236,27 @@ export default function DeliverPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '760px' : 'auto' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '760px' : 'auto' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     toggle: { display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' },
     toggleTrack: (on) => ({ width: '40px', height: '22px', borderRadius: 'var(--radius-full)', background: on ? 'var(--green)' : 'var(--border-strong)', position: 'relative', transition: 'background var(--transition-base)', flexShrink: 0 }),
     toggleThumb: (on) => ({ position: 'absolute', top: '3px', left: on ? '21px' : '3px', width: '16px', height: '16px', borderRadius: '50%', background: '#fff', transition: 'left var(--transition-base)' }),
     toggleLabel: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    fileZone: { border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '32px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' },
+    fileZone: { border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '32px', textAlign: 'center', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', width: '100%' },
     fileList: { display: 'flex', flexDirection: 'column', gap: '6px' },
     fileItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '8px' },
     copyRow: { display: 'flex', alignItems: 'center', gap: '8px' },
     copyInput: { flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', outline: 'none' },
-    viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    viewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
     viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
@@ -298,7 +307,14 @@ export default function DeliverPage() {
   ) : null
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="deliver-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .deliver-page button { min-height: 44px; }
+          .deliver-page input, .deliver-page textarea, .deliver-page select { width: 100% !important; font-size: 14px !important; }
+          .deliver-page .deliver-gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)', fontFamily: 'var(--font-ui)' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
