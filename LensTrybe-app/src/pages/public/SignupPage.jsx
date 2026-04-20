@@ -161,18 +161,14 @@ export default function SignupPage() {
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
         business_name: form.businessName,
-        full_name: `${form.firstName} ${form.lastName}`,
-        first_name: form.firstName,
-        last_name: form.lastName,
-        display_name_preference: form.displayNamePreference,
-        legal_name: form.legalName,
         skill_types: form.skillTypes,
         specialties: form.specialties,
         city: form.city,
         state: form.state,
-        country: form.country,
-        bio: form.bio,
-        subscription_tier: form.tier,
+        country: form.country || 'Australia',
+        subscription_tier: form.tier || 'basic',
+        display_name_preference: form.displayNamePreference || 'business_name',
+        account_type: 'creative',
       })
       if (profileError) throw profileError
 
