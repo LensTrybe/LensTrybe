@@ -112,22 +112,6 @@ const CATEGORY_ICONS = {
   ugc_creator: <IconPhone />,
 };
 
-const PLACEHOLDER_CREATIVES = [
-  { business_name: 'Nina Petrov Aerial Masters', subscription_tier: 'elite', skill_types: ['drone_pilot'], city: 'Gold Coast', state: 'QLD', bio: 'International aerial cinematographer pioneering...', avg_rating: 4.9, review_count: 31 },
-  { business_name: 'Cameron Lee UGC Agency', subscription_tier: 'expert', skill_types: ['ugc_creator'], city: 'Sydney', state: 'NSW', bio: 'Premium UGC content for global brands.', avg_rating: 4.7, review_count: 24 },
-  { business_name: 'Ivy Pearson Drone Services', subscription_tier: 'expert', skill_types: ['drone_pilot'], city: 'Melbourne', state: 'VIC', bio: 'Commercial and real estate aerial photography.', avg_rating: 4.8, review_count: 18 },
-  { business_name: 'Portia Hayes Studio', subscription_tier: 'elite', skill_types: ['photo_editor'], city: 'Brisbane', state: 'QLD', bio: 'Award-winning retoucher and colour grader.', avg_rating: 5.0, review_count: 42 },
-  { business_name: 'Marcus Ellis UGC Studios', subscription_tier: 'expert', skill_types: ['ugc_creator'], city: 'Perth', state: 'WA', bio: 'Specialist in lifestyle and consumer brand content.', avg_rating: 4.6, review_count: 15 },
-  { business_name: 'Alexandra Moreno Beauty', subscription_tier: 'elite', skill_types: ['hair_makeup_artist'], city: 'Hobart', state: 'TAS', bio: 'Industry-leading beauty artist with product development experience.', avg_rating: 5.0, review_count: 35 },
-  { business_name: 'Christopher Lane Digital', subscription_tier: 'expert', skill_types: ['social_media_manager'], city: 'Adelaide', state: 'SA', bio: 'Social media strategy for creator networks.', avg_rating: 4.5, review_count: 19 },
-  { business_name: 'Charlotte Wells Fine Art', subscription_tier: 'expert', skill_types: ['photographer'], city: 'Sydney', state: 'NSW', bio: 'Fine art portrait photographer.', avg_rating: 4.8, review_count: 27 },
-].map((p, i) => ({ ...p, id: `placeholder-${i}`, _placeholder: true }));
-
-function padWithPlaceholders(real, targetCount) {
-  if (real.length >= targetCount) return real;
-  return [...real, ...PLACEHOLDER_CREATIVES.slice(0, targetCount - real.length)];
-}
-
 function CreativeCard({ creative, isCenter }) {
   const tierColor = creative.subscription_tier === 'elite' ? '#F59E0B' : '#A855F7';
   const tierLabel = creative.subscription_tier === 'elite' ? '⭐ ELITE' : 'EXPERT';
@@ -195,10 +179,6 @@ function CreativeCard({ creative, isCenter }) {
   );
 }
 
-function isCarouselPlaceholder(creative) {
-  return !!(creative?._placeholder || (creative?.id != null && String(creative.id).startsWith('placeholder-')));
-}
-
 function FanCarousel({ creatives, autoPlay = true }) {
   const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -253,7 +233,7 @@ function FanCarousel({ creatives, autoPlay = true }) {
 
   const handleCardClick = (creative) => {
     if (Math.abs(dragDelta.current) > 8) return;
-    if (isCarouselPlaceholder(creative) || !creative?.id) return;
+    if (!creative?.id) return;
     navigate(`/creatives/${creative.id}`);
   };
 
@@ -302,7 +282,7 @@ function FanCarousel({ creatives, autoPlay = true }) {
             style={{
               position: 'absolute',
               width: `${CARD_WIDTH}px`,
-              cursor: isCarouselPlaceholder(creative) ? 'default' : 'pointer',
+              cursor: creative?.id ? 'pointer' : 'default',
               ...getCardProps(offset),
             }}
           >
@@ -369,13 +349,12 @@ export default function HomePage() {
         review_count: reviewMap[p.id]?.count || 0,
       }));
 
-      const padded = padWithPlaceholders(enriched, 8);
-      setFeaturedCreatives(padded);
-      setEliteCreatives(padWithPlaceholders(padded.filter(c => c.subscription_tier === 'elite' || c._placeholder), 5));
+      setFeaturedCreatives(enriched);
+      setEliteCreatives(enriched.filter(c => c.subscription_tier === 'elite'));
     } catch (err) {
       console.error('Error fetching creatives:', err);
-      setFeaturedCreatives(PLACEHOLDER_CREATIVES);
-      setEliteCreatives(PLACEHOLDER_CREATIVES.slice(0, 5));
+      setFeaturedCreatives([]);
+      setEliteCreatives([]);
     } finally {
       setLoading(false);
     }
@@ -460,7 +439,13 @@ export default function HomePage() {
             <h2 style={{ fontSize: '32px', fontWeight: '700', margin: '0 0 10px', fontFamily: "'Instrument Serif', Georgia, serif" }}>Featured Creatives</h2>
             <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0 }}>Rotating selection of Expert and Elite tier creators</p>
           </div>
-          {loading ? <Spinner /> : <FanCarousel creatives={featuredCreatives} />}
+          {loading ? (
+            <Spinner />
+          ) : featuredCreatives.length > 0 ? (
+            <FanCarousel creatives={featuredCreatives} />
+          ) : (
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>No creatives found.</div>
+          )}
         </div>
       </section>
 
@@ -474,7 +459,13 @@ export default function HomePage() {
               always visible and ready to elevate your project.
             </p>
           </div>
-          {loading ? <Spinner /> : <FanCarousel creatives={eliteCreatives} />}
+          {loading ? (
+            <Spinner />
+          ) : eliteCreatives.length > 0 ? (
+            <FanCarousel creatives={eliteCreatives} />
+          ) : (
+            <div style={{ textAlign: 'center', color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>No creatives found.</div>
+          )}
         </div>
       </section>
 
