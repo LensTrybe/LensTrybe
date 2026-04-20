@@ -195,7 +195,12 @@ function CreativeCard({ creative, isCenter }) {
   );
 }
 
+function isCarouselPlaceholder(creative) {
+  return !!(creative?._placeholder || (creative?.id != null && String(creative.id).startsWith('placeholder-')));
+}
+
 function FanCarousel({ creatives, autoPlay = true }) {
+  const navigate = useNavigate();
   const [activeIndex, setActiveIndex] = useState(0);
   const intervalRef = useRef(null);
   const trackRef = useRef(null);
@@ -246,6 +251,12 @@ function FanCarousel({ creatives, autoPlay = true }) {
     startAuto();
   };
 
+  const handleCardClick = (creative) => {
+    if (Math.abs(dragDelta.current) > 8) return;
+    if (isCarouselPlaceholder(creative) || !creative?.id) return;
+    navigate(`/creatives/${creative.id}`);
+  };
+
   const getCardProps = (offset) => {
     const abs = Math.abs(offset);
     const sign = offset < 0 ? -1 : offset > 0 ? 1 : 0;
@@ -287,8 +298,13 @@ function FanCarousel({ creatives, autoPlay = true }) {
         {visibleCards.map(({ creative, offset, idx }) => (
           <div
             key={idx}
-            onClick={() => { if (Math.abs(dragDelta.current) < 5 && offset !== 0) goTo(((activeIndex + offset) % creatives.length + creatives.length) % creatives.length); }}
-            style={{ position: 'absolute', width: `${CARD_WIDTH}px`, ...getCardProps(offset) }}
+            onClick={() => handleCardClick(creative)}
+            style={{
+              position: 'absolute',
+              width: `${CARD_WIDTH}px`,
+              cursor: isCarouselPlaceholder(creative) ? 'default' : 'pointer',
+              ...getCardProps(offset),
+            }}
           >
             <CreativeCard creative={creative} isCenter={offset === 0} />
           </div>
@@ -393,12 +409,18 @@ export default function HomePage() {
           background: 'radial-gradient(ellipse, rgba(168,85,247,0.06) 0%, transparent 70%)',
           pointerEvents: 'none',
         }} />
-        <h1 style={{
-          fontSize: isMobile ? 'clamp(30px, 10vw, 38px)' : 'clamp(40px, 6vw, 68px)', fontWeight: '800',
-          lineHeight: 1.05, margin: '0 0 24px', letterSpacing: '-0.02em',
-          fontFamily: "'Instrument Serif', Georgia, serif",
-          whiteSpace: isMobile ? 'normal' : 'nowrap',
-        }}>
+        <h1
+          className="home-hero-tagline"
+          style={{
+            fontSize: isMobile ? 'clamp(28px, 11vw, 44px)' : 'clamp(40px, 6vw, 68px)',
+            fontWeight: '800',
+            lineHeight: 1.05,
+            margin: isMobile ? '0 0 20px' : '0 0 24px',
+            letterSpacing: '-0.02em',
+            fontFamily: "'Instrument Serif', Georgia, serif",
+            whiteSpace: isMobile ? 'normal' : 'nowrap',
+          }}
+        >
           <span style={{ color: '#E879F9' }}>Connect.</span>{' '}
           <span style={{ color: '#C0C8D8' }}>Capture.</span>{' '}
           <span style={{ color: '#1DB954', textShadow: '0 0 60px rgba(29,185,84,0.5), 0 0 120px rgba(29,185,84,0.2)' }}>Create</span>
@@ -536,6 +558,9 @@ export default function HomePage() {
         @media (max-width: 767px) {
           p, span, a, button, input, select, textarea, label, li, div {
             font-size: max(14px, 0.875rem);
+          }
+          .home-hero-tagline span {
+            font-size: inherit;
           }
         }
       `}</style>
