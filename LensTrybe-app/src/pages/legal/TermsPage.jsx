@@ -1,6 +1,24 @@
+import { useEffect, useState } from 'react'
+
 export default function TermsPage() {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: '60px 24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-terms-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .legal-terms-page h1 { font-size: 24px !important; }
+          .legal-terms-page h2 { font-size: 16px !important; }
+          .legal-terms-page h3 { font-size: 15px !important; }
+          .legal-terms-page p, .legal-terms-page div, .legal-terms-page span { font-size: max(14px, 0.875rem) !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '800px', margin: '0 auto', color: '#ccc', lineHeight: 1.8 }}>
         <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Terms and Conditions</h1>
         <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>

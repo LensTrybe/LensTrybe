@@ -390,8 +390,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       </div>
 
       {showReview && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' }}>
+          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '480px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' }}>
             {reviewSent ? (
               <div style={{ textAlign: 'center', padding: '24px', color: '#1DB954', fontSize: '16px', fontWeight: 600 }}>✓ Review submitted! Thank you.</div>
             ) : (
@@ -493,9 +493,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           .public-profile-page {
             overflow-x: hidden;
           }
+          .public-profile-page section {
+            margin-bottom: 32px !important;
+          }
           .public-profile-mobile-actions > * {
             width: 100%;
             min-height: 44px;
+          }
+          .public-profile-page [style*="display: flex"][style*="justify-content: space-between"][style*="margin-bottom: 24px"] {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
           }
           .public-profile-page p,
           .public-profile-page span,

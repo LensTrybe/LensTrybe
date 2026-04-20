@@ -1,4 +1,14 @@
+import { useEffect, useState } from 'react'
+
 export default function CookiesPage() {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const sections = [
     { title: '1. What Are Cookies', body: 'Cookies are small text files that are stored on your device when you visit a website. They are widely used to make websites work efficiently and to provide information to the website operator. Cookies do not give us access to your device or any information beyond what you choose to share with us.' },
     { title: '2. How LensTrybe Uses Cookies', body: 'LensTrybe uses cookies solely to operate the platform correctly. We do not use cookies for advertising, remarketing, or tracking you across other websites.\n\n2.1 Essential Cookies\nThese cookies are necessary for the platform to function. Without them, core features such as logging in, maintaining your session, and accessing your dashboard would not work. These cookies cannot be disabled.\n\n• Session cookies — keep you logged in while you navigate the platform\n• Authentication cookies — verify your identity and account permissions\n• Security cookies — protect against cross-site request forgery and other security threats\n• Preference cookies — remember your region and currency selection\n\n2.2 Functional Cookies\nThese cookies allow the platform to remember choices you have made and provide enhanced functionality. Disabling these may affect your experience but will not prevent you from using the platform.\n\n• UI preference cookies — remember display settings and navigation state\n• Form state cookies — preserve form data if you navigate away mid-completion\n\n2.3 Analytics Cookies\nLensTrybe currently uses only built-in platform analytics to understand how the platform is being used. This data is used solely to improve the platform experience. We do not use Google Analytics or any third-party analytics tools at this time.\n\nIf we introduce third-party analytics tools in the future, this policy will be updated and users will be notified.' },
@@ -11,7 +21,14 @@ export default function CookiesPage() {
   ]
 
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: '60px 24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-cookies-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .legal-cookies-page h1 { font-size: 24px !important; }
+          .legal-cookies-page h2 { font-size: 16px !important; }
+          .legal-cookies-page p, .legal-cookies-page div, .legal-cookies-page span { font-size: max(14px, 0.875rem) !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '800px', margin: '0 auto', color: '#ccc', lineHeight: 1.8 }}>
         <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Cookies Policy</h1>
         <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>

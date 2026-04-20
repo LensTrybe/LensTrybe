@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
@@ -34,6 +34,7 @@ const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
 export default function SignupPage() {
   const navigate = useNavigate()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -61,6 +62,14 @@ export default function SignupPage() {
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function toggleArray(field, value) {
     setForm(prev => ({
@@ -136,12 +145,12 @@ export default function SignupPage() {
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'center',
-      padding: '48px 24px 80px',
+      padding: isMobile ? '24px 16px 48px' : '48px 24px 80px',
     },
     container: { width: '100%', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '40px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
     logo: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     progress: { display: 'flex', gap: '6px' },
     progressDot: (active, done) => ({
@@ -154,7 +163,7 @@ export default function SignupPage() {
     }),
     stepLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.08em', textTransform: 'uppercase' },
     content: { display: 'flex', flexDirection: 'column', gap: '20px' },
-    tierGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' },
+    tierGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
     tierCard: (selected, color) => ({
       padding: '20px',
       borderRadius: 'var(--radius-xl)',
@@ -169,7 +178,7 @@ export default function SignupPage() {
     tierName: { fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     tierDesc: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    skillGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' },
+    skillGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' },
     skillChip: (selected) => ({
       padding: '10px 16px',
       borderRadius: 'var(--radius-lg)',
@@ -195,7 +204,7 @@ export default function SignupPage() {
       transition: 'all var(--transition-base)',
       fontFamily: 'var(--font-ui)',
     }),
-    row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
+    row: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     sectionTitle: { fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', marginBottom: '-8px' },
     avatarUpload: {
       border: '2px dashed var(--border-default)',
@@ -219,7 +228,7 @@ export default function SignupPage() {
       color: 'var(--error)',
       fontFamily: 'var(--font-ui)',
     },
-    actions: { display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center' },
+    actions: { display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' },
     footerNote: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)' },
   }
 
@@ -238,7 +247,15 @@ export default function SignupPage() {
   ]
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="signup-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .signup-page button { min-height: 44px; }
+          .signup-page input, .signup-page textarea, .signup-page select { width: 100% !important; font-size: 14px !important; }
+          .signup-page [style*="height: 3px"] { min-height: 3px; }
+          .signup-page [style*="justify-content: space-between"] > button { width: 100%; }
+        }
+      `}</style>
       <div style={styles.container}>
 
         <div style={styles.header}>

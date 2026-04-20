@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
@@ -6,11 +6,20 @@ import Input from '../../components/ui/Input'
 
 export default function LoginPage() {
   const navigate = useNavigate()
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -56,12 +65,12 @@ export default function LoginPage() {
     page: {
       minHeight: '100vh', background: 'var(--bg-base)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      padding: '40px 24px',
+      padding: isMobile ? '24px' : '40px 24px',
     },
     card: { width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '32px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
     logo: { fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     subtitle: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     form: { display: 'flex', flexDirection: 'column', gap: '16px' },
     passwordWrap: { position: 'relative' },
@@ -88,7 +97,13 @@ export default function LoginPage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="login-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .login-page button { min-height: 44px; }
+          .login-page input, .login-page textarea, .login-page select { width: 100% !important; font-size: 14px !important; }
+        }
+      `}</style>
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>

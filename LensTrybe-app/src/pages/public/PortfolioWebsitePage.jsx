@@ -55,6 +55,7 @@ export default function PortfolioWebsitePage() {
   const [contactSending, setContactSending] = useState(false)
   const [contactSent, setContactSent] = useState(false)
   const [contactError, setContactError] = useState('')
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   const accent = brandKit?.primary_color || '#1DB954'
   const bodyFont = fontStackCss(brandKit?.font || 'Inter')
@@ -114,6 +115,14 @@ export default function PortfolioWebsitePage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   useEffect(() => {
     if (!profile?.business_name) return
@@ -231,17 +240,21 @@ export default function PortfolioWebsitePage() {
   const tagline = profile.portfolio_tagline || ''
 
   return (
-    <div style={{ minHeight: '100vh', background: '#fafafa', color: '#18181b', fontFamily: bodyFont }}>
+    <div style={{ minHeight: '100vh', background: '#fafafa', color: '#18181b', fontFamily: bodyFont, overflowX: 'hidden' }} className="public-portfolio-page">
       <style>{`
         html { scroll-behavior: smooth; }
         a.site-nav-link:hover { opacity: 0.85; }
+        @media (max-width: 767px) {
+          .public-portfolio-page button { min-height: 44px; }
+          .public-portfolio-page input, .public-portfolio-page textarea, .public-portfolio-page select { width: 100% !important; font-size: 14px !important; }
+        }
       `}</style>
 
       {/* Hero */}
       <header
         style={{
           position: 'relative',
-          minHeight: 'min(72vh, 640px)',
+          minHeight: isMobile ? 'auto' : 'min(72vh, 640px)',
           width: '100%',
           backgroundColor: accent,
           backgroundImage: coverUrl ? `linear-gradient(to bottom, rgba(0,0,0,0.5), rgba(0,0,0,0.72)), url(${coverUrl})` : undefined,
@@ -253,7 +266,7 @@ export default function PortfolioWebsitePage() {
           style={{
             maxWidth: 1120,
             margin: '0 auto',
-            padding: 'clamp(32px, 8vw, 72px) 24px 120px',
+            padding: isMobile ? '24px 16px 32px' : 'clamp(32px, 8vw, 72px) 24px 120px',
             position: 'relative',
             zIndex: 1,
           }}
@@ -314,10 +327,12 @@ export default function PortfolioWebsitePage() {
             margin: '0 auto',
             padding: '12px 20px',
             display: 'flex',
-            flexWrap: 'wrap',
+            flexWrap: 'nowrap',
             alignItems: 'center',
-            justifyContent: 'center',
+            justifyContent: isMobile ? 'flex-start' : 'center',
             gap: '8px 20px',
+            overflowX: isMobile ? 'auto' : 'visible',
+            whiteSpace: isMobile ? 'nowrap' : 'normal',
           }}
         >
           {navLinks.map((l) => (
@@ -340,7 +355,7 @@ export default function PortfolioWebsitePage() {
         </div>
       </nav>
 
-      <main style={{ maxWidth: 1120, margin: '0 auto', padding: 'clamp(32px, 5vw, 56px) 20px 64px' }}>
+      <main style={{ maxWidth: 1120, margin: '0 auto', padding: isMobile ? '24px 16px 48px' : 'clamp(32px, 5vw, 56px) 20px 64px' }}>
         {sections.client_reviews && (
           <section id="reviews" style={{ marginBottom: 56 }}>
             <h2 style={{ fontSize: 'clamp(22px, 3vw, 28px)', fontWeight: 700, color: accent, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Reviews</h2>
@@ -348,7 +363,7 @@ export default function PortfolioWebsitePage() {
             {reviews.length === 0 ? (
               <p style={{ color: '#71717a', fontSize: 15 }}>No reviews yet.</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
                 {reviews.map((r) => (
                   <article
                     key={r.id}
@@ -386,7 +401,7 @@ export default function PortfolioWebsitePage() {
             <h2 style={{ fontSize: 'clamp(22px, 3vw, 28px)', fontWeight: 700, color: accent, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Services</h2>
             <div style={{ width: 56, height: 3, background: accent, borderRadius: 2, marginBottom: 24 }} />
             {services.length === 0 ? <p style={{ color: '#71717a', margin: 0 }}>Services will appear here soon.</p> : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
                 {services.map((service) => (
                   <article key={service.id} style={{ background: '#fff', borderRadius: 16, padding: '18px 20px', boxShadow: '0 4px 24px rgba(0,0,0,0.06)', border: '1px solid rgba(0,0,0,0.04)' }}>
                     <h3 style={{ margin: '0 0 8px', color: '#18181b', fontSize: 18, fontWeight: 700 }}>{service.name}</h3>
@@ -403,7 +418,7 @@ export default function PortfolioWebsitePage() {
           <section id="content" style={{ marginBottom: 56 }}>
             <h2 style={{ fontSize: 'clamp(22px, 3vw, 28px)', fontWeight: 700, color: accent, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Gallery</h2>
             <div style={{ width: 56, height: 3, background: accent, borderRadius: 2, marginBottom: 24 }} />
-            <ContentGalleryBlocks folders={folders} filesInFolder={filesInFolder} accent={accent} />
+            <ContentGalleryBlocks folders={folders} filesInFolder={filesInFolder} accent={accent} isMobile={isMobile} />
           </section>
         )}
 
@@ -413,10 +428,10 @@ export default function PortfolioWebsitePage() {
             <div style={{ width: 56, height: 3, background: accent, borderRadius: 2, marginBottom: 24 }} />
             <div
               style={{
-                maxWidth: 520,
+                maxWidth: isMobile ? '100%' : 520,
                 background: '#fff',
                 borderRadius: 20,
-                padding: '28px 28px 32px',
+                padding: isMobile ? '16px' : '28px 28px 32px',
                 boxShadow: '0 8px 40px rgba(0,0,0,0.06)',
                 border: '1px solid rgba(0,0,0,0.04)',
               }}
@@ -570,7 +585,7 @@ function SocialRow({ profile, accent }) {
   )
 }
 
-function ContentGalleryBlocks({ folders, filesInFolder, accent }) {
+function ContentGalleryBlocks({ folders, filesInFolder, accent, isMobile }) {
   const general = filesInFolder(null)
   const hasAny = folders.length > 0 || general.length > 0
   if (!hasAny) {
@@ -581,13 +596,13 @@ function ContentGalleryBlocks({ folders, filesInFolder, accent }) {
       {folders.map((folder) => (
         <div key={folder.id}>
           <FolderHeader folder={folder} accent={accent} />
-          <FileGrid files={filesInFolder(folder.id)} accent={accent} />
+          <FileGrid files={filesInFolder(folder.id)} accent={accent} isMobile={isMobile} />
         </div>
       ))}
       {general.length > 0 ? (
         <div>
           <h3 style={{ fontSize: 20, fontWeight: 700, color: '#18181b', margin: '0 0 16px' }}>General</h3>
-          <FileGrid files={general} accent={accent} />
+          <FileGrid files={general} accent={accent} isMobile={isMobile} />
         </div>
       ) : null}
     </div>
@@ -607,12 +622,12 @@ function FolderHeader({ folder, accent }) {
   )
 }
 
-function FileGrid({ files, accent }) {
+function FileGrid({ files, accent, isMobile }) {
   if (!files.length) {
     return <p style={{ color: '#a1a1aa', fontSize: 14, margin: 0 }}>No files in this folder.</p>
   }
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(auto-fill, minmax(200px, 1fr))', gap: 16 }}>
       {files.map((f) => (
         <FileCard key={f.id} file={f} accent={accent} />
       ))}

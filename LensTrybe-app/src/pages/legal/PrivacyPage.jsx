@@ -1,4 +1,14 @@
+import { useEffect, useState } from 'react'
+
 export default function PrivacyPage() {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  useEffect(() => {
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768)
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
   const sections = [
     { title: '1. Introduction', body: 'LensTrybe ("we", "us", "our") is a subscription-based directory and marketplace platform connecting visual creative professionals with clients. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use the LensTrybe platform at lenstrybe.com.\n\nBy creating an account or using LensTrybe, you agree to the practices described in this Privacy Policy. If you do not agree, please do not use our platform.\n\nLensTrybe is operated by Michael Trybe (Sole Trader), Queensland, Australia. We are committed to complying with the Australian Privacy Act 1988 (Cth) and the Australian Privacy Principles (APPs).' },
     { title: '2. Information We Collect', body: '2.1 Information You Provide\n• Account details: name, email address, password, phone number\n• Profile information: display name, bio, tagline, location, profile photo, portfolio images and videos\n• Business information: ABN/ACN, business name\n• Credential documents: uploaded copies of insurance, Blue Card, police check, WWVP, or other verification documents\n• Payment information: billing details processed securely by Stripe. LensTrybe does not store full card numbers.\n• Communications: messages sent through the platform between creatives and clients\n• Content: any files, images, videos, or documents you upload to the platform\n\n2.2 Information Collected Automatically\n• Usage data: pages visited, features used, search queries, time on platform\n• Device information: browser type, operating system, IP address\n• Cookies and similar tracking technologies' },
@@ -13,7 +23,14 @@ export default function PrivacyPage() {
   ]
 
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: '60px 24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-privacy-page">
+      <style>{`
+        @media (max-width: 767px) {
+          .legal-privacy-page h1 { font-size: 24px !important; }
+          .legal-privacy-page h2 { font-size: 16px !important; }
+          .legal-privacy-page p, .legal-privacy-page div, .legal-privacy-page span { font-size: max(14px, 0.875rem) !important; }
+        }
+      `}</style>
       <div style={{ maxWidth: '800px', margin: '0 auto', color: '#ccc', lineHeight: 1.8 }}>
         <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Privacy Policy</h1>
         <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
