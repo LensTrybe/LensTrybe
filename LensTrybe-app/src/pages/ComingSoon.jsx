@@ -18,14 +18,28 @@ export default function ComingSoon() {
   const [time, setTime] = useState(getTimeLeft());
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getTimeLeft()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const handleSubmit = () => {
-    if (email) setSubmitted(true);
+  const handleSubmit = async () => {
+    if (!email || loading) return;
+    setLoading(true);
+    try {
+      await fetch('https://lqafxisymvrazipaozfk.supabase.co/functions/v1/waitlist-signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+      setSubmitted(true);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -347,8 +361,8 @@ export default function ComingSoon() {
                   onChange={(e) => setEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
                 />
-                <button className="btn-green" onClick={handleSubmit}>
-                  Notify Me
+                <button className="btn-green" onClick={handleSubmit} disabled={loading}>
+                  {loading ? 'Saving...' : 'Notify Me'}
                 </button>
               </div>
               <p className="privacy">No spam. Unsubscribe anytime.</p>
