@@ -43,8 +43,11 @@ import PrivacyPage from './pages/legal/PrivacyPage'
 import CookiesPage from './pages/legal/CookiesPage'
 import TrybeEditPage from './pages/public/TrybeEditPage'
 import TrybeEditIssue01 from './pages/TrybeEditIssue01'
+import ComingSoon from './pages/ComingSoon'
 
-function ComingSoon({ page }) {
+const isComingSoon = import.meta.env.VITE_COMING_SOON === "true"
+
+function PlaceholderPage({ page }) {
   return (
     <div style={{
       minHeight: '60vh',
@@ -89,7 +92,7 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
-  return (
+  const routes = (
     <Routes>
       <Route path="/reset-password" element={<PasswordResetPage />} />
       <Route path="/forgot-password" element={<PasswordResetPage />} />
@@ -159,7 +162,9 @@ export default function App() {
       <Route path="/site/:slug" element={<PublicPortfolioWebsitePage />} />
 
       {/* Fallback */}
-      <Route path="*" element={<ComingSoon page="404 — Page Not Found" />} />
+      <Route path="*" element={<PlaceholderPage page="404 — Page Not Found" />} />
     </Routes>
   )
+
+  return isComingSoon ? <ComingSoon /> : routes
 }
