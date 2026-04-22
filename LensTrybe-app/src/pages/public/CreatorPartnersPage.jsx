@@ -83,7 +83,7 @@ export default function CreatorPartnersPage() {
           <span style={s.green}>Get paid</span> to grow.
         </h1>
         <p style={s.subtitle}>
-          We are inviting a small group of Australian visual creatives to join LensTrybe as Founding Creator Partners before our public launch on May 1st. 12 months Elite tier free, a personal coupon code, and commission on every signup you drive.
+          We are inviting a small group of Australian visual creatives to join LensTrybe as Founding Creator Partners before our full public launch on July 1st. 12 months Elite tier free, a personal coupon code, and commission on every signup you drive.
         </p>
         <button style={s.ctaBtn} onClick={() => document.getElementById('apply').scrollIntoView({ behavior: 'smooth' })}>
           Apply Now
@@ -119,7 +119,7 @@ export default function CreatorPartnersPage() {
       {/* Commission table */}
       <div style={s.section}>
         <p style={s.sectionTitle}>Commission Structure</p>
-        <p style={s.sectionSubtitle}>Your audience gets 50% off their first payment. You earn 20% of that payment.</p>
+        <p style={s.sectionSubtitle}>Your audience gets 20% off their first annual payment. You earn 20% of that payment.</p>
         <div style={{ overflowX: 'auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '8px 0' }}>
           <table style={s.table}>
             <thead>
@@ -151,7 +151,7 @@ export default function CreatorPartnersPage() {
             </tbody>
           </table>
         </div>
-        <p style={{ fontSize: 12, color: '#666', marginTop: 16, textAlign: 'center' }}>Commission is paid on the first payment only. Payouts processed monthly via bank transfer. Minimum $50 AUD balance required.</p>
+        <p style={{ fontSize: 12, color: '#666', marginTop: 16, textAlign: 'center' }}>Commission is paid on the first payment only. Payouts processed monthly via bank transfer.</p>
       </div>
 
       <div style={s.divider} />
@@ -160,7 +160,7 @@ export default function CreatorPartnersPage() {
       <div style={s.section}>
         <p style={s.sectionTitle}>What We Ask For</p>
         <p style={s.sectionSubtitle}>No scripted posts. No required hashtags. No minimum post count. Just your genuine experience.</p>
-        <div style={s.grid}>
+        <div style={{ ...s.grid, gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {[
             { icon: '🎬', title: 'Profile Setup Reel', desc: 'Walk your audience through setting up your LensTrybe profile — skills, portfolio, credentials. This is the most impactful content you can create.' },
             { icon: '📩', title: 'First Enquiry Post', desc: 'When you receive your first booking or enquiry through LensTrybe, share it. Real results from real usage is the most powerful content.' },
