@@ -6,16 +6,31 @@ const FOLLOWING_SIZES = ['Under 1,000', '1,000 - 5,000', '5,000 - 10,000', '10,0
 
 export default function CreatorPartnersPage() {
   const navigate = useNavigate()
-  const [form, setForm] = useState({ name: '', email: '', platform: [], handle: '', following_size: '', why: '' })
+  const [form, setForm] = useState({ name: '', email: '', platforms: [], why: '' })
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
 
+  const togglePlatform = (p) => {
+    setForm(f => {
+      const exists = f.platforms.find(x => x.name === p)
+      if (exists) return { ...f, platforms: f.platforms.filter(x => x.name !== p) }
+      return { ...f, platforms: [...f.platforms, { name: p, handle: '', following_size: '' }] }
+    })
+  }
+
+  const updatePlatform = (name, field, value) => {
+    setForm(f => ({
+      ...f,
+      platforms: f.platforms.map(x => x.name === name ? { ...x, [field]: value } : x)
+    }))
+  }
+
   const handleSubmit = async () => {
-    if (!form.name || !form.email || form.platform.length === 0 || !form.handle || !form.following_size || !form.why) {
-      setError('Please fill in all fields.')
+    if (!form.name || !form.email || form.platforms.length === 0 || form.platforms.some(p => !p.handle || !p.following_size) || !form.why) {
+      setError('Please fill in all fields, including handle and following size for each selected platform.')
       return
     }
     setError('')
@@ -24,7 +39,7 @@ export default function CreatorPartnersPage() {
       const res = await fetch('https://lqafxisymvrazipaozfk.supabase.co/functions/v1/creator-partner-apply', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, platform: form.platform.join(', ') }),
+        body: JSON.stringify({ ...form, platforms: JSON.stringify(form.platforms) }),
       })
       if (!res.ok) throw new Error('Failed')
       setSubmitted(true)
@@ -206,14 +221,14 @@ export default function CreatorPartnersPage() {
 
               <div style={s.fieldWrap}>
                 <label style={s.label}>Platforms (select all that apply)</label>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 4, marginBottom: 16 }}>
                   {PLATFORMS.map(p => {
-                    const selected = form.platform.includes(p)
+                    const selected = form.platforms.find(x => x.name === p)
                     return (
                       <button
                         key={p}
                         type="button"
-                        onClick={() => set('platform', selected ? form.platform.filter(x => x !== p) : [...form.platform, p])}
+                        onClick={() => togglePlatform(p)}
                         style={{
                           padding: '8px 16px',
                           borderRadius: 100,
@@ -232,19 +247,32 @@ export default function CreatorPartnersPage() {
                     )
                   })}
                 </div>
-              </div>
 
-              <div style={s.fieldWrap}>
-                <label style={s.label}>Handle or Profile URL</label>
-                <input style={s.input} placeholder="@yourhandle or https://..." value={form.handle} onChange={e => set('handle', e.target.value)} />
-              </div>
-
-              <div style={s.fieldWrap}>
-                <label style={s.label}>Approximate Following Size</label>
-                <select style={s.select} value={form.following_size} onChange={e => set('following_size', e.target.value)}>
-                  <option value="">Select a range</option>
-                  {FOLLOWING_SIZES.map(f => <option key={f} value={f}>{f}</option>)}
-                </select>
+                {form.platforms.map(p => (
+                  <div key={p.name} style={{ background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px', marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1DB954', marginBottom: 12 }}>{p.name}</div>
+                    <div style={{ marginBottom: 10 }}>
+                      <label style={{ ...s.label, fontSize: 12 }}>Handle or Profile URL</label>
+                      <input
+                        style={s.input}
+                        placeholder="@yourhandle or https://..."
+                        value={p.handle}
+                        onChange={e => updatePlatform(p.name, 'handle', e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ ...s.label, fontSize: 12 }}>Approximate Following Size</label>
+                      <select
+                        style={s.select}
+                        value={p.following_size}
+                        onChange={e => updatePlatform(p.name, 'following_size', e.target.value)}
+                      >
+                        <option value="">Select a range</option>
+                        {FOLLOWING_SIZES.map(f => <option key={f} value={f}>{f}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               <div style={s.fieldWrap}>
