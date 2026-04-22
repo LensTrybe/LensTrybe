@@ -166,7 +166,10 @@ export default function App() {
     </Routes>
   )
 
-  const isPreview = new URLSearchParams(window.location.search).get('preview') === 'letmein';
+  if (new URLSearchParams(window.location.search).get('preview') === 'letmein') {
+    sessionStorage.setItem('preview', 'letmein')
+  }
+  const isPreview = sessionStorage.getItem('preview') === 'letmein';
 
   return (isComingSoon && !isPreview) ? <ComingSoon /> : routes
 }
