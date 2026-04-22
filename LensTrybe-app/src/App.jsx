@@ -166,5 +166,7 @@ export default function App() {
     </Routes>
   )
 
-  return isComingSoon ? <ComingSoon /> : routes
+  const isPreview = new URLSearchParams(window.location.search).get('preview') === 'letmein';
+
+  return (isComingSoon && !isPreview) ? <ComingSoon /> : routes
 }
