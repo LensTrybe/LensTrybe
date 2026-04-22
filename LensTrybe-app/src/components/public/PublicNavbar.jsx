@@ -115,40 +115,10 @@ export default function PublicNavbar() {
     opacity: 0.9,
   }
 
-  const joinBtn = {
-    background: BRAND.pink,
-    color: '#fff',
-    border: 'none',
-    borderRadius: 8,
-    padding: '8px 18px',
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: 'pointer',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-
   const joinCreativeBtn = {
     background: BRAND.green,
     color: '#080810',
     border: 'none',
-    borderRadius: 8,
-    padding: '8px 18px',
-    fontWeight: 700,
-    fontSize: 14,
-    cursor: 'pointer',
-    textDecoration: 'none',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-  }
-
-  const clientBtn = {
-    background: 'transparent',
-    color: BRAND.pink,
-    border: `1px solid ${BRAND.pink}`,
     borderRadius: 8,
     padding: '8px 18px',
     fontWeight: 700,
@@ -195,26 +165,18 @@ export default function PublicNavbar() {
           style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 14,
-            flexWrap: 'wrap',
+            gap: 24,
             justifyContent: 'center',
             flex: 1,
             minWidth: 0,
           }}
         >
-          <Link to="/newsletter" style={navLink}>
-            The Trybe Edit
-          </Link>
-          <Link to="/creator-partners" style={navLink}>
-            Creator Partner Program
-          </Link>
-          <Link to="/pricing" style={navLink}>
-            Pricing For Creatives
-          </Link>
+          <Link to="/newsletter" style={navLink}>The Trybe Edit</Link>
+          <Link to="/creator-partners" style={navLink}>Creator Partner Program</Link>
+          <Link to="/pricing" style={navLink}>Pricing For Creatives</Link>
         </div>
       ) : null}
 
-      {/* Desktop */}
       <div
         className="lt-desktop-nav"
         style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', justifyContent: 'flex-end' }}
@@ -224,15 +186,9 @@ export default function PublicNavbar() {
             <Link to={dashboardPath} style={navLink}>
               {kindLoading ? 'Dashboard' : dashboardLabel}
             </Link>
-            <Link to="/find-a-creative" style={navLink}>
-              Find a Creative
-            </Link>
-            <Link to="/job-board" style={navLink}>
-              Job Board
-            </Link>
-            <Link to="/pricing" style={navLink}>
-              Pricing
-            </Link>
+            <Link to="/find-a-creative" style={navLink}>Find a Creative</Link>
+            <Link to="/job-board" style={navLink}>Job Board</Link>
+            <Link to="/pricing" style={navLink}>Pricing</Link>
 
             <div ref={menuRef} style={{ position: 'relative' }}>
               <button
@@ -273,9 +229,7 @@ export default function PublicNavbar() {
                 <div style={{ fontSize: 13, fontWeight: 700, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {userLabel || 'Account'}
                 </div>
-                <div style={{ color: '#bbb', fontSize: 12 }} aria-hidden>
-                  ▾
-                </div>
+                <div style={{ color: '#bbb', fontSize: 12 }} aria-hidden>▾</div>
               </button>
 
               {menuOpen ? (
@@ -300,10 +254,7 @@ export default function PublicNavbar() {
                     <button
                       key={item.label}
                       type="button"
-                      onClick={() => {
-                        setMenuOpen(false)
-                        item.onClick()
-                      }}
+                      onClick={() => { setMenuOpen(false); item.onClick() }}
                       style={{
                         width: '100%',
                         background: 'transparent',
@@ -323,9 +274,7 @@ export default function PublicNavbar() {
                       {item.label}
                     </button>
                   ))}
-
                   <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '6px 0' }} />
-
                   <button
                     type="button"
                     onClick={async () => {
@@ -357,17 +306,12 @@ export default function PublicNavbar() {
           </>
         ) : (
           <>
-            <Link to="/login" style={loginBtn}>
-              Log In
-            </Link>
-            <Link to="/join" style={joinCreativeBtn}>
-              Join as a Creative
-            </Link>
+            <Link to="/login" style={loginBtn}>Log In</Link>
+            <Link to="/join" style={joinCreativeBtn}>Join as a Creative</Link>
           </>
         )}
       </div>
 
-      {/* Mobile menu toggle */}
       <button
         type="button"
         className="lt-mobile-nav-toggle"
@@ -410,25 +354,16 @@ export default function PublicNavbar() {
             gap: 12,
             fontFamily: 'Inter, sans-serif',
           }}
-          className="lt-mobile-nav-panel"
         >
           {isAuthed ? (
             <>
               <Link to={dashboardPath} onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
                 {kindLoading ? 'Dashboard' : dashboardLabel}
               </Link>
-              <Link to="/find-a-creative" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Find a Creative
-              </Link>
-              <Link to="/job-board" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Job Board
-              </Link>
-              <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Pricing
-              </Link>
-              <Link to="/settings" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Settings
-              </Link>
+              <Link to="/find-a-creative" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Find a Creative</Link>
+              <Link to="/job-board" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Job Board</Link>
+              <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Pricing</Link>
+              <Link to="/settings" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Settings</Link>
               <button
                 type="button"
                 onClick={async () => {
@@ -452,21 +387,11 @@ export default function PublicNavbar() {
             </>
           ) : (
             <>
-              <Link to="/newsletter" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                The Trybe Edit
-              </Link>
-              <Link to="/creator-partners" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Creator Partner Program
-              </Link>
-              <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Pricing For Creatives
-              </Link>
-              <Link to="/login" onClick={closeMobile} style={{ ...loginBtn, justifyContent: 'center' }}>
-                Log In
-              </Link>
-              <Link to="/join" onClick={closeMobile} style={{ ...joinCreativeBtn, justifyContent: 'center' }}>
-                Join as a Creative
-              </Link>
+              <Link to="/newsletter" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>The Trybe Edit</Link>
+              <Link to="/creator-partners" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Creator Partner Program</Link>
+              <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Pricing For Creatives</Link>
+              <Link to="/login" onClick={closeMobile} style={{ ...loginBtn, justifyContent: 'center' }}>Log In</Link>
+              <Link to="/join" onClick={closeMobile} style={{ ...joinCreativeBtn, justifyContent: 'center' }}>Join as a Creative</Link>
             </>
           )}
         </div>
