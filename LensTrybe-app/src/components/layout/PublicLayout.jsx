@@ -222,9 +222,10 @@ export default function PublicLayout() {
                 </div>
               ) : (
                 <>
+                  <button onClick={() => navigate('/the-trybe-edit')} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', opacity: 0.9 }}>The Trybe Edit</button>
+                  <button onClick={() => navigate('/creator-partners')} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', opacity: 0.9 }}>Creator Partner Program</button>
+                  <button onClick={() => navigate('/pricing')} style={{ background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '14px', fontWeight: 600, cursor: 'pointer', opacity: 0.9 }}>Pricing For Creatives</button>
                   <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log In</Button>
-                  <Button variant="secondary" size="sm" onClick={() => navigate('/jobs')}>Post a Job</Button>
-                  <Button variant="secondary" size="sm" onClick={() => navigate('/pricing')}>Pricing For Creatives</Button>
                   <Button variant="primary" size="sm" onClick={() => navigate('/join')}>Join as a Creative</Button>
                 </>
               )
