@@ -246,15 +246,6 @@ export default function PricingPage() {
       height: '1px',
       background: 'var(--border-subtle)',
     },
-    note: {
-      textAlign: 'center',
-      fontSize: '14px',
-      color: 'var(--text-muted)',
-      fontFamily: 'var(--font-ui)',
-      padding: isMobile ? '24px 16px 0' : '32px 40px 0',
-      maxWidth: '1280px',
-      margin: '0 auto',
-    },
   }
 
   function getPrice(tier) {
@@ -351,8 +342,28 @@ export default function PricingPage() {
         ))}
       </div>
 
-      <div style={styles.note}>
-        All prices in AUD. Annual billing saves 2 months. Cancel anytime from your dashboard. 14-day free trial on all paid plans.
+      <div style={{
+        maxWidth: '800px',
+        margin: '32px auto 0',
+        padding: isMobile ? '0 16px' : '0 40px',
+      }}>
+        <div style={{
+          background: 'rgba(29,185,84,0.08)',
+          border: '1px solid rgba(29,185,84,0.25)',
+          borderRadius: '12px',
+          padding: '20px 28px',
+          textAlign: 'center',
+        }}>
+          <div style={{ fontSize: '15px', fontWeight: 700, color: '#1DB954', marginBottom: 6, fontFamily: 'var(--font-ui)' }}>
+            🎉 No payments until July 1st, 2026
+          </div>
+          <div style={{ fontSize: '13px', color: '#8b8a9a', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
+            Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial — your card will never be charged early.
+          </div>
+        </div>
+        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: 20 }}>
+          All prices in AUD. Annual billing saves 2 months. Cancel anytime from your dashboard.
+        </div>
       </div>
     </div>
   )
