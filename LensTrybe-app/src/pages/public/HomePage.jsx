@@ -406,7 +406,7 @@ export default function HomePage() {
           <span style={{ color: '#1DB954', textShadow: '0 0 60px rgba(29,185,84,0.5), 0 0 120px rgba(29,185,84,0.2)' }}>Create</span>
         </h1>
         <p style={{ fontSize: '16px', color: 'rgba(192,200,216,0.8)', maxWidth: '520px', lineHeight: '1.6', margin: '0 0 40px' }}>
-          Australia's home for photographers, videographers, and visual creatives.
+          Australia's home for visual creatives.
           Showcase your work, connect with clients, and build a career on your own terms.
         </p>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '4px', width: isMobile ? '100%' : 'auto' }}>
