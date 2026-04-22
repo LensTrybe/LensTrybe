@@ -130,6 +130,21 @@ export default function PublicNavbar() {
     justifyContent: 'center',
   }
 
+  const joinCreativeBtn = {
+    background: BRAND.green,
+    color: '#080810',
+    border: 'none',
+    borderRadius: 8,
+    padding: '8px 18px',
+    fontWeight: 700,
+    fontSize: 14,
+    cursor: 'pointer',
+    textDecoration: 'none',
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+  }
+
   const clientBtn = {
     background: 'transparent',
     color: BRAND.pink,
@@ -173,6 +188,31 @@ export default function PublicNavbar() {
           Connect. Capture. Create.
         </div>
       </Link>
+
+      {!isAuthed ? (
+        <div
+          className="lt-desktop-nav lt-nav-middle"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            flexWrap: 'wrap',
+            justifyContent: 'center',
+            flex: 1,
+            minWidth: 0,
+          }}
+        >
+          <Link to="/newsletter" style={navLink}>
+            The Trybe Edit
+          </Link>
+          <Link to="/creator-partners" style={navLink}>
+            Creator Partner Program
+          </Link>
+          <Link to="/pricing" style={navLink}>
+            Pricing For Creatives
+          </Link>
+        </div>
+      ) : null}
 
       {/* Desktop */}
       <div
@@ -317,17 +357,11 @@ export default function PublicNavbar() {
           </>
         ) : (
           <>
-            <Link to="/pricing" style={navLink}>
-              Pricing
-            </Link>
-            <Link to="/join" style={joinBtn}>
-              Join as a Creative
-            </Link>
-            <Link to="/find-a-creative" style={clientBtn}>
-              Find a Creative
-            </Link>
             <Link to="/login" style={loginBtn}>
               Log In
+            </Link>
+            <Link to="/join" style={joinCreativeBtn}>
+              Join as a Creative
             </Link>
           </>
         )}
@@ -418,17 +452,20 @@ export default function PublicNavbar() {
             </>
           ) : (
             <>
+              <Link to="/newsletter" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
+                The Trybe Edit
+              </Link>
+              <Link to="/creator-partners" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
+                Creator Partner Program
+              </Link>
               <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>
-                Pricing
-              </Link>
-              <Link to="/join" onClick={closeMobile} style={{ ...joinBtn, justifyContent: 'center' }}>
-                Join as a Creative
-              </Link>
-              <Link to="/find-a-creative" onClick={closeMobile} style={{ ...clientBtn, justifyContent: 'center' }}>
-                Find a Creative
+                Pricing For Creatives
               </Link>
               <Link to="/login" onClick={closeMobile} style={{ ...loginBtn, justifyContent: 'center' }}>
                 Log In
+              </Link>
+              <Link to="/join" onClick={closeMobile} style={{ ...joinCreativeBtn, justifyContent: 'center' }}>
+                Join as a Creative
               </Link>
             </>
           )}
