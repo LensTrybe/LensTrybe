@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabaseClient'
@@ -75,6 +75,8 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   const navigate = useNavigate()
+  const [showIntro, setShowIntro] = useState(false)
+  const [introFading, setIntroFading] = useState(false)
 
   useEffect(() => {
     const hash = window.location.hash
@@ -91,6 +93,20 @@ export default function App() {
       }
     })
     return () => subscription.unsubscribe()
+  }, [])
+
+  useEffect(() => {
+    if (sessionStorage.getItem('lenstrybe_intro_seen') === 'true') return
+    setShowIntro(true)
+    sessionStorage.setItem('lenstrybe_intro_seen', 'true')
+
+    const fadeTimer = setTimeout(() => setIntroFading(true), 2400)
+    const hideTimer = setTimeout(() => setShowIntro(false), 3000)
+
+    return () => {
+      clearTimeout(fadeTimer)
+      clearTimeout(hideTimer)
+    }
   }, [])
 
   const routes = (
@@ -173,5 +189,49 @@ export default function App() {
   }
   const isPreview = sessionStorage.getItem('preview') === 'letmein';
 
-  return (isComingSoon && !isPreview) ? <ComingSoon /> : routes
+  return (
+    <>
+      {(isComingSoon && !isPreview) ? <ComingSoon /> : routes}
+      {showIntro ? (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 9999,
+            background: '#000',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            opacity: introFading ? 0 : 1,
+            transition: 'opacity 0.55s ease',
+            pointerEvents: 'none',
+          }}
+        >
+          <style>{`
+            @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&display=swap');
+            @keyframes introWordReveal {
+              0% { opacity: 0; transform: translateY(8px); filter: blur(6px); }
+              100% { opacity: 1; transform: translateY(0); filter: blur(0); }
+            }
+          `}</style>
+          <div
+            style={{
+              display: 'flex',
+              gap: '18px',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontFamily: '"Space Grotesk", sans-serif',
+              fontSize: 'clamp(36px, 7vw, 84px)',
+              fontWeight: 700,
+              letterSpacing: '0.02em',
+            }}
+          >
+            <span style={{ color: '#FF4D8D', opacity: 0, animation: 'introWordReveal 0.45s ease forwards 0.25s' }}>Connect.</span>
+            <span style={{ color: '#fff', opacity: 0, animation: 'introWordReveal 0.45s ease forwards 0.95s' }}>Capture.</span>
+            <span style={{ color: '#1DB954', opacity: 0, animation: 'introWordReveal 0.45s ease forwards 1.65s' }}>Create.</span>
+          </div>
+        </div>
+      ) : null}
+    </>
+  )
 }
