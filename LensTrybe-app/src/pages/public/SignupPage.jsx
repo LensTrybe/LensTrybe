@@ -20,14 +20,14 @@ const SKILL_TYPES = [
 ]
 
 const SPECIALTIES = {
-  'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture'],
-  'Videographer': ['Wedding', 'Brand Film', 'Documentary', 'Events', 'Music Video', 'Social Media', 'Corporate', 'Sport'],
-  'Drone Pilot': ['Real Estate', 'Cinematic', 'Surveying', 'Events', 'Agriculture', 'Construction', 'Infrastructure'],
-  'Video Editor': ['Colour Grading', 'Short-form/Reels', 'Wedding Films', 'VFX', 'Motion Graphics', 'Corporate', 'Music Video'],
-  'Photo Editor': ['Retouching', 'Culling', 'Compositing', 'Product Editing', 'Restoration', 'Fashion'],
-  'Social Media Manager': ['Instagram & TikTok', 'Reels & Short-form', 'Brand Content', 'Content Strategy', 'YouTube Management', 'LinkedIn', 'Facebook & Meta'],
-  'Hair & Makeup Artist': ['Bridal & Wedding', 'Editorial & Fashion', 'Commercial', 'Film & TV', 'Portrait & Headshots', 'Special Effects', 'Hair Styling', 'Airbrush', 'Natural & Lifestyle', 'Events'],
-  'UGC Creator': ['E-commerce & Product', 'App & Software', 'Food & Beverage', 'Beauty & Skincare', 'Health & Fitness', 'Travel & Lifestyle', 'Fashion & Apparel', 'Home & Interiors', 'Unboxing & Reviews', 'Paid Ad Creative'],
+  'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture', 'Food', 'Newborn & Family', 'Maternity', 'Boudoir', 'Pet', 'School', 'Headshots', 'Documentary', 'Travel', 'Fine Art', 'Aerial', 'Night & Astro', 'Corporate'],
+  'Videographer': ['Wedding', 'Brand Film', 'Documentary', 'Events', 'Music Video', 'Social Media', 'Corporate', 'Sport', 'Real Estate', 'Travel', 'Short Film', 'Commercial', 'Aerial', 'News & Journalism'],
+  'Drone Pilot': ['Real Estate', 'Cinematic', 'Surveying', 'Events', 'Agriculture', 'Construction', 'Infrastructure', 'Mapping', 'Search & Rescue', 'Film & TV', 'Sport', 'Inspection'],
+  'Video Editor': ['Colour Grading', 'Short-form / Reels', 'Wedding Films', 'VFX', 'Motion Graphics', 'Corporate', 'Music Video', 'Documentary', 'Social Media', 'Podcast', 'YouTube', 'Commercial'],
+  'Photo Editor': ['Retouching', 'Culling', 'Compositing', 'Product Editing', 'Restoration', 'Fashion', 'Real Estate', 'Wedding', 'Colour Correction', 'Background Removal', 'Skin Retouching'],
+  'Social Media Manager': ['Instagram & TikTok', 'Reels & Short-form', 'Brand Content', 'Content Strategy', 'Content Scheduling', 'Visual Storytelling', 'YouTube Management', 'LinkedIn Visual Content', 'Facebook & Meta Content', 'Community Management', 'Influencer Outreach', 'Analytics & Reporting'],
+  'Hair & Makeup Artist': ['Bridal & Wedding', 'Editorial & Fashion', 'Commercial & Advertising', 'Film & TV', 'Portrait & Headshots', 'Special Effects (SFX)', 'Hair Styling', 'Airbrush', 'Natural & Lifestyle', 'Events & Occasions', 'Theatre & Performance', "Men's Grooming"],
+  'UGC Creator': ['E-commerce & Product', 'App & Software Demos', 'Food & Beverage', 'Beauty & Skincare', 'Health & Fitness', 'Travel & Lifestyle', 'Fashion & Apparel', 'Home & Interiors', 'Pet Products', 'Unboxing & Reviews', 'Paid Ad Creative', 'Testimonial Style', 'Tech & Gadgets', 'Gaming', 'Finance & Fintech'],
 }
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
