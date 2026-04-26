@@ -148,11 +148,11 @@ export default function CreatorPartnersPage() {
             </thead>
             <tbody>
               {[
-                { plan: 'Pro — Monthly', full: '$24.99/mo', their: '$24.99', comm: '$2.50', ten: '$25.00' },
+                { plan: 'Pro — Monthly', full: '$24.99/mo', their: '$24.99', comm: '$5.00', ten: '$50.00' },
                 { plan: 'Pro — Annual', full: '$249.90/yr', their: '$199.92', comm: '$24.99', ten: '$249.90' },
-                { plan: 'Expert — Monthly', full: '$74.99/mo', their: '$74.99', comm: '$7.50', ten: '$75.00' },
+                { plan: 'Expert — Monthly', full: '$74.99/mo', their: '$74.99', comm: '$15.00', ten: '$150.00' },
                 { plan: 'Expert — Annual', full: '$749.90/yr', their: '$599.92', comm: '$74.99', ten: '$749.90' },
-                { plan: 'Elite — Monthly', full: '$149.99/mo', their: '$149.99', comm: '$15.00', ten: '$150.00' },
+                { plan: 'Elite — Monthly', full: '$149.99/mo', their: '$149.99', comm: '$30.00', ten: '$300.00' },
                 { plan: 'Elite — Annual', full: '$1,499.90/yr', their: '$1,199.92', comm: '$150.00', ten: '$1,500.00' },
               ].map(row => (
                 <tr key={row.plan}>
