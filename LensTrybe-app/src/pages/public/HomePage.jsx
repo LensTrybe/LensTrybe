@@ -184,12 +184,94 @@ export default function HomePage() {
   const [eliteCreatives, setEliteCreatives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const heroCanvasRef = useRef(null);
+  const heroSectionRef = useRef(null);
 
   useEffect(() => { fetchCreatives(); }, []);
   useEffect(() => {
     function handleResize() { setIsMobile(window.innerWidth < 768); }
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const canvas = heroCanvasRef.current;
+    const hero = heroSectionRef.current;
+    if (!canvas || !hero) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const colors = ['#FF4D8D', '#1DB954', '#ffffff', '#a855f7'];
+    const particles = [];
+    let rafId = 0;
+    let running = true;
+    let lastSpawn = 0;
+
+    const random = (min, max) => Math.random() * (max - min) + min;
+
+    const resizeCanvas = () => {
+      const dpr = window.devicePixelRatio || 1;
+      const width = hero.clientWidth;
+      const height = hero.clientHeight;
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+
+    const spawnParticle = () => {
+      const width = hero.clientWidth;
+      const height = hero.clientHeight;
+      particles.push({
+        x: random(0, width),
+        y: random(height * 0.88, height + 6),
+        size: random(0.5, 2),
+        alpha: random(0.3, 0.6),
+        speedY: random(0.15, 0.45),
+        speedX: random(-0.12, 0.12),
+        color: colors[Math.floor(random(0, colors.length))],
+      });
+    };
+
+    resizeCanvas();
+    for (let i = 0; i < 80; i += 1) spawnParticle();
+
+    const draw = (time) => {
+      if (!running) return;
+      const width = hero.clientWidth;
+      const height = hero.clientHeight;
+      ctx.clearRect(0, 0, width, height);
+
+      if (time - lastSpawn > 50 && particles.length < 220) {
+        spawnParticle();
+        lastSpawn = time;
+      }
+
+      for (let i = particles.length - 1; i >= 0; i -= 1) {
+        const p = particles[i];
+        p.y -= p.speedY;
+        p.x += p.speedX;
+        const progress = Math.max(0, Math.min(1, p.y / height));
+        const fade = progress * progress;
+        ctx.globalAlpha = p.alpha * fade;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        if (p.y < -6 || p.x < -20 || p.x > width + 20) particles.splice(i, 1);
+      }
+      ctx.globalAlpha = 1;
+      rafId = requestAnimationFrame(draw);
+    };
+
+    rafId = requestAnimationFrame(draw);
+    window.addEventListener('resize', resizeCanvas);
+    return () => {
+      running = false;
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', resizeCanvas);
+    };
   }, []);
 
   const fetchCreatives = async () => {
@@ -234,15 +316,20 @@ export default function HomePage() {
     <div style={{ background: BG, color: '#fff', fontFamily: FONT, overflowX: 'hidden' }}>
 
       {/* HERO */}
-      <section style={{
+      <section ref={heroSectionRef} style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
         textAlign: 'center', padding: isMobile ? '72px 16px 64px' : '120px 24px 100px',
         position: 'relative', overflow: 'hidden',
       }}>
+        <canvas
+          ref={heroCanvasRef}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0, pointerEvents: 'none' }}
+        />
         <GlowBlob color={`rgba(29,185,84,0.5)`} top="40%" left="50%" size={700} opacity={0.08} />
         <GlowBlob color={`rgba(255,45,120,0.5)`} top="20%" left="15%" size={400} opacity={0.07} />
         <GlowBlob color={`rgba(29,185,84,0.5)`} top="70%" left="80%" size={350} opacity={0.06} />
 
+        <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{
           fontSize: isMobile ? 'clamp(36px, 11vw, 52px)' : 'clamp(52px, 6vw, 80px)',
           fontWeight: '800', lineHeight: 1.0, margin: isMobile ? '0 0 24px' : '0 0 28px',
@@ -262,6 +349,7 @@ export default function HomePage() {
           <button type="button" onClick={() => navigate('/join')} style={{ background: GREEN, color: '#000', border: 'none', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: `0 0 24px rgba(29,185,84,0.35)`, minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Join as a Creative</button>
           <button type="button" onClick={() => navigate('/creatives')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Find a Creative</button>
           <button type="button" onClick={() => navigate('/jobs')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Post a Job</button>
+        </div>
         </div>
       </section>
 
