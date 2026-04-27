@@ -6,6 +6,7 @@ import HomePage from './pages/public/HomePage'
 import LoginPage from './pages/public/LoginPage'
 import PricingPage from './pages/public/PricingPage'
 import CreatorPartnersPage from './pages/public/CreatorPartnersPage'
+import UpcomingFeaturesPage from './pages/public/UpcomingFeaturesPage'
 import SignupPage from './pages/public/SignupPage'
 import ClientSignupPage from './pages/public/ClientSignupPage'
 import MessagesPage from './pages/dashboard/MessagesPage'
@@ -105,6 +106,7 @@ export default function App() {
         <Route path="/creatives" element={<ExplorePage />} />
         <Route path="/creatives/:id" element={<PublicProfilePage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/upcoming-features" element={<UpcomingFeaturesPage />} />
         <Route path="/creator-partners" element={<CreatorPartnersPage />} />
         <Route path="/join" element={<SignupPage />} />
         <Route path="/join/client" element={<ClientSignupPage />} />
