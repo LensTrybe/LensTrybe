@@ -67,6 +67,24 @@ export default function DashboardHome() {
   const [recentInvoices, setRecentInvoices] = useState([])
   const [loading, setLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [quickActions, setQuickActions] = useState([])
+  const [editingQuickActions, setEditingQuickActions] = useState(false)
+  const [draftQuickActions, setDraftQuickActions] = useState([])
+  const [quickActionsError, setQuickActionsError] = useState('')
+
+  const DEFAULT_QUICK_ACTION_LABELS = ['New Message', 'New Invoice', 'Add Portfolio', 'New Delivery']
+  const AVAILABLE_QUICK_ACTIONS = [
+    { icon: '✉', label: 'New Message', path: '/dashboard/clients/messages' },
+    { icon: '◎', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
+    { icon: '◌', label: 'New Quote', path: '/dashboard/finance/quotes' },
+    { icon: '✍', label: 'New Contract', path: '/dashboard/finance/contracts' },
+    { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
+    { icon: '⬆', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
+    { icon: '👥', label: 'Add Client', path: '/dashboard/clients/crm' },
+    { icon: '📅', label: 'New Booking', path: '/dashboard/my-work/my-bookings' },
+    { icon: '🕒', label: 'View Availability', path: '/dashboard/my-work/availability' },
+    { icon: '💼', label: 'Job Board', path: '/dashboard/my-work/jobs' },
+  ]
 
   useEffect(() => {
     function handleResize() {
@@ -78,6 +96,10 @@ export default function DashboardHome() {
 
   useEffect(() => {
     if (user) loadStats()
+  }, [user])
+
+  useEffect(() => {
+    if (user) loadQuickActions()
   }, [user])
 
   async function loadStats() {
@@ -146,6 +168,68 @@ export default function DashboardHome() {
     setLoading(false)
   }
 
+  async function loadQuickActions() {
+    const defaultActions = AVAILABLE_QUICK_ACTIONS.filter((a) => DEFAULT_QUICK_ACTION_LABELS.includes(a.label))
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('dashboard_quick_actions')
+        .eq('id', user.id)
+        .maybeSingle()
+      if (error) throw error
+
+      const labels = Array.isArray(data?.dashboard_quick_actions) ? data.dashboard_quick_actions : []
+      if (labels.length === 0) {
+        setQuickActions(defaultActions)
+        setDraftQuickActions(defaultActions)
+        return
+      }
+
+      const mapped = labels
+        .map((label) => AVAILABLE_QUICK_ACTIONS.find((action) => action.label === label))
+        .filter(Boolean)
+        .slice(0, 4)
+      const selected = mapped.length > 0 ? mapped : defaultActions
+      setQuickActions(selected)
+      setDraftQuickActions(selected)
+    } catch (err) {
+      console.error('Error loading quick actions:', err)
+      setQuickActions(defaultActions)
+      setDraftQuickActions(defaultActions)
+    }
+  }
+
+  function toggleDraftQuickAction(action) {
+    const exists = draftQuickActions.some((a) => a.label === action.label)
+    if (exists) {
+      setQuickActionsError('')
+      setDraftQuickActions(draftQuickActions.filter((a) => a.label !== action.label))
+      return
+    }
+    if (draftQuickActions.length >= 4) {
+      setQuickActionsError('You can select up to 4 quick actions')
+      return
+    }
+    setQuickActionsError('')
+    setDraftQuickActions([...draftQuickActions, action])
+  }
+
+  async function saveQuickActions() {
+    try {
+      const labels = draftQuickActions.map((a) => a.label)
+      const { error } = await supabase
+        .from('profiles')
+        .update({ dashboard_quick_actions: labels })
+        .eq('id', user.id)
+      if (error) throw error
+      setQuickActions(draftQuickActions)
+      setEditingQuickActions(false)
+      setQuickActionsError('')
+    } catch (err) {
+      setQuickActionsError(err?.message || 'Could not save quick actions right now.')
+    }
+  }
+
   const tierColors = { basic: 'var(--text-muted)', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
   const displayName = profile?.business_name ?? user?.email ?? 'there'
@@ -157,13 +241,6 @@ export default function DashboardHome() {
     if (status === 'sent') return '#3b82f6'
     return 'var(--text-muted)'
   }
-
-  const quickActions = [
-    { icon: '✉', label: 'New Message', path: '/dashboard/clients/messages' },
-    { icon: '◎', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
-    { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
-    { icon: '⬆', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
-  ]
 
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading…</div>
 
@@ -209,16 +286,62 @@ export default function DashboardHome() {
       </div>
 
       {/* Quick Actions */}
-      <div
-        style={
-          isMobile
-            ? { display: 'flex', flexDirection: 'row', gap: '8px', width: '100%', minWidth: 0 }
-            : { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', width: '100%', minWidth: 0 }
-        }
-      >
-        {quickActions.map((a, i) => (
-          <QuickAction key={i} {...a} navigate={navigate} compact={isMobile} />
-        ))}
+      <div style={{ width: '100%', minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
+          {!editingQuickActions ? (
+            <button
+              type="button"
+              onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(true) }}
+              style={{ background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: '999px', padding: '6px 12px', fontSize: '12px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
+            >
+              ✎ Customise
+            </button>
+          ) : null}
+        </div>
+        <div
+          style={
+            isMobile
+              ? { display: 'flex', flexDirection: 'row', gap: '8px', width: '100%', minWidth: 0 }
+              : { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', width: '100%', minWidth: 0 }
+          }
+        >
+          {quickActions.map((a, i) => (
+            <QuickAction key={i} {...a} navigate={navigate} compact={isMobile} />
+          ))}
+        </div>
+
+        {editingQuickActions ? (
+          <div style={{ marginTop: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '10px', padding: isMobile ? '12px' : '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px 14px' }}>
+              {AVAILABLE_QUICK_ACTIONS.map((action) => {
+                const checked = draftQuickActions.some((a) => a.label === action.label)
+                return (
+                  <label key={action.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleDraftQuickAction(action)} />
+                    {action.label}
+                  </label>
+                )
+              })}
+            </div>
+            {quickActionsError ? <div style={{ marginTop: '10px', color: '#ef4444', fontSize: '12px' }}>{quickActionsError}</div> : null}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
+              <button
+                type="button"
+                onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(false) }}
+                style={{ background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={saveQuickActions}
+                style={{ background: '#1DB954', border: 'none', color: '#05110a', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        ) : null}
       </div>
 
       {/* Row 1 — Core stats */}
