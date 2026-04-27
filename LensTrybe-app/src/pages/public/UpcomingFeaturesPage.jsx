@@ -13,23 +13,66 @@ const SKILLS = [
 ]
 
 const SKILL_FEATURES = {
-  photographer: ['AI client matching', 'Mobile app', 'Automated booking reminders', 'Look book builder', 'Online gallery delivery', 'Recurring billing'],
-  videographer: ['AI client matching', 'Mobile app', 'Automated booking reminders', 'Video project tracker', 'Recurring billing', 'Online delivery'],
-  drone_pilot: ['AI client matching', 'Mobile app', 'Flight log tracker', 'Automated booking reminders', 'Recurring billing'],
-  video_editor: ['AI client matching', 'Mobile app', 'Timestamp feedback tool', 'Project tracker', 'Recurring billing'],
-  photo_editor: ['AI client matching', 'Mobile app', 'Batch job tracker', 'Project tracker', 'Recurring billing'],
-  social_media_manager: ['AI client matching', 'Mobile app', 'Content calendar integration', 'Brand deal tracker', 'Recurring billing', 'Analytics reporting'],
-  hair_makeup_artist: ['AI client matching', 'Mobile app', 'Look book builder', 'Automated booking reminders', 'Recurring billing'],
-  ugc_creator: ['AI client matching', 'Mobile app', 'Brand deal tracker', 'Content calendar integration', 'Recurring billing', 'Paid ad performance tracker'],
+  photographer: [
+    { name: 'Culling Tool', description: 'Review your shoot in one workspace and mark each image as Keep, Maybe or Reject. Add quick notes per frame and export a selects list you can action immediately.' },
+    { name: 'Pass selects to a Photo Editor', description: 'Send your approved selects straight to a Photo Editor on LensTrybe with all notes attached. This removes back and forth file sharing and keeps the handoff in one thread.' },
+    { name: 'Shot list builder', description: 'Create detailed shot lists with required frames, priorities and client must haves. Share the list with clients before shoot day so everyone is aligned.' },
+    { name: 'Booking deposit and balance payment splits', description: 'Set automatic payment rules so clients pay a deposit at booking and the remaining balance later. LensTrybe tracks each stage and sends reminders at the right time.' },
+    { name: 'Location scouting notes', description: 'Save GPS pins, lighting windows, parking details and access instructions for every location. Reuse these notes across future shoots to speed up planning.' },
+    { name: 'Style questionnaire templates', description: 'Send branded pre shoot questionnaires to capture mood, styling and image references. Responses are stored against the booking so you can prepare with confidence.' },
+  ],
+  videographer: [
+    { name: 'Shot list and run sheet builder', description: 'Build scene by scene shot lists with camera angles, timing and priorities. Publish them as a run sheet for the full crew on shoot day.' },
+    { name: 'Production brief builder', description: 'Prepare one shareable brief with call times, locations, contacts and logistics. Keep everyone working from the same source of truth before and during production.' },
+    { name: 'Revision round tracker', description: 'Track each revision cycle with timestamps and change notes so clients can see exactly what was updated. Enforce agreed revision limits without confusion.' },
+    { name: 'Music licensing log', description: 'Record every track used in a project, including licence type, source and expiry date. Get a clear compliance record before delivery.' },
+    { name: 'Project timeline tracker', description: 'Map pre production, production and post production stages with deadlines and owners. Monitor progress across projects and spot schedule risks early.' },
+  ],
+  drone_pilot: [
+    { name: 'Flight log', description: 'Capture flight date, site, weather, altitude, aircraft and duration for every mission. Keep a complete operating history for reporting and audits.' },
+    { name: 'CASA compliance checklist', description: 'Run a pre flight checklist linked to each booking so no safety step is missed. Keep a saved compliance trail for every completed job.' },
+    { name: 'No-fly zone notes', description: 'Flag location restrictions against CASA no fly and controlled airspace zones during planning. Reduce on site surprises and avoid non compliant flights.' },
+    { name: 'Battery cycle tracker', description: 'Track charge cycles by battery and monitor pack health over time. Receive alerts when a battery is nearing replacement thresholds.' },
+    { name: 'Insurance expiry reminders', description: 'Store policy and registration expiries in your profile and receive reminders before they lapse. Stay job ready without last minute admin stress.' },
+  ],
+  video_editor: [
+    { name: 'Timestamp feedback', description: 'Clients can leave comments directly on exact timecodes in your cut. You can jump to each note instantly and resolve feedback faster.' },
+    { name: 'Revision round tracker', description: 'Log every revision round and document what changed in each pass. Keep project scope clear and reduce disputes around extra edits.' },
+    { name: 'Edit status board', description: 'Move jobs through stages like rough cut, colour grade, sound mix, final and delivered. See workload and bottlenecks at a glance.' },
+    { name: 'Project file handover checklist', description: 'Run a final checklist for exports, project files, fonts and proxies before signoff. Ensure nothing is missed when handing over to clients or teams.' },
+    { name: 'Receive rough cut handoff from a Videographer', description: 'Accept rough cuts from Videographers on LensTrybe with source links and notes attached. Start editing immediately without chasing files across tools.' },
+  ],
+  photo_editor: [
+    { name: 'Receive culled selects handoff from a Photographer', description: 'Receive curated selects from Photographers in one handoff with client instructions and references. Begin edits quickly with all required context in place.' },
+    { name: 'Batch job tracker', description: 'Track image counts, completion percentage and deadlines across active editing jobs. Prioritise work based on volume and due date.' },
+    { name: 'Turnaround time estimator', description: 'Estimate delivery dates automatically from image volume and your typical edit speed. Set realistic client expectations before work starts.' },
+    { name: 'Style reference board', description: 'Attach mood boards and visual references to each job for consistent results. Keep your look aligned with client direction throughout the edit.' },
+    { name: 'Retouching notes per image', description: 'Add precise retouching instructions to individual images instead of broad job level notes. Reduce ambiguity and avoid repeat revisions.' },
+    { name: 'Client approval workflow', description: 'Send edited sets for approval with a clear approve or request changes flow. Final delivery only proceeds once signoff is complete.' },
+  ],
+  social_media_manager: [
+    { name: 'Content calendar', description: 'Plan posts across channels in a single calendar view by client, platform and campaign. Keep scheduling organised across the entire month.' },
+    { name: 'Content approval workflow', description: 'Send draft content to clients for sign off before publishing. Track approvals and requested edits in one place.' },
+    { name: 'Platform performance dashboard', description: 'View follower growth, reach and engagement by client and platform. Spot trends quickly without switching between native apps.' },
+    { name: 'Caption library', description: 'Store high performing caption templates and reuse them across campaigns. Save time while keeping brand voice consistent.' },
+    { name: 'Monthly reporting card', description: 'Generate a clean monthly performance summary with key metrics and highlights. Share client ready updates without manual report building.' },
+    { name: 'Receive finished gallery handoff from a Photographer', description: 'Accept delivered galleries from Photographers directly on LensTrybe for content production. Move from shoot to posting without download and upload loops.' },
+  ],
+  hair_makeup_artist: [
+    { name: 'Look book builder', description: 'Build visual mood boards for each booking and share them with clients before the day. Confirm style expectations early and reduce last minute changes.' },
+    { name: 'Client skin and allergy profile', description: 'Save each client profile with skin type, sensitivities and product preferences. Reuse this information for future appointments and safer service.' },
+    { name: 'Product kit log', description: 'Record every product used to create each look, including shade and finish details. Recreate results accurately for follow up bookings.' },
+    { name: 'Trial vs day-of booking flow', description: 'Manage trial sessions and event day appointments as linked but separate workflows. Keep notes, timings and outcomes organised for both stages.' },
+    { name: 'Artist call time sheet', description: 'Coordinate multiple artists with clear call times and role assignments. Keep large weddings and productions running to schedule.' },
+  ],
+  ugc_creator: [
+    { name: 'Brand deal tracker', description: 'Track every active deal with deliverables, due dates and payment status. Keep your pipeline organised from brief to final invoice.' },
+    { name: 'Usage rights log', description: 'Record agreed usage windows, platforms and licensing terms for each brand deal. Check rights quickly before repurposing or reposting content.' },
+    { name: 'Rate card builder', description: 'Create a shareable rate card link with packages, inclusions and pricing tiers. Send professional quotes faster when brands enquire.' },
+    { name: 'Content brief builder', description: 'Capture campaign objectives, hooks, format requirements and CTAs in a structured brief. Generate a clear scope of work before production starts.' },
+    { name: 'Posting schedule tracker', description: 'Track whether each deliverable is live, scheduled or pending across ongoing deals. Stay on top of commitments and posting deadlines.' },
+  ],
 }
-
-const UNIVERSAL_FEATURES = [
-  'Mileage and expense tracking',
-  'Tax estimation tools',
-  'Referral tracking',
-  'UK expansion (Q1 2027)',
-  'Mobile app (iOS and Android, Q4 2026)',
-]
 
 export default function UpcomingFeaturesPage() {
   const [selectedSkill, setSelectedSkill] = useState(null)
@@ -157,28 +200,17 @@ export default function UpcomingFeaturesPage() {
             <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px' }}>{selectedSkillLabel} upcoming features</h2>
             <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.55)' }}>Planned features for this skill category.</p>
 
-            <div style={{ marginBottom: '24px' }}>
-              <h3 style={{ margin: '0 0 12px', fontSize: '18px', color: '#1DB954' }}>Universal upcoming features</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
-                {UNIVERSAL_FEATURES.map((feature) => (
-                  <div key={feature} style={{ background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '14px', padding: '14px' }}>
-                    <div style={{ fontWeight: 600 }}>{feature}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               {selectedSkillFeatures.map((feature) => (
-                <div key={feature} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px' }}>
+                <div key={feature.name} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '14px', padding: '18px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
-                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{feature}</div>
+                    <div style={{ fontSize: '16px', fontWeight: 600 }}>{feature.name}</div>
                     <span style={{ borderRadius: '999px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: '#1DB954', border: '1px solid rgba(29,185,84,0.35)', background: 'rgba(29,185,84,0.12)' }}>
                       Coming Soon
                     </span>
                   </div>
                   <div style={{ color: 'rgba(255,255,255,0.58)', fontSize: '14px', lineHeight: 1.6 }}>
-                    This feature is planned to help {selectedSkillLabel.toLowerCase()} run their business more smoothly.
+                    {feature.description}
                   </div>
                 </div>
               ))}
