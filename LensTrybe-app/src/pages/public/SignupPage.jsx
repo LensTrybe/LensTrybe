@@ -41,12 +41,12 @@ const SKILL_TYPE_LIMIT_BY_TIER = {
 }
 
 const PRICE_IDS = {
-  pro_monthly: 'price_1TGVFZHW7LVs8k6sElcIwbzg',
-  pro_annual: 'price_1T7V1rHW7LVs8k6sZjddvm2E',
-  expert_monthly: 'price_1TGVM3HW7LVs8k6szXy5QvSW',
-  expert_annual: 'price_1TJV35HW7LVs8k6s7CU1RBeu',
-  elite_monthly: 'price_1TGVMDHW7LVs8k6sKePKDibF',
-  elite_annual: 'price_1TJUfqHW7LVs8k6s0SdahBua',
+  pro_monthly: 'price_1TKKXSHW7LVs8k6s2IW7TXsd',
+  pro_annual: 'price_1TKKXVHW7LVs8k6snGkHjQE5',
+  expert_monthly: 'price_1TKKXYHW7LVs8k6sboOI02xE',
+  expert_annual: 'price_1TKKXbHW7LVs8k6shpoFmKAi',
+  elite_monthly: 'price_1TKKXjHW7LVs8k6sQNNIkiCf',
+  elite_annual: 'price_1TKKXfHW7LVs8k6s99ish4aV',
 }
 
 function maxSkillTypesForTier(tierId) {

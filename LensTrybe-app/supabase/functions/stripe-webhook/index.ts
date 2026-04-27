@@ -21,12 +21,12 @@ const corsHeaders = {
 }
 
 const PRICE_TO_TIER: Record<string, 'pro' | 'expert' | 'elite'> = {
-  price_1TGVFZHW7LVs8k6sElcIwbzg: 'pro',
-  price_1T7V1rHW7LVs8k6sZjddvm2E: 'pro',
-  price_1TGVM3HW7LVs8k6szXy5QvSW: 'expert',
-  price_1TJV35HW7LVs8k6s7CU1RBeu: 'expert',
-  price_1TGVMDHW7LVs8k6sKePKDibF: 'elite',
-  price_1TJUfqHW7LVs8k6s0SdahBua: 'elite',
+  price_1TKKXSHW7LVs8k6s2IW7TXsd: 'pro',
+  price_1TKKXVHW7LVs8k6snGkHjQE5: 'pro',
+  price_1TKKXYHW7LVs8k6sboOI02xE: 'expert',
+  price_1TKKXbHW7LVs8k6shpoFmKAi: 'expert',
+  price_1TKKXjHW7LVs8k6sQNNIkiCf: 'elite',
+  price_1TKKXfHW7LVs8k6s99ish4aV: 'elite',
 }
 
 function tierFromPriceId(priceId?: string | null) {
