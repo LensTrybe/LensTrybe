@@ -210,8 +210,8 @@ export default function PublicLayout() {
           <span style={styles.tagline}>Connect. Capture. Create.</span>
         </div>
 
-        {/* Centre: Nav links (logged out only) */}
-        {!loading && !user && (
+        {/* Centre: Nav links */}
+        {!loading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
             <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
             <button style={navLinkStyle} onClick={() => navigate('/creator-partners')}>Creator Partner Program</button>
