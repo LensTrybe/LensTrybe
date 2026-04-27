@@ -204,6 +204,19 @@ export default function SignupPage() {
       })
       if (profileError) throw profileError
 
+      try {
+        await supabase.functions.invoke('send-welcome-email', {
+          body: {
+            record: {
+              email,
+              user_metadata: { full_name: `${form.firstName} ${form.lastName}` }
+            }
+          }
+        })
+      } catch (welcomeEmailError) {
+        console.log('send-welcome-email failed', welcomeEmailError)
+      }
+
       if (form.tier !== 'basic') {
         const priceId = getCheckoutPriceId(form.tier, form.billingInterval)
         if (!priceId) {
