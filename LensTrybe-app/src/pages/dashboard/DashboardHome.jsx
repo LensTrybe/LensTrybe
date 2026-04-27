@@ -188,7 +188,6 @@ export default function DashboardHome() {
       const mapped = labels
         .map((label) => AVAILABLE_QUICK_ACTIONS.find((action) => action.label === label))
         .filter(Boolean)
-        .slice(0, 4)
       const selected = mapped.length > 0 ? mapped : defaultActions
       setQuickActions(selected)
       setDraftQuickActions(selected)
@@ -202,15 +201,9 @@ export default function DashboardHome() {
   function toggleDraftQuickAction(action) {
     const exists = draftQuickActions.some((a) => a.label === action.label)
     if (exists) {
-      setQuickActionsError('')
       setDraftQuickActions(draftQuickActions.filter((a) => a.label !== action.label))
       return
     }
-    if (draftQuickActions.length >= 4) {
-      setQuickActionsError('You can select up to 4 quick actions')
-      return
-    }
-    setQuickActionsError('')
     setDraftQuickActions([...draftQuickActions, action])
   }
 
@@ -301,8 +294,8 @@ export default function DashboardHome() {
         <div
           style={
             isMobile
-              ? { display: 'flex', flexDirection: 'row', gap: '8px', width: '100%', minWidth: 0 }
-              : { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', width: '100%', minWidth: 0 }
+              ? { display: 'flex', flexDirection: 'row', flexWrap: 'wrap', overflowX: 'auto', gap: '8px', width: '100%', minWidth: 0 }
+              : { display: 'flex', flexWrap: 'wrap', gap: '12px', width: '100%', minWidth: 0 }
           }
         >
           {quickActions.map((a, i) => (
@@ -323,7 +316,6 @@ export default function DashboardHome() {
                 )
               })}
             </div>
-            {quickActionsError ? <div style={{ marginTop: '10px', color: '#ef4444', fontSize: '12px' }}>{quickActionsError}</div> : null}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
               <button
                 type="button"
