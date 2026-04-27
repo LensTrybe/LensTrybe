@@ -196,10 +196,11 @@ export default function HomePage() {
     try {
       const { data, error } = await supabase
         .from('profiles').select('id, business_name, subscription_tier, skill_types, city, state, bio, avatar_url, tagline')
-        .in('subscription_tier', ['elite', 'expert']).eq('is_admin', false).eq('subscription_status', 'active')
+        .in('subscription_tier', ['elite', 'expert']).or('is_admin.is.null,is_admin.eq.false').not('avatar_url', 'is', null)
         .order('subscription_tier', { ascending: false });
       if (error) throw error;
-      const ids = (data || []).map(p => p.id);
+      const filteredProfiles = (data || []).filter((p) => String(p.avatar_url || '').trim() !== '');
+      const ids = filteredProfiles.map(p => p.id);
       let reviewMap = {};
       if (ids.length > 0) {
         const { data: reviews } = await supabase.from('reviews').select('creative_id, rating').in('creative_id', ids);
@@ -209,7 +210,7 @@ export default function HomePage() {
           reviewMap[r.creative_id].count += 1;
         });
       }
-      const enriched = (data || []).map(p => ({ ...p, avg_rating: reviewMap[p.id] ? (reviewMap[p.id].sum / reviewMap[p.id].count) : 0, review_count: reviewMap[p.id]?.count || 0 }));
+      const enriched = filteredProfiles.map(p => ({ ...p, avg_rating: reviewMap[p.id] ? (reviewMap[p.id].sum / reviewMap[p.id].count) : 0, review_count: reviewMap[p.id]?.count || 0 }));
       setFeaturedCreatives(enriched);
       setEliteCreatives(enriched.filter(c => c.subscription_tier === 'elite'));
     } catch (err) {

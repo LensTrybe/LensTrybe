@@ -381,6 +381,22 @@ export default function EditProfilePage() {
 
       {activeTab === 'basics' && (
         <div style={styles.card}>
+          {(!form.avatar_url || String(form.avatar_url).trim() === '') && (
+            <div
+              style={{
+                marginBottom: '14px',
+                padding: '10px 12px',
+                borderRadius: '10px',
+                border: '1px solid rgba(29,185,84,0.35)',
+                background: 'rgba(29,185,84,0.08)',
+                color: 'var(--text-secondary)',
+                fontSize: '13px',
+                fontFamily: 'var(--font-ui)',
+              }}
+            >
+              Add a profile photo to appear in the Featured Creatives section on the homepage.
+            </div>
+          )}
           <div style={styles.sectionTitle}>Business Details</div>
           <Input label="Business name" value={form.business_name} onChange={e => update('business_name', e.target.value)} placeholder="Golden Hour Studio" />
           <Input label="Tagline" value={form.tagline} onChange={e => update('tagline', e.target.value)} placeholder="Brisbane's most trusted wedding photographer" />
