@@ -218,7 +218,7 @@ export default function UpcomingFeaturesPage() {
           </section>
         )}
 
-        <section id="request-feature-form" style={{ marginTop: '64px', maxWidth: '760px' }}>
+        <section id="request-feature-form" style={{ margin: '64px auto 0', maxWidth: '640px' }}>
           <h2 style={{ margin: 0, fontSize: isMobile ? '28px' : '36px' }}>Request a Feature</h2>
           <p style={{ margin: '10px 0 24px', color: 'rgba(255,255,255,0.55)' }}>Tell us what would help your workflow most.</p>
 
