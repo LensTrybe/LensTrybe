@@ -265,6 +265,7 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('')
   const [exitReason, setExitReason] = useState('')
   const [loading, setLoading] = useState(false)
+  const [currentEmailInput, setCurrentEmailInput] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailMsg, setEmailMsg] = useState(null)
@@ -337,6 +338,10 @@ export default function SettingsPage() {
   }
 
   async function updateEmail() {
+    if (String(currentEmailInput || '').trim().toLowerCase() !== String(user?.email || '').trim().toLowerCase()) {
+      setEmailMsg({ text: "That doesn't match your current email address.", error: true })
+      return
+    }
     if (!newEmail || !newEmail.includes('@')) { setEmailMsg({ text: 'Please enter a valid email.', error: true }); return }
     setEmailLoading(true)
     const { error } = await supabase.auth.updateUser({ email: newEmail })
@@ -344,9 +349,21 @@ export default function SettingsPage() {
       setEmailMsg({ text: error.message, error: true })
     } else {
       setEmailMsg({ text: 'Confirmation sent to your new email address. Click the link to confirm the change.', error: false })
+      setCurrentEmailInput('')
       setNewEmail('')
     }
     setEmailLoading(false)
+  }
+
+  function maskEmail(email) {
+    const raw = String(email || '').trim()
+    const at = raw.indexOf('@')
+    if (at <= 0) return raw
+    const local = raw.slice(0, at)
+    const domain = raw.slice(at)
+    const visible = local.slice(0, 2)
+    const maskedCount = Math.max(local.length - 2, 1)
+    return `${visible}${'*'.repeat(maskedCount)}${domain}`
   }
 
   function getPricingComparePrice(pt) {
@@ -562,6 +579,15 @@ export default function SettingsPage() {
             )}
             <div style={{ display: 'flex', gap: '10px' }}>
               <input
+                value={currentEmailInput}
+                onChange={e => setCurrentEmailInput(e.target.value)}
+                placeholder="Current email"
+                type="email"
+                style={{ flex: 1, padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+              <input
                 value={newEmail}
                 onChange={e => setNewEmail(e.target.value)}
                 placeholder="New email address"
@@ -583,7 +609,7 @@ export default function SettingsPage() {
             <div style={styles.sectionSub}>Send a password reset link to your email address.</div>
             <div style={styles.row}>
               <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-                {user?.email}
+                {maskEmail(user?.email)}
               </div>
               <Button
                 variant="secondary"
