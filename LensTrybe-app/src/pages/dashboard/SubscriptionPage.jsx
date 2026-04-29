@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 
+const PRICE_DISPLAY_FONT = "'Playfair Display', serif"
+
 const PLANS = [
   {
     id: 'basic',
@@ -143,9 +145,9 @@ export default function SubscriptionPage() {
               )}
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: plan.color, marginBottom: '4px' }}>{plan.name}</div>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1 }}>
-                  {price === 0 ? 'Free' : `$${price}`}
-                  {price > 0 && <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--text-muted)' }}>/{billing === 'annual' ? 'yr' : 'mo'}</span>}
+                <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '2px' }}>
+                  <span style={{ fontFamily: PRICE_DISPLAY_FONT }}>{price === 0 ? 'Free' : `$${price}`}</span>
+                  {price > 0 && <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>/{billing === 'annual' ? 'yr' : 'mo'}</span>}
                 </div>
                 {billing === 'annual' && price > 0 && (
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>${(price / 12).toFixed(2)}/mo equivalent</div>

@@ -205,7 +205,7 @@ export default function PricingPage() {
       gap: '4px',
     },
     priceAmount: {
-      fontFamily: 'var(--font-display)',
+      fontFamily: "'Playfair Display', serif",
       fontSize: '40px',
       color: 'var(--text-primary)',
       lineHeight: 1,
