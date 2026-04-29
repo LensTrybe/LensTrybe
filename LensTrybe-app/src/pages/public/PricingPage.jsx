@@ -250,8 +250,18 @@ export default function PricingPage() {
 
   function getPrice(tier) {
     if (tier.monthly === 0) return 'Free'
-    const amount = annual ? (tier.annual / 12).toFixed(2) : tier.monthly.toFixed(2)
+    const amount = annual ? tier.annual.toFixed(2) : tier.monthly.toFixed(2)
     return `$${amount}`
+  }
+
+  function getPricePeriod(tier) {
+    if (tier.monthly === 0) return ''
+    return annual ? '/yr' : '/mo'
+  }
+
+  function getAnnualMonthlyEquivalent(tier) {
+    if (tier.monthly === 0) return null
+    return `$${(tier.annual / 12).toFixed(2)}`
   }
 
   function getAnnualSaving(tier) {
@@ -312,10 +322,10 @@ export default function PricingPage() {
             <div>
               <div style={styles.price}>
                 <span style={styles.priceAmount}>{getPrice(tier)}</span>
-                {tier.monthly > 0 && <span style={styles.pricePeriod}>/mo</span>}
+                {tier.monthly > 0 && <span style={styles.pricePeriod}>{getPricePeriod(tier)}</span>}
               </div>
               {annual && tier.monthly > 0 && (
-                <div style={styles.annualNote}>{getAnnualSaving(tier)} on annual billing</div>
+                <div style={styles.annualNote}>{getAnnualMonthlyEquivalent(tier)}/mo and {getAnnualSaving(tier)}</div>
               )}
             </div>
 
