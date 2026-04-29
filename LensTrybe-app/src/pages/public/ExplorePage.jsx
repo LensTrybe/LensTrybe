@@ -29,6 +29,40 @@ const SPECIALTIES = {
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 const TIER_ORDER = { elite: 0, expert: 1, pro: 2, basic: 3 }
 
+function normaliseCity(value) {
+  return (value || '').trim().toLowerCase()
+}
+
+function filterCreativesByLocationPreference(creatives, preference, f) {
+  const pref = preference || 'australiaWide'
+  return creatives.filter((p) => {
+    const t = (p.subscription_tier || 'basic').toLowerCase()
+    const isBasic = t === 'basic'
+    const isPro = t === 'pro'
+    const isHigh = t === 'expert' || t === 'elite'
+
+    if (pref === 'australiaWide') {
+      return isHigh
+    }
+
+    if (pref === 'local') {
+      const searchCity = normaliseCity(f.city)
+      const creativeCity = normaliseCity(p.city)
+      if (!searchCity || creativeCity !== searchCity) return false
+      return isBasic || isPro || isHigh
+    }
+
+    if (pref === 'state') {
+      const searchState = (f.state || '').trim().toUpperCase()
+      const creativeState = (p.state || '').trim().toUpperCase()
+      if (!searchState || creativeState !== searchState) return false
+      return isPro || isHigh
+    }
+
+    return true
+  })
+}
+
 function CreativeCard({ profile, onClick }) {
   const [hovered, setHovered] = useState(false)
 
@@ -103,6 +137,7 @@ export default function ExplorePage() {
     state: '',
     city: '',
     name: '',
+    locationPreference: 'australiaWide',
   })
 
   const availableSpecialties = [...new Set(selectedTypes.flatMap(t => SPECIALTIES[t] ?? []))]
@@ -163,7 +198,13 @@ export default function ExplorePage() {
       return aOrder - bOrder
     })
 
-    setCreatives(sorted)
+    const tierLocationFiltered = filterCreativesByLocationPreference(
+      sorted,
+      currentFilters.locationPreference,
+      { city: currentFilters.city, state: currentFilters.state },
+    )
+
+    setCreatives(tierLocationFiltered)
     setLoading(false)
   }
 
@@ -211,7 +252,7 @@ export default function ExplorePage() {
 
         <div style={styles.filterCard}>
           <div style={styles.filterSection}>
-            <div style={styles.filterLabel}>Creative Type — select one or more</div>
+            <div style={styles.filterLabel}>Creative type: select one or more</div>
             {isMobile ? (
               <select
                 multiple
@@ -251,6 +292,20 @@ export default function ExplorePage() {
             )}
           </div>
 
+          <div style={styles.filterSection}>
+            <label style={styles.filterLabel}>Location preference</label>
+            <select
+              style={styles.select}
+              value={filters.locationPreference}
+              onChange={(e) => updateFilter('locationPreference', e.target.value)}
+              aria-label="Location preference"
+            >
+              <option value="australiaWide">Australia Wide (all creatives)</option>
+              <option value="local">Local (same city as the client's search city)</option>
+              <option value="state">State (same state)</option>
+            </select>
+          </div>
+
           <div style={styles.filterRow}>
             <div style={styles.filterGroupInner}>
               <label style={styles.filterLabel}>Specialty</label>
@@ -285,8 +340,8 @@ export default function ExplorePage() {
             <Button variant="primary" onClick={() => handleSearch()} disabled={loading}>
               {loading ? 'Searching…' : 'Search'}
             </Button>
-            {(selectedTypes.length > 0 || filters.specialty || filters.state || filters.city || filters.name) && (
-              <Button variant="ghost" size="sm" onClick={() => { setSelectedTypes([]); setFilters({ specialty: '', state: '', city: '', name: '' }); setSearched(false); setCreatives([]) }}>
+            {(selectedTypes.length > 0 || filters.specialty || filters.state || filters.city || filters.name || filters.locationPreference !== 'australiaWide') && (
+              <Button variant="ghost" size="sm" onClick={() => { setSelectedTypes([]); setFilters({ specialty: '', state: '', city: '', name: '', locationPreference: 'australiaWide' }); setSearched(false); setCreatives([]) }}>
                 Clear all
               </Button>
             )}
@@ -315,14 +370,14 @@ export default function ExplorePage() {
             <div style={{ fontSize: '32px' }}>😕</div>
             <div style={styles.emptyTitle}>No creatives found</div>
             <div style={styles.emptyText}>Try adjusting your filters or searching a different location.</div>
-            <Button variant="secondary" onClick={() => { setSelectedTypes([]); setFilters({ specialty: '', state: '', city: '', name: '' }); handleSearch([], { specialty: '', state: '', city: '', name: '' }) }}>
+            <Button variant="secondary" onClick={() => { setSelectedTypes([]); setFilters({ specialty: '', state: '', city: '', name: '', locationPreference: 'australiaWide' }); handleSearch([], { specialty: '', state: '', city: '', name: '', locationPreference: 'australiaWide' }) }}>
               Clear Filters & Browse All
             </Button>
           </div>
         ) : (
           <>
             <div style={styles.resultsHeader}>
-              <div style={styles.resultsCount}>{creatives.length} creative{creatives.length !== 1 ? 's' : ''} found — sorted by tier</div>
+              <div style={styles.resultsCount}>{creatives.length} creative{creatives.length !== 1 ? 's' : ''} found, sorted by tier</div>
             </div>
             <div style={styles.grid}>
               {creatives.map(profile => (

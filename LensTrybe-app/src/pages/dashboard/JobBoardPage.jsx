@@ -11,6 +11,33 @@ import { acceptJobApplication, declineJobApplication, isApplicationPending } fro
 
 const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
 
+const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
+
+function jobListingState(job) {
+  if (job?.state && String(job.state).trim()) {
+    return String(job.state).trim().toUpperCase()
+  }
+  const loc = (job?.location || '').toUpperCase()
+  for (const code of AU_STATES) {
+    if (loc.includes(code)) return code
+  }
+  return null
+}
+
+function profileState(profile) {
+  const s = profile?.state
+  if (!s || !String(s).trim()) return null
+  return String(s).trim().toUpperCase()
+}
+
+function jobIsInCreativeState(job, profile) {
+  const js = jobListingState(job)
+  const ps = profileState(profile)
+  if (!ps) return true
+  if (!js) return true
+  return js === ps
+}
+
 function daysLeft(expiresAt) {
   return Math.ceil((new Date(expiresAt) - Date.now()) / (1000 * 60 * 60 * 24))
 }
@@ -35,7 +62,7 @@ export default function JobBoardPage() {
   const [toast, setToast] = useState(null)
   const [saving, setSaving] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('')
-  const canApply = tier !== 'basic'
+  const [applyUpgradeModal, setApplyUpgradeModal] = useState(null)
 
   const [form, setForm] = useState({
     title: '',
@@ -114,6 +141,8 @@ export default function JobBoardPage() {
 
   async function submitApplication() {
     if (!user || !applyingJob) return
+    if (tier === 'basic') return
+    if (tier === 'pro' && !jobIsInCreativeState(applyingJob, profile)) return
     if (!applyForm.price || !applyForm.description) return
     setSubmittingApply(true)
 
@@ -248,7 +277,6 @@ export default function JobBoardPage() {
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
     viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     descBox: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', background: 'var(--bg-base)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
-    upgradeNote: { padding: '14px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
   }
 
   return (
@@ -473,35 +501,52 @@ export default function JobBoardPage() {
               {(selected.creative_types ?? []).map(c => <Badge key={c} variant="default">{c}</Badge>)}
             </div>
 
-            {!canApply && (
-              <div style={styles.upgradeNote}>
-                Upgrade to Pro or above to apply for jobs.
-              </div>
-            )}
-
             <div style={styles.modalActions}>
               <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
-              {canApply && (
-                myApplications.some(a => a.job_id === selected.id)
-                  ? <Badge variant="green">Already Applied</Badge>
-                  : user
-                    ? (
-                      <button
-                        type="button"
-                        onClick={() => { setApplyingJob(selected); setShowApplyModal(true) }}
-                        style={{ padding: '8px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                      >
-                        Apply
-                      </button>
-                    )
-                    : (
-                      <Button variant="primary" onClick={() => navigate('/join/client')}>Apply</Button>
-                    )
+              {myApplications.some(a => a.job_id === selected.id) ? (
+                <Badge variant="green">Already Applied</Badge>
+              ) : !user ? (
+                <Button variant="primary" onClick={() => navigate('/join/client')}>Apply</Button>
+              ) : tier === 'basic' ? (
+                <Button variant="primary" onClick={() => setApplyUpgradeModal('pricing')}>
+                  Upgrade to Apply
+                </Button>
+              ) : tier === 'pro' && !jobIsInCreativeState(selected, profile) ? (
+                <Button variant="primary" onClick={() => setApplyUpgradeModal('interstate')}>
+                  Upgrade to Apply for This Job
+                </Button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => { setApplyingJob(selected); setShowApplyModal(true) }}
+                  style={{ padding: '8px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                >
+                  Apply
+                </button>
               )}
             </div>
           </div>
         </Modal>
       )}
+
+      <Modal
+        isOpen={!!applyUpgradeModal}
+        onClose={() => setApplyUpgradeModal(null)}
+        title={applyUpgradeModal === 'pricing' ? 'Upgrade to apply' : 'Apply across Australia'}
+        size="sm"
+      >
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, margin: 0 }}>
+          {applyUpgradeModal === 'pricing'
+            ? 'Job applications are available on Pro and above. Upgrade your plan to start applying.'
+            : 'This job is outside your state. Upgrade to Expert or Elite to apply for jobs across Australia.'}
+        </p>
+        <div style={{ ...styles.modalActions, marginTop: '20px' }}>
+          <Button variant="ghost" onClick={() => setApplyUpgradeModal(null)}>Close</Button>
+          <Button variant="primary" onClick={() => { setApplyUpgradeModal(null); setSelected(null); navigate('/pricing') }}>
+            View pricing
+          </Button>
+        </div>
+      </Modal>
 
       {showApplyModal && applyingJob && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
