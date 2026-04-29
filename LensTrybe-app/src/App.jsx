@@ -48,7 +48,7 @@ import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 
-const isComingSoon = import.meta.env.VITE_COMING_SOON === "true"
+const LAUNCH_DATE = new Date('2026-05-01T00:00:00+10:00')
 
 function PlaceholderPage({ page }) {
   return (
@@ -171,14 +171,12 @@ export default function App() {
     </Routes>
   )
 
-  if (new URLSearchParams(window.location.search).get('preview') === 'letmein') {
-    sessionStorage.setItem('preview', 'letmein')
-  }
-  const isPreview = sessionStorage.getItem('preview') === 'letmein';
+  const isLaunched = new Date() >= LAUNCH_DATE
+  const isPreview = new URLSearchParams(window.location.search).get('preview') === 'letmein'
 
   return (
     <>
-      {(isComingSoon && !isPreview) ? <ComingSoon /> : routes}
+      {(!isLaunched && !isPreview) ? <ComingSoon /> : routes}
       <CinematicIntro />
     </>
   )
