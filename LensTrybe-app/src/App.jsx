@@ -171,8 +171,11 @@ export default function App() {
     </Routes>
   )
 
+  if (new URLSearchParams(window.location.search).get('preview') === 'letmein') {
+    sessionStorage.setItem('lt_preview', 'true')
+  }
+  const isPreview = sessionStorage.getItem('lt_preview') === 'true'
   const isLaunched = new Date() >= LAUNCH_DATE
-  const isPreview = new URLSearchParams(window.location.search).get('preview') === 'letmein'
 
   return (
     <>
