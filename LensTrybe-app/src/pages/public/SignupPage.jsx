@@ -8,10 +8,10 @@ import Badge from '../../components/ui/Badge'
 const STEPS = ['Plan', 'Account', 'Skills', 'Specialties', 'Location', 'Credentials', 'Photo', 'Review']
 
 const TIERS = [
-  { id: 'basic', name: 'Basic', price: 0, description: 'Get discovered for free', color: 'var(--border-default)' },
-  { id: 'pro', name: 'Pro', price: 24.99, description: 'Start booking clients', color: 'var(--green)' },
-  { id: 'expert', name: 'Expert', price: 74.99, description: 'Full business tools', color: 'var(--silver)' },
-  { id: 'elite', name: 'Elite', price: 149.99, description: 'Studio-level power', color: '#EAB308' },
+  { id: 'basic', name: 'Basic', monthly: 0, annual: 0, description: 'Get discovered for free', color: 'var(--border-default)' },
+  { id: 'pro', name: 'Pro', monthly: 24.99, annual: 249.90, description: 'Start booking clients', color: 'var(--green)' },
+  { id: 'expert', name: 'Expert', monthly: 74.99, annual: 749.90, description: 'Full business tools', color: 'var(--silver)' },
+  { id: 'elite', name: 'Elite', monthly: 149.99, annual: 1499.90, description: 'Studio-level power', color: '#EAB308' },
 ]
 
 const SKILL_TYPES = [
@@ -88,6 +88,7 @@ export default function SignupPage() {
 
   const [form, setForm] = useState({
     tier: 'pro',
+    billingInterval: 'monthly',
     email: '',
     password: '',
     confirmPassword: '',
@@ -273,6 +274,40 @@ export default function SignupPage() {
     stepLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.08em', textTransform: 'uppercase' },
     content: { display: 'flex', flexDirection: 'column', gap: '20px' },
     tierGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
+    billingToggle: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '12px',
+      background: 'var(--bg-elevated)',
+      border: '1px solid var(--border-default)',
+      borderRadius: 'var(--radius-full)',
+      padding: '4px',
+      width: 'fit-content',
+      margin: '0 auto 6px',
+    },
+    billingToggleBtn: (active) => ({
+      padding: '6px 20px',
+      borderRadius: 'var(--radius-full)',
+      border: 'none',
+      background: active ? 'var(--green)' : 'transparent',
+      color: active ? '#000' : 'var(--text-secondary)',
+      fontSize: '13px',
+      fontWeight: 500,
+      cursor: 'pointer',
+      transition: 'all var(--transition-base)',
+      fontFamily: 'var(--font-ui)',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+    }),
+    saveBadge: {
+      fontSize: '10px',
+      background: 'var(--green-dim)',
+      color: 'var(--green)',
+      padding: '2px 6px',
+      borderRadius: 'var(--radius-full)',
+      fontWeight: 600,
+    },
     tierCard: (selected, color) => ({
       padding: '20px',
       borderRadius: 'var(--radius-xl)',
@@ -286,6 +321,7 @@ export default function SignupPage() {
     }),
     tierName: { fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+    tierAnnualMeta: { fontSize: '11px', color: 'var(--green)', fontFamily: 'var(--font-ui)', fontWeight: 500 },
     tierDesc: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     skillGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' },
     skillChip: (selected, disabled) => ({
@@ -371,6 +407,23 @@ export default function SignupPage() {
   const availableSpecialties = form.skillTypes.flatMap(s => SPECIALTIES[s] ?? [])
   const uniqueSpecialties = [...new Set(availableSpecialties)]
 
+  function getPlanPrice(tier) {
+    if (tier.monthly === 0) return 'Free'
+    return form.billingInterval === 'annual' ? `$${tier.annual.toFixed(2)}` : `$${tier.monthly.toFixed(2)}`
+  }
+
+  function getPlanPeriod(tier) {
+    if (tier.monthly === 0) return ''
+    return form.billingInterval === 'annual' ? '/yr' : '/mo'
+  }
+
+  function getPlanAnnualMeta(tier) {
+    if (tier.monthly === 0 || form.billingInterval !== 'annual') return null
+    const monthlyEquivalent = (tier.annual / 12).toFixed(2)
+    const saving = (tier.monthly * 12 - tier.annual).toFixed(0)
+    return `$${monthlyEquivalent}/mo · Save $${saving}/yr`
+  }
+
   const stepTitles = [
     { title: 'Choose your plan', sub: 'You can upgrade or downgrade anytime.' },
     { title: 'Create your account', sub: 'Your business details and login credentials.' },
@@ -414,15 +467,27 @@ export default function SignupPage() {
 
           {/* Step 0 — Plan */}
           {step === 0 && (
-            <div style={styles.tierGrid}>
-              {TIERS.map(tier => (
-                <div key={tier.id} style={styles.tierCard(form.tier === tier.id, tier.color)} onClick={() => update('tier', tier.id)}>
-                  <div style={styles.tierName}>{tier.name}</div>
-                  <div style={styles.tierPrice}>{tier.price === 0 ? 'Free' : `$${tier.price}/mo`}</div>
-                  <div style={styles.tierDesc}>{tier.description}</div>
-                </div>
-              ))}
-            </div>
+            <>
+              <div style={styles.billingToggle}>
+                <button type="button" style={styles.billingToggleBtn(form.billingInterval === 'monthly')} onClick={() => update('billingInterval', 'monthly')}>
+                  Monthly
+                </button>
+                <button type="button" style={styles.billingToggleBtn(form.billingInterval === 'annual')} onClick={() => update('billingInterval', 'annual')}>
+                  Annual
+                  <span style={styles.saveBadge}>2 months free</span>
+                </button>
+              </div>
+              <div style={styles.tierGrid}>
+                {TIERS.map(tier => (
+                  <div key={tier.id} style={styles.tierCard(form.tier === tier.id, tier.color)} onClick={() => update('tier', tier.id)}>
+                    <div style={styles.tierName}>{tier.name}</div>
+                    <div style={styles.tierPrice}>{getPlanPrice(tier)}{getPlanPeriod(tier)}</div>
+                    {getPlanAnnualMeta(tier) && <div style={styles.tierAnnualMeta}>{getPlanAnnualMeta(tier)}</div>}
+                    <div style={styles.tierDesc}>{tier.description}</div>
+                  </div>
+                ))}
+              </div>
+            </>
           )}
 
           {/* Step 1 — Account */}

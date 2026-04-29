@@ -368,14 +368,20 @@ export default function SettingsPage() {
 
   function getPricingComparePrice(pt) {
     if (pt.monthly === 0) return 'Free'
-    const amount = pricingAnnual ? (pt.annual / 12).toFixed(2) : pt.monthly.toFixed(2)
+    const amount = pricingAnnual ? pt.annual.toFixed(2) : pt.monthly.toFixed(2)
     return `$${amount}`
   }
 
-  function getPricingAnnualSaving(pt) {
-    if (pt.monthly === 0) return null
+  function getPricingComparePeriod(pt) {
+    if (pt.monthly === 0) return ''
+    return pricingAnnual ? '/yr' : '/mo'
+  }
+
+  function getPricingAnnualMeta(pt) {
+    if (pt.monthly === 0 || !pricingAnnual) return null
+    const monthlyEquivalent = (pt.annual / 12).toFixed(2)
     const saving = (pt.monthly * 12 - pt.annual).toFixed(0)
-    return `Save $${saving}/yr`
+    return `$${monthlyEquivalent}/mo · Save $${saving}/yr`
   }
 
   const styles = {
@@ -536,10 +542,10 @@ export default function SettingsPage() {
                     <div>
                       <div style={PRICING_COMPARE_STYLES.price}>
                         <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
-                        {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>/mo</span>}
+                        {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
                       </div>
                       {pricingAnnual && pt.monthly > 0 && (
-                        <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualSaving(pt)} on annual billing</div>
+                        <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
                       )}
                     </div>
 
