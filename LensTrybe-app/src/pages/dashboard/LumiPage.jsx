@@ -67,7 +67,7 @@ export default function LumiPage() {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
-  const [tier, setTier] = useState('basic');
+  const [tier, setTier] = useState(null);
   const [conversations, setConversations] = useState([]);
   const [activeConvoId, setActiveConvoId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -92,7 +92,7 @@ export default function LumiPage() {
     if (!user) return;
     supabase
       .from('profiles')
-      .select('subscription_tier, full_name, business_name')
+      .select('subscription_tier, business_name, tagline')
       .eq('id', user.id)
       .single()
       .then(({ data }) => {
@@ -237,7 +237,7 @@ export default function LumiPage() {
   }
 
   const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.basic;
-  const isLocked = tier === 'basic';
+  const isLocked = tier !== null && tier === 'basic';
   const usedMonthly = usage?.monthly || 0;
   const monthlyLimit = tierConfig.monthly;
   const usagePercent = monthlyLimit ? Math.min(100, (usedMonthly / monthlyLimit) * 100) : 0;
@@ -509,7 +509,7 @@ export default function LumiPage() {
                       ✨
                     </div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.white, marginBottom: 6 }}>
-                      Hi{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}! I am Lumi.
+                    Hi{profile?.business_name ? `, ${profile.business_name.split(' ')[0]}` : ''}! I am Lumi.
                     </div>
                     <div style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.6 }}>
                       Your AI business assistant. Ask me anything about running your creative business.
