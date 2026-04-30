@@ -18,6 +18,7 @@ const nav = [
   { label: 'Reviews', path: '/dashboard/business/reviews', icon: '★', section: 'Business' },
   { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: '◆', section: 'Business' },
   { label: 'Team', path: '/dashboard/business/team', icon: '⬡', section: 'Business', feature: 'team' },
+  { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
   { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: '◷', section: 'Work' },
   { label: 'Availability', path: '/dashboard/my-work/availability', icon: '📅', section: 'Work' },
   { label: 'Job Board', path: '/dashboard/my-work/jobs', icon: '◈', section: 'Work' },
@@ -31,8 +32,13 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   const { hasFeature, tier } = useSubscription()
   const navigate = useNavigate()
   const [collapsed, setCollapsed] = useState(false)
-
-  const sections = [...new Set(nav.map(n => n.section))]
+  const navItems = nav.some(item => item.path === '/dashboard/lumi')
+    ? nav
+    : [
+        ...nav.slice(0, 21),
+        { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
+        ...nav.slice(21),
+      ]
 
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--pink)', expert: 'var(--green)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
@@ -176,13 +182,13 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
           </div>
 
           <nav style={styles.nav}>
-            {nav.map((item, i) => {
+            {navItems.map((item) => {
               const locked = item.feature ? !hasFeature(item.feature) : false
               const showSection = item.section !== currentSection
               if (showSection) currentSection = item.section
 
               return (
-                <div key={i}>
+                <div key={item.path}>
                   {showSection && item.section && (
                     <span style={styles.sectionLabel}>{collapsed ? '·' : item.section}</span>
                   )}

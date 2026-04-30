@@ -16,6 +16,8 @@ const WORD_STYLE = {
 const PARTICLE_COLORS = ['#FF4D8D', '#1DB954', '#ffffff', '#9b6bff']
 
 export default function CinematicIntro() {
+  return null
+
   const [mounted, setMounted] = useState(false)
   const [fadingOut, setFadingOut] = useState(false)
   const [showConnect, setShowConnect] = useState(false)
