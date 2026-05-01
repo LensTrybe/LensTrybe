@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 
@@ -153,7 +154,14 @@ export default function LoginPage() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <button
             type="button"
-            onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/` } })}
+            onClick={() => {
+              try {
+                sessionStorage.setItem(LT_GOOGLE_OAUTH_PENDING_KEY, '1')
+              } catch {
+                /* ignore */
+              }
+              void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/` } })
+            }}
             style={{
               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
               padding: '11px 16px', borderRadius: 'var(--radius-lg)',

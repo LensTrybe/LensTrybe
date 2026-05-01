@@ -3,6 +3,9 @@ import { supabase } from '../lib/supabaseClient'
 
 const AuthContext = createContext(null)
 
+/** Set on LoginPage immediately before `signInWithOAuth({ provider: 'google' })`; cleared in `fetchUserData`. */
+export const LT_GOOGLE_OAUTH_PENDING_KEY = 'lt_google_oauth'
+
 /** Post-OAuth / magic-link: optional `sessionStorage.returnTo` — never hijack portal or deliver links. */
 function consumeOAuthReturnRedirect() {
   if (typeof window === 'undefined') return
@@ -67,6 +70,18 @@ export function AuthProvider({ children }) {
     setProfile(profileData)
     setClientAccount(clientData)
     setLoading(false)
+
+    if (typeof window === 'undefined') return
+    let googleOAuthReturn = false
+    try {
+      googleOAuthReturn = sessionStorage.getItem(LT_GOOGLE_OAUTH_PENDING_KEY) === '1'
+      if (googleOAuthReturn) sessionStorage.removeItem(LT_GOOGLE_OAUTH_PENDING_KEY)
+    } catch {
+      /* ignore */
+    }
+    if (googleOAuthReturn && profileData && window.location.pathname === '/') {
+      window.location.replace(`${window.location.origin}/dashboard`)
+    }
   }
 
   const isCreative = !!profile
