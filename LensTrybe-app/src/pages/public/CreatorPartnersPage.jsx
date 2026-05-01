@@ -68,10 +68,6 @@ export default function CreatorPartnersPage() {
     cardTitle: { fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 8 },
     cardDesc: { fontSize: 14, color: '#8b8a9a', lineHeight: 1.6 },
     divider: { height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 24px 80px' },
-    table: { width: '100%', borderCollapse: 'collapse', fontSize: 14 },
-    th: { textAlign: 'left', padding: '12px 16px', color: '#8b8a9a', fontWeight: 600, borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: 12, letterSpacing: 1, textTransform: 'uppercase' },
-    td: { padding: '14px 16px', borderBottom: '1px solid rgba(255,255,255,0.05)', color: '#fff' },
-    highlight: { color: '#1DB954', fontWeight: 700 },
     formWrap: { maxWidth: 620, margin: '0 auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '48px 40px' },
     label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#8b8a9a', marginBottom: 8, letterSpacing: 0.3 },
     input: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' },
@@ -127,46 +123,6 @@ export default function CreatorPartnersPage() {
             </div>
           ))}
         </div>
-      </div>
-
-      <div style={s.divider} />
-
-      {/* Commission table */}
-      <div style={s.section}>
-        <p style={s.sectionTitle}>Commission Structure</p>
-        <p style={s.sectionSubtitle}>Your audience gets 20% off their first annual payment. You earn 20% of that payment.</p>
-        <div style={{ overflowX: 'auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: '8px 0' }}>
-          <table style={s.table}>
-            <thead>
-              <tr>
-                <th style={s.th}>Plan</th>
-                <th style={s.th}>Full Price</th>
-                <th style={s.th}>Their Price</th>
-                <th style={s.th}>Your Commission</th>
-                <th style={s.th}>10 Signups</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
-                { plan: 'Pro — Monthly', full: '$24.99/mo', their: '$24.99', comm: '$5.00', ten: '$50.00' },
-                { plan: 'Pro — Annual', full: '$249.90/yr', their: '$199.92', comm: '$24.99', ten: '$249.90' },
-                { plan: 'Expert — Monthly', full: '$74.99/mo', their: '$74.99', comm: '$15.00', ten: '$150.00' },
-                { plan: 'Expert — Annual', full: '$749.90/yr', their: '$599.92', comm: '$74.99', ten: '$749.90' },
-                { plan: 'Elite — Monthly', full: '$149.99/mo', their: '$149.99', comm: '$30.00', ten: '$300.00' },
-                { plan: 'Elite — Annual', full: '$1,499.90/yr', their: '$1,199.92', comm: '$150.00', ten: '$1,500.00' },
-              ].map(row => (
-                <tr key={row.plan}>
-                  <td style={s.td}>{row.plan}</td>
-                  <td style={{ ...s.td, color: '#8b8a9a' }}>{row.full}</td>
-                  <td style={s.td}>{row.their}</td>
-                  <td style={{ ...s.td, ...s.highlight }}>{row.comm} AUD</td>
-                  <td style={{ ...s.td, color: '#1DB954' }}>{row.ten} AUD</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <p style={{ fontSize: 12, color: '#666', marginTop: 16, textAlign: 'center' }}>Commission is paid on the first payment only. Payouts processed monthly via bank transfer.</p>
       </div>
 
       <div style={s.divider} />
