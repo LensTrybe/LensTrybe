@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { Outlet, useNavigate } from 'react-router-dom'
+import { Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../ui/Button'
@@ -7,6 +7,7 @@ import Button from '../ui/Button'
 export default function PublicLayout() {
   const { user, profile, clientAccount, isCreative, loading } = useAuth()
   const navigate = useNavigate()
+  const location = useLocation()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -29,6 +30,12 @@ export default function PublicLayout() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    if (loading || !user || !isCreative) return
+    if (location.pathname !== '/') return
+    navigate('/dashboard', { replace: true })
+  }, [loading, user, isCreative, location.pathname, navigate])
 
   async function signOut() {
     await supabase.auth.signOut()
