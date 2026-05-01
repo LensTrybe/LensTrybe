@@ -43,7 +43,7 @@ export default function LoginPage() {
       .maybeSingle()
 
     if (profile) {
-      navigate('/')
+      navigate('/dashboard', { replace: true })
       return
     }
 
