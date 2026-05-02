@@ -115,7 +115,10 @@ export default function DashboardHome() {
   const [editingQuickActions, setEditingQuickActions] = useState(false)
   const [draftQuickActions, setDraftQuickActions] = useState([])
   const [quickActionsError, setQuickActionsError] = useState('')
-  const [isAvailable, setIsAvailable] = useState(profile?.is_available ?? true)
+  const [isAvailable, setIsAvailable] = useState(profile?.is_available ?? false)
+  const [availabilityColumn, setAvailabilityColumn] = useState(null)
+  const [availabilityError, setAvailabilityError] = useState('')
+  const [toast, setToast] = useState(null)
   const [availabilitySaving, setAvailabilitySaving] = useState(false)
 
   const DEFAULT_QUICK_ACTION_LABELS = ['New Message', 'New Invoice', 'Add Portfolio', 'New Delivery', 'New Contract', 'New Booking']
@@ -153,12 +156,63 @@ export default function DashboardHome() {
     }
   }, [user?.id])
 
+  useEffect(() => {
+    if (!profile) return
+    if (availabilityColumn === 'available') {
+      if (typeof profile.available === 'boolean') setIsAvailable(profile.available)
+      return
+    }
+    if (availabilityColumn === 'availability_status') {
+      if (typeof profile.availability_status === 'string') {
+        setIsAvailable(profile.availability_status.toLowerCase() === 'available')
+      }
+      return
+    }
+    if (typeof profile.is_available === 'boolean') {
+      setIsAvailable(profile.is_available)
+    } else {
+      setIsAvailable(false)
+    }
+  }, [profile, availabilityColumn])
+
+  function showToast(msg, type = 'error') {
+    setToast({ msg, type })
+    window.setTimeout(() => setToast(null), 3500)
+  }
+
+  async function resolveAvailabilityColumn() {
+    const candidates = ['is_available', 'available', 'availability_status']
+    for (const col of candidates) {
+      const { error } = await supabase.from('profiles').select(col).eq('id', user.id).limit(1).maybeSingle()
+      if (!error) return col
+      const text = String(error?.message || '').toLowerCase()
+      if (text.includes('column') || text.includes('schema cache')) continue
+      return null
+    }
+    return null
+  }
+
   async function loadAvailability() {
     try {
-      const { data } = await supabase.from('profiles').select('is_available').eq('id', user.id).maybeSingle()
-      if (typeof data?.is_available === 'boolean') setIsAvailable(data.is_available)
+      const col = await resolveAvailabilityColumn()
+      if (!col) {
+        setAvailabilityColumn(null)
+        setAvailabilityError('Availability field is missing on your profile schema. Please contact support.')
+        return
+      }
+      setAvailabilityColumn(col)
+      setAvailabilityError('')
+      const { data, error } = await supabase.from('profiles').select(col).eq('id', user.id).maybeSingle()
+      if (error) throw error
+      if (col === 'availability_status') {
+        setIsAvailable(String(data?.availability_status || '').toLowerCase() === 'available')
+      } else {
+        const value = col === 'available' ? data?.available : data?.is_available
+        setIsAvailable(typeof value === 'boolean' ? value : false)
+      }
     } catch {
-      setIsAvailable(true)
+      setIsAvailable(false)
+      setAvailabilityError('Could not load availability status right now.')
     }
   }
 
@@ -423,14 +477,27 @@ export default function DashboardHome() {
   }
 
   async function handleToggleAvailability() {
+    if (!availabilityColumn) {
+      const msg =
+        availabilityError ||
+        'Availability column was not found in profiles table. Expected one of: is_available, available, availability_status.'
+      showToast(msg, 'error')
+      return
+    }
+    const previous = isAvailable
     const next = !isAvailable
     setIsAvailable(next)
     setAvailabilitySaving(true)
     try {
-      const { error } = await supabase.from('profiles').update({ is_available: next }).eq('id', user.id)
+      const payload =
+        availabilityColumn === 'availability_status'
+          ? { availability_status: next ? 'available' : 'unavailable' }
+          : { [availabilityColumn]: next }
+      const { error } = await supabase.from('profiles').update(payload).eq('id', user.id)
       if (error) throw error
-    } catch {
-      setIsAvailable(!next)
+    } catch (err) {
+      setIsAvailable(previous)
+      showToast(err?.message || 'Could not update availability right now.', 'error')
     } finally {
       setAvailabilitySaving(false)
     }
@@ -525,6 +592,24 @@ export default function DashboardHome() {
         overflowX: 'hidden',
       }}
     >
+      {toast ? (
+        <div
+          style={{
+            position: 'fixed',
+            right: 20,
+            bottom: 20,
+            zIndex: 1000,
+            padding: '10px 14px',
+            borderRadius: 10,
+            background: toast.type === 'error' ? '#ef4444' : '#1DB954',
+            color: '#fff',
+            fontSize: 12,
+            boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
+          }}
+        >
+          {toast.msg}
+        </div>
+      ) : null}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 26 : 32, color: 'var(--text-primary)', margin: 0 }}>
@@ -842,6 +927,7 @@ export default function DashboardHome() {
               ...GLASS_CARD,
               borderRadius: 999,
               border: `1px solid ${isAvailable ? 'rgba(29,185,84,0.4)' : 'rgba(255,255,255,0.18)'}`,
+              background: isAvailable ? 'linear-gradient(135deg, rgba(29,185,84,0.2), rgba(29,185,84,0.08))' : 'rgba(255,255,255,0.03)',
               padding: '8px 12px',
               display: 'flex',
               alignItems: 'center',
@@ -875,6 +961,7 @@ export default function DashboardHome() {
             </span>
             {isAvailable ? 'Available for work' : 'Not available'}
           </button>
+          {availabilityError ? <div style={{ marginTop: 8, fontSize: 11, color: '#fca5a5' }}>{availabilityError}</div> : null}
         </div>
       </div>
 
