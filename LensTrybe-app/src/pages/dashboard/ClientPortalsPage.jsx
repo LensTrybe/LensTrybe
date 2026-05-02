@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -67,7 +68,7 @@ export default function ClientPortalsPage() {
         body: {
           to: form.client_email,
           client_name: form.client_name,
-          creative_name: profile?.business_name ?? user.email,
+          creative_name: creativeSenderDisplayName(profile, user),
           portal_url: portalUrl,
         },
       })

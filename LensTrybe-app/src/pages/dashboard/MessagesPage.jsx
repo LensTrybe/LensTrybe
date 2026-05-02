@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
+import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -65,10 +66,11 @@ export default function MessagesPage() {
       if (threadError) throw threadError
 
       // Insert message
+      const creativeLabel = creativeSenderDisplayName(profile, user)
       const { error: msgError } = await supabase.from('messages').insert({
         thread_id: thread.id,
         sender_type: 'creative',
-        sender_name: profile?.business_name ?? user.email,
+        sender_name: creativeLabel,
         body: newMessageText.trim(),
         creative_id: user.id,
       })
@@ -79,8 +81,8 @@ export default function MessagesPage() {
         body: {
           to: email,
           toName: newMessageName || email,
-          fromName: profile?.business_name ?? user.email,
-          subject: `New message from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
+          fromName: creativeLabel,
+          subject: `New message from ${creativeLabel} on LensTrybe`,
           messageBody: newMessageText.trim(),
           threadSubject: 'New Message',
         },
@@ -202,10 +204,11 @@ export default function MessagesPage() {
     const imListingCreative = selected.creative_id === user.id
 
     if (imListingCreative) {
+      const creativeLabel = creativeSenderDisplayName(profile, user)
       await supabase.from('messages').insert({
         thread_id: selected.id,
         sender_type: 'creative',
-        sender_name: profile?.business_name ?? user.email,
+        sender_name: creativeLabel,
         body: reply.trim(),
         creative_id: user.id,
       })
@@ -214,8 +217,8 @@ export default function MessagesPage() {
           body: {
             to: selected.client_email,
             toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
-            fromName: profile?.business_name ?? user.email,
-            subject: `Reply from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
+            fromName: creativeLabel,
+            subject: `Reply from ${creativeLabel} on LensTrybe`,
             messageBody: reply.trim(),
             threadSubject: selected.subject ?? 'your enquiry',
             profileUrl: 'https://lens-trybe.vercel.app',

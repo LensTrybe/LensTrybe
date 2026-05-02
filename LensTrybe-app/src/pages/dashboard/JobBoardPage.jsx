@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
@@ -177,11 +178,12 @@ export default function JobBoardPage() {
 
     const posterEmail = jobListing?.poster_email ?? posterProfile?.business_email ?? posterClient?.email ?? null
     const posterName = jobListing?.poster_name ?? posterProfile?.business_name ?? posterProfile?.full_name ?? clientDisplayName ?? 'there'
+    const creativeLabel = creativeSenderDisplayName(profile, user)
 
     const { error } = await supabase.from('job_applications').insert({
       job_id: applyingJob.id,
       creative_id: user.id,
-      creative_name: profile?.business_name ?? user.email,
+      creative_name: creativeLabel,
       price: parseFloat(applyForm.price),
       description: applyForm.description,
       includes: applyForm.includes || null,
@@ -196,9 +198,9 @@ export default function JobBoardPage() {
             body: {
               to: posterEmail,
               toName: posterName,
-              fromName: profile?.business_name ?? user.email,
+              fromName: creativeLabel,
               subject: `New application for your job: ${jobListing?.title ?? applyingJob.title}`,
-              messageBody: `${profile?.business_name ?? user.email} has applied for your job "${jobListing?.title ?? applyingJob.title}".\n\nOffer: AUD ${applyForm.price}\nWhat's included: ${applyForm.includes || '—'}\n\nCover message: ${applyForm.description}\n\nLog in to LensTrybe to view all applications.`,
+              messageBody: `${creativeLabel} has applied for your job "${jobListing?.title ?? applyingJob.title}".\n\nOffer: AUD ${applyForm.price}\nWhat's included: ${applyForm.includes || '—'}\n\nCover message: ${applyForm.description}\n\nLog in to LensTrybe to view all applications.`,
               threadSubject: 'Job Application',
             },
           })
