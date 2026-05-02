@@ -42,7 +42,34 @@ function TierBadge({ tier }) {
   );
 }
 
-function ConfirmModal({ message, onConfirm, onCancel }) {
+const ROLE_BADGE_STYLES = {
+  user: { bg: 'rgba(136,136,170,0.12)', color: COLORS.muted },
+  staff: { bg: COLORS.blueDim, color: COLORS.blue },
+  admin: { bg: COLORS.yellowDim, color: COLORS.yellow },
+};
+
+function RoleBadge({ role }) {
+  const r = (role || 'user').toLowerCase();
+  const cfg = ROLE_BADGE_STYLES[r] || ROLE_BADGE_STYLES.user;
+  const label = r.charAt(0).toUpperCase() + r.slice(1);
+  return (
+    <span style={{
+      fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 20,
+      background: cfg.bg, color: cfg.color, letterSpacing: '0.04em',
+    }}>
+      {label}
+    </span>
+  );
+}
+
+function ConfirmModal({
+  title = 'Are you sure?',
+  message,
+  confirmLabel = 'Delete',
+  danger = true,
+  onConfirm,
+  onCancel,
+}) {
   return (
     <div style={{
       position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
@@ -50,10 +77,10 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
     }}>
       <div style={{
         background: COLORS.panel, border: `1px solid ${COLORS.border}`,
-        borderRadius: 14, padding: 28, maxWidth: 380, width: '90%', textAlign: 'center',
+        borderRadius: 14, padding: 28, maxWidth: 420, width: '90%', textAlign: 'center',
       }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
-        <div style={{ fontSize: 15, color: COLORS.white, marginBottom: 8, fontWeight: 600 }}>Are you sure?</div>
+        <div style={{ fontSize: 15, color: COLORS.white, marginBottom: 8, fontWeight: 600 }}>{title}</div>
         <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 24, lineHeight: 1.5 }}>{message}</div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
           <button type="button" onClick={onCancel} style={{
@@ -63,10 +90,10 @@ function ConfirmModal({ message, onConfirm, onCancel }) {
             Cancel
           </button>
           <button type="button" onClick={onConfirm} style={{
-            padding: '9px 20px', background: COLORS.pink, border: 'none',
+            padding: '9px 20px', background: danger ? COLORS.pink : COLORS.green, border: 'none',
             borderRadius: 8, color: COLORS.white, fontSize: 13, fontWeight: 700, cursor: 'pointer', ...FONT,
           }}>
-            Delete
+            {confirmLabel}
           </button>
         </div>
       </div>
@@ -78,9 +105,12 @@ export default function AdminPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState([]);
+  const [callerRole, setCallerRole] = useState(null);
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const [confirmRoleChange, setConfirmRoleChange] = useState(null);
+  const [roleDropdownUserId, setRoleDropdownUserId] = useState(null);
   const [editingTier, setEditingTier] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
@@ -109,10 +139,12 @@ export default function AdminPage() {
       if (!session) { navigate('/login'); return; }
       const { data: profile } = await supabase
         .from('profiles')
-        .select('is_admin')
+        .select('role, is_admin')
         .eq('id', session.user.id)
         .single();
-      if (!profile?.is_admin) { navigate('/dashboard'); return; }
+      const allowed =
+        ['admin', 'staff'].includes(profile?.role) || profile?.is_admin;
+      if (!allowed) { navigate('/dashboard'); return; }
       loadUsers();
     });
   }, [navigate]);
@@ -121,6 +153,14 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const data = await callEdge({ action: 'list_users' });
+      if (data.callerRole === 'admin' || data.callerRole === 'staff') {
+        setCallerRole(data.callerRole);
+      } else {
+        setCallerRole(null);
+        setUsers([]);
+        navigate('/dashboard');
+        return;
+      }
       setUsers(data.users || []);
     } catch (e) {
       console.error('Failed to load users', e);
@@ -167,20 +207,22 @@ export default function AdminPage() {
     }
   }
 
-  async function handleToggleAdmin(userId, currentValue) {
+  async function handleUpdateRole(userId, roleSlug) {
+    setConfirmRoleChange(null);
+    setRoleDropdownUserId(null);
     setActionLoading(userId);
     try {
-      const data = await callEdge({ action: 'toggle_admin', userId, isAdmin: !currentValue });
+      const data = await callEdge({ action: 'update_role', userId, role: roleSlug });
       if (data.success) {
         setUsers(prev => prev.map(u =>
-          u.id === userId ? { ...u, profile: { ...u.profile, is_admin: !currentValue } } : u
+          u.id === userId ? { ...u, profile: { ...u.profile, role: roleSlug } } : u
         ));
-        showToast(!currentValue ? 'Admin access granted' : 'Admin access removed');
+        showToast('Role updated');
       } else {
-        showToast(data.error || 'Failed to update admin', 'error');
+        showToast(data.error || 'Failed to update role', 'error');
       }
     } catch (e) {
-      showToast('Failed to update admin', 'error');
+      showToast('Failed to update role', 'error');
     } finally {
       setActionLoading(null);
     }
@@ -200,8 +242,7 @@ export default function AdminPage() {
     creatives: users.filter(u => u.profile).length,
     elite: users.filter(u => u.profile?.subscription_tier === 'elite').length,
     expert: users.filter(u => u.profile?.subscription_tier === 'expert').length,
-    pro: users.filter(u => u.profile?.subscription_tier === 'pro').length,
-    basic: users.filter(u => u.profile?.subscription_tier === 'basic' || !u.profile).length,
+    staff: users.filter(u => u.profile?.role === 'staff').length,
   };
 
   return (
@@ -223,9 +264,23 @@ export default function AdminPage() {
       {/* Confirm modal */}
       {confirmDelete && (
         <ConfirmModal
-          message={`This will permanently delete ${confirmDelete.email} and all their data. This cannot be undone.`}
+          title="Delete user?"
+          message={`You are about to permanently delete the account for ${confirmDelete.email}. All data for this user will be removed. This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
           onConfirm={() => handleDeleteUser(confirmDelete.id, confirmDelete.email)}
           onCancel={() => setConfirmDelete(null)}
+        />
+      )}
+
+      {confirmRoleChange && (
+        <ConfirmModal
+          title="Confirm role change"
+          message={`Change ${confirmRoleChange.email} role from ${confirmRoleChange.fromLabel} to ${confirmRoleChange.toLabel}?`}
+          confirmLabel="Confirm"
+          danger={false}
+          onConfirm={() => handleUpdateRole(confirmRoleChange.userId, confirmRoleChange.toRole)}
+          onCancel={() => setConfirmRoleChange(null)}
         />
       )}
 
@@ -250,7 +305,7 @@ export default function AdminPage() {
           { label: 'Creatives', value: stats.creatives, color: COLORS.blue },
           { label: 'Elite', value: stats.elite, color: COLORS.green },
           { label: 'Expert', value: stats.expert, color: COLORS.yellow },
-          { label: 'Pro', value: stats.pro, color: COLORS.blue },
+          { label: 'Staff', value: stats.staff, color: COLORS.blue },
         ].map(s => (
           <div key={s.label} style={{
             background: COLORS.panel, border: `1px solid ${COLORS.border}`,
@@ -308,7 +363,7 @@ export default function AdminPage() {
           <div>Business</div>
           <div>Tier</div>
           <div>Joined</div>
-          <div>Admin</div>
+          <div>Role</div>
           <div>Actions</div>
         </div>
 
@@ -324,8 +379,12 @@ export default function AdminPage() {
           filtered.map((u, i) => {
             const isLoading = actionLoading === u.id;
             const tier = u.profile ? (u.profile.subscription_tier || 'basic') : null;
-            const isAdmin = u.profile?.is_admin || false;
+            const displayRole = (u.profile?.role || 'user').toLowerCase();
+            const roleLabel = displayRole.charAt(0).toUpperCase() + displayRole.slice(1);
             const joined = new Date(u.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
+            const canEditTier = callerRole === 'admin';
+            const canEditRole = callerRole === 'admin' && u.profile;
+            const showDelete = callerRole === 'admin';
 
             return (
               <div key={u.id} style={{
@@ -370,7 +429,10 @@ export default function AdminPage() {
                       ))}
                     </select>
                   ) : (
-                    <div onClick={() => setEditingTier(u.id)} style={{ cursor: 'pointer' }}>
+                    <div
+                      onClick={() => canEditTier && u.profile && setEditingTier(u.id)}
+                      style={{ cursor: canEditTier && u.profile ? 'pointer' : 'default' }}
+                    >
                       <TierBadge tier={tier} />
                     </div>
                   )}
@@ -379,42 +441,61 @@ export default function AdminPage() {
                 {/* Joined */}
                 <div style={{ fontSize: 12, color: COLORS.muted }}>{joined}</div>
 
-                {/* Admin toggle */}
+                {/* Role */}
                 <div>
-                  {u.profile ? (
-                    <button
-                      type="button"
-                      onClick={() => handleToggleAdmin(u.id, isAdmin)}
-                      disabled={isLoading}
+                  {canEditRole && roleDropdownUserId === u.id ? (
+                    <select
+                      value={displayRole}
+                      onChange={(e) => {
+                        const newRole = e.target.value;
+                        setRoleDropdownUserId(null);
+                        if (newRole === displayRole) return;
+                        setConfirmRoleChange({
+                          userId: u.id,
+                          email: u.email,
+                          fromLabel: roleLabel,
+                          toLabel: newRole.charAt(0).toUpperCase() + newRole.slice(1),
+                          toRole: newRole,
+                        });
+                      }}
+                      onBlur={() => setRoleDropdownUserId(null)}
+                      autoFocus
                       style={{
-                        padding: '4px 10px', borderRadius: 6, fontSize: 11, fontWeight: 600,
-                        cursor: 'pointer', ...FONT,
-                        background: isAdmin ? COLORS.yellowDim : COLORS.panelAlt,
-                        border: `1px solid ${isAdmin ? COLORS.yellow : COLORS.border}`,
-                        color: isAdmin ? COLORS.yellow : COLORS.dim,
+                        background: COLORS.panelAlt, border: `1px solid ${COLORS.green}`,
+                        borderRadius: 6, color: COLORS.white, fontSize: 12, padding: '3px 6px',
+                        cursor: 'pointer', outline: 'none', ...FONT,
                       }}
                     >
-                      {isAdmin ? 'Admin' : 'User'}
-                    </button>
+                      {['user', 'staff', 'admin'].map(r => (
+                        <option key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</option>
+                      ))}
+                    </select>
                   ) : (
-                    <span style={{ fontSize: 12, color: COLORS.dim }}>N/A</span>
+                    <div
+                      onClick={() => canEditRole && setRoleDropdownUserId(u.id)}
+                      style={{ cursor: canEditRole ? 'pointer' : 'default', display: 'inline-block' }}
+                    >
+                      <RoleBadge role={displayRole} />
+                    </div>
                   )}
                 </div>
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: 6 }}>
-                  <button
-                    type="button"
-                    onClick={() => setConfirmDelete({ id: u.id, email: u.email })}
-                    disabled={isLoading}
-                    style={{
-                      padding: '5px 10px', background: COLORS.pinkDim,
-                      border: `1px solid ${COLORS.pink}`, borderRadius: 6,
-                      color: COLORS.pink, fontSize: 12, cursor: 'pointer', fontWeight: 600, ...FONT,
-                    }}
-                  >
-                    Delete
-                  </button>
+                  {showDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete({ id: u.id, email: u.email })}
+                      disabled={isLoading}
+                      style={{
+                        padding: '5px 10px', background: COLORS.pinkDim,
+                        border: `1px solid ${COLORS.pink}`, borderRadius: 6,
+                        color: COLORS.pink, fontSize: 12, cursor: 'pointer', fontWeight: 600, ...FONT,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
                 </div>
               </div>
             );
