@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { moderateText, moderateImage } from '../../lib/moderateContent'
+import { moderateText, moderateImage, PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE } from '../../lib/moderateContent'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import {
@@ -223,9 +223,12 @@ export default function SignupPage() {
       try {
         const avatarModeration = await moderateImage(form.avatarFile)
         if (avatarModeration?.blocked) {
-          setError(avatarModeration.reason || 'This profile photo cannot be used.')
+          setError(PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE)
           setLoading(false)
           return
+        }
+        if (avatarModeration?.flagged) {
+          console.warn('[moderateContent] Signup avatar flagged (upload allowed)', avatarModeration?.reason ?? '')
         }
       } catch (modErr) {
         setError(modErr?.message || 'Could not verify your profile photo. Try again or skip the photo for now.')

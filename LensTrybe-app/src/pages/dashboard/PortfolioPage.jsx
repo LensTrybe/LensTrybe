@@ -6,6 +6,10 @@ import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import {
+  PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
+  partitionFilesByPortfolioImageModeration,
+} from '../../lib/moderateContent'
 
 const LIMITS = { basic: 5, pro: 20, expert: 40, elite: 999 }
 
@@ -16,6 +20,8 @@ export default function PortfolioPage() {
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
+  const [uploadPhase, setUploadPhase] = useState(null)
+  const [uploadError, setUploadError] = useState(null)
   const [selected, setSelected] = useState(null)
   const [showEdit, setShowEdit] = useState(null)
   const [editForm, setEditForm] = useState({ headline: '', description: '', alt_text: '' })
@@ -42,32 +48,64 @@ export default function PortfolioPage() {
   }
 
   async function handleUpload(e) {
-    const files = Array.from(e.target.files)
-    if (!files.length) return
-    if (items.length + files.length > limit) {
-      alert(`You can only have ${limit} portfolio items on your current plan.`)
-      return
-    }
+    const rawFiles = Array.from(e.target.files)
+    if (!rawFiles.length) return
+    setUploadError(null)
     setUploading(true)
-    for (const file of files) {
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/${Date.now()}.${ext}`
-      const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, file)
-      if (uploadError) continue
-      const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
-      const isVideo = file.type.startsWith('video/')
-      await supabase.from('portfolio_items').insert({
-        user_id: user.id,
-        file_url: publicUrl,
-        file_type: isVideo ? 'video' : 'image',
-        sort_order: items.length,
-        headline: '',
-        description: '',
-        alt_text: '',
-      })
+    setUploadPhase('checking')
+    try {
+      const { filesToUpload, blockedFileNames, moderationFailedFileNames } =
+        await partitionFilesByPortfolioImageModeration(rawFiles)
+
+      if (blockedFileNames.length || moderationFailedFileNames.length) {
+        const parts = []
+        if (blockedFileNames.length) {
+          parts.push(
+            `${PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE}\n\nRejected: ${blockedFileNames.join(', ')}`,
+          )
+        }
+        if (moderationFailedFileNames.length) {
+          parts.push(`Could not verify: ${moderationFailedFileNames.join(', ')}`)
+        }
+        setUploadError(parts.join('\n\n'))
+      }
+
+      if (!filesToUpload.length) {
+        await loadItems()
+        return
+      }
+
+      if (items.length + filesToUpload.length > limit) {
+        alert(`You can only have ${limit} portfolio items on your current plan.`)
+        return
+      }
+
+      setUploadPhase('uploading')
+      let nextOrder = items.length
+      for (const file of filesToUpload) {
+        const ext = file.name.split('.').pop()
+        const path = `${user.id}/${Date.now()}.${ext}`
+        const { error: uploadErr } = await supabase.storage.from('portfolio').upload(path, file)
+        if (uploadErr) continue
+        const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
+        const isVideo = file.type.startsWith('video/')
+        await supabase.from('portfolio_items').insert({
+          user_id: user.id,
+          file_url: publicUrl,
+          file_type: isVideo ? 'video' : 'image',
+          sort_order: nextOrder,
+          headline: '',
+          description: '',
+          alt_text: '',
+        })
+        nextOrder += 1
+      }
+      await loadItems()
+    } finally {
+      setUploadPhase(null)
+      setUploading(false)
+      e.target.value = ''
     }
-    await loadItems()
-    setUploading(false)
   }
 
   async function deleteItem(id, fileUrl) {
@@ -119,13 +157,31 @@ export default function PortfolioPage() {
           .portfolio-page input, .portfolio-page textarea, .portfolio-page select { width: 100% !important; font-size: 14px !important; }
         }
       `}</style>
+      {uploadError && (
+        <div
+          role="alert"
+          style={{
+            padding: '12px 16px',
+            borderRadius: '10px',
+            background: 'rgba(239,68,68,0.12)',
+            border: '1px solid rgba(239,68,68,0.25)',
+            color: '#fecaca',
+            fontSize: '13px',
+            fontFamily: 'var(--font-ui)',
+            whiteSpace: 'pre-line',
+            lineHeight: 1.5,
+          }}
+        >
+          {uploadError}
+        </div>
+      )}
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Portfolio</h1>
           <p style={styles.subtitle}>Showcase your best work to potential clients.</p>
         </div>
         <Button variant="primary" disabled={items.length >= limit || uploading} onClick={() => document.getElementById('portfolio-upload').click()}>
-          {uploading ? 'Uploading…' : '+ Add Photos'}
+          {uploading ? (uploadPhase === 'checking' ? 'Checking photos...' : 'Uploading…') : '+ Add Photos'}
         </Button>
         <input id="portfolio-upload" type="file" multiple accept="image/*,video/*" style={{ display: 'none' }} onChange={handleUpload} />
       </div>

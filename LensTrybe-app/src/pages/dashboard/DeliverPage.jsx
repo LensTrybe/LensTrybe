@@ -6,6 +6,10 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import {
+  PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
+  partitionFilesByPortfolioImageModeration,
+} from '../../lib/moderateContent'
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -39,6 +43,8 @@ export default function DeliverPage() {
   const [showCreate, setShowCreate] = useState(false)
   const [showView, setShowView] = useState(null)
   const [uploading, setUploading] = useState(false)
+  /** 'checking' | 'uploading' | null while uploading delivery files to storage */
+  const [deliveryFilesPhase, setDeliveryFilesPhase] = useState(null)
   const [saving, setSaving] = useState(false)
   const [copied, setCopied] = useState(null)
   const [toast, setToast] = useState(null)
@@ -50,9 +56,9 @@ export default function DeliverPage() {
 
   const storageLimit = tier === 'elite' ? 200 : 50
 
-  function showToast(msg, type = 'success') {
+  function showToast(msg, type = 'success', durationMs = 3000) {
     setToast({ msg, type })
-    setTimeout(() => setToast(null), 3000)
+    setTimeout(() => setToast(null), durationMs)
   }
 
   const [form, setForm] = useState({
@@ -132,17 +138,37 @@ export default function DeliverPage() {
 
     if (form.files.length > 0) {
       setUploading(true)
-      const uploadedFiles = []
-      for (const file of form.files) {
-        const path = `${user.id}/${delivery.id}/${Date.now()}-${file.name}`
-        const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, file)
-        if (!uploadError) {
-          const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
-          uploadedFiles.push({ name: file.name, url: publicUrl, type: file.type, size: file.size })
+      try {
+        setDeliveryFilesPhase('checking')
+        const { filesToUpload, blockedFileNames, moderationFailedFileNames } =
+          await partitionFilesByPortfolioImageModeration(form.files)
+        if (blockedFileNames.length || moderationFailedFileNames.length) {
+          const lines = []
+          if (blockedFileNames.length) {
+            lines.push(
+              `${PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE}\n\nNot uploaded: ${blockedFileNames.join(', ')}`,
+            )
+          }
+          if (moderationFailedFileNames.length) {
+            lines.push(`Could not verify: ${moderationFailedFileNames.join(', ')}`)
+          }
+          showToast(lines.join(' '), 'error', 9000)
         }
+        setDeliveryFilesPhase('uploading')
+        const uploadedFiles = []
+        for (const file of filesToUpload) {
+          const path = `${user.id}/${delivery.id}/${Date.now()}-${file.name}`
+          const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, file)
+          if (!uploadError) {
+            const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
+            uploadedFiles.push({ name: file.name, url: publicUrl, type: file.type, size: file.size })
+          }
+        }
+        await supabase.from('deliveries').update({ files: uploadedFiles }).eq('id', delivery.id)
+      } finally {
+        setDeliveryFilesPhase(null)
+        setUploading(false)
       }
-      await supabase.from('deliveries').update({ files: uploadedFiles }).eq('id', delivery.id)
-      setUploading(false)
     }
 
     const { data } = await supabase
@@ -457,7 +483,13 @@ export default function DeliverPage() {
           <div style={styles.modalActions}>
             <Button variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Button>
             <Button variant="primary" disabled={saving || uploading || !form.title || !form.client_email} onClick={createDelivery}>
-              {uploading ? 'Uploading files…' : saving ? 'Creating…' : 'Create & Send Gallery Link'}
+              {uploading
+                ? deliveryFilesPhase === 'checking'
+                  ? 'Checking photos...'
+                  : 'Uploading files…'
+                : saving
+                  ? 'Creating…'
+                  : 'Create & Send Gallery Link'}
             </Button>
           </div>
         </div>

@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { moderateText, moderateImage } from '../../lib/moderateContent'
+import {
+  moderateText,
+  moderateImage,
+  PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
+  partitionFilesByPortfolioImageModeration,
+} from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -84,6 +89,8 @@ export default function EditProfilePage() {
   const [activeTab, setActiveTab] = useState('basics')
   const [portfolioItems, setPortfolioItems] = useState([])
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false)
+  /** 'checking' | 'uploading' | null — while uploadingPortfolio is true */
+  const [portfolioUploadPhase, setPortfolioUploadPhase] = useState(null)
   const [otherCredentialName, setOtherCredentialName] = useState('')
   const [showFoundingBadge, setShowFoundingBadge] = useState(true)
   const [savingFoundingBadge, setSavingFoundingBadge] = useState(false)
@@ -188,26 +195,55 @@ export default function EditProfilePage() {
   async function uploadPortfolioFiles(files) {
     if (!user) return
     setUploadingPortfolio(true)
-    const list = Array.from(files)
-    for (const file of list) {
-      const isVideo = file.type.startsWith('video')
-      const path = `${user.id}/${Date.now()}_${file.name}`
-      const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
-      const { error } = await supabase.storage.from(bucket).upload(path, file)
-      if (!error) {
-        const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
-        await supabase.from('portfolio_items').insert({
-          creative_id: user.id,
-          user_id: user.id,
-          file_url: publicUrl,
-          image_url: publicUrl,
-          file_type: isVideo ? 'video' : 'image',
-          sort_order: portfolioItems.length,
-        })
+    setPortfolioUploadPhase('checking')
+    try {
+      const { filesToUpload, blockedFileNames, moderationFailedFileNames } =
+        await partitionFilesByPortfolioImageModeration(files)
+
+      if (blockedFileNames.length || moderationFailedFileNames.length) {
+        const lines = []
+        if (blockedFileNames.length) {
+          lines.push(
+            `${PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE}\n\nRejected: ${blockedFileNames.join(', ')}`,
+          )
+        }
+        if (moderationFailedFileNames.length) {
+          lines.push(`Could not verify: ${moderationFailedFileNames.join(', ')}`)
+        }
+        setToast({ type: 'error', msg: lines.join('\n\n') })
+        setTimeout(() => setToast(null), 9000)
       }
+
+      if (!filesToUpload.length) {
+        await loadPortfolio()
+        return
+      }
+
+      setPortfolioUploadPhase('uploading')
+      let nextOrder = portfolioItems.length
+      for (const file of filesToUpload) {
+        const isVideo = file.type.startsWith('video')
+        const path = `${user.id}/${Date.now()}_${file.name}`
+        const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
+        const { error } = await supabase.storage.from(bucket).upload(path, file)
+        if (!error) {
+          const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
+          await supabase.from('portfolio_items').insert({
+            creative_id: user.id,
+            user_id: user.id,
+            file_url: publicUrl,
+            image_url: publicUrl,
+            file_type: isVideo ? 'video' : 'image',
+            sort_order: nextOrder,
+          })
+          nextOrder += 1
+        }
+      }
+      await loadPortfolio()
+    } finally {
+      setPortfolioUploadPhase(null)
+      setUploadingPortfolio(false)
     }
-    await loadPortfolio()
-    setUploadingPortfolio(false)
   }
 
   async function deletePortfolioItem(id) {
@@ -255,11 +291,13 @@ export default function EditProfilePage() {
     try {
       const result = await moderateImage(file)
       if (result?.blocked) {
-        const msg = result.reason || 'This image cannot be used.'
-        setToast({ type: 'error', msg })
+        setToast({ type: 'error', msg: PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE })
         setTimeout(() => setToast(null), 5000)
         e.target.value = ''
         return
+      }
+      if (result?.flagged) {
+        console.warn('[moderateContent] Avatar flagged (upload allowed)', result?.reason ?? '')
       }
       const ext = file.name.split('.').pop()
       const path = `${user.id}/avatar.${ext}`
@@ -691,7 +729,11 @@ export default function EditProfilePage() {
             onClick={() => document.getElementById('portfolio-upload').click()}
             style={{ border: '2px dashed var(--border-default)', borderRadius: '10px', padding: '24px', textAlign: 'center', cursor: 'pointer', marginBottom: '20px', color: 'var(--text-muted)', fontSize: '14px' }}
           >
-            {uploadingPortfolio ? 'Uploading...' : '+ Click to upload photos or videos'}
+            {uploadingPortfolio
+              ? portfolioUploadPhase === 'checking'
+                ? 'Checking photos...'
+                : 'Uploading...'
+              : '+ Click to upload photos or videos'}
           </div>
           <input
             id="portfolio-upload"
