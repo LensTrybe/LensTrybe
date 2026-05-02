@@ -42,27 +42,25 @@ function normaliseCity(value) {
 function filterCreativesByLocationPreference(creatives, preference, f) {
   const pref = preference || 'australiaWide'
   return creatives.filter((p) => {
-    const t = (p.subscription_tier || 'basic').toLowerCase()
-    const isBasic = t === 'basic'
-    const isPro = t === 'pro'
-    const isHigh = t === 'expert' || t === 'elite'
-
     if (pref === 'australiaWide') {
-      return isHigh
+      // Show all tiers — higher tiers are already sorted to the top via TIER_ORDER
+      return true
     }
 
     if (pref === 'local') {
       const searchCity = normaliseCity(f.city)
       const creativeCity = normaliseCity(p.city)
       if (!searchCity || creativeCity !== searchCity) return false
-      return isBasic || isPro || isHigh
+      // Show all tiers locally
+      return true
     }
 
     if (pref === 'state') {
       const searchState = (f.state || '').trim().toUpperCase()
       const creativeState = (p.state || '').trim().toUpperCase()
       if (!searchState || creativeState !== searchState) return false
-      return isPro || isHigh
+      // Show all tiers at state level
+      return true
     }
 
     return true
