@@ -1,11 +1,13 @@
-import { useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useState, useEffect, useRef } from 'react'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 
 export default function ClientSignupPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const emailPrefillApplied = useRef(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -22,6 +24,17 @@ export default function ClientSignupPage() {
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
   }
+
+  useEffect(() => {
+    if (emailPrefillApplied.current) return
+    const raw = location.state?.email
+    if (!raw || typeof raw !== 'string') return
+    const trimmed = raw.trim()
+    if (!trimmed) return
+    emailPrefillApplied.current = true
+    setForm(prev => ({ ...prev, email: trimmed }))
+    navigate('/join/client', { replace: true, state: {} })
+  }, [location.state, navigate])
 
   const canSubmit = form.firstName && form.lastName && form.email && form.password && form.password === form.confirmPassword
 

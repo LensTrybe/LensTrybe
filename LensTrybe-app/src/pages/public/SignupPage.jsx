@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState, useRef } from 'react'
+import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -79,6 +79,9 @@ function getCheckoutPriceId(tierId, billingInterval = 'monthly') {
 
 export default function SignupPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const emailPrefillApplied = useRef(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [step, setStep] = useState(0)
   const [loading, setLoading] = useState(false)
@@ -118,6 +121,26 @@ export default function SignupPage() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    const plan = searchParams.get('plan')
+    if (!plan) return
+    const id = plan.toLowerCase()
+    const allowed = ['basic', 'pro', 'expert', 'elite']
+    if (!allowed.includes(id)) return
+    setForm(prev => (prev.tier === id ? prev : { ...prev, tier: id }))
+  }, [searchParams])
+
+  useEffect(() => {
+    if (emailPrefillApplied.current) return
+    const raw = location.state?.email
+    if (!raw || typeof raw !== 'string') return
+    const trimmed = raw.trim()
+    if (!trimmed) return
+    emailPrefillApplied.current = true
+    setForm(prev => ({ ...prev, email: trimmed }))
+    navigate('/join/creative', { replace: true, state: {} })
+  }, [location.state, navigate])
 
   /** If the user changes plan, trim skill types so they never exceed the new tier limit. */
   useEffect(() => {

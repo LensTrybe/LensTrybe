@@ -6,6 +6,9 @@ const AuthContext = createContext(null)
 /** Set on LoginPage immediately before `signInWithOAuth({ provider: 'google' })`; cleared in `fetchUserData`. */
 export const LT_GOOGLE_OAUTH_PENDING_KEY = 'lt_google_oauth'
 
+/** One-shot message for JoinHubPage after Google OAuth when the user has no app account yet. */
+export const LT_JOIN_FLASH_KEY = 'lt_join_flash'
+
 /** Post-OAuth / magic-link: optional `sessionStorage.returnTo` — never hijack portal or deliver links. */
 function consumeOAuthReturnRedirect() {
   if (typeof window === 'undefined') return
@@ -79,6 +82,23 @@ export function AuthProvider({ children }) {
     } catch {
       /* ignore */
     }
+
+    if (googleOAuthReturn && !profileData && !clientData) {
+      try {
+        sessionStorage.setItem(
+          LT_JOIN_FLASH_KEY,
+          JSON.stringify({
+            message: 'No LensTrybe account is linked to that Google sign-in yet. Create a creative or client account first, then you can use Google to log in next time.',
+          }),
+        )
+      } catch {
+        /* ignore */
+      }
+      await supabase.auth.signOut()
+      window.location.replace(`${window.location.origin}/join`)
+      return
+    }
+
     if (googleOAuthReturn && profileData && window.location.pathname === '/') {
       window.location.replace(`${window.location.origin}/dashboard`)
     }

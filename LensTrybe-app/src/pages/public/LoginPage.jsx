@@ -30,6 +30,15 @@ export default function LoginPage() {
     const { data, error: authError } = await supabase.auth.signInWithPassword({ email, password })
 
     if (authError) {
+      const msg = String(authError.message || '').toLowerCase()
+      if (msg.includes('invalid login credentials')) {
+        setError('No account found - taking you to sign up.')
+        setLoading(false)
+        window.setTimeout(() => {
+          navigate('/join', { replace: true, state: { email: String(email || '').trim() } })
+        }, 1200)
+        return
+      }
       setError(authError.message)
       setLoading(false)
       return
@@ -189,10 +198,8 @@ export default function LoginPage() {
         </div>
 
         <div style={styles.footer}>
-          Don't have an account?{' '}
-          <Link to="/join" style={styles.link}>Join as a Creative</Link>
-          {' '}or{' '}
-          <Link to="/join/client" style={styles.link}>join as a Client</Link>
+          Don&apos;t have an account?{' '}
+          <Link to="/join" style={styles.link}>Create an account</Link>
         </div>
       </div>
     </div>

@@ -344,7 +344,7 @@ export default function PricingPage() {
               variant={tier.ctaVariant}
               size="md"
               style={{ minHeight: '44px' }}
-              onClick={() => navigate(tier.monthly === 0 ? '/join' : `/join?plan=${tier.name.toLowerCase()}`)}
+              onClick={() => navigate(tier.monthly === 0 ? '/join' : `/join/creative?plan=${tier.name.toLowerCase()}`)}
             >
               {tier.cta}
             </Button>

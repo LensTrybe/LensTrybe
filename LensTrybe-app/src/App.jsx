@@ -8,6 +8,7 @@ import PricingPage from './pages/public/PricingPage'
 import CreatorPartnersPage from './pages/public/CreatorPartnersPage'
 import UpcomingFeaturesPage from './pages/public/UpcomingFeaturesPage'
 import SignupPage from './pages/public/SignupPage'
+import JoinHubPage from './pages/public/JoinHubPage'
 import ClientSignupPage from './pages/public/ClientSignupPage'
 import MessagesPage from './pages/dashboard/MessagesPage'
 import InvoicingPage from './pages/dashboard/InvoicingPage'
@@ -110,7 +111,8 @@ export default function App() {
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/upcoming-features" element={<UpcomingFeaturesPage />} />
         <Route path="/creator-partners" element={<CreatorPartnersPage />} />
-        <Route path="/join" element={<SignupPage />} />
+        <Route path="/join" element={<JoinHubPage />} />
+        <Route path="/join/creative" element={<SignupPage />} />
         <Route path="/join/client" element={<ClientSignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/jobs" element={<JobBoardPage />} />

@@ -192,7 +192,7 @@ export default function PricingCards({
   const startCheckout = async (t) => {
     if (mode !== 'pricing') return
     if (!user) {
-      navigate('/join')
+      navigate(`/join/creative?plan=${t}`)
       return
     }
     const priceId = getPriceId(t, billing)
