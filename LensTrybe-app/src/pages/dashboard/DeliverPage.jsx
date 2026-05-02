@@ -387,7 +387,7 @@ export default function DeliverPage() {
           >
             <div>
               <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{d.title}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{d.password ? '🔒 Password protected' : '🔓 Open access'}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{d.password ? ' Password protected' : ' Open access'}</div>
             </div>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{d.client_name}</span>
             <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{(d.files ?? []).length}</span>
@@ -453,7 +453,7 @@ export default function DeliverPage() {
             onMouseEnter={e => { e.currentTarget.style.borderColor = deliverAccent }}
             onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-default)' }}
           >
-            <div style={{ fontSize: '24px' }}>📁</div>
+            <div style={{ fontSize: '24px' }}></div>
             <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: deliverFontStack }}>Click to select files to upload</div>
             <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: deliverFontStack }}>Photos, videos, ZIPs or any file type</div>
           </div>
@@ -464,7 +464,7 @@ export default function DeliverPage() {
               {form.files.map((file, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', ...GLASS_CARD, borderRadius: '8px', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ fontSize: '18px' }}>{file.type?.startsWith('image') ? '🖼️' : file.type?.startsWith('video') ? '🎬' : '📄'}</span>
+                    <span style={{ fontSize: '18px' }} />
                     <div>
                       <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 500 }}>{file.name}</div>
                       <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{(file.size / 1024 / 1024).toFixed(1)} MB</div>
@@ -578,7 +578,7 @@ export default function DeliverPage() {
                   {editFiles.map((f, i) => (
                     <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', ...GLASS_CARD, borderRadius: '6px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
-                        <span style={{ fontSize: '12px', flexShrink: 0 }}>{f.type?.startsWith('image') ? '🖼️' : f.type?.startsWith('video') ? '🎬' : '📄'}</span>
+                        <span style={{ fontSize: '12px', flexShrink: 0 }} />
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
                       </div>
                       <button

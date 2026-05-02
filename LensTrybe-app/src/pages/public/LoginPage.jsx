@@ -142,7 +142,7 @@ export default function LoginPage() {
               style={styles.showBtn}
               onClick={() => setShowPassword(p => !p)}
             >
-              {showPassword ? '👁' : '👁‍🗨'}
+              {''}
             </button>
           </div>
           <span style={styles.forgotLink} onClick={() => navigate('/forgot-password')}>

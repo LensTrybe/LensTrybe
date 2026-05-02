@@ -100,7 +100,7 @@ export default function BookingRequestsPage() {
           </div>
         ) : requests.length === 0 ? (
           <div style={styles.emptyState}>
-            <div style={styles.emptyIcon}>📭</div>
+            <div style={styles.emptyIcon}></div>
             <div style={styles.emptyTitle}>No pending requests</div>
             <div style={styles.emptyText}>When clients request a booking, they'll appear here.</div>
           </div>

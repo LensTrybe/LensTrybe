@@ -8,14 +8,14 @@ import {
 } from '../../lib/glassTokens'
 
 const SKILLS = [
-  { key: 'photographer', label: 'Photographer', icon: '📷' },
-  { key: 'videographer', label: 'Videographer', icon: '🎬' },
-  { key: 'drone_pilot', label: 'Drone Pilot', icon: '🚁' },
-  { key: 'video_editor', label: 'Video Editor', icon: '✂️' },
-  { key: 'photo_editor', label: 'Photo Editor', icon: '🖼️' },
-  { key: 'social_media_manager', label: 'Social Media Manager', icon: '📱' },
-  { key: 'hair_makeup_artist', label: 'Hair and Makeup Artist', icon: '💄' },
-  { key: 'ugc_creator', label: 'UGC Creator', icon: '⭐' },
+  { key: 'photographer', label: 'Photographer', icon: '' },
+  { key: 'videographer', label: 'Videographer', icon: '' },
+  { key: 'drone_pilot', label: 'Drone Pilot', icon: '' },
+  { key: 'video_editor', label: 'Video Editor', icon: '' },
+  { key: 'photo_editor', label: 'Photo Editor', icon: '' },
+  { key: 'social_media_manager', label: 'Social Media Manager', icon: '' },
+  { key: 'hair_makeup_artist', label: 'Hair and Makeup Artist', icon: '' },
+  { key: 'ugc_creator', label: 'UGC Creator', icon: '' },
 ]
 
 const SKILL_FEATURES = {

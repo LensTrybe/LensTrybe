@@ -395,7 +395,7 @@ function ConfirmModal({
           textAlign: 'center',
         }}
       >
-        <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
+        <div style={{ fontSize: 32, marginBottom: 12 }} />
         <div style={{ fontSize: 15, color: COLORS.white, marginBottom: 8, fontWeight: 600 }}>{title}</div>
         <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 24, lineHeight: 1.5 }}>{message}</div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>

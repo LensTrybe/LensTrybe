@@ -376,7 +376,7 @@ export default function MarketplacePage() {
                 onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
               >
                 <button type="button" style={{ ...s.saveBtn, color: savedIds.has(l.id) ? '#1DB954' : 'var(--text-muted)' }} onClick={e => toggleSave(l.id, e)}>
-                  {savedIds.has(l.id) ? '★' : '☆'}
+                  {savedIds.has(l.id) ? '' : '☆'}
                 </button>
                 {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
                 <div style={s.cardPrice}>AUD {Number(l.price).toFixed(2)}</div>
@@ -429,7 +429,7 @@ export default function MarketplacePage() {
               onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
             >
               <button type="button" style={{ ...s.saveBtn, color: savedIds.has(l.id) ? '#1DB954' : 'var(--text-muted)' }} onClick={e => toggleSave(l.id, e)}>
-                {savedIds.has(l.id) ? '★' : '☆'}
+                {savedIds.has(l.id) ? '' : '☆'}
               </button>
               {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: '120px', objectFit: 'cover', borderRadius: '8px', marginBottom: '10px' }} />}
               <div style={s.cardPrice}>AUD {Number(l.price).toFixed(2)}</div>
@@ -563,7 +563,7 @@ export default function MarketplacePage() {
                       setEditPhotoUrls(selected.photos ?? [])
                     }}
                     style={{ padding: '6px 14px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                  >✎ Edit</button>
+                  > Edit</button>
                 )}
                 <button type="button" onClick={() => { setSelected(null); setEditing(false) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
@@ -593,7 +593,7 @@ export default function MarketplacePage() {
                     <span style={{ padding: '4px 10px', ...GLASS_CARD, borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.condition}</span>
                     {selected.open_to_swaps && <span style={{ padding: '4px 10px', background: 'rgba(168,85,247,0.1)', borderRadius: '999px', fontSize: '12px', color: '#a855f7', fontWeight: 600 }}>Open to swaps</span>}
                   </div>
-                  {selected.location && <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>📍 {selected.location}</div>}
+                  {selected.location && <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{selected.location}</div>}
                   {selected.description && <div style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{selected.description}</div>}
                 </>
               ) : (
@@ -684,7 +684,7 @@ export default function MarketplacePage() {
                       onClick={() => setShowContactSeller(true)}
                       style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
                     >
-                      💬 Contact Seller
+                      Contact Seller
                     </button>
                   )}
                   {selected?.creative_id === user?.id && (

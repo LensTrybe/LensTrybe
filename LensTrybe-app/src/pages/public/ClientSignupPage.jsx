@@ -151,13 +151,13 @@ export default function ClientSignupPage() {
           <div style={{ position: 'relative' }}>
             <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" value={form.password} onChange={e => update('password', e.target.value)} />
             <button type="button" onClick={() => setShowPassword(p => !p)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px', padding: '4px', marginTop: '10px' }}>
-              {showPassword ? '👁' : '👁‍🗨'}
+              {''}
             </button>
           </div>
           <div style={{ position: 'relative' }}>
             <Input label="Confirm password" type={showConfirm ? 'text' : 'password'} placeholder="Repeat your password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : ''} />
             <button type="button" onClick={() => setShowConfirm(p => !p)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '16px', padding: '4px', marginTop: '10px' }}>
-              {showConfirm ? '👁' : '👁‍🗨'}
+              {''}
             </button>
           </div>
 

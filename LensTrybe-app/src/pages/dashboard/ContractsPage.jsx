@@ -408,7 +408,7 @@ export default function ContractsPage() {
       <div style={s.header}>
         <div style={s.title}>Contracts</div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <Button variant="secondary" onClick={() => setShowUpload(true)}>⬆ Upload Contract</Button>
+          <Button variant="secondary" onClick={() => setShowUpload(true)}>Upload Contract</Button>
           <Button variant="primary" style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={() => setShowCreate(true)}>+ New Contract</Button>
           <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => setUploadFile(e.target.files[0])} />
         </div>
@@ -440,7 +440,7 @@ export default function ContractsPage() {
                 <tr key={c.id} style={{ cursor: 'pointer' }} onClick={() => setShowView(c)}>
                   <td style={s.td}>{c.client_name}</td>
                   <td style={s.td}>{c.project_name ?? c.title ?? 'Not set'}</td>
-                  <td style={s.td}>{c.contract_type === 'uploaded' ? '📎 Uploaded' : '✍ Written'}</td>
+                  <td style={s.td}>{c.contract_type === 'uploaded' ? ' Uploaded' : ' Written'}</td>
                   <td style={s.td}><span style={s.badge(c.status)}>{c.status}</span></td>
                   <td style={s.td}>{new Date(c.created_at).toLocaleDateString('en-AU')}</td>
                   <td style={s.td} onClick={e => e.stopPropagation()}>
@@ -589,7 +589,7 @@ export default function ContractsPage() {
               <span style={{ fontSize: '15px', fontWeight: 600 }}>New Contract</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>
-                  💾 Save as Template
+                   Save as Template
                 </Button>
                 <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(false)} disabled={saving}>
                   {saving ? 'Saving…' : 'Save Draft'}
@@ -638,7 +638,7 @@ export default function ContractsPage() {
                 <div style={{ fontSize: '13px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{contractModerationError}</div>
               ) : null}
               <div style={{ padding: '12px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', fontSize: '12px', color: '#ef4444' }}>
-                ⚠ LensTrybe provides tools to create and send contracts but does not provide legal advice. You are responsible for your contract content. Consult a legal professional if unsure.
+                 LensTrybe provides tools to create and send contracts but does not provide legal advice. You are responsible for your contract content. Consult a legal professional if unsure.
               </div>
             </div>
           </div>
@@ -652,7 +652,7 @@ export default function ContractsPage() {
             <div style={s.modalHeader}>
               <span style={{ fontSize: '15px', fontWeight: 600 }}>Contract</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>💾 Save as Template</Button>
+                <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>Save as Template</Button>
                 {showView.status !== 'signed' && (
                   <Button variant="primary" size="sm" style={{ fontSize: '12px', padding: '6px 12px', background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={() => sendContract(showView)}>
                     {showView.status === 'sent' ? 'Resend' : 'Send to Client'}
@@ -713,12 +713,12 @@ export default function ContractsPage() {
                           rel="noreferrer"
                           style={{ display: 'inline-block', marginTop: '8px', fontSize: '12px', color: contractPrimary, textDecoration: 'none', fontFamily: 'var(--font-ui)' }}
                         >
-                          ↗ Open full screen
+                           Open full screen
                         </a>
                       </>
                     ) : (
                       <div style={{ padding: '20px', background: '#f9fafb', borderRadius: '8px', border: '1px solid #e5e7eb', textAlign: 'center' }}>
-                        <div style={{ fontSize: '32px', marginBottom: '12px' }}>📄</div>
+                        <div style={{ fontSize: '32px', marginBottom: '12px' }}></div>
                         <div style={{ fontSize: '14px', color: '#374151', marginBottom: '16px' }}>This document cannot be previewed in the browser.</div>
                         <a
                           href={viewContractUrl}
@@ -805,7 +805,7 @@ export default function ContractsPage() {
                     <div style={{ fontSize: '14px', color: contractPrimary, fontWeight: 600 }}>✓ {uploadFile.name}</div>
                   ) : (
                     <>
-                      <div style={{ fontSize: '24px', marginBottom: '8px' }}>📎</div>
+                      <div style={{ fontSize: '24px', marginBottom: '8px' }}></div>
                       <div style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Click to select a file</div>
                       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>PDF, DOC or DOCX</div>
                     </>

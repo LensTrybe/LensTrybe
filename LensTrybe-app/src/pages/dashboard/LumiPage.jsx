@@ -22,10 +22,10 @@ const COLORS = {
 const FONT = { fontFamily: 'Inter, sans-serif' };
 
 const QUICK_PROMPTS = [
-  { icon: '💰', label: 'Help me price a project' },
-  { icon: '📄', label: 'Write a client proposal' },
-  { icon: '📅', label: 'How to follow up on overdue invoices' },
-  { icon: '📈', label: 'Tips to attract more clients' },
+  { icon: '', label: 'Help me price a project' },
+  { icon: '', label: 'Write a client proposal' },
+  { icon: '', label: 'How to follow up on overdue invoices' },
+  { icon: '', label: 'Tips to attract more clients' },
 ];
 
 const TIER_CONFIG = {
@@ -74,17 +74,17 @@ function ConvoMenu({ convo, onRename, onPin, onDelete, onClose }) {
 
   const items = [
     {
-      icon: '📌',
+      icon: '',
       label: convo.pinned ? 'Unpin' : 'Pin',
       onClick: () => { onPin(convo); onClose(); },
     },
     {
-      icon: '✏️',
+      icon: '',
       label: 'Rename',
       onClick: () => { onRename(convo); onClose(); },
     },
     {
-      icon: '🗑️',
+      icon: '',
       label: 'Delete',
       onClick: () => { onDelete(convo.id); onClose(); },
       danger: true,
@@ -373,7 +373,7 @@ export default function LumiPage() {
         }}
       >
         {convo.pinned && (
-          <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}>📌</span>
+          <span style={{ fontSize: 10, opacity: 0.5, flexShrink: 0 }}></span>
         )}
         <div style={{ flex: 1, minWidth: 0 }}>
           {isRenaming ? (
@@ -468,7 +468,7 @@ export default function LumiPage() {
       }}>
         <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-            <span style={{ fontSize: 18 }}>✨</span>
+            <span style={{ fontSize: 18 }}></span>
             <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.white }}>Conversations</span>
           </div>
           <Button
@@ -560,13 +560,13 @@ export default function LumiPage() {
             style={{ background: 'none', border: 'none', color: COLORS.muted, cursor: 'pointer', fontSize: 18, padding: '2px 6px', borderRadius: 6, ...FONT }}
             aria-label="Toggle sidebar"
           >
-            ☰
+            
           </button>
           <div style={{
             width: 32, height: 32, borderRadius: '50%', background: COLORS.lumiGrad,
             display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, flexShrink: 0,
           }}>
-            ✨
+            
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: COLORS.white }}>Lumi AI</div>
@@ -589,7 +589,7 @@ export default function LumiPage() {
         {isLocked ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
             <div style={{ maxWidth: 420, textAlign: 'center', padding: 40, ...GLASS_CARD, borderRadius: 16 }}>
-              <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
+              <div style={{ fontSize: 48, marginBottom: 16 }}></div>
               <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.white, marginBottom: 8 }}>Meet Lumi</div>
               <div style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.6, marginBottom: 24 }}>
                 Lumi is your AI business assistant. Get help with pricing, client proposals, contracts, and growing your creative business. Available on Pro and above.
@@ -619,7 +619,7 @@ export default function LumiPage() {
                       width: 56, height: 56, borderRadius: '50%', background: COLORS.lumiGrad,
                       display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, margin: '0 auto 14px',
                     }}>
-                      ✨
+                      
                     </div>
                     <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.white, marginBottom: 6 }}>
                       Hi{profile?.business_name ? `, ${profile.business_name.split(' ')[0]}` : ''}! I am Lumi.
@@ -665,7 +665,7 @@ export default function LumiPage() {
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 14, flexShrink: 0, marginTop: 2,
                       }}>
-                        {isError ? '!' : '✨'}
+                        {isError ? '!' : ''}
                       </div>
                     )}
                     <div style={{
@@ -685,7 +685,7 @@ export default function LumiPage() {
                   <div style={{
                     width: 30, height: 30, borderRadius: '50%', background: COLORS.lumiGrad,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0,
-                  }}>✨</div>
+                  }}></div>
                   <div style={{
                     padding: '14px 18px', ...GLASS_CARD,
                     borderRadius: '14px 14px 14px 4px', display: 'flex', gap: 5, alignItems: 'center',

@@ -401,7 +401,7 @@ export default function QuotesPage() {
               onClick={() => editingBank ? saveBankDetails() : setEditingBank(true)}
               style={{ padding: '7px 14px', background: editingBank ? quoteBrandColor : 'var(--bg-base)', border: `1px solid ${editingBank ? quoteBrandColor : 'var(--border-default)'}`, borderRadius: '8px', color: editingBank ? quoteHeaderTextColor : 'var(--text-secondary)', fontSize: '13px', fontWeight: editingBank ? 600 : 400, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
             >
-              {bankSaving ? 'Saving…' : editingBank ? 'Save Details' : '✎ Edit'}
+              {bankSaving ? 'Saving…' : editingBank ? 'Save Details' : ' Edit'}
             </button>
           </div>
 
@@ -623,7 +623,7 @@ export default function QuotesPage() {
                     }}
                     style={{ padding: '7px 14px', background: editingQuote ? `color-mix(in srgb, ${quoteBrandColor} 15%, var(--bg-elevated))` : 'var(--bg-elevated)', border: `1px solid ${editingQuote ? `color-mix(in srgb, ${quoteBrandColor} 40%, transparent)` : 'var(--border-default)'}`, borderRadius: '8px', color: editingQuote ? quoteBrandColor : 'var(--text-secondary)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
                   >
-                    {editingQuote ? '✓ Save' : '✎ Edit'}
+                    {editingQuote ? '✓ Save' : ' Edit'}
                   </button>
                   <button
                     type="button"

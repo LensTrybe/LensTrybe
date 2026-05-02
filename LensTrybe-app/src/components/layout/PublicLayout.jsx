@@ -246,7 +246,7 @@ export default function PublicLayout() {
             <span>LensTrybe</span>
           </div>
           <button type="button" style={styles.mobileMenuButton} onClick={() => setMobileMenuOpen(prev => !prev)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}>
-            ☰
+            
           </button>
         </nav>
 
@@ -369,7 +369,7 @@ export default function PublicLayout() {
                       onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
-                      ⚙ Settings
+                       Settings
                     </button>
                     <div style={styles.dropdownDivider} />
                     <button

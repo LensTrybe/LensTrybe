@@ -160,7 +160,7 @@ export default function TeamPage() {
           <p style={styles.subtitle}>Invite team members to your studio.</p>
         </div>
         <div style={styles.upgradeBox}>
-          <div style={{ fontSize: '32px' }}>👥</div>
+          <div style={{ fontSize: '32px' }}></div>
           <div style={styles.upgradeTitle}>Team management is an Elite feature</div>
           <div style={styles.upgradeText}>
             Upgrade to Elite to add up to 4 team members, create a Studio Profile, and manage your team's performance from one dashboard.

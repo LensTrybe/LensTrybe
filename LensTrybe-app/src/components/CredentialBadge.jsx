@@ -1,27 +1,27 @@
 const CREDENTIAL_CONFIG = {
   has_public_liability: {
     label: 'Public Liability',
-    icon: '🛡️',
+    icon: '',
     color: '#3B82F6', // blue
   },
   has_blue_card: {
     label: 'Blue Card',
-    icon: '👶',
+    icon: '',
     color: '#06B6D4', // cyan
   },
   has_police_check: {
     label: 'Police Checked',
-    icon: '✅',
+    icon: '',
     color: '#10B981', // green
   },
   has_wwvp: {
     label: 'WWVP',
-    icon: '🔒',
+    icon: '',
     color: '#8B5CF6', // purple
   },
   has_professional_licence: {
     label: 'Licensed',
-    icon: '📋',
+    icon: '',
     color: '#F59E0B', // amber
   },
 }

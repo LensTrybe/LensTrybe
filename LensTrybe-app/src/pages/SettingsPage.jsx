@@ -451,7 +451,7 @@ export default function SettingsPage() {
 
           <div style={{ ...card, marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
-              <div style={{ color: BRAND.green, fontWeight: 900, fontSize: 14 }}>🌍</div>
+              <div style={{ color: BRAND.green, fontWeight: 900, fontSize: 14 }}></div>
               <div style={{ color: '#fff', fontWeight: 900, fontSize: 13 }}>Region &amp; Currency</div>
             </div>
 
@@ -510,7 +510,7 @@ export default function SettingsPage() {
                   opacity: saving ? 0.7 : 1,
                 }}
               >
-                {saving ? 'Saving…' : '💾 Save Settings'}
+                {saving ? 'Saving…' : 'Save Settings'}
               </button>
               <button
                 type="button"
@@ -527,14 +527,14 @@ export default function SettingsPage() {
                   cursor: 'pointer',
                 }}
               >
-                ↩ Sign Out
+                Sign Out
               </button>
             </div>
           </div>
 
           <div style={{ ...card, marginBottom: 14 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-              <div style={{ color: BRAND.green, fontWeight: 900, fontSize: 14 }}>🔁</div>
+              <div style={{ color: BRAND.green, fontWeight: 900, fontSize: 14 }}></div>
               <div style={{ color: '#fff', fontWeight: 900, fontSize: 13 }}>Change Plan</div>
             </div>
             <div style={{ color: BRAND.muted, fontSize: 12, marginBottom: 14, lineHeight: 1.5 }}>
@@ -548,7 +548,7 @@ export default function SettingsPage() {
           </div>
 
           <div style={{ ...card, border: '1px solid rgba(239,68,68,0.25)', background: 'rgba(239,68,68,0.05)' }}>
-            <div style={{ color: '#ffb4b4', fontSize: 12, fontWeight: 900, marginBottom: 10 }}>🚨 Danger Zone</div>
+            <div style={{ color: '#ffb4b4', fontSize: 12, fontWeight: 900, marginBottom: 10 }}>Danger Zone</div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ color: '#fff', fontSize: 13, fontWeight: 900, marginBottom: 4 }}>Delete My Account</div>
@@ -571,7 +571,7 @@ export default function SettingsPage() {
                   whiteSpace: 'nowrap',
                 }}
               >
-                🗑 Delete Account
+                Delete Account
               </button>
             </div>
           </div>

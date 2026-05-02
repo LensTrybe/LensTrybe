@@ -333,7 +333,7 @@ export default function ClientDashboardPage() {
                   ) : (
                     <>
                       <span style={{ fontSize: '15px', fontWeight: 600 }}>{selected.nickname ?? getCreativeName(selected) ?? selected.subject ?? 'Conversation'}</span>
-                      <button style={s.editIcon} onClick={() => setEditingNickname(true)}>✎</button>
+                      <button style={s.editIcon} onClick={() => setEditingNickname(true)}></button>
                     </>
                   )}
                 </div>
@@ -393,7 +393,7 @@ export default function ClientDashboardPage() {
                       <div style={s.creativeType}>
                         {(c.skill_types ?? []).map(t => t.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())).join(', ')}
                       </div>
-                      {c.city && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>📍 {c.city}{c.state ? `, ${c.state}` : ''}</div>}
+                      {c.city && <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>{c.city}{c.state ? `, ${c.state}` : ''}</div>}
                       <div style={{ display: 'flex', gap: '8px' }}>
                         <button style={s.messageBtn} onClick={() => goToCreativeThread(c.id)}>Message</button>
                         <button style={{ ...s.messageBtn, background: 'transparent', color: 'var(--text-secondary)' }} onClick={() => navigate(`/creatives/${c.id}`)}>View Profile</button>

@@ -858,7 +858,7 @@ function Quotes() {
             <p style={{ margin: 0, color: PAGE.muted }}>Loading quotes…</p>
           ) : quotes.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '48px 16px', color: PAGE.muted }}>
-              <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 12 }}>📋</div>
+              <div style={{ fontSize: 48, lineHeight: 1, marginBottom: 12 }}></div>
               <div style={{ color: '#fff', fontWeight: 700, fontSize: 15, ...font }}>No quotes yet.</div>
               <div style={{ marginTop: 8, fontSize: 13, color: PAGE.muted, ...font }}>Create your first quote to get started.</div>
             </div>

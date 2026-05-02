@@ -23,7 +23,7 @@ function StarRating({ value, onChange, readonly }) {
             color: star <= (hovered ?? value) ? '#EAB308' : 'var(--border-strong)',
             transition: 'color var(--transition-fast)',
           }}
-        >★</span>
+        ></span>
       ))}
     </div>
   )

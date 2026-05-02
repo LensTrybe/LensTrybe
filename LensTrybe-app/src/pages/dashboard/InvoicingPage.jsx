@@ -467,7 +467,7 @@ export default function InvoicingPage() {
             onClick={() => editingBank ? saveBankDetails() : setEditingBank(true)}
             style={{ padding: '7px 14px', background: editingBank ? '#1DB954' : 'var(--bg-base)', border: `1px solid ${editingBank ? '#1DB954' : 'var(--border-default)'}`, borderRadius: '8px', color: editingBank ? '#000' : 'var(--text-secondary)', fontSize: '13px', fontWeight: editingBank ? 600 : 400, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
           >
-            {bankSaving ? 'Saving…' : editingBank ? 'Save Details' : '✎ Edit'}
+            {bankSaving ? 'Saving…' : editingBank ? 'Save Details' : ' Edit'}
           </button>
         </div>
 
@@ -695,7 +695,7 @@ export default function InvoicingPage() {
                   }}
                   style={{ padding: '7px 14px', background: editingInvoice ? 'rgba(29,185,84,0.1)' : 'var(--bg-elevated)', border: `1px solid ${editingInvoice ? 'rgba(29,185,84,0.3)' : 'var(--border-default)'}`, borderRadius: '8px', color: editingInvoice ? '#1DB954' : 'var(--text-secondary)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
                 >
-                  {editingInvoice ? '✓ Save' : '✎ Edit'}
+                  {editingInvoice ? '✓ Save' : ' Edit'}
                 </button>
                 <button onClick={() => {
                   const printContents = document.getElementById('invoice-print-area').innerHTML

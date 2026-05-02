@@ -65,7 +65,7 @@ export default function DeliverDownloadPage() {
   if (notFound) return (
     <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ textAlign: 'center', padding: '40px' }}>
-        <div style={{ fontSize: '48px', marginBottom: '16px' }}>🔗</div>
+        <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
         <div style={{ fontSize: '20px', fontWeight: 600, color: '#fff', marginBottom: '8px' }}>Gallery not found</div>
         <div style={{ fontSize: '14px', color: '#666' }}>This link may have expired or been removed.</div>
       </div>
@@ -136,7 +136,7 @@ export default function DeliverDownloadPage() {
               }}
               style={{ padding: '12px 28px', background: accent, border: 'none', borderRadius: '8px', color: '#000', fontSize: '14px', fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}
             >
-              ⬇ Download All ({files.length} files)
+               Download All ({files.length} files)
             </button>
           </div>
         )}

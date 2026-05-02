@@ -373,7 +373,7 @@ export default function PricingPage() {
           textAlign: 'center',
         }}>
           <div style={{ fontSize: '15px', color: '#1DB954', marginBottom: 6, fontFamily: 'var(--font-ui)', ...TYPO.stat }}>
-            🎉 No payments until July 1st, 2026
+            No payments until July 1st, 2026
           </div>
           <div style={{ fontSize: '13px', color: '#8b8a9a', ...TYPO.body }}>
             Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial — your card will never be charged early.

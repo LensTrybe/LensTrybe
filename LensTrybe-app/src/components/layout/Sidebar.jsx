@@ -6,26 +6,26 @@ import { supabase } from '../../lib/supabaseClient'
 
 const nav = [
   { label: 'Dashboard', path: '/dashboard', icon: '⊞', section: null },
-  { label: 'Find a Creative', path: '/creatives', icon: '🔍', section: null },
-  { label: 'Messages', path: '/dashboard/clients/messages', icon: '✉', section: 'Clients' },
+  { label: 'Find a Creative', path: '/creatives', icon: '', section: null },
+  { label: 'Messages', path: '/dashboard/clients/messages', icon: '', section: 'Clients' },
   { label: 'CRM', path: '/dashboard/clients/crm', icon: '◈', section: 'Clients', feature: 'crm' },
   { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: '◎', section: 'Finance', feature: 'invoicing' },
   { label: 'Quotes', path: '/dashboard/finance/quotes', icon: '◌', section: 'Finance', feature: 'invoicing' },
   { label: 'Contracts', path: '/dashboard/finance/contracts', icon: '✦', section: 'Finance', feature: 'contracts' },
   { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: '◉', section: 'Portfolio', feature: 'brandKit' },
-  { label: 'Portfolio Website', path: '/dashboard/portfolio-design/portfolio-website', icon: '🌐', section: 'Portfolio' },
-  { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: '⬆', section: 'Portfolio', feature: 'deliver' },
-  { label: 'Reviews', path: '/dashboard/business/reviews', icon: '★', section: 'Business' },
+  { label: 'Portfolio Website', path: '/dashboard/portfolio-design/portfolio-website', icon: '', section: 'Portfolio' },
+  { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: '', section: 'Portfolio', feature: 'deliver' },
+  { label: 'Reviews', path: '/dashboard/business/reviews', icon: '', section: 'Business' },
   { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: '◆', section: 'Business' },
-  { label: 'Collaborate', path: '/dashboard/collaborate', icon: '🤝', section: 'Business' },
+  { label: 'Collaborate', path: '/dashboard/collaborate', icon: '', section: 'Business' },
   { label: 'Team', path: '/dashboard/business/team', icon: '⬡', section: 'Business', feature: 'team' },
   { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
   { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: '◷', section: 'Work' },
-  { label: 'Availability', path: '/dashboard/my-work/availability', icon: '📅', section: 'Work' },
+  { label: 'Availability', path: '/dashboard/my-work/availability', icon: '', section: 'Work' },
   { label: 'Job Board', path: '/dashboard/my-work/jobs', icon: '◈', section: 'Work' },
   { label: 'Edit Profile', path: '/dashboard/profile/edit-profile', icon: '◎', section: 'Account' },
-  { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: '👁', section: 'Account' },
-  { label: 'Settings', path: '/dashboard/settings', icon: '⚙', section: 'Account' },
+  { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: '', section: 'Account' },
+  { label: 'Settings', path: '/dashboard/settings', icon: '', section: 'Account' },
 ]
 
 export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseMobile }) {
@@ -52,7 +52,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
 
   const navItemsWithAdmin = (() => {
     if (!isAdminUser) return navItems
-    const adminItem = { label: 'Admin', path: '/dashboard/admin', icon: '⚡', section: 'Account' }
+    const adminItem = { label: 'Admin', path: '/dashboard/admin', icon: '', section: 'Account' }
     const settingsIndex = navItems.findIndex(x => x.path === '/dashboard/settings')
     if (settingsIndex === -1) return [...navItems, adminItem]
     return [...navItems.slice(0, settingsIndex + 1), adminItem, ...navItems.slice(settingsIndex + 1)]
@@ -247,7 +247,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
                     <div style={styles.navItem(false, true)}>
                       <span style={styles.icon}>{item.icon}</span>
                       <span style={styles.label}>{item.label}</span>
-                      <span style={styles.lockIcon}>🔒</span>
+                      <span style={styles.lockIcon}></span>
                     </div>
                   ) : (
                     <NavLink to={item.path} style={({ isActive }) => styles.navItem(isActive, false)} onClick={() => onCloseMobile?.()}>
@@ -271,7 +271,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
                 })}
                 onClick={() => onCloseMobile?.()}
               >
-                <span style={styles.icon}>✎</span>
+                <span style={styles.icon}></span>
                 <span style={styles.label}>The Trybe Edit</span>
               </NavLink>
             </div>

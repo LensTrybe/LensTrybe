@@ -123,16 +123,16 @@ export default function DashboardHome() {
 
   const DEFAULT_QUICK_ACTION_LABELS = ['New Message', 'New Invoice', 'Add Portfolio', 'New Delivery', 'New Contract', 'New Booking']
   const AVAILABLE_QUICK_ACTIONS = [
-    { icon: '✉', label: 'New Message', path: '/dashboard/clients/messages' },
+    { icon: '', label: 'New Message', path: '/dashboard/clients/messages' },
     { icon: '◎', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
     { icon: '◌', label: 'New Quote', path: '/dashboard/finance/quotes' },
-    { icon: '✍', label: 'New Contract', path: '/dashboard/finance/contracts' },
+    { icon: '', label: 'New Contract', path: '/dashboard/finance/contracts' },
     { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
-    { icon: '⬆', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
-    { icon: '👥', label: 'Add Client', path: '/dashboard/clients/crm' },
-    { icon: '📅', label: 'New Booking', path: '/dashboard/my-work/my-bookings' },
-    { icon: '🕒', label: 'View Availability', path: '/dashboard/my-work/availability' },
-    { icon: '💼', label: 'Job Board', path: '/dashboard/my-work/jobs' },
+    { icon: '', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
+    { icon: '', label: 'Add Client', path: '/dashboard/clients/crm' },
+    { icon: '', label: 'New Booking', path: '/dashboard/my-work/my-bookings' },
+    { icon: '', label: 'View Availability', path: '/dashboard/my-work/availability' },
+    { icon: '', label: 'Job Board', path: '/dashboard/my-work/jobs' },
   ]
 
   useEffect(() => {
@@ -377,7 +377,7 @@ export default function DashboardHome() {
     const events = [
       ...messages.slice(0, 6).map((m) => ({
         at: m.created_at,
-        icon: '✉',
+        icon: '',
         text: 'New message received',
       })),
       ...invoices.slice(0, 6).map((i) => ({
@@ -387,17 +387,17 @@ export default function DashboardHome() {
       })),
       ...bookings.slice(0, 6).map((b) => ({
         at: b.created_at,
-        icon: '📅',
+        icon: '',
         text: `Booking added${b.client_name ? ` for ${b.client_name}` : ''}`,
       })),
       ...recentReviewRows.slice(0, 6).map((r) => ({
         at: r.created_at,
-        icon: '⭐',
-        text: `New review received (${Number(r.rating || 0).toFixed(1)}★)`,
+        icon: '',
+        text: `New review received (${Number(r.rating || 0).toFixed(1)})`,
       })),
       ...contracts.slice(0, 6).map((c) => ({
         at: c.created_at,
-        icon: '✍',
+        icon: '',
         text: `Contract ${String(c.status || 'updated').replace('_', ' ')}`,
       })),
     ]
@@ -687,7 +687,7 @@ export default function DashboardHome() {
                 setEditingQuickActions(true)
               }}
             >
-              ✎ Customise
+              Customise
             </Button>
           ) : null}
         </div>
@@ -763,7 +763,7 @@ export default function DashboardHome() {
             <FinancialCard label="YTD revenue" value={currency(d.financial.ytdRevenue)} accent />
             <FinancialCard label="Total bookings" value={String(d.financial.totalBookings)} />
             <FinancialCard label="Active enquiries" value={String(d.financial.activeEnquiries)} />
-            <FinancialCard label="Platform reviews average" value={`${d.financial.reviewsAverage.toFixed(1)}★`} sub={`${d.financial.reviewCount} reviews`} />
+            <FinancialCard label="Platform reviews average" value={`${d.financial.reviewsAverage.toFixed(1)}`} sub={`${d.financial.reviewCount} reviews`} />
             <FinancialCard label="Conversion rate" value={`${d.financial.conversionRate.toFixed(1)}%`} />
           </>
         )}
@@ -917,7 +917,7 @@ export default function DashboardHome() {
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>
             Reviews: <span style={{ color: 'var(--text-primary)' }}>{d?.financial.reviewCount ?? 0}</span> ·
-            <span style={{ color: 'var(--text-primary)' }}> {(d?.financial.reviewsAverage ?? 0).toFixed(1)}★</span>
+            <span style={{ color: 'var(--text-primary)' }}>{(d?.financial.reviewsAverage ?? 0).toFixed(1)}</span>
           </div>
           <button
             type="button"

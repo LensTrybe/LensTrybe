@@ -68,7 +68,7 @@ function FileThumb({ url, mime, label }) {
     return (
       <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-default)', background: '#111', position: 'relative' }}>
         <video src={url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>▶</span>
+        <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}></span>
       </div>
     )
   }

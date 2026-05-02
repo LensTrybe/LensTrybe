@@ -141,7 +141,7 @@ export default function TeamJoinPage() {
 
         {error && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>❌</div>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
             <h2 style={{ color: 'white', fontSize: '18px', fontWeight: '700', marginBottom: '8px' }}>Invalid Invitation</h2>
             <p style={{ color: '#888', fontSize: '14px' }}>{error}</p>
           </div>
@@ -150,7 +150,7 @@ export default function TeamJoinPage() {
         {!error && step === 'accept' && (
           <>
             <div style={{ textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎉</div>
+              <div style={{ fontSize: '40px', marginBottom: '12px' }}></div>
               <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>You've been invited!</h2>
               <p style={{ color: '#aaa', fontSize: '14px' }}>
                 <strong style={{ color: 'white' }}>{invitation?.profiles?.business_name || 'A creative studio'}</strong> has invited you to join their team as a <strong style={{ color: 'white' }}>{invitation?.role || 'Member'}</strong>.
@@ -158,7 +158,7 @@ export default function TeamJoinPage() {
             </div>
 
             <div style={{ background: '#1e2a1e', border: `1px solid ${accentColor}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '24px' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: accentColor, marginBottom: '6px' }}>✅ What's included</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: accentColor, marginBottom: '6px' }}>What&apos;s included</div>
               <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.7' }}>
                 <div>• Full <strong style={{ color: 'white' }}>Elite tier access</strong> — covered by your team owner</div>
                 <div>• Your own creative profile on LensTrybe</div>
@@ -245,8 +245,8 @@ export default function TeamJoinPage() {
 
         {step === 'success' && (
           <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '16px' }}>✅</div>
-            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>✅ Welcome to the team! You now have Elite access. Taking you to your dashboard...</h2>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}></div>
+            <h2 style={{ color: 'white', fontSize: '20px', fontWeight: '700', marginBottom: '8px' }}>Welcome to the team! You now have Elite access. Taking you to your dashboard...</h2>
           </div>
         )}
 

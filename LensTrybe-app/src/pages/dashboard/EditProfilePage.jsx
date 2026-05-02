@@ -455,7 +455,7 @@ export default function EditProfilePage() {
         <div style={styles.avatarSection}>
           {form.avatar_url
             ? <img src={form.avatar_url} alt="Avatar" style={styles.avatar} />
-            : <div style={styles.avatarPlaceholder}>👤</div>
+            : <div style={styles.avatarPlaceholder}></div>
           }
           <div style={styles.avatarInfo}>
             <div style={styles.avatarName}>{form.business_name || 'Your Business'}</div>

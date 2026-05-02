@@ -77,7 +77,7 @@ function GlowBlob({ color, top, left, right, bottom, size = 400, opacity = 0.07 
 
 function CreativeCard({ creative, isCenter }) {
   const tierColor = creative.subscription_tier === 'elite' ? '#F59E0B' : '#A855F7';
-  const tierLabel = creative.subscription_tier === 'elite' ? '⭐ ELITE' : 'EXPERT';
+  const tierLabel = creative.subscription_tier === 'elite' ? 'ELITE' : 'EXPERT';
   const skillLabel = (creative.skill_types?.[0] ?? '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) || 'Creative';
   const location = [creative.city, creative.state].filter(Boolean).join(', ');
   return (
@@ -100,7 +100,7 @@ function CreativeCard({ creative, isCenter }) {
       <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 8px' }}>
         {creative.avatar_url
           ? <img src={creative.avatar_url} alt={creative.business_name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: isCenter ? '2px solid rgba(29,185,84,0.5)' : '2px solid rgba(255,255,255,0.1)' }} />
-          : <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(29,185,84,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', border: isCenter ? '2px solid rgba(29,185,84,0.5)' : '2px solid rgba(255,255,255,0.1)' }}>📷</div>
+          : <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(29,185,84,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', border: isCenter ? '2px solid rgba(29,185,84,0.5)' : '2px solid rgba(255,255,255,0.1)' }}></div>
         }
       </div>
       <div style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.6, color: '#fff', textAlign: 'center', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{creative.business_name}</div>
@@ -408,9 +408,9 @@ export default function HomePage() {
         <GlowBlob color={`rgba(29,185,84,0.5)`} top="50%" left="90%" size={400} opacity={0.05} />
         <div style={{ maxWidth: '960px', margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
           {[
-            { icon: '🚫', title: 'No commissions, ever', desc: 'Keep 100% of what you earn. We charge a flat subscription, nothing more. No hidden fees, no surprises.' },
-            { icon: '🇦🇺', title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
-            { icon: '⚡', title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
+            { icon: '', title: 'No commissions, ever', desc: 'Keep 100% of what you earn. We charge a flat subscription, nothing more. No hidden fees, no surprises.' },
+            { icon: '', title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
+            { icon: '', title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
           ].map(item => (
             <div key={item.title} style={{ ...GLASS_CARD, padding: '28px 24px', fontFamily: FONT }}>
               <div style={{ fontSize: '28px', marginBottom: '14px', lineHeight: 1 }}>{item.icon}</div>

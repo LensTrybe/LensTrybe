@@ -26,7 +26,7 @@ function StarRating({ value }) {
   return (
     <div style={{ display: 'flex', gap: '2px' }}>
       {[1,2,3,4,5].map(s => (
-        <span key={s} style={{ color: s <= value ? '#EAB308' : 'var(--border-strong)', fontSize: '16px' }}>★</span>
+        <span key={s} style={{ color: s <= value ? '#EAB308' : 'var(--border-strong)', fontSize: '16px' }}></span>
       ))}
     </div>
   )
@@ -268,7 +268,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <div style={styles.heroInner}>
           {profile.avatar_url
             ? <img src={profile.avatar_url} alt={displayName} style={styles.avatar} />
-            : <div style={styles.avatar}>👤</div>
+            : <div style={styles.avatar}></div>
           }
           <div style={styles.heroContent}>
             <div style={styles.nameRow}>
@@ -286,7 +286,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             </div>
 
             {(profile.city || profile.state) && (
-              <div style={styles.location}>📍 {[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div>
+              <div style={styles.location}>{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div>
             )}
 
             <div style={styles.skillRow}>
@@ -338,17 +338,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                   onClick={() => (user ? setShowReview(true) : setShowAuthGate(true))}
                   style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}
                 >
-                  ★ Leave a Review
+                  Leave a Review
                 </Button>
               )}
             </div>
             {(profile.instagram_url || profile.tiktok_url || profile.linkedin_url || profile.facebook_url || profile.website || profile.twitter_url) && (
               <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap', marginTop: '12px' }}>
-                {profile.website && <a href={profile.website} target="_blank" rel="noreferrer" style={styles.socialLink}>🌐 Website</a>}
-                {profile.instagram_url && <a href={`https://instagram.com/${profile.instagram_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>📷 Instagram</a>}
-                {profile.tiktok_url && <a href={`https://tiktok.com/${profile.tiktok_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>🎵 TikTok</a>}
-                {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={styles.socialLink}>💼 LinkedIn</a>}
-                {profile.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer" style={styles.socialLink}>👥 Facebook</a>}
+                {profile.website && <a href={profile.website} target="_blank" rel="noreferrer" style={styles.socialLink}>Website</a>}
+                {profile.instagram_url && <a href={`https://instagram.com/${profile.instagram_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>Instagram</a>}
+                {profile.tiktok_url && <a href={`https://tiktok.com/${profile.tiktok_url.replace('@', '')}`} target="_blank" rel="noreferrer" style={styles.socialLink}>TikTok</a>}
+                {profile.linkedin_url && <a href={profile.linkedin_url} target="_blank" rel="noreferrer" style={styles.socialLink}>LinkedIn</a>}
+                {profile.facebook_url && <a href={profile.facebook_url} target="_blank" rel="noreferrer" style={styles.socialLink}>Facebook</a>}
                 {profile.twitter_url && <a href={profile.twitter_url} target="_blank" rel="noreferrer" style={styles.socialLink}>𝕏 Twitter</a>}
               </div>
             )}
@@ -466,7 +466,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                     <label style={{ fontSize: '12px', display: 'block', marginBottom: '8px', ...TYPO.label }}>Rating *</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       {[1, 2, 3, 4, 5].map(s => (
-                        <button key={s} type="button" onClick={() => setReviewForm(p => ({ ...p, rating: s }))} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: s <= reviewForm.rating ? '#EAB308' : 'var(--border-strong)', padding: '0' }}>★</button>
+                        <button key={s} type="button" onClick={() => setReviewForm(p => ({ ...p, rating: s }))} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: s <= reviewForm.rating ? '#EAB308' : 'var(--border-strong)', padding: '0' }}></button>
                       ))}
                     </div>
                   </div>

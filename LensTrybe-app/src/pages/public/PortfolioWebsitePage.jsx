@@ -389,7 +389,7 @@ export default function PortfolioWebsitePage() {
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                      <span style={{ color: '#eab308', fontSize: 16 }}>{'★'.repeat(Math.min(5, Math.round(Number(r.rating) || 0)))}</span>
+                      <span style={{ color: '#eab308', fontSize: 16 }}>{''.repeat(Math.min(5, Math.round(Number(r.rating) || 0)))}</span>
                       <span style={{ fontSize: 13, color: '#71717a' }}>{r.rating != null ? Number(r.rating).toFixed(1) : ''}</span>
                     </div>
                     <p style={{ margin: '0 0 12px', fontSize: 15, lineHeight: 1.55, color: '#27272a' }}>{r.body || r.comment}</p>
@@ -682,7 +682,7 @@ function FileCard({ file, accent }) {
               textShadow: '0 4px 20px rgba(0,0,0,0.5)',
             }}
           >
-            ▶
+            
           </span>
         </a>
         <div style={{ padding: '10px 12px', fontSize: 13, color: '#52525b', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{file.filename}</div>

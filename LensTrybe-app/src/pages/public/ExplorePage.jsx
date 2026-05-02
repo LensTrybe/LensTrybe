@@ -111,7 +111,7 @@ function CreativeCard({ profile, onClick }) {
     >
       {profile.avatar_url
         ? <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
-        : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>📷</div>
+        : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}></div>
       }
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
@@ -124,7 +124,7 @@ function CreativeCard({ profile, onClick }) {
         </div>
         {(profile.city || profile.state) && (
           <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-            📍 {[profile.city, profile.state].filter(Boolean).join(', ')}
+            {[profile.city, profile.state].filter(Boolean).join(', ')}
           </div>
         )}
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
@@ -393,19 +393,19 @@ export default function ExplorePage() {
 
         {!searched ? (
           <div style={styles.emptyState}>
-            <div style={{ fontSize: '32px' }}>🔍</div>
+            <div style={{ fontSize: '32px' }}></div>
             <div style={styles.emptyTitle}>Search for creatives above</div>
             <div style={styles.emptyText}>Select a creative type, filter by location and hit Search to find the right person for your project.</div>
             <Button variant="secondary" onClick={() => handleSearch()}>Browse All Creatives</Button>
           </div>
         ) : loading ? (
           <div style={styles.emptyState}>
-            <div style={{ fontSize: '32px' }}>🔍</div>
+            <div style={{ fontSize: '32px' }}></div>
             <div style={styles.emptyTitle}>Searching…</div>
           </div>
         ) : creatives.length === 0 ? (
           <div style={styles.emptyState}>
-            <div style={{ fontSize: '32px' }}>😕</div>
+            <div style={{ fontSize: '32px' }}></div>
             <div style={styles.emptyTitle}>No creatives found</div>
             <div style={styles.emptyText}>Try adjusting your filters or searching a different location.</div>
             <Button variant="secondary" onClick={() => { setSelectedTypes([]); setFilters({ specialty: '', state: '', city: '', name: '', locationPreference: 'australiaWide' }); handleSearch([], { specialty: '', state: '', city: '', name: '', locationPreference: 'australiaWide' }) }}>

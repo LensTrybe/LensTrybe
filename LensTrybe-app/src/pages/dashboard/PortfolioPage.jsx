@@ -198,7 +198,7 @@ export default function PortfolioPage() {
         <div style={styles.emptyState}>Loading portfolio…</div>
       ) : items.length === 0 ? (
         <div style={styles.uploadZone} onClick={() => document.getElementById('portfolio-upload').click()}>
-          <div style={{ fontSize: '32px' }}>📷</div>
+          <div style={{ fontSize: '32px' }}></div>
           <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Upload your first photo or video</div>
           <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>JPG, PNG, MP4 — drag and drop or click to browse</div>
         </div>

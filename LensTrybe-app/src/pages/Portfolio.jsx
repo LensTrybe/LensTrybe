@@ -49,7 +49,7 @@ export default function PortfolioPage() {
 
   if (notFound) return (
     <div style={{ background: "#0f0f0f", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", color: "#444", fontFamily: "system-ui", flexDirection: "column", gap: 12 }}>
-      <span style={{ fontSize: 48 }}>🔍</span>
+      <span style={{ fontSize: 48 }}></span>
       <p>Portfolio not found</p>
     </div>
   );
@@ -124,11 +124,11 @@ export default function PortfolioPage() {
           <div className="port-name">{profile.business_name}</div>
           {profile.tagline && <div className="port-tagline">{profile.tagline}</div>}
           <div className="port-meta">
-            {profile.location && <span className="port-meta-item">📍 {profile.location}</span>}
-            {profile.years_experience && <span className="port-meta-item">⏱ {profile.years_experience} years experience</span>}
+            {profile.location && <span className="port-meta-item"> {profile.location}</span>}
+            {profile.years_experience && <span className="port-meta-item"> {profile.years_experience} years experience</span>}
             {avgRating && (
               <div className="port-rating">
-                <span className="port-rating-stars">★</span>
+                <span className="port-rating-stars"></span>
                 <span className="port-rating-num">{avgRating}</span>
                 <span style={{ color: "#555", fontSize: 11 }}>({reviews.length})</span>
               </div>
@@ -159,7 +159,7 @@ export default function PortfolioPage() {
                         </div>
                       </>
                     ) : (
-                      <div style={{ background: "#141414", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }}>🖼️</div>
+                      <div style={{ background: "#141414", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 32 }} />
                     )}
                   </div>
                 ))}
@@ -208,7 +208,7 @@ export default function PortfolioPage() {
                       <div className="review-avatar">{r.client_name?.[0]?.toUpperCase() || "?"}</div>
                       <div>
                         <div className="review-name">{r.client_name}</div>
-                        <div className="review-stars">{"★".repeat(r.rating || 0)}{"☆".repeat(5 - (r.rating || 0))}</div>
+                        <div className="review-stars">{"".repeat(r.rating || 0)}{"☆".repeat(5 - (r.rating || 0))}</div>
                       </div>
                     </div>
                     {r.comment && <div className="review-comment">{r.comment}</div>}

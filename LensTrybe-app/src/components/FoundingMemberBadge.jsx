@@ -15,7 +15,7 @@ export function FoundingMemberBadge() {
         letterSpacing: '0.3px',
       }}
     >
-      ⭐ Founding Member
+      Founding Member
     </span>
   )
 }

@@ -647,7 +647,7 @@ function Invoicing() {
         <div style={{ marginBottom: 20 }}>
           <div style={sectionTitle}>
             <span aria-hidden style={{ fontSize: 18 }}>
-              📈
+              
             </span>
             Revenue Summary
           </div>
@@ -1118,7 +1118,7 @@ function Invoicing() {
         >
           <div style={{ ...sectionTitle, marginBottom: 16 }}>
             <span aria-hidden style={{ fontSize: 18 }}>
-              🧾
+              
             </span>
             Invoices
           </div>
@@ -1154,7 +1154,7 @@ function Invoicing() {
           ) : invoices.length === 0 ? (
             <div style={{ textAlign: 'center', padding: 40 }}>
               <div style={{ fontSize: 32, marginBottom: 14, lineHeight: 1 }} aria-hidden="true">
-                🧾
+                
               </div>
               <div style={{ color: '#fff', fontSize: 14, fontWeight: 600, fontFamily: 'Inter, sans-serif' }}>No invoices yet.</div>
             </div>

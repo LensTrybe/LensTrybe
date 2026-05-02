@@ -109,12 +109,12 @@ export default function CreatorPartnersPage() {
         <p style={s.sectionSubtitle}>Everything you need to build a creative business — and then some.</p>
         <div style={s.grid}>
           {[
-            { icon: '🏆', title: '12 Months Elite — Free', desc: 'Full access to our highest tier valued at $149.99/month. No credit card required during your partnership period.' },
-            { icon: '🎖️', title: 'Founding Partner Badge', desc: 'A permanent badge on your LensTrybe profile identifying you as one of the original creator partners. It never disappears.' },
-            { icon: '📞', title: 'Personal Onboarding Call', desc: 'A one-on-one call with the LensTrybe team to walk you through the platform and get your profile performing at its best.' },
-            { icon: '🔖', title: 'Your Own Coupon Code', desc: 'A personalised coupon code tied to your brand. Your audience gets 50% off their first payment. You earn commission on every signup.' },
-            { icon: '💰', title: '20% Commission', desc: 'Earn 20% of the first payment for every Pro, Expert or Elite subscriber who signs up using your code. Paid monthly.' },
-            { icon: '📣', title: 'Content Resharing', desc: 'Any content you create about LensTrybe gets reshared across our official social channels — growing your own audience in the process.' },
+            { icon: '', title: '12 Months Elite — Free', desc: 'Full access to our highest tier valued at $149.99/month. No credit card required during your partnership period.' },
+            { icon: '', title: 'Founding Partner Badge', desc: 'A permanent badge on your LensTrybe profile identifying you as one of the original creator partners. It never disappears.' },
+            { icon: '', title: 'Personal Onboarding Call', desc: 'A one-on-one call with the LensTrybe team to walk you through the platform and get your profile performing at its best.' },
+            { icon: '', title: 'Your Own Coupon Code', desc: 'A personalised coupon code tied to your brand. Your audience gets 50% off their first payment. You earn commission on every signup.' },
+            { icon: '', title: '20% Commission', desc: 'Earn 20% of the first payment for every Pro, Expert or Elite subscriber who signs up using your code. Paid monthly.' },
+            { icon: '', title: 'Content Resharing', desc: 'Any content you create about LensTrybe gets reshared across our official social channels — growing your own audience in the process.' },
           ].map(item => (
             <div key={item.title} style={s.card}>
               <div style={s.cardIcon}>{item.icon}</div>
@@ -133,10 +133,10 @@ export default function CreatorPartnersPage() {
         <p style={s.sectionSubtitle}>No scripted posts. No required hashtags. No minimum post count. Just your genuine experience.</p>
         <div style={{ ...s.grid, gridTemplateColumns: 'repeat(4, 1fr)' }}>
           {[
-            { icon: '🎬', title: 'Profile Setup Reel', desc: 'Walk your audience through setting up your LensTrybe profile — skills, portfolio, credentials. This is the most impactful content you can create.' },
-            { icon: '📩', title: 'First Enquiry Post', desc: 'When you receive your first booking or enquiry through LensTrybe, share it. Real results from real usage is the most powerful content.' },
-            { icon: '🔍', title: 'Feature Deep Dive', desc: 'Pick one feature you genuinely love — invoicing, the job board, the booking system — and show your audience how it works.' },
-            { icon: '🏷️', title: 'Coupon Code Drop', desc: 'Share your personal coupon code with your audience. Keep it natural — explain the offer and why you recommend it.' },
+            { icon: '', title: 'Profile Setup Reel', desc: 'Walk your audience through setting up your LensTrybe profile — skills, portfolio, credentials. This is the most impactful content you can create.' },
+            { icon: '', title: 'First Enquiry Post', desc: 'When you receive your first booking or enquiry through LensTrybe, share it. Real results from real usage is the most powerful content.' },
+            { icon: '', title: 'Feature Deep Dive', desc: 'Pick one feature you genuinely love — invoicing, the job board, the booking system — and show your audience how it works.' },
+            { icon: '', title: 'Coupon Code Drop', desc: 'Share your personal coupon code with your audience. Keep it natural — explain the offer and why you recommend it.' },
           ].map(item => (
             <div key={item.title} style={s.card}>
               <div style={s.cardIcon}>{item.icon}</div>
@@ -157,7 +157,7 @@ export default function CreatorPartnersPage() {
         <div style={s.formWrap}>
           {submitted ? (
             <div style={s.successWrap}>
-              <div style={s.successIcon}>🎉</div>
+              <div style={s.successIcon}></div>
               <div style={s.successTitle}>Application received!</div>
               <p style={s.successText}>Thanks for applying! We will review your application and be in touch within a few days. Keep an eye on your inbox.</p>
             </div>

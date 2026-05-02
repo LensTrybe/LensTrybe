@@ -57,7 +57,7 @@ export default function DashboardLayout() {
           }}
           aria-label="Open navigation menu"
         >
-          ☰
+          
         </button>
       )}
       {isMobile && mobileSidebarOpen && (

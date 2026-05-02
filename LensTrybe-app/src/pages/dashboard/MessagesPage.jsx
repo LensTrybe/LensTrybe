@@ -542,7 +542,7 @@ export default function MessagesPage() {
                   ) : (
                     <>
                       <span style={styles.mainName}>{selected?.nickname ?? selected?.peerDisplayName ?? 'Client'}</span>
-                      <button type="button" onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}>✎</button>
+                      <button type="button" onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}></button>
                     </>
                   )}
                 </div>

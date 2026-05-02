@@ -298,7 +298,7 @@ function BookingRequests() {
               }}
             >
               <div style={{ fontSize: 32, marginBottom: 12 }} aria-hidden="true">
-                📥
+                
               </div>
               <div style={{ color: '#fff', fontSize: 15, fontWeight: 700 }}>No pending booking requests.</div>
             </div>

@@ -715,7 +715,7 @@ function Contracts() {
                   alignItems: 'flex-start',
                 }}
               >
-                <span style={{ flexShrink: 0, fontSize: 16 }} aria-hidden>ℹ️</span>
+                <span style={{ flexShrink: 0, fontSize: 16 }} aria-hidden />
                 <span>
                   LensTrybe provides the tools to create and send contracts but does not provide legal advice or contract templates. You are responsible for the content of your contracts. We recommend consulting a legal professional if you are unsure.
                 </span>
@@ -862,7 +862,7 @@ function Contracts() {
                   ...font,
                 }}
               >
-                <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden>📤</div>
+                <div style={{ fontSize: 36, marginBottom: 12 }} aria-hidden></div>
                 <div style={{ color: PAGE.text, fontSize: 15, fontWeight: 600, marginBottom: 6 }}>Upload your contract file (PDF or Word)</div>
                 <div style={{ color: PAGE.label, fontSize: 13 }}>Click or drag and drop</div>
                 {uploadedFileName && <div style={{ marginTop: 12, color: PAGE.green, fontSize: 13 }}>{uploadedFileName}</div>}
