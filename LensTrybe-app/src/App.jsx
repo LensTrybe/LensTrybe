@@ -26,6 +26,7 @@ import SettingsPage from './pages/dashboard/SettingsPage'
 import SubscriptionPage from './pages/dashboard/SubscriptionPage'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage'
 import LumiPage from './pages/dashboard/LumiPage'
+import AdminPage from './pages/dashboard/AdminPage'
 import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
 import SignContract from './pages/SignContract'
@@ -148,6 +149,7 @@ export default function App() {
         <Route path="settings/subscription" element={<SubscriptionPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="lumi" element={<LumiPage />} />
+        <Route path="admin" element={<AdminPage />} />
       </Route>
 
       {/* Client dashboard */}
