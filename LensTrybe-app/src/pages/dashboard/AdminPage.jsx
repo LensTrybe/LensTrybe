@@ -481,6 +481,8 @@ export default function AdminPage() {
   const [broadcastAudience, setBroadcastAudience] = useState('all');
   const [broadcastTitle, setBroadcastTitle] = useState('');
   const [broadcastBody, setBroadcastBody] = useState('');
+  const [flaggedReviews, setFlaggedReviews] = useState([]);
+  const [flagActionId, setFlagActionId] = useState(null);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const panelUser = useMemo(() => users.find((u) => u.id === panelUserId) ?? null, [users, panelUserId]);
@@ -534,6 +536,31 @@ export default function AdminPage() {
       loadUsers();
     });
   }, [navigate]);
+
+  useEffect(() => {
+    if (loading || !['admin', 'staff'].includes(callerRole || '')) return undefined;
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase
+        .from('reviews')
+        .select('id, creative_id, reviewer_name, reviewer_email, rating, body, flag_reason, flagged_at')
+        .eq('flagged', true)
+        .eq('flag_status', 'pending');
+      if (cancelled || error) return;
+      const ids = [...new Set((data || []).map((r) => r.creative_id))];
+      let byId = {};
+      if (ids.length) {
+        const { data: profs } = await supabase.from('profiles').select('id, business_name').in('id', ids);
+        byId = Object.fromEntries((profs || []).map((p) => [p.id, p.business_name || '—']));
+      }
+      if (!cancelled) {
+        setFlaggedReviews((data || []).map((r) => ({ ...r, business_name: byId[r.creative_id] || '—' })));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [callerRole, loading]);
 
   useEffect(() => {
     if (!panelUserId) return undefined;
@@ -717,6 +744,36 @@ export default function AdminPage() {
     setBroadcastAudience('all');
     showToast('Broadcast queued - feature coming soon');
   };
+
+  async function handleKeepFlaggedReview(reviewId) {
+    setFlagActionId(reviewId);
+    const { error } = await supabase
+      .from('reviews')
+      .update({ flag_status: 'resolved_kept', flagged: false })
+      .eq('id', reviewId);
+    setFlagActionId(null);
+    if (!error) {
+      setFlaggedReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      showToast('Review kept');
+    } else {
+      showToast(error.message || 'Failed to update review', 'error');
+    }
+  }
+
+  async function handleRemoveFlaggedReview(reviewId) {
+    setFlagActionId(reviewId);
+    const { error } = await supabase
+      .from('reviews')
+      .update({ flag_status: 'resolved_removed', hidden: true })
+      .eq('id', reviewId);
+    setFlagActionId(null);
+    if (!error) {
+      setFlaggedReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      showToast('Review removed');
+    } else {
+      showToast(error.message || 'Failed to remove review', 'error');
+    }
+  }
 
   const isAdmin = callerRole === 'admin';
 
@@ -1741,6 +1798,112 @@ export default function AdminPage() {
 
       <div style={{ marginTop: 12, fontSize: 12, color: COLORS.dim, textAlign: 'right' }}>
         {filtered.length} of {users.length} users shown
+      </div>
+
+      <div style={{ marginTop: 40 }}>
+        <div
+          style={{
+            ...TYPO.heading,
+            fontSize: 13,
+            fontWeight: 700,
+            color: COLORS.muted,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+            marginBottom: 14,
+          }}
+        >
+          Flagged Reviews
+        </div>
+        {flaggedReviews.length === 0 ? (
+          <div
+            style={{
+              ...GLASS_CARD,
+              borderRadius: 12,
+              padding: '20px 18px',
+              fontSize: 13,
+              color: COLORS.muted,
+              textAlign: 'center',
+              lineHeight: 1.5,
+            }}
+          >
+            No flagged reviews in the queue.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {flaggedReviews.map((r) => {
+              const busy = flagActionId === r.id;
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    ...GLASS_CARD,
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.white }}>{r.business_name}</div>
+                  <div style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>
+                    <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.reviewer_name || '—'}</span>
+                    {' · '}
+                    <span>{r.reviewer_email?.trim() ? r.reviewer_email : '—'}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: COLORS.muted }}>
+                    Rating: <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.rating ?? '—'} / 5</span>
+                  </div>
+                  {r.body ? (
+                    <div style={{ fontSize: 13, color: COLORS.white, lineHeight: 1.55, fontStyle: 'italic' }}>&ldquo;{r.body}&rdquo;</div>
+                  ) : null}
+                  <div style={{ fontSize: 12, color: COLORS.yellow, lineHeight: 1.5 }}>
+                    <span style={{ fontWeight: 700, color: COLORS.muted }}>Flag reason: </span>
+                    {r.flag_reason || '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: COLORS.dim }}>Flagged: {formatAuDateTime(r.flagged_at)}</div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleKeepFlaggedReview(r.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.panelAlt,
+                        color: COLORS.muted,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: busy ? 'wait' : 'pointer',
+                        ...FONT,
+                      }}
+                    >
+                      Keep Review
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRemoveFlaggedReview(r.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        border: `1px solid ${COLORS.pink}`,
+                        background: COLORS.pinkDim,
+                        color: COLORS.pink,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: busy ? 'wait' : 'pointer',
+                        ...FONT,
+                      }}
+                    >
+                      Remove Review
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

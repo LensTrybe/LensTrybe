@@ -43,6 +43,9 @@ export default function ReviewsPage() {
     body: '',
     approximate_date: '',
   })
+  const [flagTarget, setFlagTarget] = useState(null)
+  const [flagReason, setFlagReason] = useState('')
+  const [flagSaving, setFlagSaving] = useState(false)
 
   useEffect(() => { loadReviews() }, [user])
   useEffect(() => {
@@ -59,9 +62,45 @@ export default function ReviewsPage() {
       .from('reviews')
       .select('*')
       .eq('creative_id', user.id)
+      .or('hidden.is.null,hidden.eq.false')
       .order('created_at', { ascending: false })
     setReviews(data ?? [])
     setLoading(false)
+  }
+
+  async function submitFlagReview() {
+    if (!user || !flagTarget || !flagReason.trim()) return
+    setFlagSaving(true)
+    const { error } = await supabase
+      .from('reviews')
+      .update({
+        flagged: true,
+        flag_reason: flagReason.trim(),
+        flag_status: 'pending',
+        flagged_at: new Date().toISOString(),
+      })
+      .eq('id', flagTarget.id)
+      .eq('creative_id', user.id)
+    setFlagSaving(false)
+    if (error) {
+      console.error('[ReviewsPage] flag review failed', error)
+      return
+    }
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === flagTarget.id
+          ? {
+              ...r,
+              flagged: true,
+              flag_reason: flagReason.trim(),
+              flag_status: 'pending',
+              flagged_at: new Date().toISOString(),
+            }
+          : r,
+      ),
+    )
+    setFlagTarget(null)
+    setFlagReason('')
   }
 
   function resetForm() {
@@ -142,6 +181,19 @@ export default function ReviewsPage() {
     textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
     infoNote: { ...GLASS_CARD, padding: '12px 16px', borderRadius: 'var(--radius-lg)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
+    flagSuccess: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 },
+    underReviewBadge: {
+      display: 'inline-block',
+      fontSize: '11px',
+      fontWeight: 600,
+      padding: '4px 10px',
+      borderRadius: '999px',
+      background: 'rgba(136,136,170,0.2)',
+      color: 'var(--text-muted)',
+      border: '1px solid var(--border-default)',
+      fontFamily: 'var(--font-ui)',
+    },
+    flagModalHint: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, marginBottom: '12px' },
   }
 
   return (
@@ -215,10 +267,52 @@ export default function ReviewsPage() {
                   </div>
                 )}
               </div>
+              {user && review.creative_id === user.id && review.flagged && review.flag_status === 'pending' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                  <div style={styles.flagSuccess}>Review flagged. We will be in touch within 48 hours.</div>
+                  <span style={styles.underReviewBadge}>Under Review</span>
+                </div>
+              ) : user && review.creative_id === user.id ? (
+                <div style={{ marginTop: '8px' }}>
+                  <Button type="button" variant="ghost" size="sm" onClick={() => { setFlagTarget(review); setFlagReason('') }}>
+                    Flag review
+                  </Button>
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
       )}
+
+      <Modal
+        isOpen={!!flagTarget}
+        onClose={() => { if (!flagSaving) { setFlagTarget(null); setFlagReason('') } }}
+        title="Flag this review"
+        size="md"
+      >
+        <div style={styles.formSection}>
+          <div style={styles.flagModalHint}>
+            Tell us why this review should be removed. We will investigate and respond within 48 hours.
+          </div>
+          <div>
+            <label style={styles.label}>REASON *</label>
+            <textarea
+              style={styles.textarea}
+              placeholder="e.g. This person was never a client of mine"
+              value={flagReason}
+              onChange={(e) => setFlagReason(e.target.value)}
+            />
+          </div>
+          <div style={styles.modalActions}>
+            <Button type="button" variant="ghost" disabled={flagSaving} onClick={() => { setFlagTarget(null); setFlagReason('') }}>
+              Cancel
+            </Button>
+            <Button type="button" variant="primary" disabled={flagSaving || !flagReason.trim()} onClick={() => void submitFlagReview()}>
+              {flagSaving ? 'Submitting…' : 'Submit Flag'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <Modal isOpen={showAdd} onClose={() => { setShowAdd(false); resetForm() }} title="Add Past Client Review" size="md">
         <div style={styles.formSection}>

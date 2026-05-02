@@ -52,9 +52,11 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [showReview, setShowReview] = useState(false)
   const [showAllReviews, setShowAllReviews] = useState(false)
   const [reviewForm, setReviewForm] = useState({ rating: 5, body: '', reviewer_name: '' })
+  const [reviewEmail, setReviewEmail] = useState('')
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewSent, setReviewSent] = useState(false)
   const [reviewModerationError, setReviewModerationError] = useState('')
+  const [reviewRatingHover, setReviewRatingHover] = useState(null)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => { loadProfile() }, [id])
@@ -81,7 +83,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   async function submitReview() {
-    if (!reviewForm.reviewer_name || !reviewForm.body) return
+    if (!reviewForm.reviewer_name || !reviewForm.body || !reviewEmail.trim()) return
     setReviewModerationError('')
     const reviewText = [reviewForm.reviewer_name, reviewForm.body].filter(Boolean).join('\n')
     const mod = await moderateText(reviewText)
@@ -95,6 +97,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     const { data, error } = await supabase.from('reviews').insert({
       creative_id: id,
       reviewer_name: reviewForm.reviewer_name,
+      reviewer_email: reviewEmail.trim(),
       client_name: reviewForm.reviewer_name,
       rating: reviewForm.rating,
       body: reviewForm.body,
@@ -105,7 +108,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     if (!error) {
       setReviewSent(true)
       await loadProfile()
-      setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)
+      setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewRatingHover(null); setReviewEmail(''); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)
     }
     setSubmittingReview(false)
   }
@@ -463,11 +466,53 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                     />
                   </div>
                   <div>
+                    <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px', ...TYPO.label }}>EMAIL ADDRESS *</label>
+                    <input
+                      type="email"
+                      value={reviewEmail}
+                      onChange={(e) => { setReviewModerationError(''); setReviewEmail(e.target.value) }}
+                      placeholder="your@email.com"
+                      style={{ width: '100%', padding: '10px 14px', ...GLASS_NATIVE_FIELD }}
+                    />
+                  </div>
+                  <div>
                     <label style={{ fontSize: '12px', display: 'block', marginBottom: '8px', ...TYPO.label }}>Rating *</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      {[1, 2, 3, 4, 5].map(s => (
-                        <button key={s} type="button" onClick={() => setReviewForm(p => ({ ...p, rating: s }))} style={{ background: 'none', border: 'none', fontSize: '28px', cursor: 'pointer', color: s <= reviewForm.rating ? '#EAB308' : 'var(--border-strong)', padding: '0' }}></button>
-                      ))}
+                    <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }} onMouseLeave={() => setReviewRatingHover(null)}>
+                      {[1, 2, 3, 4, 5].map((s) => {
+                        const active = reviewRatingHover ?? reviewForm.rating
+                        const filled = s <= active
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            aria-label={`${s} out of 5 stars`}
+                            onClick={() => setReviewForm((p) => ({ ...p, rating: s }))}
+                            onMouseEnter={() => setReviewRatingHover(s)}
+                            style={{
+                              background: 'none',
+                              border: 'none',
+                              padding: 0,
+                              cursor: 'pointer',
+                              lineHeight: 0,
+                              width: '32px',
+                              height: '32px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+                              <path
+                                d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"
+                                fill={filled ? '#FFD700' : 'none'}
+                                stroke={filled ? '#D4AF37' : 'var(--border-strong)'}
+                                strokeWidth={filled ? 1 : 1.25}
+                                strokeLinejoin="round"
+                              />
+                            </svg>
+                          </button>
+                        )
+                      })}
                     </div>
                   </div>
                   <div>
@@ -484,11 +529,11 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                   <div style={{ fontSize: '13px', color: '#f87171', marginTop: '12px', ...TYPO.body }}>{reviewModerationError}</div>
                 ) : null}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                  <Button type="button" variant="ghost" onClick={() => { setShowReview(false); setReviewModerationError('') }}>Cancel</Button>
+                  <Button type="button" variant="ghost" onClick={() => { setShowReview(false); setReviewModerationError(''); setReviewRatingHover(null); setReviewEmail('') }}>Cancel</Button>
                   <Button
                     type="button"
                     variant="primary"
-                    disabled={submittingReview || !reviewForm.reviewer_name || !reviewForm.body}
+                    disabled={submittingReview || !reviewForm.reviewer_name || !reviewEmail.trim() || !reviewForm.body}
                     onClick={() => void submitReview()}
                   >
                     {submittingReview ? 'Submitting…' : 'Submit Review'}
