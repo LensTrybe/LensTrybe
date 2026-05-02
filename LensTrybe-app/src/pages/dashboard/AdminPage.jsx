@@ -538,6 +538,7 @@ export default function AdminPage() {
   }, [navigate]);
 
   useEffect(() => {
+    console.log('flagged reviews effect running, callerRole:', callerRole, 'loading:', loading);
     if (loading || !['admin', 'staff'].includes(callerRole || '')) return undefined;
     let cancelled = false;
     (async () => {
@@ -597,6 +598,7 @@ export default function AdminPage() {
         return;
       }
       setUsers(data.users || []);
+      console.log('callerRole from edge function:', data.callerRole);
     } catch (e) {
       console.error('Failed to load users', e);
     } finally {
