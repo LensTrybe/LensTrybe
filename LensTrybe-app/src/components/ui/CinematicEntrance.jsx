@@ -77,8 +77,8 @@ export default function CinematicEntrance({ onComplete }) {
     schedule(() => setEntered(true), 20)
     schedule(() => setShimmerRun(true), 1200)
     schedule(() => setScanRun(true), 1200)
-    schedule(() => setFadingOut(true), 3800)
-    schedule(() => finish(0), 4400)
+    schedule(() => setFadingOut(true), 5800)
+    schedule(() => finish(0), 6400)
 
     return () => {
       clearAllTimeouts()
