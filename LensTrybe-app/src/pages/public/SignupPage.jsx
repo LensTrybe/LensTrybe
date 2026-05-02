@@ -221,6 +221,19 @@ export default function SignupPage() {
       const userId = authData?.user?.id
       if (!userId) throw new Error('Could not create user account.')
 
+      /** Same path and bucket as EditProfilePage `handleAvatarUpload`. */
+      let avatarUrl = null
+      if (form.avatarFile instanceof File) {
+        const ext = form.avatarFile.name.split('.').pop() || 'jpg'
+        const path = `${userId}/avatar.${ext}`
+        const { error: uploadError } = await supabase.storage
+          .from('portfolio')
+          .upload(path, form.avatarFile, { upsert: true })
+        if (uploadError) throw uploadError
+        const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path)
+        avatarUrl = urlData.publicUrl
+      }
+
       const { error: profileError } = await supabase.from('profiles').insert({
         id: userId,
         business_name: form.businessName,
@@ -232,6 +245,7 @@ export default function SignupPage() {
         subscription_tier: form.tier || 'basic',
         display_name_preference: form.displayNamePreference || 'business_name',
         account_type: 'creative',
+        avatar_url: avatarUrl,
       })
       if (profileError) throw profileError
 
