@@ -14,6 +14,7 @@ import {
   isAtOrOverCreativeReplyLimit,
   isMonthlyMessageLimitError,
 } from '../../lib/messageMonthlyLimit'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -43,6 +44,8 @@ export default function MessagesPage() {
   const [newMessageText, setNewMessageText] = useState('')
   const [toast, setToast] = useState(null)
   const [replyUsage, setReplyUsage] = useState(null)
+  const [replyModerationError, setReplyModerationError] = useState('')
+  const [portalModerationError, setPortalModerationError] = useState('')
   const bottomRef = useRef(null)
 
   function showToast(msg, type = 'success') {
@@ -63,9 +66,16 @@ export default function MessagesPage() {
   async function sendPortal() {
     if (!newMessageEmail.trim() || !newMessageText.trim()) return
     if (!profile?.id) { showToast('Only creatives can send new messages', 'error'); return }
+    setPortalModerationError('')
     setSendingPortal(true)
     try {
       const bodyText = newMessageText.trim()
+      const mod = await moderateText(bodyText)
+      if (mod?.blocked) {
+        setPortalModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged portal message', mod.reason)
       if (
         threadOwnerTierContactSharingRestricted(profile?.subscription_tier) &&
         messageBodyContainsContactDetails(bodyText)
@@ -260,6 +270,13 @@ export default function MessagesPage() {
   async function sendReply() {
     if (!reply.trim() || !selected) return
     const bodyText = reply.trim()
+    setReplyModerationError('')
+    const mod = await moderateText(bodyText)
+    if (mod?.blocked) {
+      setReplyModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (mod?.flagged) console.warn('[moderation] Flagged reply', mod.reason)
     if (selected.contactSharingRestricted && messageBodyContainsContactDetails(bodyText)) {
       showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
       return
@@ -564,8 +581,9 @@ export default function MessagesPage() {
                   <Input
                     placeholder="Type your reply…"
                     value={reply}
-                    onChange={e => setReply(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
+                    onChange={e => { setReplyModerationError(''); setReply(e.target.value) }}
+                    error={replyModerationError}
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendReply() } }}
                   />
                 </div>
                 <Button
@@ -577,7 +595,7 @@ export default function MessagesPage() {
                     !reply.trim() ||
                     (selected?.creative_id === user.id && creativeMonthlyRepliesBlocked)
                   }
-                  onClick={sendReply}
+                  onClick={() => void sendReply()}
                 >
                   {sending ? 'Sending…' : 'Send'}
                 </Button>
@@ -618,14 +636,17 @@ export default function MessagesPage() {
                 <label style={{ fontSize: '12px', display: 'block', marginBottom: '4px', ...TYPO.label }}>Message</label>
                 <textarea
                   value={newMessageText}
-                  onChange={e => setNewMessageText(e.target.value)}
+                  onChange={e => { setPortalModerationError(''); setNewMessageText(e.target.value) }}
                   placeholder="Write your message..."
                   style={{ width: '100%', padding: '9px 12px', minHeight: '100px', resize: 'vertical', ...GLASS_NATIVE_FIELD }}
                 />
+                {portalModerationError ? (
+                  <div style={{ fontSize: '12px', color: '#f87171', marginTop: '6px', fontFamily: 'var(--font-ui)' }}>{portalModerationError}</div>
+                ) : null}
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <Button type="button" variant="ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText('') }}>Cancel</Button>
+              <Button type="button" variant="ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setPortalModerationError('') }}>Cancel</Button>
               <Button
                 type="button"
                 variant="primary"
@@ -635,7 +656,7 @@ export default function MessagesPage() {
                   !newMessageText.trim() ||
                   creativeMonthlyRepliesBlocked
                 }
-                onClick={sendPortal}
+                onClick={() => void sendPortal()}
               >
                 {sendingPortal ? 'Sending…' : 'Send Portal Link'}
               </Button>

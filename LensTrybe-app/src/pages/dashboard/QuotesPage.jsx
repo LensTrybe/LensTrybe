@@ -5,6 +5,13 @@ import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+
+function quoteFreeTextForModeration(notes, lineItems) {
+  const descs = (lineItems || []).map((i) => String(i.description ?? '').trim()).filter(Boolean)
+  const n = String(notes ?? '').trim()
+  return [n, ...descs].filter(Boolean).join('\n')
+}
 
 function statusVariant(status) {
   if (status === 'accepted') return 'green'
@@ -62,6 +69,7 @@ export default function QuotesPage() {
   const [editingBank, setEditingBank] = useState(false)
   const [bankSaving, setBankSaving] = useState(false)
   const [toast, setToast] = useState(null)
+  const [quoteViewModerationError, setQuoteViewModerationError] = useState('')
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -155,8 +163,18 @@ export default function QuotesPage() {
       return
     }
 
-    setSaving(true)
     setSaveError('')
+    const qtext = quoteFreeTextForModeration(newQuote.notes, newQuote.line_items)
+    if (qtext.trim()) {
+      const mod = await moderateText(qtext)
+      if (mod?.blocked) {
+        setSaveError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged new quote text', mod.reason)
+    }
+
+    setSaving(true)
     const total = newQuote.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0)
     const quoteStatus = status === 'sent' ? 'draft' : status
     const { data, error } = await supabase.from('quotes').insert({
@@ -218,6 +236,16 @@ export default function QuotesPage() {
   }
 
   async function saveQuoteEdits() {
+    const qtext = quoteFreeTextForModeration(editForm.notes, editForm.line_items)
+    if (qtext.trim()) {
+      const mod = await moderateText(qtext)
+      if (mod?.blocked) {
+        setQuoteViewModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged quote edit text', mod.reason)
+    }
+    setQuoteViewModerationError('')
     const total = editForm.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0)
     const { data } = await supabase.from('quotes').update({
       client_name: editForm.client_name,
@@ -579,8 +607,9 @@ export default function QuotesPage() {
                     type="button"
                     onClick={() => {
                       if (editingQuote) {
-                        saveQuoteEdits()
+                        void saveQuoteEdits()
                       } else {
+                        setQuoteViewModerationError('')
                         setEditingQuote(true)
                         setEditForm({
                           client_name: showView.client_name,
@@ -646,13 +675,18 @@ export default function QuotesPage() {
                   <button type="button" onClick={() => { deleteQuote(showView.id); setShowView(null); setEditingQuote(false) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}>
                     Delete
                   </button>
-                  <button type="button" onClick={() => { setShowView(null); setEditingQuote(false) }} style={{ padding: '7px 14px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+                  <button type="button" onClick={() => { setShowView(null); setEditingQuote(false); setQuoteViewModerationError('') }} style={{ padding: '7px 14px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
                 </div>
               </div>
 
               {sendError && (
                 <div style={{ padding: '12px 24px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>
                   {sendError}
+                </div>
+              )}
+              {quoteViewModerationError && (
+                <div style={{ padding: '12px 24px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>
+                  {quoteViewModerationError}
                 </div>
               )}
 

@@ -8,6 +8,7 @@ import {
   threadOwnerTierContactSharingRestricted,
 } from '../lib/messagingContactPolicy'
 import { useAuth } from '../context/AuthContext'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../lib/moderateContent'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 
 export default function ClientDashboardPage() {
@@ -24,6 +25,7 @@ export default function ClientDashboardPage() {
   const [creatives, setCreatives] = useState([])
   const [view, setView] = useState('messages')
   const [editingNickname, setEditingNickname] = useState(false)
+  const [replyModerationError, setReplyModerationError] = useState('')
 
   useEffect(() => {
     if (window.location.pathname.startsWith('/portal/')) return
@@ -140,6 +142,13 @@ export default function ClientDashboardPage() {
   async function sendReply() {
     if (!reply.trim() || !selected) return
     const bodyText = reply.trim()
+    setReplyModerationError('')
+    const mod = await moderateText(bodyText)
+    if (mod?.blocked) {
+      setReplyModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (mod?.flagged) console.warn('[moderation] Flagged client reply', mod.reason)
     let ownerTier = creatives.find((c) => c.id === selected.creative_id)?.subscription_tier
     if (ownerTier == null && selected?.creative_id) {
       const { data: tierRow } = await supabase
@@ -155,34 +164,39 @@ export default function ClientDashboardPage() {
       return
     }
     setSending(true)
-    const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
-    await supabase.from('messages').insert({
-      thread_id: selected.id,
-      sender_type: 'client',
-      sender_name: clientSenderName,
-      body: bodyText,
-    })
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('business_name, business_email')
-      .eq('id', selected.creative_id)
-      .eq('is_admin', false)
-      .maybeSingle()
-    if (profile?.business_email) {
-      await supabase.functions.invoke('send-message-notification', {
-        body: {
-          to: profile.business_email,
-          toName: profile.business_name,
-          fromName: clientSenderName,
-          subject: `Reply from ${clientSenderName} on LensTrybe`,
-          messageBody: bodyText,
-          threadSubject: selected.subject ?? 'your enquiry',
-        }
+    try {
+      const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
+      await supabase.from('messages').insert({
+        thread_id: selected.id,
+        sender_type: 'client',
+        sender_name: clientSenderName,
+        body: bodyText,
       })
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('business_name, business_email')
+        .eq('id', selected.creative_id)
+        .eq('is_admin', false)
+        .maybeSingle()
+      if (profile?.business_email) {
+        await supabase.functions.invoke('send-message-notification', {
+          body: {
+            to: profile.business_email,
+            toName: profile.business_name,
+            fromName: clientSenderName,
+            subject: `Reply from ${clientSenderName} on LensTrybe`,
+            messageBody: bodyText,
+            threadSubject: selected.subject ?? 'your enquiry',
+          }
+        })
+      }
+      setReply('')
+      await loadMessages(selected.id)
+    } catch (e) {
+      showToast(e?.message || 'Could not send message', 'error')
+    } finally {
+      setSending(false)
     }
-    setReply('')
-    await loadMessages(selected.id)
-    setSending(false)
   }
 
   async function deleteThread(t, e) {
@@ -233,7 +247,7 @@ export default function ClientDashboardPage() {
     messageList: { flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' },
     messageRow: (isClient) => ({ display: 'flex', justifyContent: isClient ? 'flex-end' : 'flex-start', width: '100%' }),
     bubble: (isClient) => ({ padding: '10px 14px', borderRadius: '18px', maxWidth: '55%', background: isClient ? '#1DB954' : 'var(--bg-elevated)', color: isClient ? '#000' : 'var(--text-primary)', border: isClient ? 'none' : '1px solid rgba(255,255,255,0.08)', fontSize: '14px', lineHeight: 1.5, wordBreak: 'break-word', whiteSpace: 'pre-wrap' }),
-    replyBar: { padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '12px' },
+    replyBar: { padding: '16px 24px', borderTop: '1px solid rgba(255,255,255,0.06)', display: 'flex', gap: '12px', alignItems: 'flex-end' },
     replyInput: { flex: 1, background: 'var(--bg-elevated)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '24px', padding: '10px 16px', color: '#fff', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
     sendBtn: { background: '#1DB954', color: '#000', border: 'none', borderRadius: '24px', padding: '10px 20px', fontWeight: 600, fontSize: '14px', cursor: 'pointer' },
     empty: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px' },
@@ -334,14 +348,20 @@ export default function ClientDashboardPage() {
                   }
                 </div>
                 <div style={s.replyBar}>
-                  <input
-                    style={s.replyInput}
-                    placeholder="Type your reply..."
-                    value={reply}
-                    onChange={e => setReply(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendReply()}
-                  />
-                  <button style={s.sendBtn} onClick={sendReply} disabled={sending}>{sending ? '...' : 'Send'}</button>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0 }}>
+                    <input
+                      style={{ ...s.replyInput, width: '100%', flex: 'none', boxSizing: 'border-box' }}
+                      placeholder="Type your reply..."
+                      value={reply}
+                      onChange={e => { setReplyModerationError(''); setReply(e.target.value) }}
+                      onKeyDown={e => e.key === 'Enter' && !e.shiftKey && void sendReply()}
+                      aria-invalid={replyModerationError ? true : undefined}
+                    />
+                    {replyModerationError ? (
+                      <div style={{ fontSize: '12px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{replyModerationError}</div>
+                    ) : null}
+                  </div>
+                  <button style={s.sendBtn} onClick={() => void sendReply()} disabled={sending}>{sending ? '...' : 'Send'}</button>
                 </div>
               </>
             ) : (

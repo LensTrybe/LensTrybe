@@ -8,6 +8,13 @@ import Input from '../../components/ui/Input'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+
+function invoiceFreeTextForModeration(notes, lineItems) {
+  const descs = (lineItems || []).map((i) => String(i.description ?? '').trim()).filter(Boolean)
+  const n = String(notes ?? '').trim()
+  return [n, ...descs].filter(Boolean).join('\n')
+}
 
 // Inject print styles
 if (typeof document !== 'undefined' && !document.getElementById('invoice-print-style')) {
@@ -76,6 +83,7 @@ export default function InvoicingPage() {
   const [editingBank, setEditingBank] = useState(false)
   const [bankSaving, setBankSaving] = useState(false)
   const [toast, setToast] = useState(null)
+  const [invoiceViewModerationError, setInvoiceViewModerationError] = useState('')
 
   function showToast(message, type = 'success') {
     setToast({ message, type })
@@ -220,8 +228,18 @@ export default function InvoicingPage() {
       return
     }
 
-    setSaving(true)
     setSaveError('')
+    const itext = invoiceFreeTextForModeration(newInvoice.notes, newInvoice.line_items)
+    if (itext.trim()) {
+      const mod = await moderateText(itext)
+      if (mod?.blocked) {
+        setSaveError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged new invoice text', mod.reason)
+    }
+
+    setSaving(true)
     const total = newInvoice.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0)
     const invoiceStatus = status === 'sent' ? 'draft' : status
     const { data, error } = await supabase.from('invoices').insert({
@@ -231,6 +249,7 @@ export default function InvoicingPage() {
       client_phone: newInvoice.client_phone.trim() || null,
       client_address: newInvoice.client_address.trim() || null,
       due_date: newInvoice.due_date || null,
+      notes: newInvoice.notes?.trim() || null,
       items: newInvoice.line_items,
       amount: total,
       status: invoiceStatus,
@@ -281,10 +300,21 @@ export default function InvoicingPage() {
   }
 
   async function saveInvoiceEdits() {
+    const itext = invoiceFreeTextForModeration(editForm.notes, editForm.line_items)
+    if (itext.trim()) {
+      const mod = await moderateText(itext)
+      if (mod?.blocked) {
+        setInvoiceViewModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged invoice edit text', mod.reason)
+    }
+    setInvoiceViewModerationError('')
     const total = editForm.line_items.reduce((s, i) => s + (Number(i.quantity) * Number(i.rate)), 0)
     const { data } = await supabase.from('invoices').update({
       client_name: editForm.client_name,
       client_email: editForm.client_email || null,
+      notes: editForm.notes?.trim() || null,
       items: editForm.line_items,
       amount: total,
     }).eq('id', showView.id).select().single()
@@ -651,8 +681,9 @@ export default function InvoicingPage() {
                 <button
                   onClick={() => {
                     if (editingInvoice) {
-                      saveInvoiceEdits()
+                      void saveInvoiceEdits()
                     } else {
+                      setInvoiceViewModerationError('')
                       setEditingInvoice(true)
                       setEditForm({
                         client_name: showView.client_name,
@@ -701,13 +732,18 @@ export default function InvoicingPage() {
                 <button onClick={() => { deleteInvoice(showView.id); setShowView(null); setEditingInvoice(false) }} style={{ padding: '7px 14px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}>
                   Delete
                 </button>
-                <button onClick={() => { setShowView(null); setEditingInvoice(false); }} style={{ padding: '7px 14px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+                <button onClick={() => { setShowView(null); setEditingInvoice(false); setInvoiceViewModerationError('') }} style={{ padding: '7px 14px', background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
 
             {sendError && (
               <div style={{ padding: '12px 24px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>
                 {sendError}
+              </div>
+            )}
+            {invoiceViewModerationError && (
+              <div style={{ padding: '12px 24px', background: 'rgba(239,68,68,0.08)', borderBottom: '1px solid rgba(239,68,68,0.2)', color: '#f87171', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>
+                {invoiceViewModerationError}
               </div>
             )}
 

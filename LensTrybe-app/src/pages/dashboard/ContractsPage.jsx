@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 import Button from '../../components/ui/Button'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 
 function mergeContractBrand(brandKit) {
   const base = brandKit || {}
@@ -42,6 +43,8 @@ export default function ContractsPage() {
   const [uploadForm, setUploadForm] = useState({ client_name: '', client_email: '', project_name: '' })
   const [uploadFile, setUploadFile] = useState(null)
   const [brandKit, setBrandKit] = useState(null)
+  const [contractModerationError, setContractModerationError] = useState('')
+  const [templateModerationError, setTemplateModerationError] = useState('')
 
   const [form, setForm] = useState({
     client_name: '', client_email: '', project_name: '',
@@ -194,6 +197,16 @@ export default function ContractsPage() {
   }
 
   async function createContract(send = false) {
+    setContractModerationError('')
+    const contractText = [form.content, form.notes].filter(Boolean).join('\n')
+    if (contractText.trim()) {
+      const mod = await moderateText(contractText)
+      if (mod?.blocked) {
+        setContractModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged contract body', mod.reason)
+    }
     setSaving(true)
     try {
       const { data, error } = await supabase.from('contracts').insert({
@@ -270,6 +283,16 @@ export default function ContractsPage() {
 
   async function saveAsTemplate() {
     if (!templateName.trim()) return
+    setTemplateModerationError('')
+    const contentToSave = showView ? showView.content : form.content
+    if (contentToSave && String(contentToSave).trim()) {
+      const mod = await moderateText(String(contentToSave))
+      if (mod?.blocked) {
+        setTemplateModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+        return
+      }
+      if (mod?.flagged) console.warn('[moderation] Flagged contract template content', mod.reason)
+    }
     setSavingTemplate(true)
     await supabase.from('contract_templates').insert({
       creative_id: user.id,
@@ -603,14 +626,17 @@ export default function ContractsPage() {
                 <textarea
                   style={{ ...s.editor, outline: 'none' }}
                   value={form.content}
-                  onChange={e => setForm(p => ({ ...p, content: e.target.value }))}
+                  onChange={e => { setContractModerationError(''); setForm(p => ({ ...p, content: e.target.value })) }}
                   placeholder="Write your contract terms here."
                 />
               </div>
               <div>
                 <label style={s.label}>Notes (optional)</label>
-                <textarea style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} placeholder="Additional notes..." />
+                <textarea style={{ ...s.input, minHeight: '80px', resize: 'vertical' }} value={form.notes} onChange={e => { setContractModerationError(''); setForm(p => ({ ...p, notes: e.target.value })) }} placeholder="Additional notes..." />
               </div>
+              {contractModerationError ? (
+                <div style={{ fontSize: '13px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{contractModerationError}</div>
+              ) : null}
               <div style={{ padding: '12px', background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.15)', borderRadius: '8px', fontSize: '12px', color: '#ef4444' }}>
                 ⚠ LensTrybe provides tools to create and send contracts but does not provide legal advice. You are responsible for your contract content. Consult a legal professional if unsure.
               </div>
@@ -732,12 +758,15 @@ export default function ContractsPage() {
             <input
               style={{ ...s.input, marginBottom: '16px' }}
               value={templateName}
-              onChange={e => setTemplateName(e.target.value)}
+              onChange={e => { setTemplateModerationError(''); setTemplateName(e.target.value) }}
               placeholder="e.g. Wedding Photography Contract"
               autoFocus
             />
+            {templateModerationError ? (
+              <div style={{ fontSize: '13px', color: '#f87171', marginBottom: '12px', fontFamily: 'var(--font-ui)' }}>{templateModerationError}</div>
+            ) : null}
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <Button variant="ghost" onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}>Cancel</Button>
+              <Button variant="ghost" onClick={() => { setShowSaveTemplate(false); setTemplateName(''); setTemplateModerationError('') }}>Cancel</Button>
               <Button variant="primary" style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
                 {savingTemplate ? 'Saving…' : 'Save Template'}
               </Button>

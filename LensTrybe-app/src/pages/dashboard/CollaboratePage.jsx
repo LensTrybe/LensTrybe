@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { normalizeSubscriptionTier } from '../../lib/tierFeatures'
 import { GLASS_CARD, GLASS_NATIVE_FIELD, TYPO } from '../../lib/glassTokens'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import Button from '../../components/ui/Button'
 
 const BG = '#0a0a0f'
@@ -178,6 +179,8 @@ export default function CollaboratePage() {
   const [invitePanelId, setInvitePanelId] = useState(null)
   const [inviteMessage, setInviteMessage] = useState('')
   const [inviteSending, setInviteSending] = useState(false)
+  const [postBriefModerationError, setPostBriefModerationError] = useState('')
+  const [inviteModerationError, setInviteModerationError] = useState('')
 
   const tierKey = normalizeSubscriptionTier(profile?.subscription_tier)
   const isBasic = tierKey === 'basic'
@@ -321,6 +324,7 @@ export default function CollaboratePage() {
   async function submitCollabPost(e) {
     e.preventDefault()
     if (!user || !canUsePaidFeatures) return
+    setPostBriefModerationError('')
     if (!postRoles.length) {
       showToast('Choose at least one role you need', 'error')
       return
@@ -329,6 +333,12 @@ export default function CollaboratePage() {
       showToast('Brief must be 500 characters or fewer', 'error')
       return
     }
+    const briefMod = await moderateText(postBrief.trim())
+    if (briefMod?.blocked) {
+      setPostBriefModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (briefMod?.flagged) console.warn('[moderation] Flagged collab brief', briefMod.reason)
     setPostSubmitting(true)
     try {
       const payload = {
@@ -454,6 +464,13 @@ export default function CollaboratePage() {
 
   async function sendDirectInvite(toProfile) {
     if (!user || !inviteMessage.trim()) return
+    setInviteModerationError('')
+    const msgMod = await moderateText(inviteMessage.trim())
+    if (msgMod?.blocked) {
+      setInviteModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (msgMod?.flagged) console.warn('[moderation] Flagged collab invite message', msgMod.reason)
     setInviteSending(true)
     try {
       const { error } = await supabase.from('collaboration_invites').insert({
@@ -803,11 +820,14 @@ export default function CollaboratePage() {
                 <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>Brief (max 500 characters)</div>
                 <textarea
                   value={postBrief}
-                  onChange={(e) => setPostBrief(e.target.value.slice(0, 500))}
+                  onChange={(e) => { setPostBriefModerationError(''); setPostBrief(e.target.value.slice(0, 500)) }}
                   rows={6}
                   style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: 8, color: WHITE, fontSize: 13, resize: 'vertical' }}
                 />
                 <div style={{ fontSize: 11, color: DIM, marginTop: 4 }}>{postBrief.length} / 500</div>
+                {postBriefModerationError ? (
+                  <div style={{ fontSize: 12, color: PINK, marginTop: 8, lineHeight: 1.45 }}>{postBriefModerationError}</div>
+                ) : null}
               </div>
               <Button type="submit" variant="primary" disabled={postSubmitting}>
                 {postSubmitting ? 'Publishing…' : 'Publish collaboration'}
@@ -946,7 +966,7 @@ export default function CollaboratePage() {
                         <TierBadge tier={p.subscription_tier} />
                       </div>
                       {p.id === user.id ? null : (
-                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInvitePanelId(invitePanelId === p.id ? null : p.id); setInviteMessage('') }}>
+                        <Button type="button" variant="secondary" size="sm" onClick={() => { setInvitePanelId(invitePanelId === p.id ? null : p.id); setInviteMessage(''); setInviteModerationError('') }}>
                           {invitePanelId === p.id ? 'Close' : 'Invite'}
                         </Button>
                       )}
@@ -955,12 +975,15 @@ export default function CollaboratePage() {
                       <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${BORDER}` }}>
                         <textarea
                           value={inviteMessage}
-                          onChange={(e) => setInviteMessage(e.target.value)}
+                          onChange={(e) => { setInviteModerationError(''); setInviteMessage(e.target.value) }}
                           placeholder="Add a short message with your invite…"
                           rows={3}
                           style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: 8, color: WHITE, fontSize: 13, marginBottom: 10 }}
                         />
-                        <Button type="button" variant="primary" size="sm" disabled={inviteSending || !inviteMessage.trim()} onClick={() => sendDirectInvite(p)}>
+                        {inviteModerationError ? (
+                          <div style={{ fontSize: 12, color: PINK, marginBottom: 10, lineHeight: 1.45 }}>{inviteModerationError}</div>
+                        ) : null}
+                        <Button type="button" variant="primary" size="sm" disabled={inviteSending || !inviteMessage.trim()} onClick={() => void sendDirectInvite(p)}>
                           {inviteSending ? 'Sending…' : 'Send invite'}
                         </Button>
                       </div>

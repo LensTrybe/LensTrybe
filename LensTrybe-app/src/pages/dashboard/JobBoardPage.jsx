@@ -10,6 +10,7 @@ import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 
 const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
 
@@ -65,6 +66,8 @@ export default function JobBoardPage() {
   const [saving, setSaving] = useState(false)
   const [categoryFilter, setCategoryFilter] = useState('')
   const [applyUpgradeModal, setApplyUpgradeModal] = useState(null)
+  const [jobPostModerationError, setJobPostModerationError] = useState('')
+  const [jobApplyModerationError, setJobApplyModerationError] = useState('')
 
   const [form, setForm] = useState({
     title: '',
@@ -153,6 +156,14 @@ export default function JobBoardPage() {
     if (tier === 'basic') return
     if (tier === 'pro' && !jobIsInCreativeState(applyingJob, profile)) return
     if (!applyForm.price || !applyForm.description) return
+    setJobApplyModerationError('')
+    const applyText = [applyForm.description, applyForm.includes].filter(Boolean).join('\n')
+    const applyMod = await moderateText(applyText)
+    if (applyMod?.blocked) {
+      setJobApplyModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (applyMod?.flagged) console.warn('[moderation] Flagged job application text', applyMod.reason)
     setSubmittingApply(true)
 
     const { data: jobListing } = await supabase
@@ -222,6 +233,14 @@ export default function JobBoardPage() {
   }
 
   async function postJob() {
+    setJobPostModerationError('')
+    const jobText = [form.title, form.description, form.location, form.budget].filter(Boolean).join('\n')
+    const jobMod = await moderateText(jobText)
+    if (jobMod?.blocked) {
+      setJobPostModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (jobMod?.flagged) console.warn('[moderation] Flagged job listing text', jobMod.reason)
     setSaving(true)
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
     await supabase.from('job_listings').insert({
@@ -579,7 +598,7 @@ export default function JobBoardPage() {
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>What&apos;s included in your price *</label>
                 <textarea
                   value={applyForm.includes}
-                  onChange={e => setApplyForm(p => ({ ...p, includes: e.target.value }))}
+                  onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, includes: e.target.value })) }}
                   placeholder="e.g. 4 hours on-site, 50 edited photos delivered within 7 days, 1 round of revisions..."
                   style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '80px', resize: 'vertical' }}
                 />
@@ -588,15 +607,18 @@ export default function JobBoardPage() {
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Cover message *</label>
                 <textarea
                   value={applyForm.description}
-                  onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))}
+                  onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, description: e.target.value })) }}
                   placeholder="Introduce yourself and explain why you're the right creative for this job..."
                   style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '100px', resize: 'vertical' }}
                 />
               </div>
             </div>
+            {jobApplyModerationError ? (
+              <div style={{ fontSize: '13px', color: '#f87171', marginTop: '12px', fontFamily: 'var(--font-ui)' }}>{jobApplyModerationError}</div>
+            ) : null}
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null) }} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null); setJobApplyModerationError('') }} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
               <button
                 type="button"
                 onClick={() => void submitApplication()}
@@ -610,13 +632,16 @@ export default function JobBoardPage() {
         </div>
       )}
 
-      <Modal isOpen={showPost} onClose={() => { setShowPost(false); resetForm() }} title="Post a Job" size="lg">
+      <Modal isOpen={showPost} onClose={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }} title="Post a Job" size="lg">
         <div style={styles.formSection}>
-          <Input label="Job title" placeholder="Wedding Photographer needed — Brisbane" value={form.title} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} />
+          <Input label="Job title" placeholder="Wedding Photographer needed — Brisbane" value={form.title} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, title: e.target.value })) }} />
           <div>
             <label style={styles.label}>Description</label>
-            <textarea style={styles.textarea} placeholder="Describe the job, what you need, any requirements…" value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+            <textarea style={styles.textarea} placeholder="Describe the job, what you need, any requirements…" value={form.description} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, description: e.target.value })) }} />
           </div>
+          {jobPostModerationError ? (
+            <div style={{ fontSize: '13px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{jobPostModerationError}</div>
+          ) : null}
           <div>
             <label style={styles.label}>Creative types needed</label>
             <div style={styles.categoryWrap}>
@@ -626,13 +651,13 @@ export default function JobBoardPage() {
             </div>
           </div>
           <div style={styles.formRow}>
-            <Input label="Location" placeholder="Brisbane, QLD" value={form.location} onChange={e => setForm(p => ({ ...p, location: e.target.value }))} />
+            <Input label="Location" placeholder="Brisbane, QLD" value={form.location} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, location: e.target.value })) }} />
             <Input label="Date needed" type="date" value={form.job_date} onChange={e => setForm(p => ({ ...p, job_date: e.target.value }))} />
           </div>
-          <Input label="Budget (AUD)" placeholder="e.g. $500–$2,000 or negotiable" value={form.budget} onChange={e => setForm(p => ({ ...p, budget: e.target.value }))} />
+          <Input label="Budget (AUD)" placeholder="e.g. $500–$2,000 or negotiable" value={form.budget} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, budget: e.target.value })) }} />
           <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => { setShowPost(false); resetForm() }}>Cancel</Button>
-            <Button variant="primary" disabled={saving || !form.title || !form.description} onClick={postJob}>
+            <Button variant="ghost" onClick={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }}>Cancel</Button>
+            <Button variant="primary" disabled={saving || !form.title || !form.description} onClick={() => void postJob()}>
               {saving ? 'Posting…' : 'Post Job'}
             </Button>
           </div>

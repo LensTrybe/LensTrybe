@@ -12,6 +12,7 @@ import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import Input from '../../components/ui/Input'
+import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import {
   DIVIDER_GRADIENT_STYLE,
   GLASS_CARD,
@@ -53,6 +54,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [reviewForm, setReviewForm] = useState({ rating: 5, body: '', reviewer_name: '' })
   const [submittingReview, setSubmittingReview] = useState(false)
   const [reviewSent, setReviewSent] = useState(false)
+  const [reviewModerationError, setReviewModerationError] = useState('')
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => { loadProfile() }, [id])
@@ -80,6 +82,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   async function submitReview() {
     if (!reviewForm.reviewer_name || !reviewForm.body) return
+    setReviewModerationError('')
+    const reviewText = [reviewForm.reviewer_name, reviewForm.body].filter(Boolean).join('\n')
+    const mod = await moderateText(reviewText)
+    if (mod?.blocked) {
+      setReviewModerationError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (mod?.flagged) console.warn('[moderation] Flagged review', mod.reason)
     setSubmittingReview(true)
     console.log('Submitting review:', reviewForm, 'for creative:', id)
     const { data, error } = await supabase.from('reviews').insert({
@@ -104,6 +114,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     if (!user) { setShowEnquire(false); setShowAuthGate(true); return }
     setEnquiryError('')
     const combinedEnquiryText = `${enquiry.subject}\n${enquiry.message}`
+    const mod = await moderateText(combinedEnquiryText)
+    if (mod?.blocked) {
+      setEnquiryError(MODERATION_BLOCKED_USER_MESSAGE)
+      return
+    }
+    if (mod?.flagged) console.warn('[moderation] Flagged enquiry', mod.reason)
     if (
       threadOwnerTierContactSharingRestricted(profile?.subscription_tier) &&
       messageBodyContainsContactDetails(combinedEnquiryText)
@@ -441,7 +457,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                     <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Your Name *</label>
                     <input
                       value={reviewForm.reviewer_name}
-                      onChange={e => setReviewForm(p => ({ ...p, reviewer_name: e.target.value }))}
+                      onChange={e => { setReviewModerationError(''); setReviewForm(p => ({ ...p, reviewer_name: e.target.value })) }}
                       placeholder="Jane Smith"
                       style={{ width: '100%', padding: '10px 14px', ...GLASS_NATIVE_FIELD }}
                     />
@@ -458,14 +474,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                     <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Review *</label>
                     <textarea
                       value={reviewForm.body}
-                      onChange={e => setReviewForm(p => ({ ...p, body: e.target.value }))}
+                      onChange={e => { setReviewModerationError(''); setReviewForm(p => ({ ...p, body: e.target.value })) }}
                       placeholder="Share your experience working with this creative..."
                       style={{ width: '100%', padding: '10px 14px', minHeight: '100px', resize: 'vertical', ...GLASS_NATIVE_FIELD }}
                     />
                   </div>
                 </div>
+                {reviewModerationError ? (
+                  <div style={{ fontSize: '13px', color: '#f87171', marginTop: '12px', ...TYPO.body }}>{reviewModerationError}</div>
+                ) : null}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-                  <Button type="button" variant="ghost" onClick={() => setShowReview(false)}>Cancel</Button>
+                  <Button type="button" variant="ghost" onClick={() => { setShowReview(false); setReviewModerationError('') }}>Cancel</Button>
                   <Button
                     type="button"
                     variant="primary"

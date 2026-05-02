@@ -1,5 +1,9 @@
 import { supabase } from './supabaseClient'
 
+/** Shown inline when moderation blocks user-submitted text anywhere in the app. */
+export const MODERATION_BLOCKED_USER_MESSAGE =
+  'Your message contains prohibited language and could not be sent. Please review and try again.'
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 async function callModerate(body) {
