@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -13,7 +14,7 @@ import {
 } from '../../lib/glassTokens'
 
 export default function MessagesPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, clientAccount } = useAuth()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [threads, setThreads] = useState([])
   const [selected, setSelected] = useState(null)
@@ -149,14 +150,32 @@ export default function MessagesPage() {
       }
     }
 
+    const clientIdsForMyThreads = [...new Set(
+      merged.filter(t => t.creative_id === user.id && t.client_user_id).map(t => t.client_user_id),
+    )]
+    let nameByClientId = {}
+    if (clientIdsForMyThreads.length > 0) {
+      const { data: clientRows } = await supabase
+        .from('client_accounts')
+        .select('id, first_name, last_name, company_name, email')
+        .in('id', clientIdsForMyThreads)
+      for (const c of clientRows ?? []) {
+        nameByClientId[c.id] = formatClientAccountDisplayName(c)
+      }
+    }
+
     // For each thread, check if latest message is from client and after last_read_at
     const threadsWithUnread = merged.map(t => {
       const lastRead = t.last_read_at ? new Date(t.last_read_at) : new Date(0)
       const lastMsg = t.last_message_at ? new Date(t.last_message_at) : null
+      const resolvedClientName =
+        t.creative_id === user.id && t.client_user_id
+          ? (nameByClientId[t.client_user_id] || null)
+          : null
       const peerDisplayName = t.creative_id === user.id
-        ? (t.client_name ?? t.client_email ?? 'Client')
+        ? (resolvedClientName ?? t.client_name ?? t.client_email ?? 'Client')
         : (nameByCreativeId[t.creative_id] ?? 'Creative')
-      return { ...t, peerDisplayName, isUnread: lastMsg && lastMsg > lastRead }
+      return { ...t, peerDisplayName, resolvedClientName, isUnread: lastMsg && lastMsg > lastRead }
     })
 
     setThreads(threadsWithUnread)
@@ -194,7 +213,7 @@ export default function MessagesPage() {
         const { data, error } = await supabase.functions.invoke('send-message-notification', {
           body: {
             to: selected.client_email,
-            toName: selected.client_name ?? selected.client_email,
+            toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
             fromName: profile?.business_name ?? user.email,
             subject: `Reply from ${profile?.business_name ?? 'your creative'} on LensTrybe`,
             messageBody: reply.trim(),
@@ -205,10 +224,11 @@ export default function MessagesPage() {
         console.log('Email result:', data, error)
       }
     } else {
+      const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
       const msgPayload = {
         thread_id: selected.id,
         sender_type: 'client',
-        sender_name: profile?.business_name ?? user.email,
+        sender_name: clientSenderName,
         body: reply.trim(),
         creative_id: user.id,
       }
@@ -224,8 +244,8 @@ export default function MessagesPage() {
           body: {
             to: sellerProfile.business_email,
             toName: sellerProfile.business_name ?? 'there',
-            fromName: profile?.business_name ?? user.email,
-            subject: `Reply from ${profile?.business_name ?? user.email} on LensTrybe`,
+            fromName: clientSenderName,
+            subject: `Reply from ${clientSenderName} on LensTrybe`,
             messageBody: reply.trim(),
             threadSubject: selected.subject ?? 'your enquiry',
           },

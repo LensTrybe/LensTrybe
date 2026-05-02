@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { formatClientAccountDisplayName } from '../lib/clientDisplayName'
 import { useAuth } from '../context/AuthContext'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 
@@ -134,10 +135,11 @@ export default function ClientDashboardPage() {
   async function sendReply() {
     if (!reply.trim() || !selected) return
     setSending(true)
+    const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
     await supabase.from('messages').insert({
       thread_id: selected.id,
       sender_type: 'client',
-      sender_name: clientAccount?.first_name ?? user.email,
+      sender_name: clientSenderName,
       body: reply.trim(),
     })
     const { data: profile } = await supabase
@@ -151,8 +153,8 @@ export default function ClientDashboardPage() {
         body: {
           to: profile.business_email,
           toName: profile.business_name,
-          fromName: clientAccount?.first_name ?? user.email,
-          subject: `Reply from ${clientAccount?.first_name ?? user.email} on LensTrybe`,
+          fromName: clientSenderName,
+          subject: `Reply from ${clientSenderName} on LensTrybe`,
           messageBody: reply.trim(),
           threadSubject: selected.subject ?? 'your enquiry',
         }

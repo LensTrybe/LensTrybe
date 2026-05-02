@@ -1,14 +1,13 @@
+import { formatClientAccountDisplayName } from './clientDisplayName'
 import { supabase } from './supabaseClient'
 
 export function posterThreadClientFields(user, profile, clientAccount) {
-  const fromClientAccount = clientAccount
-    ? `${clientAccount.first_name ?? ''} ${clientAccount.last_name ?? ''}`.trim()
-    : ''
+  const fromClientAccount = formatClientAccountDisplayName(clientAccount)
   const client_name =
-    profile?.business_name ??
-    profile?.full_name ??
-    (fromClientAccount || null) ??
-    user?.email ??
+    fromClientAccount ||
+    (typeof profile?.business_name === 'string' ? profile.business_name.trim() : '') ||
+    (typeof profile?.full_name === 'string' ? profile.full_name.trim() : '') ||
+    user?.email ||
     ''
   const client_email = clientAccount?.email ?? user?.email ?? ''
   return { client_name, client_email }

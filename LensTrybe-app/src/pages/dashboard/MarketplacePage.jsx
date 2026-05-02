@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 import Button from '../../components/ui/Button'
@@ -8,7 +9,7 @@ const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones', 'E
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair']
 
 export default function MarketplacePage() {
-  const { user, profile } = useAuth()
+  const { user, profile, clientAccount } = useAuth()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [tab, setTab] = useState('browse')
   const [listings, setListings] = useState([])
@@ -206,6 +207,7 @@ export default function MarketplacePage() {
     try {
       const subject = `Marketplace: ${selected.title}`
       const isCreative = !!profile
+      const buyerDisplayName = formatClientAccountDisplayName(clientAccount) || profile?.business_name || user.email
 
       let existingQuery = supabase
         .from('message_threads')
@@ -227,7 +229,7 @@ export default function MarketplacePage() {
         const { data: thread } = await supabase.from('message_threads').insert({
           creative_id: selected.creative_id,
           client_user_id: user.id,
-          client_name: profile?.business_name ?? user.email,
+          client_name: buyerDisplayName,
           client_email: user.email,
           subject,
         }).select().single()
@@ -242,7 +244,7 @@ export default function MarketplacePage() {
       const msgRow = {
         thread_id: threadId,
         sender_type: 'client',
-        sender_name: profile?.business_name ?? user.email,
+        sender_name: buyerDisplayName,
         body: contactMessage.trim(),
       }
       if (isCreative) {
@@ -263,7 +265,7 @@ export default function MarketplacePage() {
           body: {
             to: sellerProfile.business_email,
             toName: sellerProfile.business_name ?? 'there',
-            fromName: profile?.business_name ?? user.email,
+            fromName: buyerDisplayName,
             subject: `New message about your listing: ${selected.title}`,
             messageBody: contactMessage.trim(),
             threadSubject: subject,

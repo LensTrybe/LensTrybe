@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -29,7 +30,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const params = useParams()
   const id = previewId ?? params.id
   const navigate = useNavigate()
-  const { user } = useAuth()
+  const { user, clientAccount } = useAuth()
   const [profile, setProfile] = useState(null)
   const [portfolioItems, setPortfolioItems] = useState([])
   const [reviews, setReviews] = useState([])
@@ -96,10 +97,11 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   async function sendEnquiry() {
     if (!user) { setShowEnquire(false); setShowAuthGate(true); return }
     setSending(true)
+    const clientLabel = formatClientAccountDisplayName(clientAccount) || user.email
     const { data: thread } = await supabase.from('message_threads').insert({
       creative_id: id,
       client_user_id: user.id,
-      client_name: user.email,
+      client_name: clientLabel,
       client_email: user.email,
       subject: enquiry.subject,
     }).select().single()
@@ -108,7 +110,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       await supabase.from('messages').insert({
         thread_id: thread.id,
         sender_type: 'client',
-        sender_name: user.email,
+        sender_name: clientLabel,
         body: enquiry.message,
       })
       // Email notification to creative
@@ -116,8 +118,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         body: {
           to: profile.business_email,
           toName: profile.business_name,
-          fromName: user.email,
-          subject: `New enquiry from ${user.email}`,
+          fromName: clientLabel,
+          subject: `New enquiry from ${clientLabel}`,
           messageBody: enquiry.message,
           threadSubject: enquiry.subject,
           profileUrl: 'https://lens-trybe.vercel.app/dashboard/clients/messages',
