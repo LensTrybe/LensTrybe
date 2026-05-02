@@ -73,7 +73,7 @@ function profileIsFoundingMember(p) {
 }
 
 export default function EditProfilePage() {
-  const { user, profile, fetchUserData } = useAuth()
+  const { user, profile, fetchUserData, loading: authLoading } = useAuth()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -122,6 +122,7 @@ export default function EditProfilePage() {
   })
 
   useEffect(() => {
+    if (!user || authLoading) return
     if (profile) {
       setForm({
         business_name: profile.business_name ?? '',
@@ -160,8 +161,10 @@ export default function EditProfilePage() {
       setShowFoundingBadge(profileWantsFoundingBadgeVisible(profile))
       setLoading(false)
       void loadPortfolio()
+    } else {
+      setLoading(false)
     }
-  }, [profile])
+  }, [profile, user, authLoading])
 
   useEffect(() => {
     function handleResize() {

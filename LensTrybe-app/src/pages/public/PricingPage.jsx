@@ -91,7 +91,7 @@ const tiers = [
 
 export default function PricingPage() {
   const navigate = useNavigate()
-  const [annual, setAnnual] = useState(true)
+  const [annual, setAnnual] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => {

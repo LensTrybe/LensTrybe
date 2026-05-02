@@ -24,6 +24,13 @@ export default function ClientDashboardPage() {
     if (window.location.pathname.startsWith('/deliver/')) return
   }, [])
 
+  useEffect(() => {
+    if (!user) return
+    if (profile) {
+      navigate('/dashboard', { replace: true })
+    }
+  }, [user, profile, navigate])
+
   useEffect(() => { if (user) { loadThreads(); loadJobs() } }, [user, clientAccount])
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
 

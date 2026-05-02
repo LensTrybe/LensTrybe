@@ -55,7 +55,7 @@ export default function LoginPage() {
       .maybeSingle()
 
     if (client) {
-      navigate('/')
+      navigate('/client-dashboard', { replace: true })
       return
     }
 
