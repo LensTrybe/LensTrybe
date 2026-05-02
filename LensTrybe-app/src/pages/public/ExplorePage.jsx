@@ -35,6 +35,21 @@ const SPECIALTIES = {
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 const TIER_ORDER = { elite: 0, expert: 1, pro: 2, basic: 3 }
 
+/** Dark select styling for Find a Creative filters (matches page chrome). */
+const SELECT_DARK = {
+  background: '#111118',
+  color: '#ffffff',
+  border: '1px solid #1e1e2e',
+  borderRadius: '10px',
+  boxSizing: 'border-box',
+  outline: 'none',
+  fontFamily: 'var(--font-ui)',
+  fontSize: '14px',
+  fontWeight: 400,
+  lineHeight: 1.6,
+}
+const SELECT_CLASS = 'explore-page-select'
+
 function normaliseCity(value) {
   return (value || '').trim().toLowerCase()
 }
@@ -236,7 +251,7 @@ export default function ExplorePage() {
       fontWeight: selected ? 500 : 400,
     }),
     filterRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'flex-end' },
-    select: { ...GLASS_NATIVE_FIELD, padding: '10px 14px', cursor: 'pointer', width: '100%' },
+    select: { ...SELECT_DARK, padding: '10px 14px', cursor: 'pointer', width: '100%' },
     textInput: { ...GLASS_NATIVE_FIELD, padding: '10px 14px', width: '100%' },
     filterGroupInner: { display: 'flex', flexDirection: 'column', gap: '6px' },
     resultsHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' },
@@ -248,7 +263,22 @@ export default function ExplorePage() {
   }
 
   return (
-    <div style={styles.page}>
+    <div style={styles.page} className="explore-page-root">
+      <style>{`
+        .${SELECT_CLASS},
+        .${SELECT_CLASS} option {
+          background: #111118;
+          color: #ffffff;
+          border: 1px solid #1e1e2e;
+        }
+        .${SELECT_CLASS} {
+          color-scheme: dark;
+        }
+        .${SELECT_CLASS}:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+      `}</style>
       <div style={styles.inner}>
         <div style={styles.header}>
           <h1 style={styles.title}>Find a Creative</h1>
@@ -260,6 +290,7 @@ export default function ExplorePage() {
             <div style={styles.filterLabel}>Creative type: select one or more</div>
             {isMobile ? (
               <select
+                className={SELECT_CLASS}
                 multiple
                 size={CATEGORIES.length}
                 value={selectedTypes}
@@ -300,6 +331,7 @@ export default function ExplorePage() {
           <div style={styles.filterSection}>
             <label style={styles.filterLabel}>Location preference</label>
             <select
+              className={SELECT_CLASS}
               style={styles.select}
               value={filters.locationPreference}
               onChange={(e) => updateFilter('locationPreference', e.target.value)}
@@ -315,6 +347,7 @@ export default function ExplorePage() {
             <div style={styles.filterGroupInner}>
               <label style={styles.filterLabel}>Specialty</label>
               <select
+                className={SELECT_CLASS}
                 style={styles.select}
                 value={filters.specialty}
                 onChange={e => updateFilter('specialty', e.target.value)}
@@ -326,7 +359,7 @@ export default function ExplorePage() {
             </div>
             <div style={styles.filterGroupInner}>
               <label style={styles.filterLabel}>State</label>
-              <select style={styles.select} value={filters.state} onChange={e => updateFilter('state', e.target.value)}>
+              <select className={SELECT_CLASS} style={styles.select} value={filters.state} onChange={e => updateFilter('state', e.target.value)}>
                 <option value="">All states</option>
                 {AU_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
