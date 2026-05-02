@@ -7,6 +7,13 @@ import {
   messageBodyContainsContactDetails,
   threadOwnerTierContactSharingRestricted,
 } from '../../lib/messagingContactPolicy'
+import {
+  MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE,
+  creativeMonthlyReplyLimit,
+  fetchMyCreativeMessageReplyUsage,
+  isAtOrOverCreativeReplyLimit,
+  isMonthlyMessageLimitError,
+} from '../../lib/messageMonthlyLimit'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -35,11 +42,22 @@ export default function MessagesPage() {
   const [newMessageName, setNewMessageName] = useState('')
   const [newMessageText, setNewMessageText] = useState('')
   const [toast, setToast] = useState(null)
+  const [replyUsage, setReplyUsage] = useState(null)
   const bottomRef = useRef(null)
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
     setTimeout(() => setToast(null), 3000)
+  }
+
+  async function loadReplyUsage() {
+    if (!user?.id) return
+    try {
+      const u = await fetchMyCreativeMessageReplyUsage(supabase)
+      setReplyUsage(u)
+    } catch {
+      setReplyUsage({ used: 0, maxAllowed: 0, unlimited: true, rpcMissing: true })
+    }
   }
 
   async function sendPortal() {
@@ -53,7 +71,15 @@ export default function MessagesPage() {
         messageBodyContainsContactDetails(bodyText)
       ) {
         showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
-        setSendingPortal(false)
+        return
+      }
+
+      if (
+        replyUsage &&
+        !replyUsage.unlimited &&
+        isAtOrOverCreativeReplyLimit(replyUsage, profile?.subscription_tier)
+      ) {
+        showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
         return
       }
 
@@ -89,7 +115,14 @@ export default function MessagesPage() {
         body: bodyText,
         creative_id: user.id,
       })
-      if (msgError) throw msgError
+      if (msgError) {
+        await supabase.from('message_threads').delete().eq('id', thread.id)
+        if (isMonthlyMessageLimitError(msgError)) {
+          showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+          return
+        }
+        throw msgError
+      }
 
       // Send email notification
       const { error: fnError } = await supabase.functions.invoke('send-message-notification', {
@@ -110,13 +143,20 @@ export default function MessagesPage() {
       setNewMessageName('')
       setNewMessageText('')
       showToast('Message sent to ' + email)
+      await loadReplyUsage()
     } catch (err) {
-      showToast('Failed to send: ' + (err?.message ?? 'Unknown error'), 'error')
+      if (isMonthlyMessageLimitError(err)) {
+        showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+      } else {
+        showToast('Failed to send: ' + (err?.message ?? 'Unknown error'), 'error')
+      }
+    } finally {
+      setSendingPortal(false)
     }
-    setSendingPortal(false)
   }
 
   useEffect(() => { loadThreads() }, [user, profile?.id])
+  useEffect(() => { loadReplyUsage() }, [user?.id, profile?.subscription_tier])
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
   useEffect(() => {
@@ -224,18 +264,35 @@ export default function MessagesPage() {
       showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
       return
     }
-    setSending(true)
     const imListingCreative = selected.creative_id === user.id
+    if (
+      imListingCreative &&
+      replyUsage &&
+      !replyUsage.unlimited &&
+      isAtOrOverCreativeReplyLimit(replyUsage, profile?.subscription_tier)
+    ) {
+      showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+      return
+    }
 
+    setSending(true)
+    try {
     if (imListingCreative) {
       const creativeLabel = creativeSenderDisplayName(profile, user)
-      await supabase.from('messages').insert({
+      const { error: insertErr } = await supabase.from('messages').insert({
         thread_id: selected.id,
         sender_type: 'creative',
         sender_name: creativeLabel,
         body: bodyText,
         creative_id: user.id,
       })
+      if (insertErr) {
+        if (isMonthlyMessageLimitError(insertErr)) {
+          showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+          return
+        }
+        throw insertErr
+      }
       if (selected?.client_email) {
         const { data, error } = await supabase.functions.invoke('send-message-notification', {
           body: {
@@ -259,7 +316,8 @@ export default function MessagesPage() {
         body: bodyText,
         creative_id: user.id,
       }
-      await supabase.from('messages').insert(msgPayload)
+      const { error: clientInsertErr } = await supabase.from('messages').insert(msgPayload)
+      if (clientInsertErr) throw clientInsertErr
       const { data: sellerProfile } = await supabase
         .from('profiles')
         .select('business_email, business_name')
@@ -284,7 +342,16 @@ export default function MessagesPage() {
     setReply('')
     await loadMessages(selected.id)
     await loadThreads()
-    setSending(false)
+    if (imListingCreative) await loadReplyUsage()
+    } catch (err) {
+      if (isMonthlyMessageLimitError(err)) {
+        showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+      } else {
+        showToast('Failed to send: ' + (err?.message ?? 'Unknown error'), 'error')
+      }
+    } finally {
+      setSending(false)
+    }
   }
 
   const styles = {
@@ -332,6 +399,19 @@ export default function MessagesPage() {
 
   if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', background: 'transparent', ...TYPO.body }}>Loading messages…</div>
 
+  const monthlyReplyCap = creativeMonthlyReplyLimit(profile?.subscription_tier)
+  const showMonthlyReplyUsage =
+    Boolean(profile?.id) &&
+    monthlyReplyCap != null &&
+    replyUsage &&
+    !replyUsage.unlimited &&
+    !replyUsage.rpcMissing
+  const creativeMonthlyRepliesBlocked =
+    Boolean(profile?.id) &&
+    replyUsage &&
+    !replyUsage.unlimited &&
+    isAtOrOverCreativeReplyLimit(replyUsage, profile?.subscription_tier)
+
   return (
     <div style={{ background: 'transparent' }}>
       {toast && (
@@ -342,11 +422,35 @@ export default function MessagesPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '16px 12px 0' : '24px 24px 0', marginBottom: '16px', gap: '10px', flexWrap: 'wrap' }}>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '22px', color: 'var(--text-primary)', ...TYPO.heading }}>Messages</div>
         {profile && (
-          <Button type="button" variant="primary" style={{ minHeight: '44px' }} onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}>
+          <Button
+            type="button"
+            variant="primary"
+            style={{ minHeight: '44px' }}
+            disabled={creativeMonthlyRepliesBlocked}
+            onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}
+          >
             + New Message
           </Button>
         )}
       </div>
+      {showMonthlyReplyUsage && (
+        <div
+          style={{
+            margin: '0 24px 12px',
+            padding: '10px 14px',
+            borderRadius: '10px',
+            fontSize: '13px',
+            fontFamily: 'var(--font-ui)',
+            ...TYPO.body,
+            ...(creativeMonthlyRepliesBlocked
+              ? { background: 'rgba(239,68,68,0.12)', color: '#fecaca', border: '1px solid rgba(239,68,68,0.35)' }
+              : { background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)' }),
+          }}
+        >
+          {replyUsage.used} / {monthlyReplyCap} message replies this calendar month (UTC). Resets on the 1st.
+          {creativeMonthlyRepliesBlocked ? ` ${MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE}` : ''}
+        </div>
+      )}
 
       <div style={styles.page}>
         <div style={styles.sidebar}>
@@ -464,7 +568,17 @@ export default function MessagesPage() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendReply() } }}
                   />
                 </div>
-                <Button variant="primary" size="md" style={{ minHeight: '44px' }} disabled={sending || !reply.trim()} onClick={sendReply}>
+                <Button
+                  variant="primary"
+                  size="md"
+                  style={{ minHeight: '44px' }}
+                  disabled={
+                    sending ||
+                    !reply.trim() ||
+                    (selected?.creative_id === user.id && creativeMonthlyRepliesBlocked)
+                  }
+                  onClick={sendReply}
+                >
                   {sending ? 'Sending…' : 'Send'}
                 </Button>
               </div>
@@ -512,7 +626,17 @@ export default function MessagesPage() {
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <Button type="button" variant="ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText('') }}>Cancel</Button>
-              <Button type="button" variant="primary" disabled={sendingPortal || !newMessageEmail.trim() || !newMessageText.trim()} onClick={sendPortal}>
+              <Button
+                type="button"
+                variant="primary"
+                disabled={
+                  sendingPortal ||
+                  !newMessageEmail.trim() ||
+                  !newMessageText.trim() ||
+                  creativeMonthlyRepliesBlocked
+                }
+                onClick={sendPortal}
+              >
                 {sendingPortal ? 'Sending…' : 'Send Portal Link'}
               </Button>
             </div>
