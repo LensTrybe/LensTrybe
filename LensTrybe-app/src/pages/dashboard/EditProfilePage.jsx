@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
+import { moderateText, moderateImage } from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -86,6 +87,8 @@ export default function EditProfilePage() {
   const [showFoundingBadge, setShowFoundingBadge] = useState(true)
   const [savingFoundingBadge, setSavingFoundingBadge] = useState(false)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [toast, setToast] = useState(null)
+  const [profileTextModerationError, setProfileTextModerationError] = useState('')
 
   const [credentials, setCredentials] = useState({
     abn: '',
@@ -248,12 +251,27 @@ export default function EditProfilePage() {
     const file = e.target.files[0]
     if (!file) return
     setUploading(true)
-    const ext = file.name.split('.').pop()
-    const path = `${user.id}/avatar.${ext}`
-    await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
-    const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
-    update('avatar_url', publicUrl)
-    setUploading(false)
+    try {
+      const result = await moderateImage(file)
+      if (result?.blocked) {
+        const msg = result.reason || 'This image cannot be used.'
+        setToast({ type: 'error', msg })
+        setTimeout(() => setToast(null), 5000)
+        e.target.value = ''
+        return
+      }
+      const ext = file.name.split('.').pop()
+      const path = `${user.id}/avatar.${ext}`
+      await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
+      const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
+      update('avatar_url', publicUrl)
+    } catch (err) {
+      setToast({ type: 'error', msg: err?.message || 'Could not check or upload image.' })
+      setTimeout(() => setToast(null), 5000)
+      e.target.value = ''
+    } finally {
+      setUploading(false)
+    }
   }
 
   async function uploadCredential(file, field) {
@@ -268,6 +286,17 @@ export default function EditProfilePage() {
 
   async function saveProfile() {
     setSaving(true)
+    setProfileTextModerationError('')
+    const combinedBioTagline = [form.bio, form.tagline].filter(Boolean).join('\n')
+    const textResult = await moderateText(combinedBioTagline)
+    if (textResult?.blocked) {
+      setProfileTextModerationError(textResult.reason || 'This content cannot be saved.')
+      setSaving(false)
+      return
+    }
+    if (textResult?.flagged) {
+      console.warn('[EditProfile] Profile text flagged by moderation', { reason: textResult.reason })
+    }
     await supabase.from('profiles').update({
       business_name: form.business_name,
       bio: form.bio,
@@ -340,6 +369,29 @@ export default function EditProfilePage() {
 
   return (
     <div style={{ ...styles.page, overflowX: 'hidden' }} className="edit-profile-page">
+      {toast && (
+        <div
+          role="alert"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            zIndex: 9999,
+            background: toast.type === 'error' ? '#ef4444' : '#1DB954',
+            color: toast.type === 'error' ? '#fff' : '#000',
+            padding: '12px 20px',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: 600,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
+            fontFamily: 'var(--font-ui)',
+            maxWidth: 'min(420px, calc(100vw - 32px))',
+          }}
+        >
+          {toast.type === 'error' ? '✕ ' : '✓ '}
+          {toast.msg}
+        </div>
+      )}
       <style>{`
         @media (max-width: 767px) {
           .edit-profile-page { padding: 16px !important; }
@@ -403,15 +455,33 @@ export default function EditProfilePage() {
           )}
           <div style={styles.sectionTitle}>Business Details</div>
           <Input label="Business name" value={form.business_name} onChange={e => update('business_name', e.target.value)} placeholder="Golden Hour Studio" />
-          <Input label="Tagline" value={form.tagline} onChange={e => update('tagline', e.target.value)} placeholder="Brisbane's most trusted wedding photographer" />
+          <Input
+            label="Tagline"
+            value={form.tagline}
+            onChange={e => { setProfileTextModerationError(''); update('tagline', e.target.value) }}
+            placeholder="Brisbane's most trusted wedding photographer"
+            error={profileTextModerationError}
+          />
           <div>
             <label style={styles.label}>Bio</label>
             <textarea
-              style={styles.textarea}
+              style={{
+                ...styles.textarea,
+                ...(profileTextModerationError
+                  ? { borderColor: 'rgba(239,68,68,0.45)', boxShadow: '0 0 0 1px rgba(239,68,68,0.2)' }
+                  : {}),
+              }}
               value={form.bio}
-              onChange={e => update('bio', e.target.value)}
+              onChange={e => { setProfileTextModerationError(''); update('bio', e.target.value) }}
               placeholder="I'm a Brisbane-based wedding photographer with 8 years of experience capturing authentic moments…"
+              aria-invalid={profileTextModerationError ? true : undefined}
+              aria-describedby={profileTextModerationError ? 'bio-moderation-hint' : undefined}
             />
+            {profileTextModerationError ? (
+              <p id="bio-moderation-hint" style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', fontFamily: 'var(--font-ui)', lineHeight: 1.45 }}>
+                Tagline and bio are checked together. See the message under Tagline.
+              </p>
+            ) : null}
           </div>
           {profileIsFoundingMember(profile) && (
             <div style={{ marginTop: '8px', paddingTop: '20px', borderTop: '1px solid var(--border-default)' }}>

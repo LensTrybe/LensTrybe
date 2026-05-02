@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { moderateText, moderateImage } from '../../lib/moderateContent'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import {
@@ -209,6 +210,28 @@ export default function SignupPage() {
       setError('Password must be at least 6 characters.')
       setLoading(false)
       return
+    }
+
+    const businessNameModeration = await moderateText(form.businessName)
+    if (businessNameModeration?.blocked) {
+      setError(businessNameModeration.reason || 'This business name cannot be used.')
+      setLoading(false)
+      return
+    }
+
+    if (form.avatarFile instanceof File) {
+      try {
+        const avatarModeration = await moderateImage(form.avatarFile)
+        if (avatarModeration?.blocked) {
+          setError(avatarModeration.reason || 'This profile photo cannot be used.')
+          setLoading(false)
+          return
+        }
+      } catch (modErr) {
+        setError(modErr?.message || 'Could not verify your profile photo. Try again or skip the photo for now.')
+        setLoading(false)
+        return
+      }
     }
 
     try {
