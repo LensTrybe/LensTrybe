@@ -541,21 +541,34 @@ export default function AdminPage() {
     if (loading || !['admin', 'staff'].includes(callerRole || '')) return undefined;
     let cancelled = false;
     (async () => {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('reviews')
-        .select('id, creative_id, reviewer_name, reviewer_email, rating, body, flag_reason, flagged_at')
+        .select('*, profiles!reviews_creative_id_fkey(business_name)')
         .eq('flagged', true)
-        .eq('flag_status', 'pending');
+        .eq('flag_status', 'pending')
+        .order('flagged_at', { ascending: false });
+      console.log('flagged reviews:', data, error);
+      if (error) {
+        const second = await supabase
+          .from('reviews')
+          .select('*')
+          .eq('flagged', true)
+          .eq('flag_status', 'pending')
+          .order('flagged_at', { ascending: false });
+        data = second.data;
+        error = second.error;
+        console.log('flagged reviews:', data, error);
+      }
       if (cancelled || error) return;
-      const ids = [...new Set((data || []).map((r) => r.creative_id))];
-      let byId = {};
-      if (ids.length) {
-        const { data: profs } = await supabase.from('profiles').select('id, business_name').in('id', ids);
-        byId = Object.fromEntries((profs || []).map((p) => [p.id, p.business_name || '—']));
-      }
-      if (!cancelled) {
-        setFlaggedReviews((data || []).map((r) => ({ ...r, business_name: byId[r.creative_id] || '—' })));
-      }
+      const normalized = (data || []).map((r) => {
+        const p = r.profiles;
+        const joinedName = p && (Array.isArray(p) ? p[0]?.business_name : p?.business_name);
+        return {
+          ...r,
+          business_name: joinedName ?? r.creative_id ?? '—',
+        };
+      });
+      if (!cancelled) setFlaggedReviews(normalized);
     })();
     return () => {
       cancelled = true;
