@@ -8,6 +8,7 @@ import {
 } from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import Button from '../../components/ui/Button'
 
 const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones', 'Editing Hardware', 'Bags & Tripods', 'Miscellaneous']
@@ -310,7 +311,7 @@ export default function MarketplacePage() {
     postBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
     filters: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
     searchInput: { ...GLASS_NATIVE_FIELD, flex: 1, minWidth: isMobile ? '100%' : '200px', padding: '9px 14px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
-    select: { ...GLASS_NATIVE_FIELD, padding: '9px 14px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    select: { ...LT_DASHBOARD_SELECT_STYLE, padding: '9px 14px', borderRadius: '8px', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
     grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '16px' },
     card: { ...GLASS_CARD, borderRadius: '12px', padding: '16px', cursor: 'pointer', position: 'relative', transition: 'border-color 0.15s' },
     cardTitle: { ...TYPO.heading, fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' },
@@ -331,6 +332,7 @@ export default function MarketplacePage() {
 
   return (
     <div style={s.page} className="marketplace-page">
+      <LtDashboardSelectDarkStyles />
       <style>{`
         @media (max-width: 767px) {
           .marketplace-page button { min-height: 44px; }
@@ -358,7 +360,7 @@ export default function MarketplacePage() {
         <>
           <div style={s.filters}>
             <input style={s.searchInput} placeholder="Search listings…" value={search} onChange={e => setSearch(e.target.value)} />
-            <select style={s.select} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
+            <select className={LT_DASHBOARD_SELECT_CLASS} style={s.select} value={filterCat} onChange={e => setFilterCat(e.target.value)}>
               <option value="All">All Categories</option>
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
@@ -455,13 +457,13 @@ export default function MarketplacePage() {
               <div style={s.grid2}>
                 <div>
                   <label style={s.label}>Category</label>
-                  <select style={{ ...s.input }} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
+                  <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}>
                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={s.label}>Condition</label>
-                  <select style={{ ...s.input }} value={form.condition} onChange={e => setForm(p => ({ ...p, condition: e.target.value }))}>
+                  <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} value={form.condition} onChange={e => setForm(p => ({ ...p, condition: e.target.value }))}>
                     {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
                 </div>
@@ -603,13 +605,13 @@ export default function MarketplacePage() {
                   <div style={s.grid2}>
                     <div>
                       <label style={s.label}>Category</label>
-                      <select style={{ ...s.input }} value={editForm.category} onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}>
+                      <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} value={editForm.category} onChange={e => setEditForm(p => ({ ...p, category: e.target.value }))}>
                         {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>
                     <div>
                       <label style={s.label}>Condition</label>
-                      <select style={{ ...s.input }} value={editForm.condition} onChange={e => setEditForm(p => ({ ...p, condition: e.target.value }))}>
+                      <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} value={editForm.condition} onChange={e => setEditForm(p => ({ ...p, condition: e.target.value }))}>
                         {CONDITIONS.map(c => <option key={c} value={c}>{c}</option>)}
                       </select>
                     </div>

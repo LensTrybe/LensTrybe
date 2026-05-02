@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
@@ -21,66 +21,15 @@ const CATEGORIES = [
   { value: 'UGC Creator', label: 'UGC Creator' },
 ]
 
-/** Full specialty catalog keyed by `CATEGORIES[].value` (skill_types / creative type). */
-const SPECIALTY_CATALOG = {
-  Photographer: {
-    groupLabel: 'Photography',
-    skills: [
-      'Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture', 'Travel', 'Nature & Wildlife', 'Food & Beverage', 'Boudoir', 'Newborn & Family', 'School & Graduation', 'Corporate & Headshots', 'Documentary', 'Fine Art', 'Aerial',
-    ],
-  },
-  Videographer: {
-    groupLabel: 'Videography',
-    skills: [
-      'Wedding', 'Corporate', 'Music Video', 'Documentary', 'Events', 'Commercial', 'Real Estate', 'Social Media', 'Sports', 'Travel', 'Education & Training', 'Live Streaming',
-    ],
-  },
-  'Drone Pilot': {
-    groupLabel: 'Drone',
-    skills: [
-      'Aerial Photography', 'Aerial Videography', 'Real Estate', 'Construction & Surveying', 'Events', 'Agriculture', 'Search & Rescue', 'Inspection',
-    ],
-  },
-  'Video Editor': {
-    groupLabel: 'Video Editing',
-    skills: [
-      'Wedding', 'Corporate', 'Music Video', 'Documentary', 'Social Media', 'Colour Grading', 'Motion Graphics', 'YouTube', 'Film & TV', 'Commercial',
-    ],
-  },
-  'Photo Editor': {
-    groupLabel: 'Photo Editing',
-    skills: [
-      'Retouching', 'Colour Grading', 'Composite Editing', 'Product Editing', 'Real Estate Editing', 'Wedding Culling & Editing', 'Restoration',
-    ],
-  },
-  'Social Media Manager': {
-    groupLabel: 'Social Media Management',
-    skills: [
-      'Instagram', 'TikTok', 'Facebook', 'LinkedIn', 'YouTube', 'Pinterest', 'Content Strategy', 'Paid Ads',
-    ],
-  },
-  'Hair & Makeup Artist': {
-    groupLabel: 'Hair & Makeup',
-    skills: [
-      'Bridal', 'Editorial', 'Film & TV', 'Special Effects', 'Fashion', 'Corporate', 'Events', 'Hair Styling',
-    ],
-  },
-  'UGC Creator': {
-    groupLabel: 'UGC Creation',
-    skills: [
-      'Product Reviews', 'Lifestyle', 'Food & Beverage', 'Travel', 'Beauty & Skincare', 'Fashion & Apparel', 'Tech & Gadgets', 'Fitness & Wellness',
-    ],
-  },
-}
-
-/** Optgroups for the specialty dropdown: all types if none selected; else only selected types (CATEGORIES order). */
-function visibleSpecialtyGroups(selectedTypes) {
-  return CATEGORIES.map((c) => {
-    const entry = SPECIALTY_CATALOG[c.value]
-    if (!entry?.skills?.length) return null
-    if (selectedTypes.length > 0 && !selectedTypes.includes(c.value)) return null
-    return { typeKey: c.value, groupLabel: entry.groupLabel, skills: entry.skills }
-  }).filter(Boolean)
+const SPECIALTIES = {
+  'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture'],
+  'Videographer': ['Wedding', 'Brand Film', 'Documentary', 'Events', 'Music Video', 'Social Media', 'Corporate', 'Sport'],
+  'Drone Pilot': ['Real Estate', 'Cinematic', 'Surveying', 'Events', 'Agriculture', 'Construction', 'Infrastructure'],
+  'Video Editor': ['Colour Grading', 'Short-form/Reels', 'Wedding Films', 'VFX', 'Motion Graphics', 'Corporate', 'Music Video'],
+  'Photo Editor': ['Retouching', 'Culling', 'Compositing', 'Product Editing', 'Restoration', 'Fashion'],
+  'Social Media Manager': ['Instagram & TikTok', 'Reels & Short-form', 'Brand Content', 'Content Strategy', 'YouTube Management', 'LinkedIn', 'Facebook & Meta'],
+  'Hair & Makeup Artist': ['Bridal & Wedding', 'Editorial & Fashion', 'Commercial', 'Film & TV', 'Portrait & Headshots', 'Special Effects', 'Hair Styling', 'Airbrush', 'Natural & Lifestyle', 'Events'],
+  'UGC Creator': ['E-commerce & Product', 'App & Software', 'Food & Beverage', 'Beauty & Skincare', 'Health & Fitness', 'Travel & Lifestyle', 'Fashion & Apparel', 'Home & Interiors', 'Unboxing & Reviews', 'Paid Ad Creative'],
 }
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
@@ -208,14 +157,7 @@ export default function ExplorePage() {
     locationPreference: 'australiaWide',
   })
 
-  const specialtyGroupsForSelect = useMemo(
-    () => visibleSpecialtyGroups(selectedTypes),
-    [selectedTypes],
-  )
-
-  useEffect(() => {
-    setFilters((prev) => (prev.specialty === '' ? prev : { ...prev, specialty: '' }))
-  }, [selectedTypes])
+  const availableSpecialties = [...new Set(selectedTypes.flatMap(t => SPECIALTIES[t] ?? []))]
 
   useEffect(() => {
     const type = searchParams.get('type')
@@ -235,9 +177,10 @@ export default function ExplorePage() {
   }, [])
 
   function toggleType(value) {
-    setSelectedTypes((prev) =>
-      prev.includes(value) ? prev.filter((t) => t !== value) : [...prev, value],
+    setSelectedTypes(prev =>
+      prev.includes(value) ? prev.filter(t => t !== value) : [...prev, value]
     )
+    setFilters(prev => ({ ...prev, specialty: '' }))
   }
 
   function updateFilter(key, value) {
@@ -335,11 +278,6 @@ export default function ExplorePage() {
           opacity: 0.55;
           cursor: not-allowed;
         }
-        .${SELECT_CLASS} optgroup {
-          background: #111118;
-          color: #ffffff;
-          font-weight: 600;
-        }
       `}</style>
       <div style={styles.inner}>
         <div style={styles.header}>
@@ -359,6 +297,7 @@ export default function ExplorePage() {
                 onChange={(e) => {
                   const next = Array.from(e.target.selectedOptions, (opt) => opt.value)
                   setSelectedTypes(next)
+                  setFilters((prev) => ({ ...prev, specialty: '' }))
                 }}
                 aria-label="Creative types (select one or more)"
                 style={{
@@ -412,16 +351,10 @@ export default function ExplorePage() {
                 style={styles.select}
                 value={filters.specialty}
                 onChange={e => updateFilter('specialty', e.target.value)}
-                aria-label="Specialty"
+                disabled={availableSpecialties.length === 0}
               >
                 <option value="">All specialties</option>
-                {specialtyGroupsForSelect.map(({ typeKey, groupLabel, skills }) => (
-                  <optgroup key={typeKey} label={groupLabel}>
-                    {skills.map((s) => (
-                      <option key={`${typeKey}-${s}`} value={s}>{s}</option>
-                    ))}
-                  </optgroup>
-                ))}
+                {availableSpecialties.map(s => <option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div style={styles.filterGroupInner}>

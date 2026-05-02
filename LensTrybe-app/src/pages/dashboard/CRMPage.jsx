@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import Button from '../../components/ui/Button'
 
 const STAGES = ['Lead', 'In Discussion', 'Booked', 'Completed', 'Archived']
@@ -162,6 +163,7 @@ export default function CRMPage() {
 
   return (
     <div style={s.page} className="crm-page">
+      <LtDashboardSelectDarkStyles />
       <style>{`
         @media (max-width: 767px) {
           .crm-page button { min-height: 44px; }
@@ -257,12 +259,13 @@ export default function CRMPage() {
                   <div style={{ marginTop: '10px' }} onClick={e => e.stopPropagation()}>
                     <label style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: '4px' }}>Stage</label>
                     <select
+                      className={LT_DASHBOARD_SELECT_CLASS}
                       value={c.status}
                       onChange={e => {
                         e.stopPropagation()
                         void updateContact(c.id, { status: e.target.value })
                       }}
-                      style={{ ...s.input, padding: '6px 8px', fontSize: '12px', cursor: 'pointer' }}
+                      style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE, padding: '6px 8px', fontSize: '12px' }}
                     >
                       {STAGES.map(st => (
                         <option key={st} value={st}>{st}</option>
@@ -303,7 +306,7 @@ export default function CRMPage() {
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={s.label}>Status</label>
-              <select style={{ ...s.input }} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
+              <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} value={form.status} onChange={e => setForm(p => ({ ...p, status: e.target.value }))}>
                 {STAGES.map(st => <option key={st} value={st}>{st}</option>)}
               </select>
             </div>
@@ -351,7 +354,7 @@ export default function CRMPage() {
             </div>
             <div style={{ marginBottom: '12px' }}>
               <label style={s.label}>Status</label>
-              <select style={{ ...s.input }} defaultValue={selected.status} onChange={e => updateContact(selected.id, { status: e.target.value })}>
+              <select className={LT_DASHBOARD_SELECT_CLASS} style={{ ...s.input, ...LT_DASHBOARD_SELECT_STYLE }} defaultValue={selected.status} onChange={e => updateContact(selected.id, { status: e.target.value })}>
                 {STAGES.map(st => <option key={st} value={st}>{st}</option>)}
               </select>
             </div>

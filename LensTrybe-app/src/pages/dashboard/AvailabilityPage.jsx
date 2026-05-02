@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import Button from '../../components/ui/Button'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -125,12 +126,13 @@ export default function AvailabilityPage() {
     modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
     modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '440px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
     label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
-    select: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
+    select: { ...LT_DASHBOARD_SELECT_STYLE, width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
     input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
   }
 
   return (
     <div style={s.page} className="availability-page">
+      <LtDashboardSelectDarkStyles />
       <style>{`
         @media (max-width: 767px) {
           .availability-page button { min-height: 44px; }
@@ -261,13 +263,13 @@ export default function AvailabilityPage() {
               <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
                 <div>
                   <label style={s.label}>Start time</label>
-                  <select style={s.select} value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>
+                  <select className={LT_DASHBOARD_SELECT_CLASS} style={s.select} value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>
                     {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>
                 <div>
                   <label style={s.label}>End time</label>
-                  <select style={s.select} value={timeForm.end_time} onChange={e => setTimeForm(p => ({ ...p, end_time: e.target.value }))}>
+                  <select className={LT_DASHBOARD_SELECT_CLASS} style={s.select} value={timeForm.end_time} onChange={e => setTimeForm(p => ({ ...p, end_time: e.target.value }))}>
                     {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                   </select>
                 </div>

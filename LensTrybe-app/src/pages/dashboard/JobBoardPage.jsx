@@ -10,6 +10,7 @@ import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 
 const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
@@ -284,7 +285,7 @@ export default function JobBoardPage() {
     toolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' },
     tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflow: 'hidden' },
     tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    select: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '8px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--text-secondary)', outline: 'none', cursor: 'pointer' },
+    select: { ...LT_DASHBOARD_SELECT_STYLE, borderRadius: 'var(--radius-lg)', padding: '8px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none' },
     grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
     jobCard: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer', transition: 'border-color var(--transition-fast)', minHeight: 'unset' },
     jobTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
@@ -310,6 +311,7 @@ export default function JobBoardPage() {
 
   return (
     <div style={styles.page}>
+      <LtDashboardSelectDarkStyles />
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
           {toast.msg}
@@ -344,7 +346,7 @@ export default function JobBoardPage() {
 
       <div style={styles.toolbar}>
         {activeTab === 'browse' && (
-          <select style={styles.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+          <select className={LT_DASHBOARD_SELECT_CLASS} style={styles.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
             <option value="">All categories</option>
             {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
           </select>

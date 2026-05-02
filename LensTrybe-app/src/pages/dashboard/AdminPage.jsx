@@ -10,6 +10,7 @@ import {
   TYPO,
 } from '../../lib/glassTokens';
 import Button from '../../components/ui/Button';
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark';
 
 const COLORS = {
   bg: '#0a0a0f',
@@ -721,6 +722,7 @@ export default function AdminPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', ...FONT, padding: '24px 28px' }}>
+      <LtDashboardSelectDarkStyles />
       {toast && (
         <div
           style={{
@@ -793,13 +795,13 @@ export default function AdminPage() {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <label style={{ fontSize: 12, color: COLORS.muted, ...TYPO.label }}>Target audience</label>
               <select
+                className={LT_DASHBOARD_SELECT_CLASS}
                 value={broadcastAudience}
                 onChange={(e) => setBroadcastAudience(e.target.value)}
                 style={{
-                  ...GLASS_NATIVE_FIELD,
+                  ...LT_DASHBOARD_SELECT_STYLE,
                   padding: '10px 12px',
                   borderRadius: 8,
-                  color: COLORS.white,
                   fontSize: 13,
                   ...FONT,
                 }}
@@ -1008,15 +1010,15 @@ export default function AdminPage() {
                     <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.muted, marginBottom: 6 }}>CHANGE TIER</div>
                     {panelUser.profile ? (
                       <select
+                        className={LT_DASHBOARD_SELECT_CLASS}
                         value={(panelUser.profile.subscription_tier || 'basic').toLowerCase()}
                         onChange={(e) => handleUpdateTier(panelUser.id, e.target.value)}
                         disabled={actionLoading === panelUser.id}
                         style={{
                           width: '100%',
-                          ...GLASS_NATIVE_FIELD,
+                          ...LT_DASHBOARD_SELECT_STYLE,
                           padding: '10px 12px',
                           borderRadius: 8,
-                          color: COLORS.white,
                           fontSize: 13,
                           ...FONT,
                         }}
@@ -1035,6 +1037,7 @@ export default function AdminPage() {
                     <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.muted, marginBottom: 6 }}>CHANGE ROLE</div>
                     {panelUser.profile ? (
                       <select
+                        className={LT_DASHBOARD_SELECT_CLASS}
                         value={(panelUser.profile.role || 'user').toLowerCase()}
                         onChange={(e) => {
                           const newRole = e.target.value;
@@ -1051,10 +1054,9 @@ export default function AdminPage() {
                         disabled={actionLoading === panelUser.id}
                         style={{
                           width: '100%',
-                          ...GLASS_NATIVE_FIELD,
+                          ...LT_DASHBOARD_SELECT_STYLE,
                           padding: '10px 12px',
                           borderRadius: 8,
-                          color: COLORS.white,
                           fontSize: 13,
                           ...FONT,
                         }}
@@ -1633,18 +1635,16 @@ export default function AdminPage() {
                     <span style={{ fontSize: 12, color: COLORS.muted, fontWeight: 400 }}>N/A</span>
                   ) : editingTier === u.id ? (
                     <select
+                      className={LT_DASHBOARD_SELECT_CLASS}
                       defaultValue={tier}
                       onChange={(e) => handleUpdateTier(u.id, e.target.value)}
                       onBlur={() => setEditingTier(null)}
                       autoFocus
                       style={{
-                        background: COLORS.panelAlt,
-                        border: `1px solid ${COLORS.green}`,
+                        ...LT_DASHBOARD_SELECT_STYLE,
                         borderRadius: 6,
-                        color: COLORS.white,
                         fontSize: 12,
                         padding: '3px 6px',
-                        cursor: 'pointer',
                         outline: 'none',
                         ...FONT,
                       }}
@@ -1670,6 +1670,7 @@ export default function AdminPage() {
                 <div onClick={(e) => e.stopPropagation()}>
                   {canEditRole && roleDropdownUserId === u.id ? (
                     <select
+                      className={LT_DASHBOARD_SELECT_CLASS}
                       value={displayRole}
                       onChange={(e) => {
                         const newRole = e.target.value;
@@ -1686,13 +1687,10 @@ export default function AdminPage() {
                       onBlur={() => setRoleDropdownUserId(null)}
                       autoFocus
                       style={{
-                        background: COLORS.panelAlt,
-                        border: `1px solid ${COLORS.green}`,
+                        ...LT_DASHBOARD_SELECT_STYLE,
                         borderRadius: 6,
-                        color: COLORS.white,
                         fontSize: 12,
                         padding: '3px 6px',
-                        cursor: 'pointer',
                         outline: 'none',
                         ...FONT,
                       }}

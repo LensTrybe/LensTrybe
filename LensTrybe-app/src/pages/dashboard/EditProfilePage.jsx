@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 
 const SKILL_TYPES = [
   'Photographer', 'Videographer', 'Drone Pilot', 'Video Editor',
@@ -360,7 +361,7 @@ export default function EditProfilePage() {
     specialtyWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     specialtyChip: (selected) => ({ padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`, background: selected ? 'var(--green-dim)' : 'transparent', color: selected ? 'var(--green)' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', transition: 'all var(--transition-base)', fontFamily: 'var(--font-ui)' }),
     textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '120px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
-    select: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%' },
+    select: { ...LT_DASHBOARD_SELECT_STYLE, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', outline: 'none', width: '100%' },
     label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
     actions: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
   }
@@ -369,6 +370,7 @@ export default function EditProfilePage() {
 
   return (
     <div style={{ ...styles.page, overflowX: 'hidden' }} className="edit-profile-page">
+      <LtDashboardSelectDarkStyles />
       {toast && (
         <div
           role="alert"
@@ -595,7 +597,7 @@ export default function EditProfilePage() {
           <div style={styles.row}>
             <div>
               <label style={styles.label}>State</label>
-              <select style={styles.select} value={form.state} onChange={e => update('state', e.target.value)}>
+              <select className={LT_DASHBOARD_SELECT_CLASS} style={styles.select} value={form.state} onChange={e => update('state', e.target.value)}>
                 <option value="">Select state</option>
                 {AU_STATES.map(s => <option key={s} value={s}>{s}</option>)}
               </select>

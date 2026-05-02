@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { normalizeSubscriptionTier } from '../../lib/tierFeatures'
 import { GLASS_CARD, GLASS_NATIVE_FIELD, TYPO } from '../../lib/glassTokens'
+import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import Button from '../../components/ui/Button'
 
@@ -518,6 +519,7 @@ export default function CollaboratePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', color: WHITE, ...FONT, padding: '20px 24px 40px' }}>
+      <LtDashboardSelectDarkStyles />
       {toast && (
         <div
           style={{
@@ -556,9 +558,10 @@ export default function CollaboratePage() {
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16, alignItems: 'center' }}>
             <select
+              className={LT_DASHBOARD_SELECT_CLASS}
               value={filterSpecialty}
               onChange={(e) => setFilterSpecialty(e.target.value)}
-              style={{ ...GLASS_NATIVE_FIELD, padding: '8px 12px', borderRadius: 8, color: WHITE, fontSize: 13, minWidth: 160 }}
+              style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13, minWidth: 160 }}
             >
               <option value="all">All specialties</option>
               {SPECIALTIES.map((s) => (
@@ -568,9 +571,10 @@ export default function CollaboratePage() {
               ))}
             </select>
             <select
+              className={LT_DASHBOARD_SELECT_CLASS}
               value={filterWork}
               onChange={(e) => setFilterWork(e.target.value)}
-              style={{ ...GLASS_NATIVE_FIELD, padding: '8px 12px', borderRadius: 8, color: WHITE, fontSize: 13, minWidth: 160 }}
+              style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13, minWidth: 160 }}
             >
               <option value="all">All work types</option>
               <option value="on-location">On location</option>
@@ -582,9 +586,10 @@ export default function CollaboratePage() {
               Paid only (hide TFP)
             </label>
             <select
+              className={LT_DASHBOARD_SELECT_CLASS}
               value={sortOrder}
               onChange={(e) => setSortOrder(e.target.value)}
-              style={{ ...GLASS_NATIVE_FIELD, padding: '8px 12px', borderRadius: 8, color: WHITE, fontSize: 13 }}
+              style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13 }}
             >
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
