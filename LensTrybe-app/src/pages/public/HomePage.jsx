@@ -278,7 +278,7 @@ export default function HomePage() {
     try {
       const { data, error } = await supabase
         .from('profiles').select('id, business_name, subscription_tier, skill_types, city, state, bio, avatar_url, tagline')
-        .in('subscription_tier', ['elite', 'expert']).or('is_admin.is.null,is_admin.eq.false').not('avatar_url', 'is', null)
+        .in('subscription_tier', ['elite', 'expert']).eq('is_admin', false).not('avatar_url', 'is', null)
         .order('subscription_tier', { ascending: false });
       if (error) throw error;
       const filteredProfiles = (data || []).filter((p) => String(p.avatar_url || '').trim() !== '');

@@ -38,8 +38,8 @@ export default function DeliverDownloadPage() {
     setDelivery(data)
     if (!data.password) setUnlocked(true)
     if (data.creative_id) {
-      const { data: prof } = await supabase.from('profiles').select('business_name, avatar_url').eq('id', data.creative_id).single()
-      setCreative(prof)
+      const { data: prof } = await supabase.from('profiles').select('business_name, avatar_url').eq('id', data.creative_id).eq('is_admin', false).maybeSingle()
+      setCreative(prof ?? null)
     }
     setLoading(false)
   }

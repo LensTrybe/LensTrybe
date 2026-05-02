@@ -54,7 +54,14 @@ export default function MarketplacePage() {
 
   async function loadListings() {
     const { data } = await supabase.from('marketplace_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
-    setListings(data ?? [])
+    const raw = data ?? []
+    const sellerIds = [...new Set(raw.map((l) => l.creative_id).filter(Boolean))]
+    let adminSellerIds = new Set()
+    if (sellerIds.length > 0) {
+      const { data: adminRows } = await supabase.from('profiles').select('id').in('id', sellerIds).eq('is_admin', true)
+      adminSellerIds = new Set((adminRows ?? []).map((r) => r.id))
+    }
+    setListings(raw.filter((l) => !adminSellerIds.has(l.creative_id)))
   }
 
   async function loadMyListings() {
@@ -64,8 +71,17 @@ export default function MarketplacePage() {
 
   async function loadSaved() {
     const { data } = await supabase.from('saved_listings').select('listing_id, marketplace_listings(*)').eq('user_id', user.id)
-    setSavedIds(new Set((data ?? []).map(s => s.listing_id)))
-    setSavedListings((data ?? []).map(s => s.marketplace_listings).filter(Boolean))
+    const rows = data ?? []
+    const listings = rows.map((s) => s.marketplace_listings).filter(Boolean)
+    const sellerIds = [...new Set(listings.map((l) => l.creative_id).filter(Boolean))]
+    let adminSellerIds = new Set()
+    if (sellerIds.length > 0) {
+      const { data: adminRows } = await supabase.from('profiles').select('id').in('id', sellerIds).eq('is_admin', true)
+      adminSellerIds = new Set((adminRows ?? []).map((r) => r.id))
+    }
+    const kept = rows.filter((s) => s.marketplace_listings && !adminSellerIds.has(s.marketplace_listings.creative_id))
+    setSavedIds(new Set(kept.map((s) => s.listing_id)))
+    setSavedListings(kept.map((s) => s.marketplace_listings).filter(Boolean))
   }
 
   async function uploadPhotos(files) {
@@ -237,6 +253,7 @@ export default function MarketplacePage() {
         .from('profiles')
         .select('business_email, business_name')
         .eq('id', selected.creative_id)
+        .eq('is_admin', false)
         .maybeSingle()
 
       if (sellerProfile?.business_email) {

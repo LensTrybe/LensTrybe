@@ -135,6 +135,7 @@ export default function MessagesPage() {
         .from('profiles')
         .select('id, business_name')
         .in('id', otherCreativeIds)
+        .eq('is_admin', false)
       for (const p of sellers ?? []) {
         nameByCreativeId[p.id] = p.business_name
       }
@@ -208,6 +209,7 @@ export default function MessagesPage() {
         .from('profiles')
         .select('business_email, business_name')
         .eq('id', selected.creative_id)
+        .eq('is_admin', false)
         .maybeSingle()
       if (sellerProfile?.business_email) {
         await supabase.functions.invoke('send-message-notification', {

@@ -85,6 +85,7 @@ export default function ClientDashboardPage() {
         .from('profiles')
         .select('id, business_name, business_email, avatar_url, city, state, skill_types, bio, subscription_tier')
         .in('id', creativeIds)
+        .eq('is_admin', false)
       setCreatives(profiles ?? [])
     }
   }
@@ -143,6 +144,7 @@ export default function ClientDashboardPage() {
       .from('profiles')
       .select('business_name, business_email')
       .eq('id', selected.creative_id)
+      .eq('is_admin', false)
       .maybeSingle()
     if (profile?.business_email) {
       await supabase.functions.invoke('send-message-notification', {

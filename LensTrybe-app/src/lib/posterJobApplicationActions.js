@@ -86,7 +86,7 @@ export async function acceptJobApplication({
     return
   }
 
-  const { data: creativeProfile } = await supabase.from('profiles').select('business_email').eq('id', app.creative_id).maybeSingle()
+  const { data: creativeProfile } = await supabase.from('profiles').select('business_email').eq('id', app.creative_id).eq('is_admin', false).maybeSingle()
   if (creativeProfile?.business_email) {
     try {
       await supabase.functions.invoke('send-message-notification', {

@@ -50,7 +50,7 @@ export default function PortfolioPage() {
       setError('')
       setPortfolioError('')
 
-      const { data: p, error: pErr } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle()
+      const { data: p, error: pErr } = await supabase.from('profiles').select('*').eq('id', id).eq('is_admin', false).maybeSingle()
       const {
         data: port,
         error: portErr,

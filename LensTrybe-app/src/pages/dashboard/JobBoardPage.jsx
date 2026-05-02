@@ -105,7 +105,14 @@ export default function JobBoardPage() {
 
   async function loadJobs() {
     const { data } = await supabase.from('job_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
-    setJobs(data ?? [])
+    const raw = data ?? []
+    const posterIds = [...new Set(raw.map((j) => j.posted_by).filter(Boolean))]
+    let adminPosterIds = new Set()
+    if (posterIds.length > 0) {
+      const { data: adminRows } = await supabase.from('profiles').select('id').in('id', posterIds).eq('is_admin', true)
+      adminPosterIds = new Set((adminRows ?? []).map((r) => r.id))
+    }
+    setJobs(raw.filter((j) => !adminPosterIds.has(j.posted_by)))
     setLoading(false)
   }
 
@@ -156,7 +163,7 @@ export default function JobBoardPage() {
     let posterClient = null
     if (jobListing?.posted_by) {
       const [profRes, clientRes] = await Promise.all([
-        supabase.from('profiles').select('business_email, business_name, full_name').eq('id', jobListing.posted_by).maybeSingle(),
+        supabase.from('profiles').select('business_email, business_name, full_name').eq('id', jobListing.posted_by).eq('is_admin', false).maybeSingle(),
         supabase.from('client_accounts').select('email, first_name, last_name').eq('id', jobListing.posted_by).maybeSingle(),
       ])
       posterProfile = profRes.data

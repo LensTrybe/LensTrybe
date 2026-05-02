@@ -68,6 +68,7 @@ function SignContract() {
         .from('profiles')
         .select('business_name')
         .eq('id', creativeId)
+        .eq('is_admin', false)
         .maybeSingle()
 
       if (!cancelled) {
