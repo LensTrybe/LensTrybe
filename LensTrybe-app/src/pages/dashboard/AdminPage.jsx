@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
@@ -64,6 +64,145 @@ function RoleBadge({ role }) {
   );
 }
 
+const ADMIN_FLAGS_DISMISSED_KEY = 'lenstrybe_admin_flags_dismissed_v1';
+
+/** @returns {Set<string>} */
+function readDismissedAdminFlags() {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = window.localStorage.getItem(ADMIN_FLAGS_DISMISSED_KEY);
+    const arr = raw ? JSON.parse(raw) : [];
+    return new Set(Array.isArray(arr) ? arr.filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function persistDismissedAdminFlags(set) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(ADMIN_FLAGS_DISMISSED_KEY, JSON.stringify([...set]));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Disposable / throwaway inbox domains (partial match on registrable suffix). */
+const DISPOSABLE_EMAIL_DOMAINS = [
+  'mailinator.com',
+  'guerrillamail.com',
+  'guerrillamailblock.com',
+  'guerrillamail.net',
+  'sharklasers.com',
+  'pokemail.net',
+  'spam4.me',
+  'grr.la',
+  'yopmail.com',
+  'yopmail.fr',
+  'tempmail.com',
+  'tempmail.net',
+  'tempmailo.com',
+  'throwam.com',
+  'throwaway.email',
+  'trashmail.com',
+  'getnada.com',
+  'maildrop.cc',
+  '10minutemail.com',
+  '10minutemail.net',
+];
+
+function emailLocalAndDomain(email) {
+  const e = String(email ?? '').trim().toLowerCase();
+  const at = e.lastIndexOf('@');
+  if (at < 1) return { local: e, domain: '' };
+  return { local: e.slice(0, at), domain: e.slice(at + 1) };
+}
+
+function isDisposableEmailDomain(domain) {
+  const d = domain.toLowerCase();
+  if (!d) return false;
+  return DISPOSABLE_EMAIL_DOMAINS.some(
+    (block) => d === block || d.endsWith(`.${block}`),
+  );
+}
+
+/**
+ * Heuristic: long digit runs in local part (common automated spam signups).
+ * @returns {string | null} human-readable reason or null
+ */
+function numericSpamLocalPartReason(local) {
+  if (!local) return null;
+  if (/\d{6,}/.test(local)) {
+    return 'Email local part contains a long numeric sequence (possible automated signup).';
+  }
+  const digits = (local.match(/\d/g) || []).length;
+  if (local.length >= 10 && digits >= 6 && digits / local.length >= 0.45) {
+    return 'Email local part is mostly random digits and characters.';
+  }
+  return null;
+}
+
+/**
+ * @param {string} email
+ * @returns {string | null}
+ */
+function getSuspiciousEmailFlagReason(email) {
+  const { local, domain } = emailLocalAndDomain(email);
+  if (isDisposableEmailDomain(domain)) {
+    return `Disposable or throwaway email domain (${domain}).`;
+  }
+  return numericSpamLocalPartReason(local);
+}
+
+/**
+ * @param {Array<{ id: string, email?: string, created_at?: string, profile?: object }>} users
+ * @param {Set<string>} dismissedIds
+ */
+function buildAdminInvestigationFlags(users, dismissedIds) {
+  /** @type {{ id: string, userId: string, email: string, reason: string, kind: string }[]} */
+  const out = [];
+  const now = Date.now();
+  const ms24h = 24 * 60 * 60 * 1000;
+
+  for (const u of users) {
+    if (!u?.id || !u.email) continue;
+
+    const ghost =
+      !u.profile &&
+      u.created_at &&
+      now - new Date(u.created_at).getTime() > ms24h;
+    if (ghost) {
+      const id = `ghost:${u.id}`;
+      if (!dismissedIds.has(id)) {
+        out.push({
+          id,
+          userId: u.id,
+          email: u.email,
+          kind: 'Incomplete signup',
+          reason:
+            'Auth account exists for more than 24 hours with no profile row (incomplete signup / ghost account).',
+        });
+      }
+    }
+
+    const suspiciousReason = getSuspiciousEmailFlagReason(u.email);
+    if (suspiciousReason) {
+      const id = `suspicious:${u.id}`;
+      if (!dismissedIds.has(id)) {
+        out.push({
+          id,
+          userId: u.id,
+          email: u.email,
+          kind: 'Suspicious email',
+          reason: suspiciousReason,
+        });
+      }
+    }
+  }
+
+  return out;
+}
+
 function ConfirmModal({
   title = 'Are you sure?',
   message,
@@ -109,7 +248,22 @@ export default function AdminPage() {
   const [editingTier, setEditingTier] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
+  const [dismissedFlagIds, setDismissedFlagIds] = useState(() => readDismissedAdminFlags());
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+
+  const investigationFlags = useMemo(
+    () => buildAdminInvestigationFlags(users, dismissedFlagIds),
+    [users, dismissedFlagIds],
+  );
+
+  const dismissInvestigationFlag = useCallback((flagId) => {
+    setDismissedFlagIds((prev) => {
+      const next = new Set(prev);
+      next.add(flagId);
+      persistDismissedAdminFlags(next);
+      return next;
+    });
+  }, []);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -290,24 +444,128 @@ export default function AdminPage() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12, marginBottom: 24 }}>
-        {[
-          { label: 'Total Users', value: stats.total, color: COLORS.white },
-          { label: 'Creatives', value: stats.creatives, color: COLORS.blue },
-          { label: 'Elite', value: stats.elite, color: COLORS.green },
-          { label: 'Expert', value: stats.expert, color: COLORS.yellow },
-          { label: 'Staff', value: stats.staff, color: COLORS.blue },
-        ].map(s => (
-          <div key={s.label} style={{
-            ...(s.color === COLORS.green ? GLASS_CARD_GREEN : GLASS_CARD),
-            borderRadius: 10, padding: '14px 16px',
-          }}>
-            <div style={{ ...TYPO.stat, fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ ...TYPO.label, fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{s.label}</div>
-          </div>
-        ))}
+      {/* Analytics */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{
+          ...TYPO.heading,
+          fontSize: 13,
+          fontWeight: 700,
+          color: COLORS.muted,
+          marginBottom: 10,
+          letterSpacing: '0.06em',
+          textTransform: 'uppercase',
+        }}>
+          Analytics
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
+          {[
+            { label: 'Total Users', value: stats.total, color: COLORS.white },
+            { label: 'Creatives', value: stats.creatives, color: COLORS.blue },
+            { label: 'Elite', value: stats.elite, color: COLORS.green },
+            { label: 'Expert', value: stats.expert, color: COLORS.yellow },
+            { label: 'Staff', value: stats.staff, color: COLORS.blue },
+          ].map(s => (
+            <div key={s.label} style={{
+              ...(s.color === COLORS.green ? GLASS_CARD_GREEN : GLASS_CARD),
+              borderRadius: 10, padding: '14px 16px',
+            }}>
+              <div style={{ ...TYPO.stat, fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
+              <div style={{ ...TYPO.label, fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
+
+      {/* Flags — investigation (dismissals stored in localStorage on this device) */}
+      {investigationFlags.length > 0 && (
+        <div style={{ marginBottom: 24 }}>
+          <div style={{
+            ...TYPO.heading,
+            fontSize: 13,
+            fontWeight: 700,
+            color: COLORS.muted,
+            marginBottom: 6,
+            letterSpacing: '0.06em',
+            textTransform: 'uppercase',
+          }}>
+            Flags
+          </div>
+          <div style={{ fontSize: 12, color: COLORS.dim, marginBottom: 12, lineHeight: 1.45 }}>
+            Automatic review signals. Dismiss hides a card on refresh for this browser only.
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {investigationFlags.map((f) => {
+              const showDelete = callerRole === 'admin';
+              const busy = actionLoading === f.userId;
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    position: 'relative',
+                    borderRadius: 12,
+                    padding: '14px 16px 14px 44px',
+                    background: COLORS.pinkDim,
+                    border: `1px solid ${COLORS.pink}`,
+                    boxShadow: '0 0 0 1px rgba(255,45,120,0.08) inset',
+                  }}
+                >
+                  <button
+                    type="button"
+                    aria-label="Dismiss flag"
+                    onClick={() => dismissInvestigationFlag(f.id)}
+                    style={{
+                      position: 'absolute',
+                      top: 10,
+                      left: 10,
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      border: `1px solid rgba(255,45,120,0.45)`,
+                      background: 'rgba(0,0,0,0.2)',
+                      color: COLORS.pink,
+                      cursor: 'pointer',
+                      fontSize: 16,
+                      lineHeight: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      ...FONT,
+                    }}
+                  >
+                    ×
+                  </button>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.pink, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>
+                    {f.kind}
+                  </div>
+                  <div style={{ fontSize: 14, color: COLORS.white, fontWeight: 600, marginBottom: 6 }}>{f.email}</div>
+                  <div style={{ fontSize: 13, color: COLORS.muted, lineHeight: 1.45, marginBottom: showDelete ? 12 : 0 }}>{f.reason}</div>
+                  {showDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete({ id: f.userId, email: f.email })}
+                      disabled={busy}
+                      style={{
+                        padding: '6px 12px',
+                        background: COLORS.pinkDim,
+                        border: `1px solid ${COLORS.pink}`,
+                        borderRadius: 8,
+                        color: COLORS.pink,
+                        fontSize: 12,
+                        cursor: busy ? 'wait' : 'pointer',
+                        fontWeight: 700,
+                        opacity: busy ? 0.55 : 1,
+                        ...FONT,
+                      }}
+                    >
+                      Delete
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Filters */}
       <div style={{ display: 'flex', gap: 12, marginBottom: 16, alignItems: 'center' }}>
