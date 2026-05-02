@@ -664,6 +664,9 @@ export default function AdminPage() {
     const pro = users.filter((u) => u.profile?.subscription_tier === 'pro').length;
     const basic = users.filter((u) => u.profile && (u.profile.subscription_tier || 'basic').toLowerCase() === 'basic').length;
     const mrr = elite * MRR_ELITE + expert * MRR_EXPERT + pro * MRR_PRO + basic * MRR_BASIC;
+    const payingUsers = pro + expert + elite;
+    const arpu = payingUsers > 0 ? mrr / payingUsers : 0;
+    const conversionRate = creatives > 0 ? (payingUsers / creatives) * 100 : 0;
     return {
       total: users.length,
       creatives,
@@ -673,6 +676,9 @@ export default function AdminPage() {
       pro,
       basic,
       mrr,
+      payingUsers,
+      arpu,
+      conversionRate,
     };
   }, [users]);
 
@@ -1123,7 +1129,14 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+          gap: 12,
+          marginBottom: 24,
+        }}
+      >
         {[
           { label: 'Total users', value: stats.total, color: COLORS.white },
           { label: 'Creatives', value: stats.creatives, color: COLORS.blue },
@@ -1137,7 +1150,23 @@ export default function AdminPage() {
             value: `$${stats.mrr.toFixed(2)}`,
             color: COLORS.green,
             greenCard: true,
+            valueFontSize: 20,
           },
+          {
+            label: 'Avg Revenue Per User',
+            value: `$${stats.arpu.toFixed(2)}`,
+            color: COLORS.green,
+            greenCard: true,
+            valueFontSize: 20,
+          },
+          { label: 'Paying Users', value: stats.payingUsers, color: COLORS.yellow },
+          {
+            label: 'Conversion Rate',
+            value: `${stats.conversionRate.toFixed(1)}%`,
+            color: COLORS.blue,
+            valueFontSize: 22,
+          },
+          { label: 'Free Tier', value: stats.basic, color: COLORS.muted },
         ].map((s) => (
           <div
             key={s.label}
@@ -1145,10 +1174,21 @@ export default function AdminPage() {
               ...(s.greenCard ? GLASS_CARD_GREEN : GLASS_CARD),
               borderRadius: 10,
               padding: '14px 16px',
+              minWidth: 0,
             }}
           >
-            <div style={{ ...TYPO.stat, fontSize: s.label === 'Estimated MRR' ? 20 : 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ ...TYPO.label, fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{s.label}</div>
+            <div
+              style={{
+                ...TYPO.stat,
+                fontSize: s.valueFontSize ?? 24,
+                fontWeight: 800,
+                color: s.color,
+                lineHeight: 1.1,
+              }}
+            >
+              {s.value}
+            </div>
+            <div style={{ ...TYPO.label, fontSize: 11, color: COLORS.muted, marginTop: 4, lineHeight: 1.25 }}>{s.label}</div>
           </div>
         ))}
       </div>
