@@ -40,6 +40,23 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         ...nav.slice(21),
       ]
 
+  const isAdminUser = Boolean(
+    profile && (
+      profile.is_admin === true
+      || profile.is_admin === 'true'
+      || profile.is_admin === 1
+      || profile.is_admin === '1'
+    ),
+  )
+
+  const navItemsWithAdmin = (() => {
+    if (!isAdminUser) return navItems
+    const adminItem = { label: 'Admin', path: '/dashboard/admin', icon: '⚡', section: 'Account' }
+    const settingsIndex = navItems.findIndex(x => x.path === '/dashboard/settings')
+    if (settingsIndex === -1) return [...navItems, adminItem]
+    return [...navItems.slice(0, settingsIndex + 1), adminItem, ...navItems.slice(settingsIndex + 1)]
+  })()
+
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--pink)', expert: 'var(--green)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
 
@@ -182,7 +199,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
           </div>
 
           <nav style={styles.nav}>
-            {navItems.map((item) => {
+            {navItemsWithAdmin.map((item) => {
               const locked = item.feature ? !hasFeature(item.feature) : false
               const showSection = item.section !== currentSection
               if (showSection) currentSection = item.section
