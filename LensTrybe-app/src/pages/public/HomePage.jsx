@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import Button from '../../components/ui/Button';
+import CinematicEntrance from '../../components/ui/CinematicEntrance';
 
 const CATEGORIES = [
   { key: 'photographer', label: 'Photographers' },
@@ -218,6 +219,13 @@ function FanCarousel({ creatives, autoPlay = true }) {
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [showEntrance, setShowEntrance] = useState(() => {
+    try {
+      return !sessionStorage.getItem('lt_entrance_played');
+    } catch {
+      return true;
+    }
+  });
   const [featuredCreatives, setFeaturedCreatives] = useState([]);
   const [eliteCreatives, setEliteCreatives] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -352,6 +360,7 @@ export default function HomePage() {
 
   return (
     <div style={{ background: 'transparent', color: '#fff', fontFamily: FONT, overflowX: 'hidden' }}>
+      {showEntrance && <CinematicEntrance onComplete={() => setShowEntrance(false)} />}
 
       {/* HERO */}
       <section ref={heroSectionRef} style={{
