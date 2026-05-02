@@ -323,7 +323,7 @@ export default function AdminPage() {
         ) : (
           filtered.map((u, i) => {
             const isLoading = actionLoading === u.id;
-            const tier = u.profile?.subscription_tier || 'basic';
+            const tier = u.profile ? (u.profile.subscription_tier || 'basic') : null;
             const isAdmin = u.profile?.is_admin || false;
             const joined = new Date(u.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' });
 
@@ -351,7 +351,9 @@ export default function AdminPage() {
 
                 {/* Tier */}
                 <div>
-                  {editingTier === u.id ? (
+                  {!u.profile ? (
+                    <span style={{ fontSize: 12, color: COLORS.muted, fontWeight: 400 }}>N/A</span>
+                  ) : editingTier === u.id ? (
                     <select
                       defaultValue={tier}
                       onChange={e => handleUpdateTier(u.id, e.target.value)}
@@ -368,7 +370,7 @@ export default function AdminPage() {
                       ))}
                     </select>
                   ) : (
-                    <div onClick={() => u.profile && setEditingTier(u.id)} style={{ cursor: u.profile ? 'pointer' : 'default' }}>
+                    <div onClick={() => setEditingTier(u.id)} style={{ cursor: 'pointer' }}>
                       <TierBadge tier={tier} />
                     </div>
                   )}
