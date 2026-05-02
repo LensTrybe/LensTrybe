@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { DIVIDER_GRADIENT_STYLE, GLASS_CARD, TYPO } from '../../lib/glassTokens'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -73,15 +74,15 @@ export default function LoginPage() {
 
   const styles = {
     page: {
-      minHeight: '100vh', background: 'var(--bg-base)',
+      minHeight: '100vh', background: 'transparent',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: isMobile ? '24px' : '40px 24px',
     },
-    card: { width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '32px' },
+    card: { width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '32px', ...GLASS_CARD, padding: isMobile ? '28px 24px' : '32px 36px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
     logo: { fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', ...TYPO.heading },
+    subtitle: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
     form: { display: 'flex', flexDirection: 'column', gap: '16px' },
     passwordWrap: { position: 'relative' },
     showBtn: {
@@ -94,15 +95,12 @@ export default function LoginPage() {
       textAlign: 'right', display: 'block', marginTop: '-8px',
       fontFamily: 'var(--font-ui)', cursor: 'pointer',
     },
-    divider: { display: 'flex', alignItems: 'center', gap: '12px' },
-    dividerLine: { flex: 1, height: '1px', background: 'var(--border-subtle)' },
-    dividerText: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     errorBox: {
       background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)',
-      borderRadius: 'var(--radius-lg)', padding: '12px 16px',
-      fontSize: '13px', color: 'var(--error)', fontFamily: 'var(--font-ui)',
+      borderRadius: '10px', padding: '12px 16px',
+      fontSize: '13px', color: 'var(--error)', ...TYPO.body,
     },
-    footer: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)' },
+    footer: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', ...TYPO.body },
     link: { color: 'var(--green)', textDecoration: 'none', fontWeight: 500 },
   }
 
@@ -153,16 +151,18 @@ export default function LoginPage() {
           <Button
             variant="primary"
             size="lg"
+            type="submit"
             disabled={loading || !email || !password}
-            onClick={handleLogin}
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </Button>
         </form>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <button
-            type="button"
+          <Button
+            variant="secondary"
+            size="lg"
+            style={{ width: '100%', justifyContent: 'center', gap: '10px' }}
             onClick={() => {
               try {
                 sessionStorage.setItem(LT_GOOGLE_OAUTH_PENDING_KEY, '1')
@@ -171,30 +171,21 @@ export default function LoginPage() {
               }
               void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/` } })
             }}
-            style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
-              padding: '11px 16px', borderRadius: 'var(--radius-lg)',
-              border: '1px solid var(--border-default)', background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)',
-              cursor: 'pointer', transition: 'all var(--transition-fast)', width: '100%', fontWeight: 500,
-            }}
-            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-            onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
           >
-            <svg width="18" height="18" viewBox="0 0 18 18">
+            <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>
               <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 0 0 2.38-5.88c0-.57-.05-.66-.15-1.18z"/>
               <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 0 1-7.18-2.54H1.83v2.07A8 8 0 0 0 8.98 17z"/>
               <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 0 1 0-3.04V5.41H1.83a8 8 0 0 0 0 7.18l2.67-2.07z"/>
               <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.31z"/>
             </svg>
             Continue with Google
-          </button>
+          </Button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
-          <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>or sign in with email</span>
-          <div style={{ flex: 1, height: '1px', background: 'var(--border-subtle)' }} />
+          <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or sign in with email</span>
+          <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
         </div>
 
         <div style={styles.footer}>

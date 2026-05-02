@@ -5,6 +5,7 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 const LIMITS = { basic: 5, pro: 20, expert: 40, elite: 999 }
 
@@ -88,10 +89,10 @@ export default function PortfolioPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     limitBar: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
     limitTrack: { flex: 1, height: '4px', background: 'var(--border-default)', borderRadius: 'var(--radius-full)', overflow: 'hidden' },
     limitFill: { height: '100%', background: items.length >= limit ? 'var(--error)' : 'var(--green)', borderRadius: 'var(--radius-full)', transition: 'width var(--transition-base)' },
@@ -104,9 +105,9 @@ export default function PortfolioPage() {
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     inputWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
-    label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    input: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', boxSizing: 'border-box' },
-    textarea: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
+    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+    input: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', boxSizing: 'border-box' },
+    textarea: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
   }
 

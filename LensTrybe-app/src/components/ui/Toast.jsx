@@ -3,11 +3,11 @@ import { createContext, useContext, useState, useCallback, useEffect, useRef } f
 const ToastContext = createContext(null);
 
 const accentColors = {
-  success: 'var(--green)',
-  error:   'var(--error)',
+  success: '#1DB954',
+  error: '#FF2D78',
   warning: 'var(--warning)',
-  info:    'var(--info)',
-  default: 'var(--pink)',
+  info: 'var(--info)',
+  default: '#FF2D78',
 };
 
 function ToastItem({ toast, onRemove }) {
@@ -16,15 +16,20 @@ function ToastItem({ toast, onRemove }) {
     return () => clearTimeout(timer);
   }, [toast.id, onRemove]);
 
+  const accent = accentColors[toast.type] ?? accentColors.default;
+
   const itemStyle = {
-    background: 'var(--bg-overlay)',
-    border: '1px solid var(--border-default)',
-    borderLeft: `3px solid ${accentColors[toast.type] ?? accentColors.default}`,
-    borderRadius: 'var(--radius-xl)',
+    backdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+    WebkitBackdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    borderTop: '1px solid rgba(255,255,255,0.2)',
+    borderLeft: `3px solid ${accent}`,
+    borderRadius: '20px',
     padding: '14px 16px',
     minWidth: '280px',
     maxWidth: '380px',
-    boxShadow: 'var(--shadow-lg)',
+    boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
     display: 'flex',
     alignItems: 'flex-start',
     gap: '12px',
@@ -37,15 +42,19 @@ function ToastItem({ toast, onRemove }) {
   };
 
   const titleStyle = {
-    color: 'var(--text-primary)',
+    color: '#ffffff',
     fontSize: '14px',
-    fontWeight: 500,
+    fontWeight: 600,
+    letterSpacing: '-0.3px',
+    lineHeight: 1.6,
     margin: 0,
   };
 
   const messageStyle = {
-    color: 'var(--text-secondary)',
+    color: 'rgba(255,255,255,0.75)',
     fontSize: '13px',
+    fontWeight: 400,
+    lineHeight: 1.6,
     marginTop: '2px',
   };
 

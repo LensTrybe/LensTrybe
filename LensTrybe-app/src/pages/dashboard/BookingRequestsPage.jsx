@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 export default function BookingRequestsPage() {
   const { user } = useAuth()
@@ -32,10 +33,10 @@ export default function BookingRequestsPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px' },
     pageHeader: { display: 'flex', alignItems: 'center', gap: '12px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     countBadge: {
       display: 'inline-flex',
       alignItems: 'center',
@@ -50,9 +51,9 @@ export default function BookingRequestsPage() {
       fontWeight: 700,
       fontFamily: 'var(--font-ui)',
     },
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableWrap: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
     emptyState: {
       padding: '64px 24px',
       textAlign: 'center',
@@ -63,13 +64,13 @@ export default function BookingRequestsPage() {
       gap: '12px',
     },
     emptyIcon: { fontSize: '40px' },
-    emptyTitle: { fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)' },
-    emptyText: { fontSize: '13px', color: 'var(--text-muted)' },
+    emptyTitle: { ...TYPO.heading, fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)' },
+    emptyText: { ...TYPO.body, fontSize: '13px', color: 'var(--text-muted)' },
     viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
     viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    notes: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', background: 'var(--bg-base)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
+    notes: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
   }
 

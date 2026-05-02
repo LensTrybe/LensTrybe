@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const COLORS = {
   bg: '#0a0a0f',
@@ -450,7 +452,7 @@ export default function LumiPage() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: COLORS.bg, ...FONT }}>
+    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'transparent', ...FONT }}>
 
       {/* Sidebar */}
       <div style={{
@@ -458,29 +460,28 @@ export default function LumiPage() {
         minWidth: sidebarOpen ? 260 : 0,
         transition: 'width 0.2s ease, min-width 0.2s ease',
         overflow: 'hidden',
-        background: COLORS.panel,
-        borderRight: `1px solid ${COLORS.border}`,
+        ...GLASS_CARD,
+        borderRadius: 0,
+        borderRight: '1px solid rgba(255,255,255,0.08)',
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{ padding: '20px 16px 12px', borderBottom: `1px solid ${COLORS.border}`, flexShrink: 0 }}>
+        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 18 }}>✨</span>
             <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.white }}>Conversations</span>
           </div>
-          <button
+          <Button
             type="button"
+            variant="primary"
             onClick={startNewConversation}
             style={{
               width: '100%',
               padding: '8px 12px',
-              background: COLORS.greenDim,
-              border: `1px solid ${COLORS.green}`,
               borderRadius: 8,
               color: COLORS.green,
               fontSize: 13,
               fontWeight: 600,
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
               gap: 6,
@@ -488,7 +489,7 @@ export default function LumiPage() {
             }}
           >
             <span>+</span> New conversation
-          </button>
+          </Button>
         </div>
 
         <div style={{ flex: 1, overflowY: 'auto', padding: '8px 8px' }}>
@@ -521,7 +522,7 @@ export default function LumiPage() {
         </div>
 
         {!isLocked && monthlyLimit !== null && (
-          <div style={{ padding: '12px 16px', borderTop: `1px solid ${COLORS.border}`, flexShrink: 0 }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 11, color: COLORS.muted }}>Monthly messages</span>
               <span style={{ fontSize: 11, color: COLORS.muted }}>{usedMonthly} / {monthlyLimit}</span>
@@ -545,8 +546,9 @@ export default function LumiPage() {
         {/* Top bar */}
         <div style={{
           padding: '14px 20px',
-          borderBottom: `1px solid ${COLORS.border}`,
-          background: COLORS.panel,
+          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          ...GLASS_CARD,
+          borderRadius: 0,
           display: 'flex',
           alignItems: 'center',
           gap: 12,
@@ -586,19 +588,20 @@ export default function LumiPage() {
         {/* Locked state */}
         {isLocked ? (
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-            <div style={{ maxWidth: 420, textAlign: 'center', padding: 40, background: COLORS.panel, border: `1px solid ${COLORS.border}`, borderRadius: 16 }}>
+            <div style={{ maxWidth: 420, textAlign: 'center', padding: 40, ...GLASS_CARD, borderRadius: 16 }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✨</div>
               <div style={{ fontSize: 20, fontWeight: 700, color: COLORS.white, marginBottom: 8 }}>Meet Lumi</div>
               <div style={{ fontSize: 14, color: COLORS.muted, lineHeight: 1.6, marginBottom: 24 }}>
                 Lumi is your AI business assistant. Get help with pricing, client proposals, contracts, and growing your creative business. Available on Pro and above.
               </div>
-              <button
+              <Button
                 type="button"
+                variant="primary"
                 onClick={() => navigate('/dashboard/settings/billing')}
-                style={{ padding: '12px 28px', background: COLORS.lumiGrad, border: 'none', borderRadius: 10, color: COLORS.white, fontSize: 14, fontWeight: 700, cursor: 'pointer', ...FONT }}
+                style={{ padding: '12px 28px', borderRadius: 10, color: COLORS.white, fontSize: 14, fontWeight: 700, ...FONT }}
               >
                 Upgrade to unlock Lumi
-              </button>
+              </Button>
             </div>
           </div>
         ) : tier === null ? (
@@ -632,7 +635,7 @@ export default function LumiPage() {
                         type="button"
                         onClick={() => sendMessage(p.label)}
                         style={{
-                          padding: '12px 14px', background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
+                          padding: '12px 14px', ...GLASS_CARD,
                           borderRadius: 10, color: COLORS.white, fontSize: 13, cursor: 'pointer',
                           textAlign: 'left', display: 'flex', alignItems: 'center', gap: 8, ...FONT,
                         }}
@@ -666,10 +669,9 @@ export default function LumiPage() {
                       </div>
                     )}
                     <div style={{
+                      ...(isUser ? GLASS_CARD_GREEN : isError ? glassCardAccentBorder(COLORS.pink) : GLASS_CARD),
                       padding: '11px 15px',
                       borderRadius: isUser ? '14px 14px 4px 14px' : '14px 14px 14px 4px',
-                      background: isUser ? COLORS.greenDim : isError ? COLORS.pinkDim : COLORS.panelAlt,
-                      border: `1px solid ${isUser ? COLORS.green : isError ? COLORS.pink : COLORS.border}`,
                       fontSize: 14, color: isError ? COLORS.pink : COLORS.white, lineHeight: 1.6, maxWidth: '100%',
                     }}>
                       {isUser ? msg.content : <MarkdownText text={msg.content} />}
@@ -685,7 +687,7 @@ export default function LumiPage() {
                     display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, flexShrink: 0,
                   }}>✨</div>
                   <div style={{
-                    padding: '14px 18px', background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
+                    padding: '14px 18px', ...GLASS_CARD,
                     borderRadius: '14px 14px 14px 4px', display: 'flex', gap: 5, alignItems: 'center',
                   }}>
                     {[0, 1, 2].map(j => (
@@ -701,10 +703,10 @@ export default function LumiPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: '14px 20px', borderTop: `1px solid ${COLORS.border}`, background: COLORS.panel, flexShrink: 0 }}>
+            <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', ...GLASS_CARD, borderRadius: 0, flexShrink: 0 }}>
               <div style={{
                 display: 'flex', gap: 10, alignItems: 'flex-end',
-                background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
+                ...GLASS_CARD,
                 borderRadius: 12, padding: '8px 12px',
               }}>
                 <textarea
@@ -715,6 +717,7 @@ export default function LumiPage() {
                   placeholder="Ask Lumi anything about your business..."
                   rows={1}
                   style={{
+                    ...GLASS_NATIVE_FIELD,
                     flex: 1, background: 'transparent', border: 'none', outline: 'none',
                     color: COLORS.white, fontSize: 14, resize: 'none', lineHeight: 1.5,
                     maxHeight: 120, overflowY: 'auto', ...FONT,

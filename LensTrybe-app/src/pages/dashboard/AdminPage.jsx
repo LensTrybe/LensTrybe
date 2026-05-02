@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const COLORS = {
   bg: '#0a0a0f',
@@ -72,29 +74,22 @@ function ConfirmModal({
 }) {
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
+      position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000,
     }}>
       <div style={{
-        background: COLORS.panel, border: `1px solid ${COLORS.border}`,
+        ...GLASS_MODAL_PANEL,
         borderRadius: 14, padding: 28, maxWidth: 420, width: '90%', textAlign: 'center',
       }}>
         <div style={{ fontSize: 32, marginBottom: 12 }}>⚠️</div>
         <div style={{ fontSize: 15, color: COLORS.white, marginBottom: 8, fontWeight: 600 }}>{title}</div>
         <div style={{ fontSize: 13, color: COLORS.muted, marginBottom: 24, lineHeight: 1.5 }}>{message}</div>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-          <button type="button" onClick={onCancel} style={{
-            padding: '9px 20px', background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
-            borderRadius: 8, color: COLORS.white, fontSize: 13, cursor: 'pointer', ...FONT,
-          }}>
+          <Button type="button" variant="secondary" onClick={onCancel} style={{ padding: '9px 20px', borderRadius: 8, color: COLORS.white, fontSize: 13, ...FONT }}>
             Cancel
-          </button>
-          <button type="button" onClick={onConfirm} style={{
-            padding: '9px 20px', background: danger ? COLORS.pink : COLORS.green, border: 'none',
-            borderRadius: 8, color: COLORS.white, fontSize: 13, fontWeight: 700, cursor: 'pointer', ...FONT,
-          }}>
+          </Button>
+          <Button type="button" variant={danger ? 'danger' : 'primary'} onClick={onConfirm} style={{ padding: '9px 20px', borderRadius: 8, color: COLORS.white, fontSize: 13, fontWeight: 700, ...FONT }}>
             {confirmLabel}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -246,7 +241,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: COLORS.bg, ...FONT, padding: '24px 28px' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent', ...FONT, padding: '24px 28px' }}>
 
       {/* Toast */}
       {toast && (
@@ -287,15 +282,12 @@ export default function AdminPage() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
         <div>
-          <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.white }}>Admin Panel</div>
+          <div style={{ ...TYPO.heading, fontSize: 22, fontWeight: 800, color: COLORS.white }}>Admin Panel</div>
           <div style={{ fontSize: 13, color: COLORS.muted, marginTop: 2 }}>LensTrybe user management</div>
         </div>
-        <button type="button" onClick={() => navigate('/dashboard')} style={{
-          padding: '8px 16px', background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
-          borderRadius: 8, color: COLORS.muted, fontSize: 13, cursor: 'pointer', ...FONT,
-        }}>
+        <Button type="button" variant="secondary" onClick={() => navigate('/dashboard')} style={{ padding: '8px 16px', borderRadius: 8, color: COLORS.muted, fontSize: 13, ...FONT }}>
           Back to Dashboard
-        </button>
+        </Button>
       </div>
 
       {/* Stats */}
@@ -308,11 +300,11 @@ export default function AdminPage() {
           { label: 'Staff', value: stats.staff, color: COLORS.blue },
         ].map(s => (
           <div key={s.label} style={{
-            background: COLORS.panel, border: `1px solid ${COLORS.border}`,
+            ...(s.color === COLORS.green ? GLASS_CARD_GREEN : GLASS_CARD),
             borderRadius: 10, padding: '14px 16px',
           }}>
-            <div style={{ fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{s.label}</div>
+            <div style={{ ...TYPO.stat, fontSize: 24, fontWeight: 800, color: s.color }}>{s.value}</div>
+            <div style={{ ...TYPO.label, fontSize: 12, color: COLORS.muted, marginTop: 2 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -324,8 +316,8 @@ export default function AdminPage() {
           onChange={e => setSearch(e.target.value)}
           placeholder="Search by email or business name..."
           style={{
-            flex: 1, padding: '9px 14px', background: COLORS.panel,
-            border: `1px solid ${COLORS.border}`, borderRadius: 8,
+            ...GLASS_NATIVE_FIELD,
+            flex: 1, padding: '9px 14px', borderRadius: 8,
             color: COLORS.white, fontSize: 13, outline: 'none', ...FONT,
           }}
         />
@@ -340,23 +332,20 @@ export default function AdminPage() {
             {t === 'all' ? 'All' : t}
           </button>
         ))}
-        <button type="button" onClick={loadUsers} style={{
-          padding: '8px 14px', background: COLORS.panelAlt, border: `1px solid ${COLORS.border}`,
-          borderRadius: 8, color: COLORS.muted, fontSize: 13, cursor: 'pointer', ...FONT,
-        }}>
+        <Button type="button" variant="secondary" onClick={loadUsers} style={{ padding: '8px 14px', borderRadius: 8, color: COLORS.muted, fontSize: 13, ...FONT }}>
           Refresh
-        </button>
+        </Button>
       </div>
 
       {/* Table */}
       <div style={{
-        background: COLORS.panel, border: `1px solid ${COLORS.border}`,
+        ...GLASS_CARD,
         borderRadius: 12, overflow: 'hidden',
       }}>
         {/* Table header */}
         <div style={{
           display: 'grid', gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 140px',
-          padding: '10px 16px', borderBottom: `1px solid ${COLORS.border}`,
+          padding: '10px 16px', borderBottom: '1px solid rgba(255,255,255,0.08)',
           fontSize: 11, fontWeight: 700, color: COLORS.dim, textTransform: 'uppercase', letterSpacing: '0.06em',
         }}>
           <div>User</div>

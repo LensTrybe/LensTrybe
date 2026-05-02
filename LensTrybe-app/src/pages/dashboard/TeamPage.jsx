@@ -6,6 +6,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 export default function TeamPage() {
   const { user, profile } = useAuth()
@@ -67,14 +68,13 @@ export default function TeamPage() {
   const availableSlots = totalSlots - usedSlots
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
     upgradeBox: {
+      ...GLASS_CARD,
       padding: isMobile ? '16px' : '32px',
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
       textAlign: 'center',
       display: 'flex',
@@ -85,8 +85,7 @@ export default function TeamPage() {
     upgradeTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
     upgradeText: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', maxWidth: '400px', lineHeight: 1.7 },
     slotsBar: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-xl)',
       padding: '16px',
       display: 'flex',
@@ -111,10 +110,9 @@ export default function TeamPage() {
       fontSize: '14px',
     }),
     section: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    sectionTitle: { ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     memberCard: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-xl)',
       padding: '16px',
       display: 'flex',
@@ -129,7 +127,7 @@ export default function TeamPage() {
       width: '40px',
       height: '40px',
       borderRadius: 'var(--radius-full)',
-      background: 'var(--green-dim)',
+      ...GLASS_CARD_GREEN,
       border: '1px solid rgba(29,185,84,0.3)',
       display: 'flex',
       alignItems: 'center',
@@ -143,13 +141,12 @@ export default function TeamPage() {
     memberName: { fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     memberEmail: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '2px' },
     emptyState: {
+      ...GLASS_CARD,
       padding: '32px 24px',
       textAlign: 'center',
       color: 'var(--text-muted)',
       fontSize: '14px',
       fontFamily: 'var(--font-ui)',
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
     },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '8px' },

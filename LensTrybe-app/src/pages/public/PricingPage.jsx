@@ -1,7 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
+import {
+  DIVIDER_GRADIENT_STYLE,
+  GLASS_CARD,
+  GLASS_CARD_GREEN,
+  TYPO,
+  glassCardAccentBorder,
+} from '../../lib/glassTokens'
 
 const tiers = [
   {
@@ -103,7 +109,7 @@ export default function PricingPage() {
   }, [])
 
   const styles = {
-    page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px', overflowX: 'hidden' },
+    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px', overflowX: 'hidden' },
     header: {
       padding: isMobile ? '48px 16px 32px' : '80px 40px 48px',
       maxWidth: '1280px',
@@ -116,31 +122,26 @@ export default function PricingPage() {
     },
     eyebrow: {
       fontSize: '11px',
-      letterSpacing: '0.12em',
-      textTransform: 'uppercase',
-      color: 'var(--text-muted)',
-      fontFamily: 'var(--font-ui)',
+      ...TYPO.label,
     },
     title: {
       fontFamily: 'var(--font-display)',
       fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 5vw, 56px)',
       color: 'var(--text-primary)',
-      fontWeight: 400,
       maxWidth: '600px',
+      ...TYPO.heading,
     },
     subtitle: {
       fontSize: '17px',
       color: 'var(--text-secondary)',
       maxWidth: '480px',
-      lineHeight: 1.7,
-      fontFamily: 'var(--font-ui)',
+      ...TYPO.body,
     },
     toggle: {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-full)',
       padding: '4px',
     },
@@ -176,9 +177,7 @@ export default function PricingPage() {
       padding: isMobile ? '0 16px' : '0 40px',
     },
     card: (borderColor, hasBadge) => ({
-      background: 'var(--bg-elevated)',
-      border: `1px solid ${borderColor}`,
-      borderRadius: 'var(--radius-xl)',
+      ...glassCardAccentBorder(borderColor),
       padding: `${hasBadge ? (isMobile ? '40px' : '44px') : (isMobile ? '24px' : '32px')} ${isMobile ? '20px' : '28px'} ${isMobile ? '24px' : '32px'}`,
       display: 'flex',
       flexDirection: 'column',
@@ -189,15 +188,14 @@ export default function PricingPage() {
     cardHeader: { display: 'flex', flexDirection: 'column', gap: '8px' },
     tierName: {
       fontSize: '18px',
-      fontWeight: 600,
       color: 'var(--text-primary)',
       fontFamily: 'var(--font-ui)',
+      ...TYPO.heading,
     },
     tierDesc: {
       fontSize: '14px',
       color: 'var(--text-secondary)',
-      fontFamily: 'var(--font-ui)',
-      lineHeight: 1.5,
+      ...TYPO.body,
     },
     price: {
       display: 'flex',
@@ -209,11 +207,13 @@ export default function PricingPage() {
       fontSize: '40px',
       color: 'var(--text-primary)',
       lineHeight: 1,
+      ...TYPO.stat,
     },
     pricePeriod: {
       fontSize: '14px',
       color: 'var(--text-muted)',
       fontFamily: 'var(--font-ui)',
+      ...TYPO.body,
     },
     annualNote: {
       fontSize: '11px',
@@ -233,8 +233,7 @@ export default function PricingPage() {
       gap: '10px',
       fontSize: '14px',
       color: 'var(--text-secondary)',
-      fontFamily: 'var(--font-ui)',
-      lineHeight: 1.4,
+      ...TYPO.body,
     },
     featureCheck: {
       color: 'var(--green)',
@@ -242,10 +241,7 @@ export default function PricingPage() {
       flexShrink: 0,
       marginTop: '1px',
     },
-    divider: {
-      height: '1px',
-      background: 'var(--border-subtle)',
-    },
+    divider: DIVIDER_GRADIENT_STYLE,
   }
 
   function getPrice(tier) {
@@ -358,20 +354,18 @@ export default function PricingPage() {
         padding: isMobile ? '0 16px' : '0 40px',
       }}>
         <div style={{
-          background: 'rgba(29,185,84,0.08)',
-          border: '1px solid rgba(29,185,84,0.25)',
-          borderRadius: '12px',
+          ...GLASS_CARD_GREEN,
           padding: '20px 28px',
           textAlign: 'center',
         }}>
-          <div style={{ fontSize: '15px', fontWeight: 700, color: '#1DB954', marginBottom: 6, fontFamily: 'var(--font-ui)' }}>
+          <div style={{ fontSize: '15px', color: '#1DB954', marginBottom: 6, fontFamily: 'var(--font-ui)', ...TYPO.stat }}>
             🎉 No payments until July 1st, 2026
           </div>
-          <div style={{ fontSize: '13px', color: '#8b8a9a', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '13px', color: '#8b8a9a', ...TYPO.body }}>
             Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial — your card will never be charged early.
           </div>
         </div>
-        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: 20 }}>
+        <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginTop: 20, ...TYPO.body }}>
           All prices in AUD. Annual billing saves 2 months. Cancel anytime from your dashboard.
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
+import Button from '../../components/ui/Button';
 
 const CATEGORIES = [
   { key: 'photographer', label: 'Photographers' },
@@ -33,7 +34,30 @@ const CATEGORY_ICONS = {
 const FONT = "'Inter', sans-serif";
 const GREEN = '#1DB954';
 const PINK = '#FF2D78';
-const BG = '#080810';
+
+const GLASS_CARD = {
+  backdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+  WebkitBackdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  borderTop: '1px solid rgba(255,255,255,0.2)',
+  borderLeft: '1px solid rgba(255,255,255,0.16)',
+  borderRadius: '20px',
+  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
+};
+
+const GLASS_CARD_GREEN = {
+  backdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+  WebkitBackdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
+  background: 'linear-gradient(135deg, rgba(29,185,84,0.18) 0%, rgba(29,185,84,0.06) 100%)',
+  border: '1px solid rgba(29,185,84,0.35)',
+  borderTop: '1px solid rgba(29,185,84,0.5)',
+  borderLeft: '1px solid rgba(29,185,84,0.4)',
+  borderRadius: '20px',
+  boxShadow: '0 8px 32px rgba(29,185,84,0.15), inset 0 1px 0 rgba(29,185,84,0.2)',
+};
+
+const DIVIDER_GRADIENT = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)';
 
 function GlowBlob({ color, top, left, right, bottom, size = 400, opacity = 0.07 }) {
   return (
@@ -57,14 +81,20 @@ function CreativeCard({ creative, isCenter }) {
   const location = [creative.city, creative.state].filter(Boolean).join(', ');
   return (
     <div style={{
-      background: isCenter ? 'linear-gradient(145deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%)' : '#13131f',
-      border: isCenter ? '1px solid rgba(29,185,84,0.4)' : '1px solid rgba(255,255,255,0.08)',
-      borderRadius: '20px', padding: '0 16px 16px', minWidth: '240px',
-      boxShadow: isCenter ? '0 24px 64px rgba(29,185,84,0.2), 0 0 40px rgba(29,185,84,0.1)' : '0 4px 20px rgba(0,0,0,0.4)',
+      ...(isCenter ? GLASS_CARD_GREEN : GLASS_CARD),
+      padding: '0 16px 16px', minWidth: '240px',
       pointerEvents: 'none', fontFamily: FONT,
     }}>
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '14px' }}>
-        <span style={{ fontSize: '10px', fontWeight: '700', color: tierColor, background: `${tierColor}1A`, border: `1px solid ${tierColor}40`, borderRadius: '20px', padding: '3px 10px', letterSpacing: '0.05em' }}>{tierLabel}</span>
+        <span style={{
+          fontSize: '10px', fontWeight: 600, letterSpacing: '-0.2px', lineHeight: 1.6, color: tierColor,
+          backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
+          background: tierColor === '#F59E0B' ? 'rgba(245,158,11,0.15)' : 'rgba(168,85,247,0.15)',
+          border: `1px solid ${tierColor === '#F59E0B' ? 'rgba(245,158,11,0.3)' : 'rgba(168,85,247,0.3)'}`,
+          borderTop: `1px solid ${tierColor === '#F59E0B' ? 'rgba(245,158,11,0.42)' : 'rgba(168,85,247,0.42)'}`,
+          borderRadius: '20px', padding: '3px 10px',
+        }}
+        >{tierLabel}</span>
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '20px 0 8px' }}>
         {creative.avatar_url
@@ -72,21 +102,21 @@ function CreativeCard({ creative, isCenter }) {
           : <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(29,185,84,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', border: isCenter ? '2px solid rgba(29,185,84,0.5)' : '2px solid rgba(255,255,255,0.1)' }}>📷</div>
         }
       </div>
-      <div style={{ fontSize: '14px', fontWeight: '600', color: '#fff', textAlign: 'center', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{creative.business_name}</div>
-      <div style={{ fontSize: '12px', color: GREEN, textAlign: 'center', marginBottom: '10px' }}>{skillLabel}</div>
+      <div style={{ fontSize: '14px', fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.6, color: '#fff', textAlign: 'center', marginBottom: '5px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{creative.business_name}</div>
+      <div style={{ fontSize: '12px', fontWeight: 400, lineHeight: 1.6, color: GREEN, textAlign: 'center', marginBottom: '10px' }}>{skillLabel}</div>
       {location && (
         <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center', marginBottom: '10px' }}>
           <span style={{ color: 'rgba(255,255,255,0.5)', display: 'flex' }}><IconPin /></span>
-          <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.6)' }}>{location}</span>
+          <span style={{ fontSize: '12px', fontWeight: 400, lineHeight: 1.6, color: 'rgba(255,255,255,0.65)' }}>{location}</span>
         </div>
       )}
       {creative.bio && isCenter && (
-        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.55)', textAlign: 'center', lineHeight: '1.5', marginBottom: '12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{creative.bio}</div>
+        <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.65)', textAlign: 'center', lineHeight: 1.6, fontWeight: 400, marginBottom: '12px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{creative.bio}</div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
         <span style={{ color: '#F59E0B', display: 'flex' }}><IconStar /></span>
-        <span style={{ fontSize: '13px', color: '#fff', fontWeight: '600' }}>{Number(creative.avg_rating || 0).toFixed(1)}</span>
-        <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)' }}>({creative.review_count || 0})</span>
+        <span style={{ fontSize: '13px', color: '#fff', fontWeight: 700, letterSpacing: '-1px', lineHeight: 1.6 }}>{Number(creative.avg_rating || 0).toFixed(1)}</span>
+        <span style={{ fontSize: '12px', fontWeight: 400, lineHeight: 1.6, color: 'rgba(255,255,255,0.35)' }}>({creative.review_count || 0})</span>
       </div>
     </div>
   );
@@ -171,7 +201,15 @@ function FanCarousel({ creatives, autoPlay = true }) {
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         {creatives.map((_, i) => (
           <button key={i} type="button" onClick={() => { clearInterval(intervalRef.current); goTo(i); startAuto(); }}
-            style={{ width: i === activeIndex ? '24px' : '8px', height: '8px', borderRadius: '4px', border: 'none', cursor: 'pointer', background: i === activeIndex ? GREEN : 'rgba(255,255,255,0.25)', transition: 'all 0.3s ease', padding: 0 }} aria-label={i === activeIndex ? `Slide ${i + 1} of ${creatives.length}, current` : `Go to slide ${i + 1}`} />
+            style={{
+              width: i === activeIndex ? '24px' : '8px', height: '8px', borderRadius: '4px',
+              border: i === activeIndex ? '1px solid rgba(29,185,84,0.45)' : '1px solid rgba(255,255,255,0.12)',
+              cursor: 'pointer',
+              backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+              background: i === activeIndex ? 'linear-gradient(135deg, rgba(29,185,84,0.35), rgba(29,185,84,0.15))' : 'rgba(255,255,255,0.06)',
+              boxShadow: i === activeIndex ? '0 2px 8px rgba(29,185,84,0.2), inset 0 1px 0 rgba(255,255,255,0.08)' : 'none',
+              transition: 'all 0.3s ease', padding: 0,
+            }} aria-label={i === activeIndex ? `Slide ${i + 1} of ${creatives.length}, current` : `Go to slide ${i + 1}`} />
         ))}
       </div>
     </div>
@@ -305,15 +343,15 @@ export default function HomePage() {
   };
 
   const sectionHeading = (text) => (
-    <h2 style={{ fontSize: isMobile ? '28px' : '36px', fontWeight: '700', margin: '0 0 10px', fontFamily: FONT, color: '#fff', letterSpacing: '-0.02em' }}>{text}</h2>
+    <h2 style={{ fontSize: isMobile ? '28px' : '36px', fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.6, margin: '0 0 10px', fontFamily: FONT, color: '#fff' }}>{text}</h2>
   );
 
   const sectionSubtitle = (text) => (
-    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '15px', margin: 0, lineHeight: 1.6, fontFamily: FONT }}>{text}</p>
+    <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '15px', fontWeight: 400, margin: 0, lineHeight: 1.6, fontFamily: FONT }}>{text}</p>
   );
 
   return (
-    <div style={{ background: BG, color: '#fff', fontFamily: FONT, overflowX: 'hidden' }}>
+    <div style={{ background: 'transparent', color: '#fff', fontFamily: FONT, overflowX: 'hidden' }}>
 
       {/* HERO */}
       <section ref={heroSectionRef} style={{
@@ -332,8 +370,8 @@ export default function HomePage() {
         <div style={{ position: 'relative', zIndex: 1 }}>
         <h1 style={{
           fontSize: isMobile ? 'clamp(36px, 11vw, 52px)' : 'clamp(52px, 6vw, 80px)',
-          fontWeight: '800', lineHeight: 1.0, margin: isMobile ? '0 0 24px' : '0 0 28px',
-          letterSpacing: '-0.03em', fontFamily: FONT,
+          fontWeight: 700, lineHeight: 1.0, margin: isMobile ? '0 0 24px' : '0 0 28px',
+          letterSpacing: '-0.5px', fontFamily: FONT,
           whiteSpace: isMobile ? 'normal' : 'nowrap',
         }}>
           <span style={{ color: PINK }}>Connect.</span>{' '}
@@ -341,17 +379,19 @@ export default function HomePage() {
           <span style={{ color: GREEN, textShadow: `0 0 60px rgba(29,185,84,0.5), 0 0 120px rgba(29,185,84,0.2)` }}>Create</span>
         </h1>
 
-        <p style={{ fontSize: isMobile ? '16px' : '18px', color: 'rgba(192,200,216,0.8)', maxWidth: '520px', lineHeight: '1.7', margin: '0 0 44px', fontFamily: FONT }}>
+        <p style={{ fontSize: isMobile ? '16px' : '18px', color: 'rgba(255,255,255,0.85)', maxWidth: '520px', lineHeight: 1.6, fontWeight: 400, margin: '0 0 44px', fontFamily: FONT }}>
           Australia's home for visual creatives. Showcase your work, connect with clients, and build a career on your own terms.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', width: isMobile ? '100%' : 'auto' }}>
-          <button type="button" onClick={() => navigate('/join')} style={{ background: GREEN, color: '#000', border: 'none', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '700', cursor: 'pointer', boxShadow: `0 0 24px rgba(29,185,84,0.35)`, minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Join as a Creative</button>
-          <button type="button" onClick={() => navigate('/creatives')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Find a Creative</button>
-          <button type="button" onClick={() => navigate('/jobs')} style={{ background: 'transparent', color: '#fff', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '100px', padding: '14px 28px', fontSize: '15px', fontWeight: '600', cursor: 'pointer', minHeight: '44px', width: isMobile ? '100%' : 'auto', fontFamily: FONT }}>Post a Job</button>
+          <Button variant="primary" size="lg" onClick={() => navigate('/join')} style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}>Join as a Creative</Button>
+          <Button variant="ghost" size="lg" onClick={() => navigate('/creatives')} style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}>Find a Creative</Button>
+          <Button variant="ghost" size="lg" onClick={() => navigate('/jobs')} style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}>Post a Job</Button>
         </div>
         </div>
       </section>
+
+      <div style={{ height: '1px', width: '100%', maxWidth: '960px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
 
       {/* VALUE PROPS */}
       <section style={{ padding: isMobile ? '0 16px 72px' : '0 24px 96px', position: 'relative' }}>
@@ -363,14 +403,16 @@ export default function HomePage() {
             { icon: '🇦🇺', title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
             { icon: '⚡', title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
           ].map(item => (
-            <div key={item.title} style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', padding: '28px 24px', fontFamily: FONT }}>
-              <div style={{ fontSize: '28px', marginBottom: '14px' }}>{item.icon}</div>
-              <div style={{ fontSize: '16px', fontWeight: '700', color: '#fff', marginBottom: '10px' }}>{item.title}</div>
-              <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.5)', lineHeight: 1.6 }}>{item.desc}</div>
+            <div key={item.title} style={{ ...GLASS_CARD, padding: '28px 24px', fontFamily: FONT }}>
+              <div style={{ fontSize: '28px', marginBottom: '14px', lineHeight: 1 }}>{item.icon}</div>
+              <div style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '-0.3px', lineHeight: 1.6, color: '#fff', marginBottom: '10px' }}>{item.title}</div>
+              <div style={{ fontSize: '14px', fontWeight: 400, color: 'rgba(255,255,255,0.75)', lineHeight: 1.6 }}>{item.desc}</div>
             </div>
           ))}
         </div>
       </section>
+
+      <div style={{ height: '1px', width: '100%', maxWidth: '1100px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
 
       {/* FEATURED CREATIVES — only show if there are creatives */}
       {!loading && featuredCreatives.length > 0 && (
@@ -384,6 +426,10 @@ export default function HomePage() {
             <FanCarousel creatives={featuredCreatives} />
           </div>
         </section>
+      )}
+
+      {(!loading && featuredCreatives.length > 0) && (
+        <div style={{ height: '1px', width: '100%', maxWidth: '1100px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
       )}
 
       {/* ELITE CREATIVES — only show if there are elite creatives */}
@@ -401,6 +447,10 @@ export default function HomePage() {
         </section>
       )}
 
+      {(!loading && eliteCreatives.length > 0) && (
+        <div style={{ height: '1px', width: '100%', maxWidth: '1100px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
+      )}
+
       {/* BROWSE BY SPECIALTY */}
       <section style={{ padding: isMobile ? '0 16px 72px' : '0 24px 96px', position: 'relative' }}>
         <GlowBlob color={`rgba(29,185,84,0.5)`} top="50%" left="50%" size={700} opacity={0.05} />
@@ -413,17 +463,42 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
-                background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: '12px', padding: isMobile ? '16px 12px' : '24px 16px',
+                ...GLASS_CARD,
+                borderRadius: '12px',
+                padding: isMobile ? '16px 12px' : '24px 16px',
                 cursor: 'pointer', textAlign: 'left', color: '#fff',
                 minHeight: isMobile ? '140px' : '160px', display: 'flex', flexDirection: 'column',
                 fontFamily: FONT, transition: 'all 0.2s ease',
-              }}>
-                <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'rgba(255,255,255,0.7)' }}>
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)';
+                e.currentTarget.style.transform = 'translateY(-3px)';
+                e.currentTarget.style.boxShadow = '0 16px 48px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.12)';
+              }}
+              onMouseLeave={(e) => {
+                const s = e.currentTarget.style;
+                s.background = GLASS_CARD.background;
+                s.backdropFilter = GLASS_CARD.backdropFilter;
+                s.webkitBackdropFilter = GLASS_CARD.WebkitBackdropFilter;
+                s.border = GLASS_CARD.border;
+                s.borderTop = GLASS_CARD.borderTop;
+                s.borderLeft = GLASS_CARD.borderLeft;
+                s.borderRadius = '12px';
+                s.boxShadow = GLASS_CARD.boxShadow;
+                s.transform = '';
+              }}
+              >
+                <div style={{
+                  width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px',
+                  backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
+                  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderTop: '1px solid rgba(255,255,255,0.12)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'rgba(255,255,255,0.85)',
+                }}>
                   {CATEGORY_ICONS[cat.key]}
                 </div>
-                <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: '600', marginBottom: '4px', lineHeight: 1.35 }}>{cat.label}</div>
-                <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)', marginTop: 'auto' }}>Browse all →</div>
+                <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: 600, letterSpacing: '-0.3px', marginBottom: '4px', lineHeight: 1.35 }}>{cat.label}</div>
+                <div style={{ fontSize: '13px', fontWeight: 400, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'rgba(255,255,255,0.35)', marginTop: 'auto', lineHeight: 1.6 }}>Browse all →</div>
               </button>
             ))}
           </div>

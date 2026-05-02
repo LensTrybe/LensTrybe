@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const CATEGORIES = ['Camera Bodies', 'Lenses', 'Lighting', 'Audio', 'Drones', 'Editing Hardware', 'Bags & Tripods', 'Miscellaneous']
 const CONDITIONS = ['New', 'Like New', 'Good', 'Fair']
@@ -285,31 +287,31 @@ export default function MarketplacePage() {
   })
 
   const s = {
-    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    page: { background: 'transparent', padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
     header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    tabs: { display: 'flex', gap: '4px', ...GLASS_CARD, padding: '4px', borderRadius: '10px', marginBottom: '20px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
     tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s', fontFamily: 'var(--font-ui)' }),
     postBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
     filters: { display: 'flex', gap: '10px', marginBottom: '20px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
-    searchInput: { flex: 1, minWidth: isMobile ? '100%' : '200px', padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
-    select: { padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    searchInput: { ...GLASS_NATIVE_FIELD, flex: 1, minWidth: isMobile ? '100%' : '200px', padding: '9px 14px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    select: { ...GLASS_NATIVE_FIELD, padding: '9px 14px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontFamily: 'var(--font-ui)', outline: 'none' },
     grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '16px' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px', cursor: 'pointer', position: 'relative', transition: 'border-color 0.15s' },
-    cardTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' },
+    card: { ...GLASS_CARD, borderRadius: '12px', padding: '16px', cursor: 'pointer', position: 'relative', transition: 'border-color 0.15s' },
+    cardTitle: { ...TYPO.heading, fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' },
     cardPrice: { fontSize: '16px', fontWeight: 700, color: '#1DB954', marginBottom: '6px' },
     cardMeta: { fontSize: '12px', color: 'var(--text-muted)' },
     saveBtn: { position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', fontSize: '18px', cursor: 'pointer', padding: '2px' },
     empty: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '560px', maxHeight: isMobile ? '100vh' : '90vh', minHeight: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    modalHeader: { padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '560px', maxHeight: isMobile ? '100vh' : '90vh', minHeight: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
     modalBody: { padding: isMobile ? '16px' : '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
-    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
-    input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
+    label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
+    input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
     grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
     actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', padding: '16px 24px', borderTop: '1px solid var(--border-subtle)' },
-    cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
+    cancelBtn: { padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
   }
 
   return (
@@ -328,7 +330,7 @@ export default function MarketplacePage() {
 
       <div style={s.header}>
         <div style={s.title}>Marketplace</div>
-        <button type="button" style={s.postBtn} onClick={() => setShowCreate(true)}>+ Post Listing</button>
+        <Button type="button" variant="primary" onClick={() => setShowCreate(true)}>+ Post Listing</Button>
       </div>
 
       <div style={s.tabs}>
@@ -509,7 +511,7 @@ export default function MarketplacePage() {
               </label>
             </div>
             <div style={s.actions}>
-              <button type="button" style={s.cancelBtn} onClick={closeCreateModal}>Cancel</button>
+              <Button type="button" variant="secondary" onClick={closeCreateModal}>Cancel</Button>
               <button type="button" style={{ ...s.postBtn, opacity: saving || !form.title || !form.price ? 0.5 : 1 }} disabled={saving || !form.title || !form.price} onClick={createListing}>
                 {saving ? 'Posting…' : 'Post Listing'}
               </button>
@@ -543,7 +545,7 @@ export default function MarketplacePage() {
                       })
                       setEditPhotoUrls(selected.photos ?? [])
                     }}
-                    style={{ padding: '6px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                    style={{ padding: '6px 14px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
                   >✎ Edit</button>
                 )}
                 <button type="button" onClick={() => { setSelected(null); setEditing(false) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
@@ -570,8 +572,8 @@ export default function MarketplacePage() {
                   )}
                   <div style={{ fontSize: '28px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(selected.price).toFixed(2)}</div>
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                    <span style={{ padding: '4px 10px', background: 'var(--bg-base)', borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.category}</span>
-                    <span style={{ padding: '4px 10px', background: 'var(--bg-base)', borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.condition}</span>
+                    <span style={{ padding: '4px 10px', ...GLASS_CARD, borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.category}</span>
+                    <span style={{ padding: '4px 10px', ...GLASS_CARD, borderRadius: '999px', fontSize: '12px', color: 'var(--text-muted)' }}>{selected.condition}</span>
                     {selected.open_to_swaps && <span style={{ padding: '4px 10px', background: 'rgba(168,85,247,0.1)', borderRadius: '999px', fontSize: '12px', color: '#a855f7', fontWeight: 600 }}>Open to swaps</span>}
                   </div>
                   {selected.location && <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>📍 {selected.location}</div>}
@@ -652,7 +654,7 @@ export default function MarketplacePage() {
             <div style={s.actions}>
               {editing ? (
                 <>
-                  <button type="button" style={s.cancelBtn} onClick={() => setEditing(false)}>Cancel</button>
+                  <Button type="button" variant="secondary" onClick={() => setEditing(false)}>Cancel</Button>
                   <button type="button" style={{ ...s.postBtn, opacity: saving ? 0.5 : 1 }} disabled={saving} onClick={saveEdit}>
                     {saving ? 'Saving…' : 'Save Changes'}
                   </button>
@@ -671,7 +673,7 @@ export default function MarketplacePage() {
                   {selected?.creative_id === user?.id && (
                     <button type="button" onClick={() => deleteListing(selected.id)} style={{ padding: '9px 18px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Delete</button>
                   )}
-                  <button type="button" style={s.cancelBtn} onClick={() => { setSelected(null); setEditing(false) }}>Close</button>
+                  <Button type="button" variant="secondary" onClick={() => { setSelected(null); setEditing(false) }}>Close</Button>
                 </>
               )}
             </div>
@@ -680,18 +682,18 @@ export default function MarketplacePage() {
       )}
 
       {showContactSeller && selected && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '460px', padding: '28px' }}>
+        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '460px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Contact Seller</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>About: {selected.title}</div>
             <textarea
               value={contactMessage}
               onChange={e => setContactMessage(e.target.value)}
               placeholder="Hi, I'm interested in your listing. Is it still available?"
-              style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '100px', resize: 'vertical', marginBottom: '16px' }}
+              style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '100px', resize: 'vertical', marginBottom: '16px' }}
             />
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => { setShowContactSeller(false); setContactMessage('') }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => { setShowContactSeller(false); setContactMessage('') }} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
               <button
                 type="button"
                 onClick={() => void contactSeller()}
@@ -708,7 +710,7 @@ export default function MarketplacePage() {
       {lightbox && (
         <div
           onClick={() => setLightbox(null)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.92)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}
+          style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', cursor: 'zoom-out' }}
         >
           <button
             type="button"

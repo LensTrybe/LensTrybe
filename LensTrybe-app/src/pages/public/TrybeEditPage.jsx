@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
+import Button from '../../components/ui/Button'
+import { GLASS_CARD, TYPO } from '../../lib/glassTokens'
 
 const ISSUE_01 = {
   issueNumber: 1,
@@ -8,6 +10,7 @@ const ISSUE_01 = {
 }
 
 export default function TrybeEditPage() {
+  const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   useEffect(() => {
     function handleResize() {
@@ -17,7 +20,7 @@ export default function TrybeEditPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   const styles = {
-    page: { background: 'var(--bg-base)', minHeight: 'calc(100vh - 64px)', paddingBottom: '80px' },
+    page: { background: 'transparent', minHeight: 'calc(100vh - 64px)', paddingBottom: '80px' },
     header: {
       padding: isMobile ? '40px 16px 24px' : '80px 24px 48px',
       maxWidth: '1280px',
@@ -32,17 +35,16 @@ export default function TrybeEditPage() {
       fontFamily: 'var(--font-display)',
       fontSize: 'clamp(36px, 5vw, 56px)',
       color: 'var(--text-primary)',
-      fontWeight: 400,
       margin: 0,
+      ...TYPO.heading,
       lineHeight: 1.1,
     },
     subtitle: {
       fontSize: isMobile ? '14px' : '17px',
       color: 'var(--text-secondary)',
       maxWidth: '560px',
-      lineHeight: 1.65,
-      fontFamily: 'var(--font-ui)',
       margin: 0,
+      ...TYPO.body,
     },
     grid: {
       display: 'grid',
@@ -53,9 +55,7 @@ export default function TrybeEditPage() {
       padding: isMobile ? '0 16px' : '0 24px',
     },
     card: {
-      background: '#13131f',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderRadius: '20px',
+      ...GLASS_CARD,
       padding: isMobile ? '16px' : '24px',
       display: 'flex',
       flexDirection: 'column',
@@ -64,37 +64,18 @@ export default function TrybeEditPage() {
     },
     issueBadge: {
       fontSize: '11px',
-      letterSpacing: '0.08em',
-      textTransform: 'uppercase',
       color: 'var(--green)',
-      fontWeight: 600,
+      ...TYPO.label,
     },
     cardTitle: {
       fontSize: '18px',
-      fontWeight: 600,
       color: 'var(--text-primary)',
       fontFamily: 'var(--font-display)',
-      lineHeight: 1.3,
       margin: 0,
+      ...TYPO.heading,
+      lineHeight: 1.3,
     },
-    cardMeta: { fontSize: '14px', color: 'var(--text-secondary)' },
-    readLink: {
-      display: 'inline-flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginTop: '8px',
-      fontFamily: 'var(--font-ui)',
-      fontWeight: 500,
-      fontSize: '12px',
-      padding: '6px 12px',
-      borderRadius: 'var(--radius-lg)',
-      background: 'transparent',
-      color: 'var(--text-secondary)',
-      border: '1px solid var(--border-strong)',
-      textDecoration: 'none',
-      width: 'fit-content',
-      transition: 'all var(--transition-base)',
-    },
+    cardMeta: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
     glow: {
       position: 'absolute',
       top: '10%',
@@ -131,9 +112,9 @@ export default function TrybeEditPage() {
             <span style={styles.issueBadge}>Issue {ISSUE_01.issueNumber}</span>
             <h2 style={styles.cardTitle}>{ISSUE_01.title}</h2>
             <p style={styles.cardMeta}>{ISSUE_01.monthYear}</p>
-            <Link to="/the-trybe-edit/issue-01" style={styles.readLink}>
+            <Button variant="ghost" size="sm" style={{ marginTop: '8px', width: 'fit-content' }} onClick={() => navigate('/the-trybe-edit/issue-01')}>
               Read Issue
-            </Link>
+            </Button>
           </article>
         </div>
       </section>

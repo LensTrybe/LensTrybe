@@ -5,6 +5,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 function StarRating({ value, onChange, readonly }) {
   const [hovered, setHovered] = useState(null)
@@ -92,13 +93,12 @@ export default function ReviewsPage() {
   const canAddMore = importedCount < 5
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     summaryCard: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-xl)',
       padding: '24px',
       display: 'flex',
@@ -106,17 +106,16 @@ export default function ReviewsPage() {
       gap: '32px',
       flexDirection: isMobile ? 'column' : 'row',
     },
-    avgRating: { fontFamily: 'var(--font-display)', fontSize: '56px', color: 'var(--text-primary)', lineHeight: 1 },
+    avgRating: { ...TYPO.stat, fontFamily: 'var(--font-display)', fontSize: '56px', color: 'var(--text-primary)', lineHeight: 1 },
     ratingLabel: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     divider: { width: '1px', height: '60px', background: 'var(--border-default)' },
     statsRow: { display: 'flex', gap: '32px', flexWrap: 'wrap' },
     statItem: { display: 'flex', flexDirection: 'column', gap: '4px' },
     statValue: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)' },
-    statLabel: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    statLabel: { ...TYPO.label, fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     reviewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '16px' },
     reviewCard: {
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-xl)',
       padding: '24px',
       display: 'flex',
@@ -129,21 +128,20 @@ export default function ReviewsPage() {
     reviewMeta: { display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' },
     reviewDate: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     emptyState: {
+      ...GLASS_CARD,
       padding: '64px 24px',
       textAlign: 'center',
       color: 'var(--text-muted)',
       fontSize: '14px',
       fontFamily: 'var(--font-ui)',
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
       borderRadius: 'var(--radius-xl)',
     },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
-    label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
-    textarea: { width: '100%', minHeight: '100px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
+    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
+    textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    infoNote: { padding: '12px 16px', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
+    infoNote: { ...GLASS_CARD, padding: '12px 16px', borderRadius: 'var(--radius-lg)', fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
   }
 
   return (

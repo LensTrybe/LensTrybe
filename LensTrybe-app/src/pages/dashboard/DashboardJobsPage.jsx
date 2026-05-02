@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom'
 import useAuthUser from '../../hooks/useAuthUser'
 import { supabase } from '../../lib/supabaseClient'
 import { formatJobBudget } from '../../lib/jobPricing.js'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const PAGE = {
   bg: '#0a0a0f',
@@ -62,6 +64,7 @@ export default function DashboardJobsPage() {
   }, [authLoading, load])
 
   const sectionTitle = {
+    ...TYPO.heading,
     margin: '0 0 14px',
     fontSize: 16,
     fontWeight: 700,
@@ -70,8 +73,7 @@ export default function DashboardJobsPage() {
   }
 
   const cardStyle = {
-    background: PAGE.card,
-    border: PAGE.border,
+    ...GLASS_CARD,
     borderRadius: 10,
     padding: 16,
     marginBottom: 12,
@@ -81,7 +83,7 @@ export default function DashboardJobsPage() {
   return (
     <section
       style={{
-        background: PAGE.bg,
+        background: 'transparent',
         minHeight: '100%',
         padding: '28px 28px 48px',
         color: PAGE.text,
@@ -97,7 +99,7 @@ export default function DashboardJobsPage() {
       </Link>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700, color: '#fff' }}>Jobs</h1>
+        <h1 style={{ ...TYPO.heading, margin: 0, fontSize: 24, fontWeight: 700, color: '#fff' }}>Jobs</h1>
         <Link
           to="/dashboard/job-board"
           style={{
@@ -159,7 +161,7 @@ export default function DashboardJobsPage() {
                       {job?.title || 'Job listing'}
                     </div>
                     {app.quoted_budget ? (
-                      <div style={{ fontSize: 14, fontWeight: 700, color: PAGE.pink, marginBottom: 6 }}>Your quote: {formatJobBudget(app.quoted_budget)}</div>
+                      <div style={{ ...TYPO.stat, fontSize: 14, fontWeight: 700, color: PAGE.pink, marginBottom: 6 }}>Your quote: {formatJobBudget(app.quoted_budget)}</div>
                     ) : job?.budget_range ? (
                       <div style={{ fontSize: 12, color: PAGE.sub, marginBottom: 6 }}>
                         Listing budget: {formatJobBudget(job.budget_range)}

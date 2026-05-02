@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -105,10 +107,10 @@ export default function AvailabilityPage() {
   const upcomingBlocked = blockedDates.filter(d => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))
 
   const s = {
-    page: { padding: isMobile ? '16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    page: { background: 'transparent', padding: isMobile ? '16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
     layout: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: '24px', alignItems: 'start' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px' },
+    card: { ...GLASS_CARD, borderRadius: '12px', padding: '16px' },
     navBtn: { background: 'none', border: '1px solid var(--border-default)', borderRadius: '6px', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
     dayCell: (isBlocked, isToday, isPast, isEmpty) => ({
       aspectRatio: '1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -120,11 +122,11 @@ export default function AvailabilityPage() {
       fontWeight: isToday ? 600 : 400,
       transition: 'all 0.1s',
     }),
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '440px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
-    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
-    select: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
-    input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
+    modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '440px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
+    label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
+    select: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
+    input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
   }
 
   return (
@@ -179,7 +181,7 @@ export default function AvailabilityPage() {
               )
             })}
           </div>
-          <div style={{ marginTop: '16px', padding: '12px 14px', background: 'var(--bg-base)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
+          <div style={{ marginTop: '16px', padding: '12px 14px', ...GLASS_CARD, borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
             Click a date to block it. Click a blocked date (red) to unblock it.
           </div>
         </div>
@@ -278,7 +280,7 @@ export default function AvailabilityPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
               <button type="button" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ padding: '9px 18px', background: '#ef4444', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Blocking…' : 'Block Date'}
               </button>

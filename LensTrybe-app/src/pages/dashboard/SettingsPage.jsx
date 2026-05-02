@@ -7,6 +7,7 @@ import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 const SUBSCRIPTION_PLAN_ORDER = { basic: 0, pro: 1, expert: 2, elite: 3 }
 
@@ -100,11 +101,10 @@ const PRICING_PAGE_TIERS = [
 /** Copied from PricingPage.jsx `styles` (toggle + plan cards only). */
 const PRICING_COMPARE_STYLES = {
   toggle: {
+    ...GLASS_CARD,
     display: 'flex',
     alignItems: 'center',
     gap: '12px',
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-default)',
     borderRadius: 'var(--radius-full)',
     padding: '4px',
     width: 'fit-content',
@@ -126,7 +126,7 @@ const PRICING_COMPARE_STYLES = {
   }),
   saveBadge: {
     fontSize: '10px',
-    background: 'var(--green-dim)',
+    background: GLASS_CARD_GREEN.background,
     color: 'var(--green)',
     padding: '2px 6px',
     borderRadius: 'var(--radius-full)',
@@ -140,7 +140,7 @@ const PRICING_COMPARE_STYLES = {
     width: '100%',
   },
   card: (borderColor, hasBadge) => ({
-    background: 'var(--bg-elevated)',
+    ...glassCardAccentBorder(borderColor),
     border: `1px solid ${borderColor}`,
     borderRadius: 'var(--radius-xl)',
     padding: `${hasBadge ? '44px' : '32px'} 28px 32px`,
@@ -385,16 +385,16 @@ export default function SettingsPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden', width: 'fit-content' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflow: 'hidden', width: 'fit-content' },
     tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    card: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
     cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    sectionTitle: { ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     sectionSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    tierCard: { background: 'var(--bg-overlay)', border: `1px solid ${tierColor}`, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
+    tierCard: { ...glassCardAccentBorder(tierColor), borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
     tierName: { fontFamily: 'var(--font-display)', fontSize: '28px', color: tierColor, fontWeight: 400 },
     tierSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     dangerCard: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
@@ -487,7 +487,7 @@ export default function SettingsPage() {
                     type="button"
                     disabled={loading}
                     onClick={() => void openBillingPortal()}
-                    style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-ui)', opacity: loading ? 0.7 : 1 }}
+                    style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-ui)', opacity: loading ? 0.7 : 1 }}
                   >
                     {loading ? 'Loading…' : 'Manage Billing'}
                   </button>
@@ -575,7 +575,7 @@ export default function SettingsPage() {
 
       {activeTab === 'password' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
+          <div style={{ ...GLASS_CARD, borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
             <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Update Email</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>A confirmation link will be sent to your new email address.</div>
             {emailMsg && (
@@ -589,7 +589,7 @@ export default function SettingsPage() {
                 onChange={e => setCurrentEmailInput(e.target.value)}
                 placeholder="Current email"
                 type="email"
-                style={{ flex: 1, padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
+                style={{ flex: 1, padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
               />
             </div>
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
@@ -598,7 +598,7 @@ export default function SettingsPage() {
                 onChange={e => setNewEmail(e.target.value)}
                 placeholder="New email address"
                 type="email"
-                style={{ flex: 1, padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
+                style={{ flex: 1, padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
               />
               <button
                 onClick={updateEmail}

@@ -3,7 +3,14 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import Badge from '../../components/ui/Badge'
+import {
+  DIVIDER_GRADIENT_STYLE,
+  GLASS_CARD,
+  GLASS_CARD_GREEN,
+  GLASS_NATIVE_FIELD,
+  TYPO,
+  glassCardAccentBorder,
+} from '../../lib/glassTokens'
 
 const STEPS = ['Plan', 'Account', 'Skills', 'Specialties', 'Location', 'Credentials', 'Photo', 'Review']
 
@@ -274,7 +281,7 @@ export default function SignupPage() {
   const styles = {
     page: {
       minHeight: '100vh',
-      background: 'var(--bg-base)',
+      background: 'transparent',
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'center',
@@ -283,8 +290,8 @@ export default function SignupPage() {
     container: { width: '100%', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '40px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
     logo: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
+    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', ...TYPO.heading },
+    subtitle: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
     progress: { display: 'flex', gap: '6px' },
     progressDot: (active, done) => ({
       height: '3px',
@@ -294,15 +301,14 @@ export default function SignupPage() {
       opacity: done ? 1 : active ? 1 : 0.4,
       transition: 'all var(--transition-base)',
     }),
-    stepLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.08em', textTransform: 'uppercase' },
+    stepLabel: { fontSize: '11px', ...TYPO.label },
     content: { display: 'flex', flexDirection: 'column', gap: '20px' },
     tierGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
     billingToggle: {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      background: 'var(--bg-elevated)',
-      border: '1px solid var(--border-default)',
+      ...GLASS_CARD,
       borderRadius: 'var(--radius-full)',
       padding: '4px',
       width: 'fit-content',
@@ -332,66 +338,68 @@ export default function SignupPage() {
       fontWeight: 600,
     },
     tierCard: (selected, color) => ({
+      ...(selected ? glassCardAccentBorder(color) : GLASS_CARD),
       padding: '20px',
-      borderRadius: 'var(--radius-xl)',
-      border: `1px solid ${selected ? color : 'var(--border-default)'}`,
-      background: selected ? 'var(--bg-overlay)' : 'var(--bg-elevated)',
       cursor: 'pointer',
       transition: 'all var(--transition-base)',
       display: 'flex',
       flexDirection: 'column',
       gap: '6px',
     }),
-    tierName: { fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    tierAnnualMeta: { fontSize: '11px', color: 'var(--green)', fontFamily: 'var(--font-ui)', fontWeight: 500 },
-    tierDesc: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    tierName: { fontSize: '16px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
+    tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', ...TYPO.stat },
+    tierAnnualMeta: { fontSize: '11px', color: 'var(--green)', fontFamily: 'var(--font-ui)', ...TYPO.body, fontWeight: 500 },
+    tierDesc: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', ...TYPO.body },
     skillGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' },
     skillChip: (selected, disabled) => ({
       padding: '10px 16px',
+      ...(disabled
+        ? { ...GLASS_CARD, cursor: 'not-allowed', opacity: 0.55 }
+        : selected
+          ? {
+              ...glassCardAccentBorder('var(--green)'),
+              background: 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)',
+            }
+          : GLASS_CARD),
       borderRadius: 'var(--radius-lg)',
-      border: `1px solid ${
-        disabled
-          ? 'var(--border-default)'
-          : selected
-            ? 'var(--green)'
-            : 'var(--border-default)'
-      }`,
-      background: disabled ? 'var(--bg-base)' : selected ? 'var(--green-dim)' : 'var(--bg-elevated)',
       color: disabled ? 'var(--text-muted)' : selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '13px',
-      fontWeight: selected ? 500 : 400,
       cursor: disabled ? 'not-allowed' : 'pointer',
-      opacity: disabled ? 0.55 : 1,
       transition: 'all var(--transition-base)',
       textAlign: 'center',
       fontFamily: 'var(--font-ui)',
+      ...TYPO.body,
+      fontWeight: selected ? 500 : 400,
     }),
     skillLimitHint: {
       fontSize: '13px',
       color: 'var(--text-muted)',
-      fontFamily: 'var(--font-ui)',
-      lineHeight: 1.55,
       margin: 0,
       marginTop: '4px',
+      ...TYPO.body,
     },
     specialtyWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     specialtyChip: (selected) => ({
       padding: '6px 14px',
+      ...(selected
+        ? {
+            ...glassCardAccentBorder('var(--green)'),
+            background: 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)',
+          }
+          : GLASS_CARD),
       borderRadius: 'var(--radius-full)',
-      border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`,
-      background: selected ? 'var(--green-dim)' : 'transparent',
       color: selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '13px',
       cursor: 'pointer',
       transition: 'all var(--transition-base)',
       fontFamily: 'var(--font-ui)',
+      ...TYPO.body,
     }),
     row: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
-    sectionTitle: { fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', marginBottom: '-8px' },
+    sectionTitle: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', marginBottom: '-8px', ...TYPO.heading },
     avatarUpload: {
-      border: '2px dashed var(--border-default)',
-      borderRadius: 'var(--radius-xl)',
+      ...GLASS_CARD,
+      border: '2px dashed rgba(255,255,255,0.12)',
       padding: '40px',
       textAlign: 'center',
       cursor: 'pointer',
@@ -412,7 +420,7 @@ export default function SignupPage() {
       fontFamily: 'var(--font-ui)',
     },
     actions: { display: 'flex', gap: '12px', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' },
-    footerNote: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)' },
+    footerNote: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', ...TYPO.body },
     passwordToggleBtn: {
       border: 'none',
       background: 'transparent',
@@ -608,8 +616,8 @@ export default function SignupPage() {
             <>
               <Input label="City or suburb" placeholder="Brisbane" value={form.city} onChange={e => update('city', e.target.value)} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                <label style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>State</label>
-                <select value={form.state} onChange={e => update('state', e.target.value)} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', color: form.state ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: '15px', outline: 'none', cursor: 'pointer' }}>
+                <label style={{ fontSize: '13px', ...TYPO.label }}>State</label>
+                <select value={form.state} onChange={e => update('state', e.target.value)} style={{ padding: '10px 14px', cursor: 'pointer', color: form.state ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '15px', ...GLASS_NATIVE_FIELD }}>
                   <option value="">Select state</option>
                   {AU_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -620,7 +628,7 @@ export default function SignupPage() {
           {/* Step 5 — Credentials (optional) */}
           {step === 5 && (
             <>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-default)' }}>
+              <div style={{ ...GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
                 Credentials are optional. They appear as trust badges on your public profile. Documents are private — clients only see the badge, not the file.
               </div>
               <Input label="ABN or ACN (optional)" placeholder="12 345 678 901" value={form.abn ?? ''} onChange={e => update('abn', e.target.value)} />
@@ -638,10 +646,10 @@ export default function SignupPage() {
                   ? <img src={form.avatarPreview} alt="Preview" style={styles.avatarPreview} />
                   : <div style={{ fontSize: '32px' }}>📷</div>
                 }
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
                   {form.avatarPreview ? 'Click to change photo' : 'Click to upload profile photo'}
                 </div>
-                <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>JPG or PNG, max 5MB</div>
+                <div style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>JPG or PNG, max 5MB</div>
               </div>
               <input id="avatar-upload" type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
                 const file = e.target.files[0]
@@ -650,7 +658,7 @@ export default function SignupPage() {
                   update('avatarPreview', URL.createObjectURL(file))
                 }
               }} />
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textAlign: 'center' }}>Optional — you can add this from your dashboard later.</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', ...TYPO.body }}>Optional — you can add this from your dashboard later.</div>
             </>
           )}
 
@@ -664,14 +672,17 @@ export default function SignupPage() {
                 { label: 'Email', value: form.email },
                 { label: 'Skills', value: form.skillTypes.join(', ') },
                 { label: 'Location', value: `${form.city}, ${form.state}` },
-              ].map((row, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0', borderBottom: '1px solid var(--border-subtle)' }}>
-                  <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{row.label}</span>
-                  <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', textAlign: 'right', maxWidth: '60%' }}>{row.value}</span>
+              ].map((row, i, arr) => (
+                <div key={row.label}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', padding: '12px 0' }}>
+                    <span style={{ fontSize: '13px', ...TYPO.label }}>{row.label}</span>
+                    <span style={{ fontSize: '13px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', textAlign: 'right', maxWidth: '60%', ...TYPO.body }}>{row.value}</span>
+                  </div>
+                  {i < arr.length - 1 ? <div style={DIVIDER_GRADIENT_STYLE} aria-hidden /> : null}
                 </div>
               ))}
               {form.tier !== 'basic' && (
-                <div style={{ padding: '16px', background: 'var(--green-dim)', border: '1px solid rgba(29,185,84,0.3)', borderRadius: 'var(--radius-lg)', fontSize: '13px', color: 'var(--green)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
+                <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
                   After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after.
                 </div>
               )}

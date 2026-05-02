@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const STAGES = ['Lead', 'In Discussion', 'Booked', 'Completed', 'Archived']
 
@@ -127,16 +129,16 @@ export default function CRMPage() {
   )
 
   const s = {
-    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    page: { background: 'transparent', padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
     header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
     row: { display: 'flex', gap: '12px', alignItems: 'center', marginBottom: '20px', flexDirection: isMobile ? 'column' : 'row' },
-    search: { flex: 1, padding: '9px 14px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
+    search: { ...GLASS_NATIVE_FIELD, flex: 1, padding: '9px 14px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
     viewBtn: (active) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', background: active ? 'var(--bg-elevated)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }),
     addBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
     table: { width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '720px' : '100%' },
-    th: { textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-subtle)' },
-    td: { padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)', cursor: 'pointer' },
+    th: { ...TYPO.label, textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.08)' },
+    td: { ...TYPO.body, padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' },
     badge: (status) => {
       const colors = { Lead: '#6b7280', 'In Discussion': '#3b82f6', Booked: '#1DB954', Completed: '#a855f7', Archived: '#374151' }
       const c = colors[status] ?? '#6b7280'
@@ -144,17 +146,17 @@ export default function CRMPage() {
     },
     pipeline: { display: 'flex', gap: '16px', overflowX: isMobile ? 'hidden' : 'auto', paddingBottom: '16px', flexDirection: isMobile ? 'column' : 'row' },
     col: { minWidth: isMobile ? '100%' : '220px', flex: 1 },
-    colHeader: { fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', padding: '0 4px' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '10px', padding: '14px', marginBottom: '10px', cursor: 'pointer', transition: 'border-color 0.15s' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '520px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
-    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
-    input: { width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
+    colHeader: { ...TYPO.label, fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px', padding: '0 4px' },
+    card: { ...GLASS_CARD, borderRadius: '10px', padding: '14px', marginBottom: '10px', cursor: 'pointer', transition: 'border-color 0.15s' },
+    modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '520px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
+    label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
+    input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
     grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' },
     actions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' },
-    cancelBtn: { padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
+    cancelBtn: { padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' },
     mobileCardList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-    mobileCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' },
+    mobileCard: { ...GLASS_CARD, borderRadius: '12px', padding: '14px', display: 'flex', flexDirection: 'column', gap: '10px' },
     mobileCardRow: { display: 'flex', justifyContent: 'space-between', gap: '10px', alignItems: 'flex-start' },
   }
 
@@ -175,7 +177,7 @@ export default function CRMPage() {
 
       <div style={s.header}>
         <div style={s.title}>CRM</div>
-        <button style={s.addBtn} onClick={() => setShowCreate(true)}>+ Add Client</button>
+        <Button variant="primary" onClick={() => setShowCreate(true)}>+ Add Client</Button>
       </div>
 
       <div style={s.row}>
@@ -366,8 +368,8 @@ export default function CRMPage() {
       )}
 
       {showBookingDate && bookingDateContact && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '420px', padding: '28px' }}>
+        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '420px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Create Booking</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{bookingDateContact.name} has been moved to Booked.</div>
 
@@ -378,7 +380,7 @@ export default function CRMPage() {
                   type="date"
                   value={bookingDate}
                   onChange={e => setBookingDate(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                  style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
                 />
               </div>
               <div>
@@ -387,7 +389,7 @@ export default function CRMPage() {
                   value={bookingService}
                   onChange={e => setBookingService(e.target.value)}
                   placeholder="e.g. Wedding Photography, Brand Shoot..."
-                  style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                  style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
                 />
               </div>
             </div>
@@ -396,7 +398,7 @@ export default function CRMPage() {
               <button
                 type="button"
                 onClick={() => { setShowBookingDate(false); setBookingDateContact(null); setBookingDate(''); setBookingService('') }}
-                style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
                 Skip
               </button>

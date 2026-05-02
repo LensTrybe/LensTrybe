@@ -2,6 +2,18 @@ import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 
+const PAGE_BG =
+  'linear-gradient(135deg, #060610 0%, #0a0a1a 30%, #060d06 70%, #0a060d 100%)'
+
+const GLASS_HAMBURGER = {
+  backdropFilter: 'blur(40px) saturate(180%)',
+  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
+  border: '1px solid rgba(255,255,255,0.1)',
+  borderTop: '1px solid rgba(255,255,255,0.16)',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+}
+
 export default function DashboardLayout() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -31,14 +43,17 @@ export default function DashboardLayout() {
             width: '44px',
             height: '44px',
             borderRadius: '10px',
-            border: '1px solid var(--border-default)',
-            background: 'var(--bg-elevated)',
-            color: 'var(--text-primary)',
+            ...GLASS_HAMBURGER,
+            color: '#ffffff',
             cursor: 'pointer',
             fontSize: '20px',
+            fontWeight: 600,
+            letterSpacing: '-0.3px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
+            lineHeight: 1.6,
+            transition: 'all 0.2s',
           }}
           aria-label="Open navigation menu"
         >
@@ -48,10 +63,17 @@ export default function DashboardLayout() {
       {isMobile && mobileSidebarOpen && (
         <div
           onClick={() => setMobileSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.72)', zIndex: 999 }}
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            background: 'rgba(0,0,0,0.55)',
+            zIndex: 999,
+          }}
         />
       )}
-      <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: 'var(--bg-base)', width: '100%' }}>
+      <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: PAGE_BG, width: '100%', position: 'relative', zIndex: 1 }}>
         {!isMobile && <Sidebar isMobile={false} mobileOpen={false} onCloseMobile={() => setMobileSidebarOpen(false)} />}
         <main style={{
           flex: 1,

@@ -5,6 +5,7 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import Modal from '../../components/ui/Modal'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789'
@@ -236,13 +237,13 @@ export default function DeliverPage() {
   }
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tableWrap: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '12px 24px', borderBottom: '1px solid var(--border-subtle)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '760px' : 'auto' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '16px 24px', borderBottom: '1px solid var(--border-subtle)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '760px' : 'auto' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    tableWrap: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '760px' : 'auto' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 80px 120px minmax(200px, 1fr)', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '760px' : 'auto' },
     emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
@@ -255,7 +256,7 @@ export default function DeliverPage() {
     fileItem: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-md)', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end', paddingTop: '8px' },
     copyRow: { display: 'flex', alignItems: 'center', gap: '8px' },
-    copyInput: { flex: 1, background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', outline: 'none' },
+    copyInput: { flex: 1, ...GLASS_CARD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontSize: '12px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', outline: 'none' },
     viewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
@@ -371,7 +372,7 @@ export default function DeliverPage() {
               <button
                 type="button"
                 onClick={() => resendDelivery(d)}
-                style={{ padding: '5px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                style={{ padding: '5px 12px', ...GLASS_CARD, borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
                 Resend
               </button>
@@ -382,7 +383,7 @@ export default function DeliverPage() {
                   setEditForm({ title: d.title, client_name: d.client_name, client_email: d.client_email, notes: d.notes ?? d.message ?? '' })
                   setEditFiles(d.files ?? [])
                 }}
-                style={{ padding: '5px 12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                style={{ padding: '5px 12px', ...GLASS_CARD, borderRadius: '6px', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
               >
                 Edit
               </button>
@@ -435,7 +436,7 @@ export default function DeliverPage() {
           {form.files.length > 0 && (
             <div style={styles.fileList}>
               {form.files.map((file, i) => (
-                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-elevated)', borderRadius: '8px', marginBottom: '6px' }}>
+                <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', ...GLASS_CARD, borderRadius: '8px', marginBottom: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ fontSize: '18px' }}>{file.type?.startsWith('image') ? '🖼️' : file.type?.startsWith('video') ? '🎬' : '📄'}</span>
                     <div>
@@ -519,31 +520,31 @@ export default function DeliverPage() {
       )}
 
       {editingDelivery && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Edit Delivery</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Project Name</label>
-                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} />
+                <input style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.title} onChange={e => setEditForm(p => ({ ...p, title: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Name</label>
-                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_name} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} />
+                <input style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_name} onChange={e => setEditForm(p => ({ ...p, client_name: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Client Email</label>
-                <input style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_email} onChange={e => setEditForm(p => ({ ...p, client_email: e.target.value }))} />
+                <input style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }} value={editForm.client_email} onChange={e => setEditForm(p => ({ ...p, client_email: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>Notes to Client</label>
-                <textarea style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', minHeight: '80px', resize: 'vertical' }} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
+                <textarea style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', minHeight: '80px', resize: 'vertical' }} value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} />
               </div>
               <div>
                 <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '8px' }}>Files ({editFiles.length})</label>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginBottom: '10px', maxHeight: '200px', overflowY: 'auto' }}>
                   {editFiles.map((f, i) => (
-                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '6px' }}>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 8px', ...GLASS_CARD, borderRadius: '6px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
                         <span style={{ fontSize: '12px', flexShrink: 0 }}>{f.type?.startsWith('image') ? '🖼️' : f.type?.startsWith('video') ? '🎬' : '📄'}</span>
                         <span style={{ fontSize: '11px', color: 'var(--text-secondary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</span>
@@ -566,7 +567,7 @@ export default function DeliverPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '20px' }}>
-              <button type="button" onClick={() => { setEditingDelivery(null); setEditFiles([]) }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => { setEditingDelivery(null); setEditFiles([]) }} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
               <button type="button" onClick={saveEditDelivery} style={{ padding: '9px 18px', background: deliverPrimary, border: 'none', borderRadius: '8px', color: deliverHeaderText, fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Save Changes</button>
             </div>
           </div>

@@ -3,6 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
+import {
+  GLASS_CARD,
+  GLASS_NATIVE_FIELD,
+  TYPO,
+  glassCardAccentBorder,
+} from '../../lib/glassTokens'
 
 const CATEGORIES = [
   { value: 'Photographer', label: 'Photographer' },
@@ -83,9 +89,7 @@ function CreativeCard({ profile, onClick }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        background: hovered ? 'var(--bg-overlay)' : 'var(--bg-elevated)',
-        border: `1px solid ${hovered ? 'var(--green)' : 'var(--border-default)'}`,
-        borderRadius: 'var(--radius-xl)',
+        ...(hovered ? glassCardAccentBorder('var(--green)') : GLASS_CARD),
         overflow: 'hidden',
         cursor: 'pointer',
         transition: 'all var(--transition-base)',
@@ -98,7 +102,7 @@ function CreativeCard({ profile, onClick }) {
       }
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{displayName}</div>
+          <div style={{ fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...TYPO.heading }}>{displayName}</div>
           {badge && (
             <div style={{ fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: 'var(--radius-full)', background: badge.bg, color: badge.color, border: `1px solid ${badge.border}`, fontFamily: 'var(--font-ui)', flexShrink: 0 }}>
               {badge.label}
@@ -209,37 +213,40 @@ export default function ExplorePage() {
   }
 
   const styles = {
-    page: { background: 'var(--bg-base)', minHeight: '100vh', paddingBottom: '80px' },
+    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px' },
     inner: { maxWidth: '1280px', margin: '0 auto', padding: isMobile ? '0 16px' : '0 40px' },
     header: { padding: isMobile ? '32px 0 24px' : '48px 0 32px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)', color: 'var(--text-primary)', fontWeight: 400, marginBottom: '8px' },
-    subtitle: { fontSize: '16px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    filterCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    title: { fontFamily: 'var(--font-display)', fontSize: 'clamp(32px, 4vw, 48px)', color: 'var(--text-primary)', marginBottom: '8px', ...TYPO.heading },
+    subtitle: { fontSize: '16px', color: 'var(--text-secondary)', ...TYPO.body },
+    filterCard: { ...GLASS_CARD, padding: isMobile ? '16px' : '24px', marginBottom: '32px', display: 'flex', flexDirection: 'column', gap: '20px' },
     filterSection: { display: 'flex', flexDirection: 'column', gap: '10px' },
-    filterLabel: { fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    filterLabel: { fontSize: '11px', ...TYPO.label },
     typeGrid: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     typeChip: (selected) => ({
       padding: '7px 16px',
+      ...(selected ? glassCardAccentBorder('var(--green)') : GLASS_CARD),
       borderRadius: 'var(--radius-full)',
-      border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`,
-      background: selected ? 'var(--green-dim)' : 'transparent',
+      background: selected
+        ? 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)'
+        : GLASS_CARD.background,
       color: selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '14px',
-      fontWeight: selected ? 500 : 400,
       cursor: 'pointer',
       transition: 'all var(--transition-base)',
       fontFamily: 'var(--font-ui)',
+      ...TYPO.body,
+      fontWeight: selected ? 500 : 400,
     }),
     filterRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr 1fr', gap: '16px', alignItems: 'flex-end' },
-    select: { background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', cursor: 'pointer', width: '100%' },
-    textInput: { background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', boxSizing: 'border-box' },
+    select: { ...GLASS_NATIVE_FIELD, padding: '10px 14px', cursor: 'pointer', width: '100%' },
+    textInput: { ...GLASS_NATIVE_FIELD, padding: '10px 14px', width: '100%' },
     filterGroupInner: { display: 'flex', flexDirection: 'column', gap: '6px' },
     resultsHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', flexWrap: 'wrap', gap: '8px' },
-    resultsCount: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    resultsCount: { fontSize: '14px', color: 'var(--text-muted)', ...TYPO.body },
     grid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(160px, 1fr))' : 'repeat(4, 1fr)', gap: isMobile ? '12px' : '16px' },
     emptyState: { padding: '80px 24px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' },
-    emptyTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    emptyText: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: '360px' },
+    emptyTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', ...TYPO.heading },
+    emptyText: { fontSize: '14px', color: 'var(--text-muted)', maxWidth: '360px', ...TYPO.body },
   }
 
   return (

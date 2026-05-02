@@ -8,6 +8,7 @@ import Input from '../../components/ui/Input'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
 
@@ -255,27 +256,27 @@ export default function JobBoardPage() {
   )
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1280px', margin: '0 auto', padding: '0 40px', width: '100%', boxSizing: 'border-box' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1280px', margin: '0 auto', padding: '0 40px', width: '100%', boxSizing: 'border-box' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
     toolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' },
-    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflow: 'hidden' },
+    tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflow: 'hidden' },
     tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    select: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '8px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--text-secondary)', outline: 'none', cursor: 'pointer' },
+    select: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '8px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', color: 'var(--text-secondary)', outline: 'none', cursor: 'pointer' },
     grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
-    jobCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer', transition: 'border-color var(--transition-fast)', minHeight: 'unset' },
+    jobCard: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer', transition: 'border-color var(--transition-fast)', minHeight: 'unset' },
     jobTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     jobDesc: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
     jobMeta: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' },
     jobFooter: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' },
     jobLocation: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     jobExpiry: (days) => ({ fontSize: '11px', color: days <= 5 ? 'var(--warning)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }),
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)' },
+    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', ...GLASS_CARD, borderRadius: 'var(--radius-xl)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
-    textarea: { width: '100%', minHeight: '100px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
+    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
+    textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
     categoryWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     categoryChip: (sel) => ({ padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `1px solid ${sel ? 'var(--green)' : 'var(--border-default)'}`, background: sel ? 'var(--green-dim)' : 'transparent', color: sel ? 'var(--green)' : 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', transition: 'all var(--transition-base)', fontFamily: 'var(--font-ui)' }),
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
@@ -283,7 +284,7 @@ export default function JobBoardPage() {
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
     viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
     viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    descBox: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', background: 'var(--bg-base)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
+    descBox: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
   }
 
   return (
@@ -307,7 +308,7 @@ export default function JobBoardPage() {
         <Button variant="secondary" onClick={() => user ? setShowPost(true) : navigate('/join/client')}>+ Post a Job</Button>
       </div>
 
-      <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '20px', width: 'fit-content', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: '4px', ...GLASS_CARD, padding: '4px', borderRadius: '10px', marginBottom: '20px', width: 'fit-content', flexWrap: 'wrap' }}>
         {['browse', 'my-applications', 'my-posted'].map(t => (
           <button
             key={t}
@@ -368,7 +369,7 @@ export default function JobBoardPage() {
             <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t applied to any jobs yet.</div>
           ) : (
             myApplications.map(app => (
-              <div key={app.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px 20px', marginBottom: '12px' }}>
+              <div key={app.id} style={{ ...GLASS_CARD, borderRadius: '12px', padding: '16px 20px', marginBottom: '12px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                   <div>
                     <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{app.job_listings?.title ?? 'Job'}</div>
@@ -387,7 +388,7 @@ export default function JobBoardPage() {
             <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t posted any jobs yet.</div>
           ) : (
             myPostedJobs.map(job => (
-              <div key={job.id} style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
+              <div key={job.id} style={{ ...GLASS_CARD, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
                 <div
                   style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
                   onClick={() => setExpandedPostedJob(expandedPostedJob === job.id ? null : job.id)}
@@ -397,7 +398,7 @@ export default function JobBoardPage() {
                     <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{job.location} · {job.budget_range}</div>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ padding: '4px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                    <span style={{ padding: '4px 12px', ...GLASS_CARD_GREEN, borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
                       {job.job_applications?.length ?? 0} application{job.job_applications?.length !== 1 ? 's' : ''}
                     </span>
                     <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>{expandedPostedJob === job.id ? '▲' : '▼'}</span>
@@ -409,7 +410,7 @@ export default function JobBoardPage() {
                       <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '16px 0' }}>No applications yet.</div>
                     ) : (
                       job.job_applications.map(app => (
-                        <div key={app.id} style={{ padding: '16px', background: 'var(--bg-base)', borderRadius: '10px', marginBottom: '10px', border: '1px solid var(--border-default)' }}>
+                        <div key={app.id} style={{ padding: '16px', ...GLASS_CARD, borderRadius: '10px', marginBottom: '10px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
                             <div>
                               <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{app.creative_name}</div>
@@ -448,7 +449,7 @@ export default function JobBoardPage() {
                             </div>
                           )}
                           {app.status === 'accepted' && (
-                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
+                            <div style={{ marginTop: '12px', padding: '8px 12px', ...GLASS_CARD_GREEN, borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
                               ✓ Accepted — message thread created
                             </div>
                           )}
@@ -458,7 +459,7 @@ export default function JobBoardPage() {
                             </div>
                           )}
                           {app.status === 'closed' && (
-                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
+                            <div style={{ marginTop: '12px', padding: '8px 12px', ...GLASS_CARD, borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
                               Position filled
                             </div>
                           )}
@@ -556,8 +557,8 @@ export default function JobBoardPage() {
       </Modal>
 
       {showApplyModal && applyingJob && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '28px' }}>
+        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Apply for this job</div>
             <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{applyingJob.title}</div>
 
@@ -569,7 +570,7 @@ export default function JobBoardPage() {
                   value={applyForm.price}
                   onChange={e => setApplyForm(p => ({ ...p, price: e.target.value }))}
                   placeholder="e.g. 850"
-                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px' }}
                 />
               </div>
               <div>
@@ -578,7 +579,7 @@ export default function JobBoardPage() {
                   value={applyForm.includes}
                   onChange={e => setApplyForm(p => ({ ...p, includes: e.target.value }))}
                   placeholder="e.g. 4 hours on-site, 50 edited photos delivered within 7 days, 1 round of revisions..."
-                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '80px', resize: 'vertical' }}
+                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '80px', resize: 'vertical' }}
                 />
               </div>
               <div>
@@ -587,13 +588,13 @@ export default function JobBoardPage() {
                   value={applyForm.description}
                   onChange={e => setApplyForm(p => ({ ...p, description: e.target.value }))}
                   placeholder="Introduce yourself and explain why you're the right creative for this job..."
-                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none', minHeight: '100px', resize: 'vertical' }}
+                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '100px', resize: 'vertical' }}
                 />
               </div>
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null) }} style={{ padding: '9px 18px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
+              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null) }} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
               <button
                 type="button"
                 onClick={() => void submitApplication()}

@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 const PRICE_DISPLAY_FONT = "'Playfair Display', serif"
 
@@ -102,7 +104,7 @@ export default function SubscriptionPage() {
   const currentColor = tierColors[tier] ?? '#6b7280'
 
   return (
-    <div style={{ padding: '32px 40px', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ background: 'transparent', padding: '32px 40px', fontFamily: 'var(--font-ui)' }}>
       {toast && (
         <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
           {toast.msg}
@@ -110,7 +112,7 @@ export default function SubscriptionPage() {
       )}
 
       <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400, margin: '0 0 8px' }}>Subscription</h1>
+        <h1 style={{ ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400, margin: '0 0 8px' }}>Subscription</h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>Current plan:</span>
           <span style={{ padding: '4px 14px', borderRadius: '999px', fontSize: '13px', fontWeight: 700, background: `${currentColor}22`, border: `1px solid ${currentColor}44`, color: currentColor }}>
@@ -120,7 +122,7 @@ export default function SubscriptionPage() {
       </div>
 
       {/* Billing toggle */}
-      <div style={{ display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '32px', width: 'fit-content' }}>
+      <div style={{ display: 'flex', gap: '4px', ...GLASS_CARD, padding: '4px', borderRadius: '10px', marginBottom: '32px', width: 'fit-content' }}>
         {['monthly', 'annual'].map(b => (
           <button key={b} type="button" onClick={() => setBilling(b)} style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: billing === b ? 'var(--bg-base)' : 'transparent', color: billing === b ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
             {b === 'monthly' ? 'Monthly' : 'Annual'}
@@ -137,7 +139,7 @@ export default function SubscriptionPage() {
           const isLoading = loading === plan.id
 
           return (
-            <div key={plan.id} style={{ background: 'var(--bg-elevated)', border: `2px solid ${isCurrent ? plan.color : 'var(--border-default)'}`, borderRadius: '14px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
+            <div key={plan.id} style={{ ...(isCurrent ? glassCardAccentBorder(plan.color) : GLASS_CARD), borderRadius: '14px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px', position: 'relative' }}>
               {isCurrent && (
                 <div style={{ position: 'absolute', top: '-12px', left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', background: plan.color, borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: plan.id === 'pro' || plan.id === 'elite' ? '#000' : '#fff', whiteSpace: 'nowrap' }}>
                   Current Plan
@@ -145,7 +147,7 @@ export default function SubscriptionPage() {
               )}
               <div>
                 <div style={{ fontSize: '18px', fontWeight: 700, color: plan.color, marginBottom: '4px' }}>{plan.name}</div>
-                <div style={{ fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '2px' }}>
+                <div style={{ ...TYPO.stat, fontSize: '28px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1, display: 'flex', alignItems: 'baseline', flexWrap: 'wrap', gap: '2px' }}>
                   <span style={{ fontFamily: PRICE_DISPLAY_FONT }}>{price === 0 ? 'Free' : `$${price}`}</span>
                   {price > 0 && <span style={{ fontSize: '13px', fontWeight: 400, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>/{billing === 'annual' ? 'yr' : 'mo'}</span>}
                 </div>

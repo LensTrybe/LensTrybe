@@ -22,30 +22,47 @@ export default function Input({
   };
 
   const labelStyle = {
-    color: 'var(--text-secondary)',
+    color: 'rgba(255,255,255,0.35)',
     fontSize: '13px',
-    fontWeight: 500,
+    fontWeight: 400,
+    letterSpacing: '0.08em',
+    textTransform: 'uppercase',
     fontFamily: 'var(--font-ui)',
     marginBottom: '6px',
+    lineHeight: 1.6,
+  };
+
+  const glassRest = {
+    backdropFilter: 'blur(20px)',
+    WebkitBackdropFilter: 'blur(20px)',
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.08)',
+    borderTop: '1px solid rgba(255,255,255,0.12)',
+    borderRadius: '10px',
+    boxShadow: 'none',
+  };
+
+  const glassFocused = {
+    borderColor: 'rgba(29,185,84,0.4)',
+    borderTopColor: 'rgba(29,185,84,0.45)',
+    background: 'rgba(29,185,84,0.05)',
+    boxShadow: '0 0 0 3px rgba(29,185,84,0.08)',
+  };
+
+  const glassError = {
+    borderColor: 'rgba(255,45,120,0.45)',
+    borderTopColor: 'rgba(255,45,120,0.5)',
+    background: 'rgba(255,45,120,0.06)',
+    boxShadow: '0 0 0 3px rgba(255,45,120,0.1)',
   };
 
   const inputRowStyle = {
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    background: 'var(--bg-elevated)',
-    borderRadius: 'var(--radius-lg)',
-    border: error
-      ? '1px solid var(--error)'
-      : focused
-      ? '1px solid var(--pink)'
-      : '1px solid var(--border-default)',
-    boxShadow: error
-      ? '0 0 0 3px rgba(239,68,68,0.15)'
-      : focused
-      ? '0 0 0 3px rgba(217,70,239,0.15)'
-      : 'none',
-    transition: 'border-color var(--transition-base), box-shadow var(--transition-base)',
+    ...glassRest,
+    ...(error ? glassError : focused ? glassFocused : {}),
+    transition: 'border-color 0.2s, box-shadow 0.2s, background 0.2s',
     opacity: disabled ? 0.4 : 1,
     cursor: disabled ? 'not-allowed' : 'text',
   };
@@ -54,11 +71,13 @@ export default function Input({
     display: 'flex',
     alignItems: 'center',
     padding: '0 10px',
-    color: 'var(--text-muted)',
+    color: 'rgba(255,255,255,0.45)',
     fontFamily: 'var(--font-ui)',
     fontSize: 'var(--text-sm)',
     flexShrink: 0,
     userSelect: 'none',
+    fontWeight: 400,
+    lineHeight: 1.6,
   };
 
   const inputStyle = {
@@ -72,22 +91,28 @@ export default function Input({
     paddingRight: suffix ? '4px' : '14px',
     fontFamily: 'var(--font-ui)',
     fontSize: 'var(--text-base)',
-    color: 'var(--text-primary)',
+    fontWeight: 400,
+    lineHeight: 1.6,
+    color: '#ffffff',
     cursor: disabled ? 'not-allowed' : 'text',
   };
 
   const hintStyle = {
-    color: 'var(--text-muted)',
+    color: 'rgba(255,255,255,0.45)',
     fontSize: '12px',
     fontFamily: 'var(--font-ui)',
     marginTop: '4px',
+    fontWeight: 400,
+    lineHeight: 1.6,
   };
 
   const errorStyle = {
-    color: 'var(--error)',
+    color: '#FF2D78',
     fontSize: '12px',
     fontFamily: 'var(--font-ui)',
     marginTop: '4px',
+    fontWeight: 400,
+    lineHeight: 1.6,
   };
 
   return (

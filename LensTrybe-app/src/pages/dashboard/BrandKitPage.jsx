@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 /** Accent is fixed for UI; persisted saves still write this value so DB shape stays valid. */
 const DISPLAY_ACCENT = '#ffffff'
@@ -398,8 +400,7 @@ export default function BrandKitPage() {
   }
 
   const card = {
-    background: 'var(--bg-elevated)',
-    border: '1px solid var(--border-default)',
+    ...GLASS_CARD,
     borderRadius: 'var(--radius-xl)',
     padding: '24px',
   }
@@ -408,7 +409,7 @@ export default function BrandKitPage() {
 
   if (!user) {
     return (
-      <div style={{ padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ background: 'transparent', padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
         Sign in to manage your brand kit.
       </div>
     )
@@ -416,7 +417,7 @@ export default function BrandKitPage() {
 
   if (loading) {
     return (
-      <div style={{ padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
+      <div style={{ background: 'transparent', padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
         Loading brand kit…
       </div>
     )
@@ -436,6 +437,7 @@ export default function BrandKitPage() {
     <div
       className="brand-kit-page"
       style={{
+        background: 'transparent',
         display: 'flex',
         flexDirection: 'column',
         gap: '24px',
@@ -448,7 +450,7 @@ export default function BrandKitPage() {
       }}
     >
       <header style={{ marginBottom: 0 }}>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Brand Kit</h1>
+        <h1 style={{ ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Brand Kit</h1>
         <p style={{ margin: '8px 0 0', fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 640, lineHeight: 1.6 }}>
           Set your brand base once, then customise how each client document looks. Word documents are converted to PDF
           before sending to clients.
@@ -472,7 +474,7 @@ export default function BrandKitPage() {
       ) : null}
 
       {/* Section 1: Brand Base */}
-      <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', margin: '0 0 12px' }}>
+      <h2 style={{ ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', margin: '0 0 12px' }}>
         Brand Base
       </h2>
       <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '0 0 16px', lineHeight: 1.5 }}>
@@ -547,9 +549,7 @@ export default function BrandKitPage() {
                 maxWidth: 280,
                 padding: '10px 12px',
                 borderRadius: 8,
-                border: '1px solid var(--border-default)',
-                background: 'var(--bg-base)',
-                color: 'var(--text-primary)',
+                ...GLASS_CARD, color: 'var(--text-primary)',
                 fontSize: 14,
                 fontFamily: 'var(--font-ui)',
               }}
@@ -696,9 +696,7 @@ export default function BrandKitPage() {
                   maxWidth: 260,
                   padding: '8px 10px',
                   borderRadius: 8,
-                  border: '1px solid var(--border-default)',
-                  background: 'var(--bg-base)',
-                  color: 'var(--text-primary)',
+                  ...GLASS_CARD, color: 'var(--text-primary)',
                   fontSize: 13,
                   fontFamily: 'var(--font-ui)',
                 }}
@@ -762,9 +760,7 @@ export default function BrandKitPage() {
                   width: 72,
                   height: 72,
                   borderRadius: 8,
-                  border: '1px solid var(--border-default)',
-                  background: 'var(--bg-base)',
-                  display: 'flex',
+                  ...GLASS_CARD, display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   overflow: 'hidden',
@@ -781,9 +777,7 @@ export default function BrandKitPage() {
                   style={{
                     padding: '8px 14px',
                     borderRadius: 8,
-                    border: '1px solid var(--border-default)',
-                    background: 'var(--bg-base)',
-                    cursor: uploadingDocLogo ? 'wait' : 'pointer',
+                    ...GLASS_CARD, cursor: uploadingDocLogo ? 'wait' : 'pointer',
                     fontSize: 13,
                     width: 'fit-content',
                   }}
@@ -915,9 +909,7 @@ export default function BrandKitPage() {
             style={{
               padding: '10px 18px',
               borderRadius: 8,
-              border: '1px solid var(--border-default)',
-              background: 'var(--bg-elevated)',
-              color: 'var(--text-primary)',
+              ...GLASS_CARD, color: 'var(--text-primary)',
               fontWeight: 600,
               fontSize: 14,
               cursor: 'pointer',

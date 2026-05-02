@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+import Button from '../../components/ui/Button'
 
 function mergeContractBrand(brandKit) {
   const base = brandKit || {}
@@ -334,25 +336,24 @@ export default function ContractsPage() {
   const viewContractUrl = showView ? (showView.file_url ?? showView.contract_file_url ?? showView.content) : null
 
   const s = {
-    page: { padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
+    page: { background: 'transparent', padding: isMobile ? '16px' : '32px 40px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
     header: { display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', marginBottom: '24px', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
-    tabs: { display: 'flex', gap: '4px', background: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px', marginBottom: '24px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
-    tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'var(--bg-base)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s' }),
-    btn: (variant = 'primary') => ({ padding: '9px 18px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: variant === 'primary' ? '#1DB954' : variant === 'danger' ? 'rgba(239,68,68,0.1)' : 'var(--bg-elevated)', color: variant === 'primary' ? '#000' : variant === 'danger' ? '#ef4444' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }),
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', fontWeight: 400 },
+    tabs: { display: 'flex', gap: '4px', ...GLASS_CARD, padding: '4px', borderRadius: '10px', marginBottom: '24px', overflowX: isMobile ? 'auto' : 'visible', whiteSpace: isMobile ? 'nowrap' : 'normal' },
+    tab: (active) => ({ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: active ? 'rgba(255,255,255,0.1)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', transition: 'all 0.15s', ...TYPO.body }),
     table: { width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '720px' : '100%' },
-    th: { textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid var(--border-subtle)' },
-    td: { padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid var(--border-subtle)' },
-    modal: { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
-    modalBox: { background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '780px', maxHeight: isMobile ? '100vh' : '90vh', height: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    modalHeader: { padding: isMobile ? '12px 14px' : '16px 24px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' },
+    th: { ...TYPO.label, textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.08)' },
+    td: { ...TYPO.body, padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.08)' },
+    modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
+    modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '780px', maxHeight: isMobile ? '100vh' : '90vh', height: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+    modalHeader: { padding: isMobile ? '12px 14px' : '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' },
     modalBody: { padding: isMobile ? '16px' : '28px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: '16px' },
-    input: { padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', width: '100%', boxSizing: 'border-box' },
-    label: { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', display: 'block' },
+    input: { ...GLASS_NATIVE_FIELD, padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', width: '100%', boxSizing: 'border-box' },
+    label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '4px', display: 'block' },
     grid2: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' },
-    editor: { padding: '12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', minHeight: '280px', resize: 'vertical', width: '100%', boxSizing: 'border-box', lineHeight: 1.6 },
+    editor: { padding: '12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', minHeight: '280px', resize: 'vertical', width: '100%', boxSizing: 'border-box', lineHeight: 1.6 },
     badge: (status) => ({ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase', background: `${statusColor[status] ?? '#6b7280'}22`, color: statusColor[status] ?? '#6b7280' }),
-    templateCard: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: isMobile ? '16px' : '20px 24px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
+    templateCard: { ...GLASS_CARD, borderRadius: '12px', padding: isMobile ? '16px' : '20px 24px', display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', justifyContent: 'space-between', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '12px' : '0' },
     emptyState: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
     fileTypeBadge: (t) => ({
       padding: '3px 10px',
@@ -384,8 +385,8 @@ export default function ContractsPage() {
       <div style={s.header}>
         <div style={s.title}>Contracts</div>
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button style={s.btn('secondary')} onClick={() => setShowUpload(true)}>⬆ Upload Contract</button>
-          <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={() => setShowCreate(true)}>+ New Contract</button>
+          <Button variant="secondary" onClick={() => setShowUpload(true)}>⬆ Upload Contract</Button>
+          <Button variant="primary" style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={() => setShowCreate(true)}>+ New Contract</Button>
           <input ref={fileInputRef} type="file" accept=".pdf,.doc,.docx" style={{ display: 'none' }} onChange={e => setUploadFile(e.target.files[0])} />
         </div>
       </div>
@@ -420,7 +421,7 @@ export default function ContractsPage() {
                   <td style={s.td}><span style={s.badge(c.status)}>{c.status}</span></td>
                   <td style={s.td}>{new Date(c.created_at).toLocaleDateString('en-AU')}</td>
                   <td style={s.td} onClick={e => e.stopPropagation()}>
-                    <button style={{ ...s.btn('danger'), padding: '5px 10px', fontSize: '12px' }} onClick={() => deleteContract(c.id)}>Delete</button>
+                    <Button variant="danger" size="sm" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={() => deleteContract(c.id)}>Delete</Button>
                   </td>
                 </tr>
               ))}
@@ -441,8 +442,8 @@ export default function ContractsPage() {
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(t.created_at).toLocaleDateString('en-AU')}</div>
                 </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button style={s.btn('secondary')} onClick={() => useTemplate(t)}>Use Template</button>
-                  <button style={s.btn('danger')} onClick={() => deleteTemplate(t.id)}>Delete</button>
+                  <Button variant="secondary" onClick={() => useTemplate(t)}>Use Template</Button>
+                  <Button variant="danger" onClick={() => deleteTemplate(t.id)}>Delete</Button>
                 </div>
               </div>
             ))}
@@ -454,8 +455,7 @@ export default function ContractsPage() {
         <>
           <div
             style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-default)',
+              ...GLASS_CARD,
               borderRadius: '12px',
               padding: '20px 24px',
               marginBottom: '24px',
@@ -496,23 +496,24 @@ export default function ContractsPage() {
                   setExternalContractFile(f)
                 }}
               />
-              <button type="button" style={{ ...s.btn('secondary'), marginBottom: '10px' }} onClick={() => externalContractFileRef.current?.click()}>
+              <Button type="button" variant="secondary" style={{ marginBottom: '10px' }} onClick={() => externalContractFileRef.current?.click()}>
                 Choose file
-              </button>
+              </Button>
               {externalContractFile ? (
                 <div style={{ fontSize: '13px', color: 'var(--text-primary)', fontWeight: 600 }}>{externalContractFile.name}</div>
               ) : (
                 <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>PDF or Word (.docx) only</div>
               )}
             </div>
-            <button
+            <Button
               type="button"
-              style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }}
+              variant="primary"
+              style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }}
               onClick={uploadExternalContract}
               disabled={savingExternalContract || !externalContractFile || !externalContractClientName.trim()}
             >
               {savingExternalContract ? 'Uploading…' : 'Upload'}
-            </button>
+            </Button>
           </div>
 
           {uploadedContracts.length === 0 ? (
@@ -541,20 +542,12 @@ export default function ContractsPage() {
                     <td style={s.td}>{new Date(row.created_at).toLocaleDateString('en-AU')}</td>
                     <td style={s.td}>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                        <button
-                          type="button"
-                          style={{ ...s.btn('secondary'), padding: '5px 10px', fontSize: '12px' }}
-                          onClick={() => downloadUploadedContract(row)}
-                        >
+                        <Button type="button" variant="secondary" size="sm" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={() => downloadUploadedContract(row)}>
                           Download
-                        </button>
-                        <button
-                          type="button"
-                          style={{ ...s.btn('danger'), padding: '5px 10px', fontSize: '12px' }}
-                          onClick={() => deleteUploadedContract(row)}
-                        >
+                        </Button>
+                        <Button type="button" variant="danger" size="sm" style={{ padding: '5px 10px', fontSize: '12px' }} onClick={() => deleteUploadedContract(row)}>
                           Delete
-                        </button>
+                        </Button>
                       </div>
                     </td>
                   </tr>
@@ -572,18 +565,15 @@ export default function ContractsPage() {
             <div style={s.modalHeader}>
               <span style={{ fontSize: '15px', fontWeight: 600 }}>New Contract</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button
-                  style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }}
-                  onClick={() => setShowSaveTemplate(true)}
-                >
+                <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>
                   💾 Save as Template
-                </button>
-                <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(false)} disabled={saving}>
+                </Button>
+                <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => createContract(false)} disabled={saving}>
                   {saving ? 'Saving…' : 'Save Draft'}
-                </button>
-                <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px', background: contractPrimary, color: contractHeaderTextColor }} onClick={() => createContract(true)} disabled={saving || !form.client_email}>
+                </Button>
+                <Button variant="primary" size="sm" style={{ fontSize: '12px', padding: '6px 12px', background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={() => createContract(true)} disabled={saving || !form.client_email}>
                   {saving ? 'Sending…' : 'Send to Client'}
-                </button>
+                </Button>
                 <button onClick={() => { setShowCreate(false); resetForm() }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
@@ -636,13 +626,13 @@ export default function ContractsPage() {
             <div style={s.modalHeader}>
               <span style={{ fontSize: '15px', fontWeight: 600 }}>Contract</span>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button style={{ ...s.btn('secondary'), fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>💾 Save as Template</button>
+                <Button variant="secondary" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => setShowSaveTemplate(true)}>💾 Save as Template</Button>
                 {showView.status !== 'signed' && (
-                  <button style={{ ...s.btn('primary'), fontSize: '12px', padding: '6px 12px', background: contractPrimary, color: contractHeaderTextColor }} onClick={() => sendContract(showView)}>
+                  <Button variant="primary" size="sm" style={{ fontSize: '12px', padding: '6px 12px', background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={() => sendContract(showView)}>
                     {showView.status === 'sent' ? 'Resend' : 'Send to Client'}
-                  </button>
+                  </Button>
                 )}
-                <button style={{ ...s.btn('danger'), fontSize: '12px', padding: '6px 12px' }} onClick={() => deleteContract(showView.id)}>Delete</button>
+                <Button variant="danger" size="sm" style={{ fontSize: '12px', padding: '6px 12px' }} onClick={() => deleteContract(showView.id)}>Delete</Button>
                 <button onClick={() => setShowView(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
@@ -736,7 +726,7 @@ export default function ContractsPage() {
       {/* Save as Template Modal */}
       {showSaveTemplate && (
         <div style={{ ...s.modal, zIndex: 1100 }}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Save as Template</div>
             <label style={s.label}>Template Name</label>
             <input
@@ -747,10 +737,10 @@ export default function ContractsPage() {
               autoFocus
             />
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button style={s.btn('secondary')} onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}>Cancel</button>
-              <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
+              <Button variant="ghost" onClick={() => { setShowSaveTemplate(false); setTemplateName('') }}>Cancel</Button>
+              <Button variant="primary" style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={saveAsTemplate} disabled={savingTemplate || !templateName.trim()}>
                 {savingTemplate ? 'Saving…' : 'Save Template'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -758,7 +748,7 @@ export default function ContractsPage() {
 
       {showUpload && (
         <div style={s.modal}>
-          <div style={{ background: 'var(--bg-overlay)', border: '1px solid var(--border-default)', borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
+          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '480px', padding: '28px' }}>
             <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '20px' }}>Upload Contract</div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
@@ -796,10 +786,10 @@ export default function ContractsPage() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button style={s.btn('secondary')} onClick={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ client_name: '', client_email: '', project_name: '' }) }}>Cancel</button>
-              <button style={{ ...s.btn('primary'), background: contractPrimary, color: contractHeaderTextColor }} onClick={uploadContract} disabled={saving || !uploadFile || !uploadForm.client_name}>
+              <Button variant="ghost" onClick={() => { setShowUpload(false); setUploadFile(null); setUploadForm({ client_name: '', client_email: '', project_name: '' }) }}>Cancel</Button>
+              <Button variant="primary" style={{ background: contractPrimary, borderColor: contractPrimary, borderTopColor: contractPrimary, color: contractHeaderTextColor }} onClick={uploadContract} disabled={saving || !uploadFile || !uploadForm.client_name}>
                 {saving ? 'Uploading…' : 'Upload Contract'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

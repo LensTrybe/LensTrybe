@@ -4,13 +4,20 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
+import {
+  DIVIDER_GRADIENT_STYLE,
+  GLASS_CARD,
+  GLASS_CARD_GREEN,
+  TYPO,
+  glassCardAccentBorder,
+} from '../../lib/glassTokens'
 
-function StatCard({ label, value, sub, icon, compact }) {
+function StatCard({ label, value, sub, icon, compact, green }) {
+  const base = green ? GLASS_CARD_GREEN : GLASS_CARD
   return (
     <div
       style={{
-        background: 'var(--bg-elevated)',
-        border: '1px solid var(--border-default)',
+        ...base,
         borderRadius: '12px',
         padding: compact ? '14px 14px' : '24px 28px',
         display: 'flex',
@@ -21,9 +28,9 @@ function StatCard({ label, value, sub, icon, compact }) {
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', minWidth: 0 }}>
-        <span style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>{label}</span>
-        <span style={{ fontSize: compact ? 'clamp(20px, 5vw, 28px)' : '32px', fontWeight: 700, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1, wordBreak: 'break-word' }}>{value}</span>
-        {sub && <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{sub}</span>}
+        <span style={{ fontSize: '11px', ...TYPO.label }}>{label}</span>
+        <span style={{ fontSize: compact ? 'clamp(20px, 5vw, 28px)' : '32px', color: 'var(--text-primary)', fontFamily: 'var(--font-display)', lineHeight: 1, wordBreak: 'break-word', ...TYPO.stat }}>{value}</span>
+        {sub && <span style={{ fontSize: '11px', color: 'var(--text-muted)', ...TYPO.body }}>{sub}</span>}
       </div>
       <div style={{ fontSize: compact ? '22px' : '28px', opacity: 0.25, flexShrink: 0 }}>{icon}</div>
     </div>
@@ -38,10 +45,11 @@ function QuickAction({ icon, label, path, navigate, compact }) {
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       style={{
-        padding: compact ? '10px 6px' : '16px',
+        ...GLASS_CARD,
         borderRadius: '10px',
-        border: `1px solid ${hovered ? '#1DB954' : 'var(--border-default)'}`,
-        background: hovered ? 'rgba(29,185,84,0.08)' : 'var(--bg-elevated)',
+        ...(hovered ? glassCardAccentBorder('#1DB954') : {}),
+        background: hovered ? 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)' : GLASS_CARD.background,
+        padding: compact ? '10px 6px' : '16px',
         cursor: 'pointer',
         transition: 'all 0.15s',
         display: 'flex',
@@ -54,7 +62,7 @@ function QuickAction({ icon, label, path, navigate, compact }) {
       }}
     >
       <span style={{ fontSize: compact ? '16px' : '18px', lineHeight: 1 }}>{icon}</span>
-      <span style={{ fontSize: compact ? '11px' : '13px', fontWeight: 500, color: hovered ? '#1DB954' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', textAlign: 'center', lineHeight: 1.25 }}>{label}</span>
+      <span style={{ fontSize: compact ? '11px' : '13px', fontWeight: 500, color: hovered ? '#1DB954' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', textAlign: 'center', lineHeight: 1.25, ...TYPO.body }}>{label}</span>
     </div>
   )
 }
@@ -235,7 +243,7 @@ export default function DashboardHome() {
     return 'var(--text-muted)'
   }
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)' }}>Loading…</div>
+  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', background: 'transparent', ...TYPO.body }}>Loading…</div>
 
   const s = stats
 
@@ -250,6 +258,7 @@ export default function DashboardHome() {
   return (
     <div
       style={{
+        background: 'transparent',
         padding: isMobile ? '20px 16px' : '32px 40px',
         display: 'flex',
         flexDirection: 'column',
@@ -265,7 +274,7 @@ export default function DashboardHome() {
       {/* Greeting */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 'clamp(22px, 5vw, 28px)' : '32px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 'clamp(22px, 5vw, 28px)' : '32px', color: 'var(--text-primary)', margin: 0, ...TYPO.heading }}>
             Good to see you, {displayName.split(' ')[0]}.
           </h1>
           <span style={{ padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, background: `${tierColor}22`, border: `1px solid ${tierColor}44`, color: tierColor }}>
@@ -275,20 +284,16 @@ export default function DashboardHome() {
             <span style={{ fontSize: '11px', fontWeight: 600, padding: '3px 10px', borderRadius: '999px', background: 'linear-gradient(90deg, rgba(29,185,84,0.2), rgba(234,179,8,0.2))', border: '1px solid rgba(234,179,8,0.4)', color: '#EAB308' }}>✦ Founding Member</span>
           )}
         </div>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0 }}>Here's what's happening with your business.</p>
+        <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: 0, ...TYPO.body }}>Here's what's happening with your business.</p>
       </div>
 
       {/* Quick Actions */}
       <div style={{ width: '100%', minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '10px' }}>
           {!editingQuickActions ? (
-            <button
-              type="button"
-              onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(true) }}
-              style={{ background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: '999px', padding: '6px 12px', fontSize: '12px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
-            >
+            <Button type="button" variant="ghost" size="sm" style={{ borderRadius: '999px' }} onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(true) }}>
               ✎ Customise
-            </button>
+            </Button>
           ) : null}
         </div>
         <div
@@ -304,12 +309,12 @@ export default function DashboardHome() {
         </div>
 
         {editingQuickActions ? (
-          <div style={{ marginTop: '12px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '10px', padding: isMobile ? '12px' : '14px' }}>
+          <div style={{ marginTop: '12px', ...GLASS_CARD, borderRadius: '10px', padding: isMobile ? '12px' : '14px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '8px 14px' }}>
               {AVAILABLE_QUICK_ACTIONS.map((action) => {
                 const checked = draftQuickActions.some((a) => a.label === action.label)
                 return (
-                  <label key={action.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer' }}>
+                  <label key={action.label} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', color: 'var(--text-secondary)', cursor: 'pointer', ...TYPO.body }}>
                     <input type="checkbox" checked={checked} onChange={() => toggleDraftQuickAction(action)} />
                     {action.label}
                   </label>
@@ -317,20 +322,12 @@ export default function DashboardHome() {
               })}
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '12px' }}>
-              <button
-                type="button"
-                onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(false) }}
-                style={{ background: 'transparent', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
-              >
+              <Button type="button" variant="ghost" size="sm" onClick={() => { setDraftQuickActions(quickActions); setQuickActionsError(''); setEditingQuickActions(false) }}>
                 Cancel
-              </button>
-              <button
-                type="button"
-                onClick={saveQuickActions}
-                style={{ background: '#1DB954', border: 'none', color: '#05110a', borderRadius: '8px', padding: '8px 12px', fontSize: '12px', fontWeight: 700, fontFamily: 'var(--font-ui)', cursor: 'pointer' }}
-              >
+              </Button>
+              <Button type="button" variant="primary" size="sm" onClick={saveQuickActions}>
                 Save
-              </button>
+              </Button>
             </div>
           </div>
         ) : null}
@@ -346,10 +343,10 @@ export default function DashboardHome() {
 
       {/* Row 2 — Revenue (includes This Month + YTD in 2×2 on mobile) */}
       <div style={statGrid}>
-        <StatCard label="This Month Revenue" value={`$${s.thisMonthRevenue.toFixed(2)}`} icon="💰" compact={isMobile} />
-        <StatCard label="YTD Revenue" value={`$${s.ytdRevenue.toFixed(2)}`} icon="📈" compact={isMobile} />
+        <StatCard label="This Month Revenue" value={`$${s.thisMonthRevenue.toFixed(2)}`} icon="💰" compact={isMobile} green />
+        <StatCard label="YTD Revenue" value={`$${s.ytdRevenue.toFixed(2)}`} icon="📈" compact={isMobile} green />
         <StatCard label="Enquiries This Month" value={s.thisMonthEnquiries} sub={`vs ${s.lastMonthEnquiries} last month`} icon="📥" compact={isMobile} />
-        <StatCard label="Avg Project Value" value={`$${s.avgProjectValue}`} icon="💵" compact={isMobile} />
+        <StatCard label="Avg Project Value" value={`$${s.avgProjectValue}`} icon="💵" compact={isMobile} green />
       </div>
 
       {/* Chart + Recent Invoices */}
@@ -362,8 +359,8 @@ export default function DashboardHome() {
           minWidth: 0,
         }}
       >
-        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: isMobile ? '16px' : '24px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-          <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '16px' }}>Bookings & Enquiries (Last 6 Months)</div>
+        <div style={{ ...GLASS_CARD, borderRadius: '12px', padding: isMobile ? '16px' : '24px', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ fontSize: '14px', color: 'var(--text-primary)', marginBottom: '16px', ...TYPO.heading }}>Bookings & Enquiries (Last 6 Months)</div>
           <div style={{ display: 'flex', gap: '16px', marginBottom: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '11px', color: 'var(--text-muted)' }}>
               <div style={{ width: '10px', height: '10px', borderRadius: '2px', background: '#1DB954' }} /> Bookings
@@ -401,24 +398,28 @@ export default function DashboardHome() {
           </div>
         </div>
 
-        <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: '12px', overflow: 'hidden', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
-          <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>Recent Invoices</div>
-            <button type="button" onClick={() => navigate('/dashboard/finance/invoicing')} style={{ fontSize: '12px', color: '#1DB954', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>View all →</button>
+        <div style={{ ...GLASS_CARD, borderRadius: '12px', overflow: 'hidden', minWidth: 0, width: '100%', boxSizing: 'border-box' }}>
+          <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ fontSize: '14px', color: 'var(--text-primary)', ...TYPO.heading }}>Recent Invoices</div>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/dashboard/finance/invoicing')}>View all →</Button>
           </div>
+          <div style={DIVIDER_GRADIENT_STYLE} aria-hidden />
           {recentInvoices.length === 0 ? (
-            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>No invoices yet.</div>
+            <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px', ...TYPO.body }}>No invoices yet.</div>
           ) : (
             recentInvoices.map((inv, i) => (
-              <div key={i} style={{ padding: '12px 20px', borderBottom: i < recentInvoices.length - 1 ? '1px solid var(--border-subtle)' : 'none', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)' }}>{inv.client_name ?? 'Client'}</div>
-                  <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{new Date(inv.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+              <div key={i}>
+                <div style={{ padding: '12px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: '13px', color: 'var(--text-primary)', ...TYPO.body }}>{inv.client_name ?? 'Client'}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', ...TYPO.body }}>{new Date(inv.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '13px', color: 'var(--text-primary)', ...TYPO.stat }}>${inv.amount?.toFixed(2) ?? '0.00'}</span>
+                    <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, background: `${statusColor(inv.status)}22`, color: statusColor(inv.status), border: `1px solid ${statusColor(inv.status)}44` }}>{inv.status ?? 'draft'}</span>
+                  </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-                  <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>${inv.amount?.toFixed(2) ?? '0.00'}</span>
-                  <span style={{ padding: '2px 8px', borderRadius: '999px', fontSize: '10px', fontWeight: 700, background: `${statusColor(inv.status)}22`, color: statusColor(inv.status), border: `1px solid ${statusColor(inv.status)}44` }}>{inv.status ?? 'draft'}</span>
-                </div>
+                {i < recentInvoices.length - 1 ? <div style={DIVIDER_GRADIENT_STYLE} aria-hidden /> : null}
               </div>
             ))
           )}
@@ -428,8 +429,7 @@ export default function DashboardHome() {
       {!profile?.bio && (
         <div
           style={{
-            background: 'var(--bg-elevated)',
-            border: '1px solid var(--border-default)',
+            ...GLASS_CARD,
             borderRadius: '12px',
             padding: '20px 24px',
             display: 'flex',
@@ -440,7 +440,7 @@ export default function DashboardHome() {
             minWidth: 0,
           }}
         >
-          <div style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Complete your profile to get discovered by more clients. Add a bio, portfolio photos and your specialties.</div>
+          <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>Complete your profile to get discovered by more clients. Add a bio, portfolio photos and your specialties.</div>
           <Button variant="secondary" size="sm" onClick={() => navigate('/dashboard/profile/edit-profile')}>Complete Profile</Button>
         </div>
       )}

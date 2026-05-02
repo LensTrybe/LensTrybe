@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 const SKILL_TYPES = [
   'Photographer', 'Videographer', 'Drone Pilot', 'Video Editor',
@@ -309,17 +310,17 @@ export default function EditProfilePage() {
   const uniqueSpecialties = [...new Set(availableSpecialties)]
 
   const styles = {
-    page: { display: 'flex', flexDirection: 'column', gap: '32px' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px' },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden', width: isMobile ? '100%' : 'fit-content', whiteSpace: isMobile ? 'nowrap' : 'normal' },
+    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden', width: isMobile ? '100%' : 'fit-content', whiteSpace: isMobile ? 'nowrap' : 'normal' },
     tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400, whiteSpace: 'nowrap', flexShrink: 0 }),
     section: { display: 'flex', flexDirection: 'column', gap: '20px' },
-    sectionTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
+    sectionTitle: { ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
     sectionSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '-12px' },
     row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    card: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
+    card: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
     avatarSection: { display: 'flex', alignItems: 'center', gap: '24px' },
     avatar: { width: '80px', height: '80px', borderRadius: 'var(--radius-full)', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', objectFit: 'cover', flexShrink: 0 },
     avatarPlaceholder: { width: '80px', height: '80px', borderRadius: 'var(--radius-full)', background: 'var(--bg-subtle)', border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', flexShrink: 0 },
@@ -329,13 +330,13 @@ export default function EditProfilePage() {
     skillChip: (selected) => ({ padding: '10px 16px', borderRadius: 'var(--radius-lg)', border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`, background: selected ? 'var(--green-dim)' : 'var(--bg-elevated)', color: selected ? 'var(--green)' : 'var(--text-secondary)', fontSize: '13px', fontWeight: selected ? 500 : 400, cursor: 'pointer', transition: 'all var(--transition-base)', textAlign: 'center', fontFamily: 'var(--font-ui)' }),
     specialtyWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     specialtyChip: (selected) => ({ padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`, background: selected ? 'var(--green-dim)' : 'transparent', color: selected ? 'var(--green)' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', transition: 'all var(--transition-base)', fontFamily: 'var(--font-ui)' }),
-    textarea: { width: '100%', minHeight: '120px', background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
-    select: { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%' },
-    label: { fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
+    textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '120px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
+    select: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%' },
+    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
     actions: { display: 'flex', justifyContent: 'flex-end', gap: '12px' },
   }
 
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading profile…</div>
+  if (loading) return <div style={{ background: 'transparent', padding: '40px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading profile…</div>
 
   return (
     <div style={{ ...styles.page, overflowX: 'hidden' }} className="edit-profile-page">
@@ -565,14 +566,14 @@ export default function EditProfilePage() {
             { key: 'drone_licence', label: 'CASA Drone Licence / ReOC', desc: 'Upload your Remote Pilot Licence or ReOC certificate' },
             { key: 'other', label: 'Other Credential', desc: 'Any other professional licence or certification' },
           ].map(({ key, label, desc }) => (
-            <div key={key} style={{ marginBottom: '20px', padding: '16px', background: 'var(--bg-elevated)', borderRadius: '10px', border: '1px solid var(--border-default)' }}>
+            <div key={key} style={{ marginBottom: '20px', padding: '16px', ...GLASS_CARD, borderRadius: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
                 <div>
                   <div style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)' }}>{label}</div>
                   <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{desc}</div>
                 </div>
                 {credentials[`has_${key}`] && (
-                  <span style={{ padding: '3px 10px', background: 'rgba(29,185,84,0.15)', border: '1px solid rgba(29,185,84,0.3)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954' }}>✓ Uploaded</span>
+                  <span style={{ padding: '3px 10px', ...GLASS_CARD_GREEN, borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954' }}>✓ Uploaded</span>
                 )}
               </div>
               {key === 'other' && (
@@ -582,7 +583,7 @@ export default function EditProfilePage() {
                     value={otherCredentialName}
                     onChange={e => setOtherCredentialName(e.target.value)}
                     placeholder="e.g. CASA Remote Pilot Licence, First Aid Certificate..."
-                    style={{ width: '100%', padding: '9px 12px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
+                    style={{ width: '100%', padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' }}
                   />
                 </div>
               )}
@@ -590,7 +591,7 @@ export default function EditProfilePage() {
                 <button
                   type="button"
                   onClick={() => document.getElementById(`cred-${key}`).click()}
-                  style={{ padding: '7px 14px', background: 'var(--bg-base)', border: '1px solid var(--border-default)', borderRadius: '7px', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
+                  style={{ padding: '7px 14px', ...GLASS_CARD, borderRadius: '7px', color: 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
                 >
                   {credentials[`has_${key}`] ? 'Replace File' : 'Upload File'}
                 </button>

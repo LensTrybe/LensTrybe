@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
+import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
 const DEFAULT_SECTIONS = {
   client_reviews: true,
@@ -524,11 +525,11 @@ export default function PortfolioWebsitePage() {
     }
   }
 
-  const card = { background: 'var(--bg-elevated)', border: '1px solid var(--border-default)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }
+  const card = { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }
   const label = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.05em' }
-  const inputStyle = { width: '100%', padding: '10px 12px', borderRadius: '8px', border: '1px solid var(--border-default)', background: 'var(--bg-base)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box' }
+  const inputStyle = { ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px' }
 
-  if (!user) return <div style={{ padding: 32, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Sign in to manage your portfolio website.</div>
+  if (!user) return <div style={{ background: 'transparent', padding: 32, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Sign in to manage your portfolio website.</div>
 
   if (!hasAccess) {
     return (
@@ -647,7 +648,7 @@ export default function PortfolioWebsitePage() {
         </div>
         <div><div style={label}>Headline</div><input value={headline} onChange={(e) => setHeadline(e.target.value)} style={{ ...inputStyle, marginTop: 8 }} /></div>
         <div><div style={label}>Tagline</div><textarea value={tagline} onChange={(e) => setTagline(e.target.value)} rows={3} style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 72 }} /></div>
-        <div style={{ padding: '12px 14px', background: 'var(--bg-base)', borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
+        <div style={{ padding: '12px 14px', ...GLASS_CARD, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
           <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.55 }}>
             Your colour scheme is pulled from your Brand Kit{brandKit?.primary_color ? ` (${brandKit.primary_color}).` : '.'} Your font is pulled from your Brand Kit{brandKit?.font ? ` (${brandKit.font}).` : '.'}
           </p>
@@ -785,10 +786,10 @@ export default function PortfolioWebsitePage() {
 
 function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFile, uploadingFiles, addFilesRef }) {
   return (
-    <div style={{ border: '1px solid var(--border-default)', borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>General</div>
+          <div style={{ width: 56, height: 56, borderRadius: 8, ...GLASS_CARD, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>General</div>
           <div><div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>General</div><div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{count} file{count === 1 ? '' : 's'}</div></div>
         </div>
         <Button variant="secondary" size="sm" type="button" onClick={onManage}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
@@ -801,7 +802,7 @@ function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFi
 function FolderRow({ folder, fileCount, manageOpen, onManage, onDelete, files, onDeleteFile, onAddFiles, uploadingFiles }) {
   const localRef = useRef(null)
   return (
-    <div style={{ border: '1px solid var(--border-default)', borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           {folder.cover_url ? <img src={folder.cover_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-default)' }} /> : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)' }} />}
@@ -819,7 +820,7 @@ function FolderRow({ folder, fileCount, manageOpen, onManage, onDelete, files, o
 
 function ManagePanel({ files, onDeleteFile, onPickFiles, uploadingFiles, inputRef }) {
   return (
-    <div style={{ marginTop: 4, padding: '14px', borderRadius: 10, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)' }}>
+    <div style={{ marginTop: 4, padding: '14px', ...GLASS_CARD, borderRadius: 10 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 12 }}>
         <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase' }}>Files in this folder</span>
         <div>
@@ -830,7 +831,7 @@ function ManagePanel({ files, onDeleteFile, onPickFiles, uploadingFiles, inputRe
       {files.length === 0 ? <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No files yet. Add images, video or PDF.</p> : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {files.map((f) => (
-            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--border-subtle)' }}>
+            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
               <FileThumb url={f.file_url} mime={f.mime_type} label="PDF" />
               <div style={{ flex: '1 1 120px', minWidth: 0 }}>
                 <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', wordBreak: 'break-word' }}>{f.filename}</div>
