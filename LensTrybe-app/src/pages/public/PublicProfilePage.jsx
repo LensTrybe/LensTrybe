@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -40,6 +45,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [enquiry, setEnquiry] = useState({ subject: '', message: '' })
+  const [enquiryError, setEnquiryError] = useState('')
   const [lightbox, setLightbox] = useState(null)
   const [blockedDates, setBlockedDates] = useState([])
   const [showReview, setShowReview] = useState(false)
@@ -96,6 +102,15 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   async function sendEnquiry() {
     if (!user) { setShowEnquire(false); setShowAuthGate(true); return }
+    setEnquiryError('')
+    const combinedEnquiryText = `${enquiry.subject}\n${enquiry.message}`
+    if (
+      threadOwnerTierContactSharingRestricted(profile?.subscription_tier) &&
+      messageBodyContainsContactDetails(combinedEnquiryText)
+    ) {
+      setEnquiryError(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
+      return
+    }
     setSending(true)
     const clientLabel = formatClientAccountDisplayName(clientAccount) || user.email
     const { data: thread } = await supabase.from('message_threads').insert({
@@ -295,7 +310,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 </Button>
               )}
               {!previewMode && (
-                <Button variant="primary" size="lg" onClick={() => user ? setShowEnquire(true) : setShowAuthGate(true)}>
+                <Button variant="primary" size="lg" onClick={() => { if (user) { setEnquiryError(''); setShowEnquire(true) } else setShowAuthGate(true) }}>
                   Enquire Now
                 </Button>
               )}
@@ -472,7 +487,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         </div>
       )}
 
-      <Modal isOpen={showEnquire} onClose={() => setShowEnquire(false)} title={`Enquire with ${displayName}`} size="md">
+      <Modal isOpen={showEnquire} onClose={() => { setShowEnquire(false); setEnquiryError('') }} title={`Enquire with ${displayName}`} size="md">
         <div style={styles.formSection}>
           {sent ? (
             <div style={{ padding: '24px', textAlign: 'center', color: 'var(--green)', fontSize: '15px', ...TYPO.body }}>
@@ -480,16 +495,19 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             </div>
           ) : (
             <>
-              <Input label="Subject" placeholder="e.g. Wedding Photography — June 2026" value={enquiry.subject} onChange={e => setEnquiry(p => ({ ...p, subject: e.target.value }))} />
+              <Input label="Subject" placeholder="e.g. Wedding Photography — June 2026" value={enquiry.subject} onChange={e => { setEnquiryError(''); setEnquiry(p => ({ ...p, subject: e.target.value })) }} />
               <div>
                 <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Message</label>
                 <textarea
                   style={{ width: '100%', minHeight: '120px', padding: '10px 14px', resize: 'vertical', boxSizing: 'border-box', ...GLASS_NATIVE_FIELD }}
                   placeholder="Tell them about your project, date, location and what you need…"
                   value={enquiry.message}
-                  onChange={e => setEnquiry(p => ({ ...p, message: e.target.value }))}
+                  onChange={e => { setEnquiryError(''); setEnquiry(p => ({ ...p, message: e.target.value })) }}
                 />
               </div>
+              {enquiryError ? (
+                <div style={{ fontSize: '13px', color: '#f87171', marginTop: '8px', ...TYPO.body }}>{enquiryError}</div>
+              ) : null}
               <div style={styles.modalActions}>
                 <Button variant="ghost" onClick={() => setShowEnquire(false)}>Cancel</Button>
                 <Button variant="primary" disabled={sending || !enquiry.subject || !enquiry.message} onClick={sendEnquiry}>

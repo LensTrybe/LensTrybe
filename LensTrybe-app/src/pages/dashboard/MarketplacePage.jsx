@@ -1,6 +1,11 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 import Button from '../../components/ui/Button'
@@ -205,6 +210,21 @@ export default function MarketplacePage() {
     if (!contactMessage.trim() || !selected || !user?.id) return
     setSendingContact(true)
     try {
+      const { data: sellerRow } = await supabase
+        .from('profiles')
+        .select('subscription_tier, business_email, business_name')
+        .eq('id', selected.creative_id)
+        .eq('is_admin', false)
+        .maybeSingle()
+      if (
+        threadOwnerTierContactSharingRestricted(sellerRow?.subscription_tier) &&
+        messageBodyContainsContactDetails(contactMessage.trim())
+      ) {
+        showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
+        setSendingContact(false)
+        return
+      }
+
       const subject = `Marketplace: ${selected.title}`
       const isCreative = !!profile
       const buyerDisplayName = formatClientAccountDisplayName(clientAccount) || profile?.business_name || user.email
@@ -253,18 +273,11 @@ export default function MarketplacePage() {
 
       await supabase.from('messages').insert(msgRow)
 
-      const { data: sellerProfile } = await supabase
-        .from('profiles')
-        .select('business_email, business_name')
-        .eq('id', selected.creative_id)
-        .eq('is_admin', false)
-        .maybeSingle()
-
-      if (sellerProfile?.business_email) {
+      if (sellerRow?.business_email) {
         await supabase.functions.invoke('send-message-notification', {
           body: {
-            to: sellerProfile.business_email,
-            toName: sellerProfile.business_name ?? 'there',
+            to: sellerRow.business_email,
+            toName: sellerRow.business_name ?? 'there',
             fromName: buyerDisplayName,
             subject: `New message about your listing: ${selected.title}`,
             messageBody: contactMessage.trim(),

@@ -2,6 +2,11 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { formatClientAccountDisplayName } from '../lib/clientDisplayName'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../lib/messagingContactPolicy'
 import { useAuth } from '../context/AuthContext'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 
@@ -134,13 +139,28 @@ export default function ClientDashboardPage() {
 
   async function sendReply() {
     if (!reply.trim() || !selected) return
+    const bodyText = reply.trim()
+    let ownerTier = creatives.find((c) => c.id === selected.creative_id)?.subscription_tier
+    if (ownerTier == null && selected?.creative_id) {
+      const { data: tierRow } = await supabase
+        .from('profiles')
+        .select('subscription_tier')
+        .eq('id', selected.creative_id)
+        .eq('is_admin', false)
+        .maybeSingle()
+      ownerTier = tierRow?.subscription_tier
+    }
+    if (threadOwnerTierContactSharingRestricted(ownerTier) && messageBodyContainsContactDetails(bodyText)) {
+      showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
+      return
+    }
     setSending(true)
     const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
     await supabase.from('messages').insert({
       thread_id: selected.id,
       sender_type: 'client',
       sender_name: clientSenderName,
-      body: reply.trim(),
+      body: bodyText,
     })
     const { data: profile } = await supabase
       .from('profiles')
@@ -155,7 +175,7 @@ export default function ClientDashboardPage() {
           toName: profile.business_name,
           fromName: clientSenderName,
           subject: `Reply from ${clientSenderName} on LensTrybe`,
-          messageBody: reply.trim(),
+          messageBody: bodyText,
           threadSubject: selected.subject ?? 'your enquiry',
         }
       })

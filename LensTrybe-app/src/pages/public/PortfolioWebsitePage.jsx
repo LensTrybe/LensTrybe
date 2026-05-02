@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../../lib/messagingContactPolicy'
 
 const DEFAULT_SECTIONS = {
   client_reviews: true,
@@ -149,6 +154,13 @@ export default function PortfolioWebsitePage() {
     const message = contact.message.trim()
     if (!name || !email || !message) {
       setContactError('Please fill in all fields.')
+      return
+    }
+    if (
+      threadOwnerTierContactSharingRestricted(profile?.subscription_tier) &&
+      messageBodyContainsContactDetails(message)
+    ) {
+      setContactError(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
       return
     }
     setContactSending(true)

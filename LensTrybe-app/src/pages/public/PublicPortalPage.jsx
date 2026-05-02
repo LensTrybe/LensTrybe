@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../../lib/messagingContactPolicy'
 
 /** Token-based client portal — no auth required; loads by `portal_token` only. */
 export default function PublicPortalPage() {
@@ -13,6 +18,7 @@ export default function PublicPortalPage() {
   const [activeThread, setActiveThread] = useState(null)
   const [threadMessages, setThreadMessages] = useState([])
   const [newMessage, setNewMessage] = useState('')
+  const [portalMessageError, setPortalMessageError] = useState('')
   const [sending, setSending] = useState(false)
   const [creativeProfile, setCreativeProfile] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -33,7 +39,7 @@ export default function PublicPortalPage() {
     const creativeId = portalData.creative_id
     const clientEmail = portalData.client_email
     const [prof, inv, quo, con, thr] = await Promise.all([
-      supabase.from('profiles').select('business_name, avatar_url, location').eq('id', creativeId).eq('is_admin', false).single(),
+      supabase.from('profiles').select('business_name, avatar_url, location, subscription_tier').eq('id', creativeId).eq('is_admin', false).single(),
       supabase.from('invoices').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
       supabase.from('quotes').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
       supabase.from('contracts').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
@@ -65,10 +71,22 @@ export default function PublicPortalPage() {
     setThreadMessages(data || [])
   }
 
-  const handleSelectThread = (thread) => { setActiveThread(thread); fetchThreadMessages(thread.id) }
+  const handleSelectThread = (thread) => {
+    setPortalMessageError('')
+    setActiveThread(thread)
+    fetchThreadMessages(thread.id)
+  }
 
   const sendMessage = async () => {
     if (!newMessage.trim() || !activeThread || !portal) return
+    setPortalMessageError('')
+    if (
+      threadOwnerTierContactSharingRestricted(creativeProfile?.subscription_tier) &&
+      messageBodyContainsContactDetails(newMessage.trim())
+    ) {
+      setPortalMessageError(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
+      return
+    }
     setSending(true)
     const { data, error } = await supabase.from('messages').insert({
       creative_id: portal.creative_id, thread_id: activeThread.id,
@@ -162,8 +180,11 @@ export default function PublicPortalPage() {
                     ))}
                     <div ref={bottomRef} />
                   </div>
+                  {portalMessageError ? (
+                    <div style={{ padding: '0 16px 8px', fontSize: 12, color: '#f87171', lineHeight: 1.4 }}>{portalMessageError}</div>
+                  ) : null}
                   <div style={{ padding: '12px 16px', borderTop: '1px solid #1e1e1e', display: 'flex', gap: 8 }}>
-                    <textarea value={newMessage} onChange={(e) => setNewMessage(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Type a reply... (Enter to send)" rows={1} style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 10, padding: '9px 13px', color: '#e8e8e8', fontSize: 13, resize: 'none', outline: 'none', fontFamily: 'inherit' }} />
+                    <textarea value={newMessage} onChange={(e) => { setPortalMessageError(''); setNewMessage(e.target.value) }} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage() } }} placeholder="Type a reply... (Enter to send)" rows={1} style={{ flex: 1, background: '#1a1a1a', border: '1px solid #2a2a2a', borderRadius: 10, padding: '9px 13px', color: '#e8e8e8', fontSize: 13, resize: 'none', outline: 'none', fontFamily: 'inherit' }} />
                     <button type="button" onClick={sendMessage} disabled={sending || !newMessage.trim()} style={{ background: '#39ff14', border: 'none', borderRadius: 10, width: 38, height: 38, color: '#000', fontSize: 16, fontWeight: 700, cursor: sending ? 'not-allowed' : 'pointer', opacity: sending || !newMessage.trim() ? 0.4 : 1, flexShrink: 0 }}>↑</button>
                   </div>
                 </div>

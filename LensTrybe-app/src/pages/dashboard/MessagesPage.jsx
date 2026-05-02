@@ -2,6 +2,11 @@ import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
+import {
+  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
+  messageBodyContainsContactDetails,
+  threadOwnerTierContactSharingRestricted,
+} from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
@@ -42,6 +47,16 @@ export default function MessagesPage() {
     if (!profile?.id) { showToast('Only creatives can send new messages', 'error'); return }
     setSendingPortal(true)
     try {
+      const bodyText = newMessageText.trim()
+      if (
+        threadOwnerTierContactSharingRestricted(profile?.subscription_tier) &&
+        messageBodyContainsContactDetails(bodyText)
+      ) {
+        showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
+        setSendingPortal(false)
+        return
+      }
+
       const email = newMessageEmail.trim()
 
       // Look up if client already has an account
@@ -71,7 +86,7 @@ export default function MessagesPage() {
         thread_id: thread.id,
         sender_type: 'creative',
         sender_name: creativeLabel,
-        body: newMessageText.trim(),
+        body: bodyText,
         creative_id: user.id,
       })
       if (msgError) throw msgError
@@ -83,7 +98,7 @@ export default function MessagesPage() {
           toName: newMessageName || email,
           fromName: creativeLabel,
           subject: `New message from ${creativeLabel} on LensTrybe`,
-          messageBody: newMessageText.trim(),
+          messageBody: bodyText,
           threadSubject: 'New Message',
         },
       })
@@ -141,14 +156,16 @@ export default function MessagesPage() {
 
     const otherCreativeIds = [...new Set(merged.filter(t => t.creative_id !== user.id).map(t => t.creative_id))]
     let nameByCreativeId = {}
+    let tierByCreativeId = {}
     if (otherCreativeIds.length > 0) {
       const { data: sellers } = await supabase
         .from('profiles')
-        .select('id, business_name')
+        .select('id, business_name, subscription_tier')
         .in('id', otherCreativeIds)
         .eq('is_admin', false)
       for (const p of sellers ?? []) {
         nameByCreativeId[p.id] = p.business_name
+        tierByCreativeId[p.id] = p.subscription_tier
       }
     }
 
@@ -177,7 +194,9 @@ export default function MessagesPage() {
       const peerDisplayName = t.creative_id === user.id
         ? (resolvedClientName ?? t.client_name ?? t.client_email ?? 'Client')
         : (nameByCreativeId[t.creative_id] ?? 'Creative')
-      return { ...t, peerDisplayName, resolvedClientName, isUnread: lastMsg && lastMsg > lastRead }
+      const threadOwnerTier = t.creative_id === user.id ? profile?.subscription_tier : tierByCreativeId[t.creative_id]
+      const contactSharingRestricted = threadOwnerTierContactSharingRestricted(threadOwnerTier)
+      return { ...t, peerDisplayName, resolvedClientName, contactSharingRestricted, isUnread: lastMsg && lastMsg > lastRead }
     })
 
     setThreads(threadsWithUnread)
@@ -200,6 +219,11 @@ export default function MessagesPage() {
 
   async function sendReply() {
     if (!reply.trim() || !selected) return
+    const bodyText = reply.trim()
+    if (selected.contactSharingRestricted && messageBodyContainsContactDetails(bodyText)) {
+      showToast(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE, 'error')
+      return
+    }
     setSending(true)
     const imListingCreative = selected.creative_id === user.id
 
@@ -209,7 +233,7 @@ export default function MessagesPage() {
         thread_id: selected.id,
         sender_type: 'creative',
         sender_name: creativeLabel,
-        body: reply.trim(),
+        body: bodyText,
         creative_id: user.id,
       })
       if (selected?.client_email) {
@@ -219,7 +243,7 @@ export default function MessagesPage() {
             toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
             fromName: creativeLabel,
             subject: `Reply from ${creativeLabel} on LensTrybe`,
-            messageBody: reply.trim(),
+            messageBody: bodyText,
             threadSubject: selected.subject ?? 'your enquiry',
             profileUrl: 'https://lens-trybe.vercel.app',
           },
@@ -232,7 +256,7 @@ export default function MessagesPage() {
         thread_id: selected.id,
         sender_type: 'client',
         sender_name: clientSenderName,
-        body: reply.trim(),
+        body: bodyText,
         creative_id: user.id,
       }
       await supabase.from('messages').insert(msgPayload)
@@ -249,7 +273,7 @@ export default function MessagesPage() {
             toName: sellerProfile.business_name ?? 'there',
             fromName: clientSenderName,
             subject: `Reply from ${clientSenderName} on LensTrybe`,
-            messageBody: reply.trim(),
+            messageBody: bodyText,
             threadSubject: selected.subject ?? 'your enquiry',
           },
         })
