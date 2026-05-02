@@ -388,8 +388,8 @@ export default function HomePage() {
           <span style={{ color: GREEN, textShadow: `0 0 60px rgba(29,185,84,0.5), 0 0 120px rgba(29,185,84,0.2)` }}>Create</span>
         </h1>
 
-        <p style={{ fontSize: isMobile ? '16px' : '18px', color: 'rgba(255,255,255,0.85)', maxWidth: '520px', lineHeight: 1.6, fontWeight: 400, margin: '0 0 44px', fontFamily: FONT }}>
-          Australia's home for visual creatives. Showcase your work, connect with clients, and build a career on your own terms.
+        <p style={{ fontSize: isMobile ? '16px' : '18px', color: 'rgba(255,255,255,0.85)', maxWidth: '640px', lineHeight: 1.6, fontWeight: 400, margin: '0 auto', fontFamily: FONT, textAlign: 'center' }}>
+          Australia's home for visual creatives. No commissions, ever. Your marketplace profile, invoicing, contracts, portfolio, and client delivery. One subscription. Everything you need to run your creative business.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', width: isMobile ? '100%' : 'auto' }}>
