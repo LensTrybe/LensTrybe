@@ -125,7 +125,7 @@ export default function PricingPage() {
       ...TYPO.label,
     },
     title: {
-      fontFamily: 'var(--font-display)',
+      fontFamily: 'var(--font-ui)',
       fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 5vw, 56px)',
       color: 'var(--text-primary)',
       maxWidth: '600px',
@@ -175,6 +175,7 @@ export default function PricingPage() {
       maxWidth: '1280px',
       margin: '0 auto',
       padding: isMobile ? '0 16px' : '0 40px',
+      alignItems: 'stretch',
     },
     card: (borderColor, hasBadge) => ({
       ...glassCardAccentBorder(borderColor),
@@ -184,7 +185,17 @@ export default function PricingPage() {
       gap: '24px',
       position: 'relative',
       overflow: 'hidden',
+      height: '100%',
+      boxSizing: 'border-box',
     }),
+    /** Aligns feature lists across the four-column row (desktop). */
+    cardTop: {
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '24px',
+      flexShrink: 0,
+      minHeight: isMobile ? undefined : '200px',
+    },
     cardHeader: { display: 'flex', flexDirection: 'column', gap: '8px' },
     tierName: {
       fontSize: '18px',
@@ -203,7 +214,7 @@ export default function PricingPage() {
       gap: '4px',
     },
     priceAmount: {
-      fontFamily: "'Playfair Display', serif",
+      fontFamily: 'var(--font-ui)',
       fontSize: '40px',
       color: 'var(--text-primary)',
       lineHeight: 1,
@@ -226,6 +237,7 @@ export default function PricingPage() {
       flexDirection: 'column',
       gap: '10px',
       flex: 1,
+      minHeight: 0,
     },
     featureItem: {
       display: 'flex',
@@ -310,22 +322,24 @@ export default function PricingPage() {
               </div>
             )}
 
-            <div style={styles.cardHeader}>
-              <div style={styles.tierName}>{tier.name}</div>
-              <div style={styles.tierDesc}>{tier.description}</div>
-            </div>
-
-            <div>
-              <div style={styles.price}>
-                <span style={styles.priceAmount}>{getPrice(tier)}</span>
-                {tier.monthly > 0 && <span style={styles.pricePeriod}>{getPricePeriod(tier)}</span>}
+            <div style={styles.cardTop}>
+              <div style={styles.cardHeader}>
+                <div style={styles.tierName}>{tier.name}</div>
+                <div style={styles.tierDesc}>{tier.description}</div>
               </div>
-              {annual && tier.monthly > 0 && (
-                <div style={styles.annualNote}>{getAnnualMonthlyEquivalent(tier)}/mo and {getAnnualSaving(tier)}</div>
-              )}
-            </div>
 
-            <div style={styles.divider} />
+              <div>
+                <div style={styles.price}>
+                  <span style={styles.priceAmount}>{getPrice(tier)}</span>
+                  {tier.monthly > 0 && <span style={styles.pricePeriod}>{getPricePeriod(tier)}</span>}
+                </div>
+                {annual && tier.monthly > 0 && (
+                  <div style={styles.annualNote}>{getAnnualMonthlyEquivalent(tier)}/mo and {getAnnualSaving(tier)}</div>
+                )}
+              </div>
+
+              <div style={styles.divider} />
+            </div>
 
             <div style={styles.featureList}>
               {tier.features.map((f, j) => (
@@ -339,7 +353,7 @@ export default function PricingPage() {
             <Button
               variant={tier.ctaVariant}
               size="md"
-              style={{ minHeight: '44px' }}
+              style={{ minHeight: '44px', marginTop: 'auto', width: '100%' }}
               onClick={() => navigate(tier.monthly === 0 ? '/join' : `/join/creative?plan=${tier.name.toLowerCase()}`)}
             >
               {tier.cta}

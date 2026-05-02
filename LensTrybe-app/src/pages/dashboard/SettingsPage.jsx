@@ -138,6 +138,7 @@ const PRICING_COMPARE_STYLES = {
     gap: '16px',
     maxWidth: '1280px',
     width: '100%',
+    alignItems: 'stretch',
   },
   card: (borderColor, hasBadge) => ({
     ...glassCardAccentBorder(borderColor),
@@ -149,7 +150,16 @@ const PRICING_COMPARE_STYLES = {
     gap: '24px',
     position: 'relative',
     overflow: 'hidden',
+    height: '100%',
+    boxSizing: 'border-box',
   }),
+  cardTop: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '24px',
+    flexShrink: 0,
+    minHeight: '200px',
+  },
   cardHeader: { display: 'flex', flexDirection: 'column', gap: '8px' },
   tierName: {
     fontSize: '18px',
@@ -169,7 +179,8 @@ const PRICING_COMPARE_STYLES = {
     gap: '4px',
   },
   priceAmount: {
-    fontFamily: 'var(--font-display)',
+    ...TYPO.stat,
+    fontFamily: 'var(--font-ui)',
     fontSize: '40px',
     color: 'var(--text-primary)',
     lineHeight: 1,
@@ -190,6 +201,7 @@ const PRICING_COMPARE_STYLES = {
     flexDirection: 'column',
     gap: '10px',
     flex: 1,
+    minHeight: 0,
   },
   featureItem: {
     display: 'flex',
@@ -206,10 +218,7 @@ const PRICING_COMPARE_STYLES = {
     flexShrink: 0,
     marginTop: '1px',
   },
-  divider: {
-    height: '1px',
-    background: 'var(--border-subtle)',
-  },
+  divider: DIVIDER_GRADIENT_STYLE,
   badgeStrip: {
     position: 'absolute',
     top: 0,
@@ -529,27 +538,29 @@ export default function SettingsPage() {
                       </div>
                     )}
 
-                    <div style={PRICING_COMPARE_STYLES.cardHeader}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                        <div style={PRICING_COMPARE_STYLES.tierName}>{pt.name}</div>
-                        {isCurrent && (
-                          <Badge variant="green" size="sm">Current Plan</Badge>
+                    <div style={PRICING_COMPARE_STYLES.cardTop}>
+                      <div style={PRICING_COMPARE_STYLES.cardHeader}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                          <div style={PRICING_COMPARE_STYLES.tierName}>{pt.name}</div>
+                          {isCurrent && (
+                            <Badge variant="green" size="sm">Current Plan</Badge>
+                          )}
+                        </div>
+                        <div style={PRICING_COMPARE_STYLES.tierDesc}>{pt.description}</div>
+                      </div>
+
+                      <div>
+                        <div style={PRICING_COMPARE_STYLES.price}>
+                          <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
+                          {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
+                        </div>
+                        {pricingAnnual && pt.monthly > 0 && (
+                          <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
                         )}
                       </div>
-                      <div style={PRICING_COMPARE_STYLES.tierDesc}>{pt.description}</div>
-                    </div>
 
-                    <div>
-                      <div style={PRICING_COMPARE_STYLES.price}>
-                        <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
-                        {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
-                      </div>
-                      {pricingAnnual && pt.monthly > 0 && (
-                        <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
-                      )}
+                      <div style={PRICING_COMPARE_STYLES.divider} />
                     </div>
-
-                    <div style={PRICING_COMPARE_STYLES.divider} />
 
                     <div style={PRICING_COMPARE_STYLES.featureList}>
                       {pt.features.map((f, j) => (
@@ -560,11 +571,17 @@ export default function SettingsPage() {
                       ))}
                     </div>
 
-                    {showUpgrade && (
-                      <Link to="/pricing" style={PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant)}>
-                        Upgrade
-                      </Link>
-                    )}
+                    <div style={{ marginTop: 'auto', width: '100%' }}>
+                      {showUpgrade ? (
+                        <Link to="/pricing" style={PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant)}>
+                          Upgrade
+                        </Link>
+                      ) : (
+                        <div style={{ ...PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant), visibility: 'hidden', pointerEvents: 'none' }} aria-hidden>
+                          Upgrade
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )
               })}
