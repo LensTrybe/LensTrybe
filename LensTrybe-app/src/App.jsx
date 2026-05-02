@@ -21,6 +21,7 @@ import DashboardHome from './pages/dashboard/DashboardHome'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
 import TeamPage from './pages/dashboard/TeamPage'
+import CollaboratePage from './pages/dashboard/CollaboratePage'
 import EditProfilePage from './pages/dashboard/EditProfilePage'
 import ViewProfilePage from './pages/dashboard/ViewProfilePage'
 import SettingsPage from './pages/dashboard/SettingsPage'
@@ -142,6 +143,7 @@ export default function App() {
         <Route path="business/insights" element={<Navigate to="/dashboard" replace />} />
         <Route path="business/reviews" element={<ReviewsPage />} />
         <Route path="business/marketplace" element={<MarketplacePage />} />
+        <Route path="collaborate" element={<CollaboratePage />} />
         <Route path="business/team" element={<TeamPage />} />
         <Route path="my-work/my-bookings" element={<MyBookingsPage />} />
         <Route path="my-work/availability" element={<AvailabilityPage />} />

@@ -17,6 +17,7 @@ const nav = [
   { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: '⬆', section: 'Portfolio', feature: 'deliver' },
   { label: 'Reviews', path: '/dashboard/business/reviews', icon: '★', section: 'Business' },
   { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: '◆', section: 'Business' },
+  { label: 'Collaborate', path: '/dashboard/collaborate', icon: '🤝', section: 'Business' },
   { label: 'Team', path: '/dashboard/business/team', icon: '⬡', section: 'Business', feature: 'team' },
   { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
   { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: '◷', section: 'Work' },
