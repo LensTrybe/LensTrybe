@@ -57,9 +57,16 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [reviewSent, setReviewSent] = useState(false)
   const [reviewModerationError, setReviewModerationError] = useState('')
   const [reviewRatingHover, setReviewRatingHover] = useState(null)
+  const [profileFlagTarget, setProfileFlagTarget] = useState(null)
+  const [profileFlagReason, setProfileFlagReason] = useState('')
+  const [profileFlagSaving, setProfileFlagSaving] = useState(false)
+  const [profileFlagSuccessId, setProfileFlagSuccessId] = useState(null)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => { loadProfile() }, [id])
+  useEffect(() => {
+    setProfileFlagSuccessId(null)
+  }, [id])
   useEffect(() => {
     function handleResize() {
       setIsMobile(window.innerWidth < 768)
@@ -72,12 +79,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     const [profileRes, portfolioRes, reviewsRes, availabilityRes] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', id).eq('is_admin', false).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
-      supabase.from('reviews').select('*').eq('creative_id', id).order('created_at', { ascending: false }),
+      supabase.from('reviews').select('*').eq('creative_id', id).or('hidden.is.null,hidden.eq.false').order('created_at', { ascending: false }),
       supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),
     ])
     setProfile(profileRes.data)
     setPortfolioItems(portfolioRes.data ?? [])
-    setReviews(reviewsRes.data ?? [])
+    const reviewRows = reviewsRes.data ?? []
+    setReviews(reviewRows.filter((r) => !r.hidden && r.flag_status !== 'resolved_removed'))
     setBlockedDates(availabilityRes.data ?? [])
     setLoading(false)
   }
@@ -111,6 +119,42 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewRatingHover(null); setReviewEmail(''); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)
     }
     setSubmittingReview(false)
+  }
+
+  async function submitPublicProfileFlag() {
+    if (!user || !profileFlagTarget || !profileFlagReason.trim()) return
+    setProfileFlagSaving(true)
+    const { error } = await supabase
+      .from('reviews')
+      .update({
+        flagged: true,
+        flag_reason: profileFlagReason.trim(),
+        flag_status: 'pending',
+        flagged_at: new Date().toISOString(),
+      })
+      .eq('id', profileFlagTarget.id)
+      .eq('creative_id', user.id)
+    setProfileFlagSaving(false)
+    if (error) {
+      console.error('[PublicProfilePage] flag review failed', error)
+      return
+    }
+    setReviews((prev) =>
+      prev.map((r) =>
+        r.id === profileFlagTarget.id
+          ? {
+              ...r,
+              flagged: true,
+              flag_reason: profileFlagReason.trim(),
+              flag_status: 'pending',
+              flagged_at: new Date().toISOString(),
+            }
+          : r,
+      ),
+    )
+    setProfileFlagSuccessId(profileFlagTarget.id)
+    setProfileFlagTarget(null)
+    setProfileFlagReason('')
   }
 
   async function sendEnquiry() {
@@ -263,6 +307,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     lightboxImg: { maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
+    profileFlagModalHint: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, marginBottom: '12px', ...TYPO.body },
+    profileFlagTextarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
   }
 
   return (
@@ -401,13 +447,63 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             <div style={{ fontSize: '14px', color: 'var(--text-muted)', padding: '20px 0' }}>No reviews yet.</div>
           ) : (
             <div style={styles.reviewGrid}>
-              {(showAllReviews ? reviews : reviews.slice(0, 5)).map(review => (
+              {(showAllReviews ? reviews : reviews.slice(0, 5)).map((review) => (
                 <div key={review.id} style={styles.reviewCard}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={styles.reviewerName}>{review.reviewer_name ?? review.client_name}</div>
-                    <div style={{ transform: 'scale(0.85)', transformOrigin: 'right center' }}>
-                      <StarRating value={review.rating} />
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '10px' }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={styles.reviewerName}>{review.reviewer_name ?? review.client_name}</div>
+                      <div style={{ transform: 'scale(0.85)', transformOrigin: isMobile ? 'center' : 'left center', display: 'flex', justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                        <StarRating value={review.rating} />
+                      </div>
                     </div>
+                    {user?.id === id && !previewMode ? (
+                      review.flagged && review.flag_status === 'pending' ? (
+                        <div style={{ flexShrink: 0, textAlign: 'right', maxWidth: '160px' }}>
+                          {profileFlagSuccessId === review.id ? (
+                            <div style={{ fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: '6px', fontFamily: 'var(--font-ui)' }}>
+                              Review flagged. We will be in touch within 48 hours.
+                            </div>
+                          ) : null}
+                          <span
+                            style={{
+                              display: 'inline-block',
+                              fontSize: '11px',
+                              fontWeight: 600,
+                              padding: '3px 8px',
+                              borderRadius: '999px',
+                              background: 'rgba(136,136,170,0.2)',
+                              color: '#888',
+                              border: '1px solid var(--border-default)',
+                              fontFamily: 'var(--font-ui)',
+                            }}
+                          >
+                            Under Review
+                          </span>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setProfileFlagTarget(review)
+                            setProfileFlagReason('')
+                          }}
+                          style={{
+                            flexShrink: 0,
+                            fontSize: '12px',
+                            color: '#888',
+                            cursor: 'pointer',
+                            background: 'none',
+                            border: 'none',
+                            textDecoration: 'underline',
+                            fontFamily: 'var(--font-ui)',
+                            padding: 0,
+                            alignSelf: 'flex-start',
+                          }}
+                        >
+                          Flag review
+                        </button>
+                      )
+                    ) : null}
                   </div>
                   {(review.body ?? review.comment) && <div style={styles.reviewBody}>"{review.body ?? review.comment}"</div>}
                   <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -544,6 +640,41 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           </div>
         </div>
       )}
+
+      <Modal
+        isOpen={!!profileFlagTarget}
+        onClose={() => {
+          if (!profileFlagSaving) {
+            setProfileFlagTarget(null)
+            setProfileFlagReason('')
+          }
+        }}
+        title="Flag this review"
+        size="md"
+      >
+        <div style={styles.formSection}>
+          <div style={styles.profileFlagModalHint}>
+            Tell us why this review should be removed. We will investigate and respond within 48 hours.
+          </div>
+          <div>
+            <label style={{ fontSize: '12px', display: 'block', marginBottom: '6px', ...TYPO.label }}>REASON *</label>
+            <textarea
+              style={styles.profileFlagTextarea}
+              placeholder="e.g. This person was never a client of mine"
+              value={profileFlagReason}
+              onChange={(e) => setProfileFlagReason(e.target.value)}
+            />
+          </div>
+          <div style={styles.modalActions}>
+            <Button type="button" variant="ghost" disabled={profileFlagSaving} onClick={() => { setProfileFlagTarget(null); setProfileFlagReason('') }}>
+              Cancel
+            </Button>
+            <Button type="button" variant="primary" disabled={profileFlagSaving || !profileFlagReason.trim()} onClick={() => void submitPublicProfileFlag()}>
+              {profileFlagSaving ? 'Submitting…' : 'Submit Flag'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       {lightbox && (
         <div style={styles.lightboxOverlay} onClick={() => setLightbox(null)}>
