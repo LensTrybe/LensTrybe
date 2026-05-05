@@ -483,6 +483,7 @@ export default function AdminPage() {
   const [broadcastBody, setBroadcastBody] = useState('');
   const [flaggedReviews, setFlaggedReviews] = useState([]);
   const [flagActionId, setFlagActionId] = useState(null);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 
   const panelUser = useMemo(() => users.find((u) => u.id === panelUserId) ?? null, [users, panelUserId]);
@@ -584,6 +585,12 @@ export default function AdminPage() {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [panelUserId]);
+
+  useEffect(() => {
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, []);
 
   async function loadUsers() {
     setLoading(true);
@@ -793,7 +800,7 @@ export default function AdminPage() {
   const isAdmin = callerRole === 'admin';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent', ...FONT, padding: '24px 28px' }}>
+    <div style={{ minHeight: '100vh', background: 'transparent', ...FONT, padding: isMobile ? '16px 14px' : '24px 28px', paddingRight: isMobile ? '28px' : undefined }}>
       <LtDashboardSelectDarkStyles />
       {toast && (
         <div
@@ -1635,26 +1642,28 @@ export default function AdminPage() {
           overflow: 'hidden',
         }}
       >
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 140px',
-            padding: '10px 16px',
-            borderBottom: '1px solid rgba(255,255,255,0.08)',
-            fontSize: 11,
-            fontWeight: 700,
-            color: COLORS.dim,
-            textTransform: 'uppercase',
-            letterSpacing: '0.06em',
-          }}
-        >
-          <div>User</div>
-          <div>Business</div>
-          <div>Tier</div>
-          <div>Joined</div>
-          <div>Role</div>
-          <div>Actions</div>
-        </div>
+        {!isMobile && (
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 140px',
+              padding: '10px 16px',
+              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              fontSize: 11,
+              fontWeight: 700,
+              color: COLORS.dim,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+            }}
+          >
+            <div>User</div>
+            <div>Business</div>
+            <div>Tier</div>
+            <div>Joined</div>
+            <div>Role</div>
+            <div>Actions</div>
+          </div>
+        )}
 
         {loading ? (
           <div style={{ padding: '40px', textAlign: 'center', color: COLORS.muted, fontSize: 13 }}>Loading users…</div>
@@ -1676,11 +1685,13 @@ export default function AdminPage() {
                 key={u.id}
                 onClick={() => setPanelUserId(u.id)}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 140px',
-                  padding: '12px 16px',
+                  display: isMobile ? 'flex' : 'grid',
+                  flexDirection: isMobile ? 'column' : undefined,
+                  gridTemplateColumns: isMobile ? undefined : '2fr 1.5fr 1fr 1fr 1fr 140px',
+                  padding: isMobile ? '14px 16px' : '12px 16px',
+                  gap: isMobile ? '6px' : undefined,
                   borderBottom: i < filtered.length - 1 ? `1px solid ${COLORS.border}` : 'none',
-                  alignItems: 'center',
+                  alignItems: isMobile ? 'flex-start' : 'center',
                   opacity: isLoading ? 0.5 : 1,
                   transition: 'opacity 0.2s, background 0.15s',
                   cursor: 'pointer',
