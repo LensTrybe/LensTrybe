@@ -465,7 +465,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [tierFilter, setTierFilter] = useState('all');
   const [roleFilter, setRoleFilter] = useState('all');
-  const [activeFilter, setActiveFilter] = useState('all');
+  const [activeFilter, setActiveFilter] = useState('48h');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [confirmRoleChange, setConfirmRoleChange] = useState(null);
   const [roleDropdownUserId, setRoleDropdownUserId] = useState(null);
@@ -477,6 +477,7 @@ export default function AdminPage() {
   const [flagsOpen, setFlagsOpen] = useState(true);
   const [reportsOpen, setReportsOpen] = useState(true);
   const [panelUserId, setPanelUserId] = useState(null);
+  const [usersListOpen, setUsersListOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [broadcastAudience, setBroadcastAudience] = useState('all');
   const [broadcastTitle, setBroadcastTitle] = useState('');
@@ -683,6 +684,7 @@ export default function AdminPage() {
     const now = Date.now();
     function matchesActive(u) {
       const last = u.last_sign_in_at ? new Date(u.last_sign_in_at).getTime() : null;
+      if (activeFilter === '48h') return last != null && now - last <= 48 * 60 * 60 * 1000;
       if (activeFilter === 'all') return true;
       if (activeFilter === '7d') return last != null && now - last <= ms7;
       if (activeFilter === '30d') return last != null && now - last <= ms30;
@@ -786,7 +788,7 @@ export default function AdminPage() {
     setFlagActionId(reviewId);
     const { error } = await supabase
       .from('reviews')
-      .update({ flag_status: 'resolved_removed', hidden: true })
+      .update({ flag_status: 'resolved_removed', hidden: true, flagged: false })
       .eq('id', reviewId);
     setFlagActionId(null);
     if (!error) {
@@ -1532,6 +1534,14 @@ export default function AdminPage() {
         )}
       </div>
 
+      <div style={{ marginBottom: 16 }}>
+        <CollapsibleHeader
+          title={`Users (${filtered.length} shown)`}
+          open={usersListOpen}
+          onToggle={() => setUsersListOpen((o) => !o)}
+        />
+        {usersListOpen && (
+          <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
         <input
           value={search}
@@ -1599,6 +1609,7 @@ export default function AdminPage() {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 11, color: COLORS.dim, fontWeight: 700, marginRight: 4 }}>LAST ACTIVE</span>
           {[
+            { id: '48h', label: 'Last 48 hours' },
             { id: 'all', label: 'All time' },
             { id: '7d', label: 'Last 7 days' },
             { id: '30d', label: 'Last 30 days' },
@@ -1824,6 +1835,9 @@ export default function AdminPage() {
 
       <div style={{ marginTop: 12, fontSize: 12, color: COLORS.dim, textAlign: 'right' }}>
         {filtered.length} of {users.length} users shown
+      </div>
+          </>
+        )}
       </div>
 
       <div style={{ marginTop: 40 }}>
