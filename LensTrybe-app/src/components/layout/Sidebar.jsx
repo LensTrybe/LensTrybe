@@ -80,7 +80,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       height: '100vh',
     },
     logo: {
-      padding: collapsed ? '20px 0' : '24px 20px',
+      padding: collapsed ? '20px 0' : '20px 20px 20px 60px',
       borderBottom: '1px solid rgba(255,255,255,0.06)',
       display: 'flex',
       alignItems: 'center',
