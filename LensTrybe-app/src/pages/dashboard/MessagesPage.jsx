@@ -392,6 +392,7 @@ export default function MessagesPage() {
     message: (isCreative) => ({
       display: 'flex',
       justifyContent: isCreative ? 'flex-end' : 'flex-start',
+      alignItems: isCreative ? 'flex-end' : 'flex-start',
       width: '100%',
       padding: isMobile ? '2px 4px' : '2px 16px',
       boxSizing: 'border-box',
@@ -399,9 +400,9 @@ export default function MessagesPage() {
     bubble: {
       padding: '10px 14px',
       borderRadius: '18px',
-      maxWidth: isMobile ? '88%' : '55%',
-      minWidth: 'auto',
+      minWidth: '0',
       display: 'block',
+      width: '100%',
       wordBreak: 'break-word',
       whiteSpace: 'normal',
       overflowWrap: 'anywhere',
@@ -558,7 +559,7 @@ export default function MessagesPage() {
                   const isCreative = msg.sender_type === 'creative'
                   return (
                     <div key={i} style={styles.message(isCreative)}>
-                      <div>
+                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: isCreative ? 'flex-end' : 'flex-start', maxWidth: isMobile ? '88%' : '55%' }}>
                         <div style={{
                           ...styles.bubble,
                           ...(isCreative
