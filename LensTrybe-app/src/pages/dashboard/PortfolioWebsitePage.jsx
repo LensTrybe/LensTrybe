@@ -786,7 +786,7 @@ export default function PortfolioWebsitePage() {
 
 function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFile, uploadingFiles, addFilesRef }) {
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
           <div>
