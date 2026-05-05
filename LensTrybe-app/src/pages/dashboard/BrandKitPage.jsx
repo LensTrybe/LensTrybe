@@ -559,37 +559,27 @@ export default function BrandKitPage() {
 
         <div style={{ marginBottom: 20 }}>
           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>Font</div>
-          <div
+          <select
+            value={brandBase.font}
+            onChange={(e) => setBrandBase((b) => ({ ...b, font: e.target.value }))}
             style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-              gap: 8,
+              width: '100%',
+              padding: '10px 14px',
+              borderRadius: 8,
+              background: '#111118',
+              color: '#ffffff',
+              border: '1px solid rgba(255,255,255,0.1)',
+              fontSize: 14,
+              fontFamily: fontStackCss(brandBase.font),
+              cursor: 'pointer',
+              outline: 'none',
+              colorScheme: 'dark',
             }}
           >
-            {BASE_FONTS.map((f) => {
-              const sel = brandBase.font === f
-              return (
-                <button
-                  key={f}
-                  type="button"
-                  onClick={() => setBrandBase((b) => ({ ...b, font: f }))}
-                  style={{
-                    padding: '10px 12px',
-                    borderRadius: 8,
-                    border: `1px solid ${sel ? '#1DB954' : 'var(--border-default)'}`,
-                    background: sel ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)',
-                    color: sel ? '#1DB954' : 'var(--text-primary)',
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    fontFamily: fontStackCss(f),
-                  }}
-                >
-                  {f}
-                </button>
-              )
-            })}
-          </div>
+            {BASE_FONTS.map((f) => (
+              <option key={f} value={f} style={{ fontFamily: fontStackCss(f) }}>{f}</option>
+            ))}
+          </select>
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
@@ -713,36 +703,33 @@ export default function BrandKitPage() {
 
           <div style={{ marginBottom: 20 }}>
             <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Font override</div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
-              {BASE_FONTS.map((f) => {
-                const sel = d.font === f
-                return (
-                  <button
-                    key={f}
-                    type="button"
-                    onClick={() =>
-                      setDocSettings((p) => ({
-                        ...p,
-                        [activeTab]: { ...p[activeTab], font: f },
-                      }))
-                    }
-                    style={{
-                      padding: '8px 10px',
-                      borderRadius: 8,
-                      border: `1px solid ${sel ? '#1DB954' : 'var(--border-default)'}`,
-                      background: sel ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)',
-                      color: sel ? '#1DB954' : 'var(--text-primary)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: fontStackCss(f),
-                    }}
-                  >
-                    {f}
-                  </button>
-                )
-              })}
-            </div>
+            <select
+              value={d.font || ''}
+              onChange={(e) =>
+                setDocSettings((p) => ({
+                  ...p,
+                  [activeTab]: { ...p[activeTab], font: e.target.value || null },
+                }))
+              }
+              style={{
+                width: '100%',
+                padding: '10px 14px',
+                borderRadius: 8,
+                background: '#111118',
+                color: '#ffffff',
+                border: '1px solid rgba(255,255,255,0.1)',
+                fontSize: 14,
+                fontFamily: d.font ? fontStackCss(d.font) : 'var(--font-ui)',
+                cursor: 'pointer',
+                outline: 'none',
+                colorScheme: 'dark',
+              }}
+            >
+              <option value="">Use brand base ({brandBase.font})</option>
+              {BASE_FONTS.map((f) => (
+                <option key={f} value={f} style={{ fontFamily: fontStackCss(f) }}>{f}</option>
+              ))}
+            </select>
             <button
               type="button"
               onClick={() => resetDocField('font')}
