@@ -46,6 +46,25 @@ const GLASS_GHOST_BTN = {
 
 const DIVIDER_LINE = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)'
 
+function HamburgerIcon({ open }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+      {open ? (
+        <>
+          <line x1="4" y1="4" x2="18" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="18" y1="4" x2="4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        </>
+      ) : (
+        <>
+          <line x1="3" y1="6" x2="19" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="3" y1="11" x2="19" y2="11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="3" y1="16" x2="19" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+        </>
+      )}
+    </svg>
+  )
+}
+
 function PublicBgOrbs() {
   const orb = (style) => (
     <div
@@ -151,7 +170,7 @@ export default function PublicLayout() {
       width: '44px', height: '44px', borderRadius: '10px',
       ...GLASS_GHOST_BTN,
       color: '#ffffff', display: 'flex', alignItems: 'center',
-      justifyContent: 'center', fontSize: '20px', cursor: 'pointer', flexShrink: 0,
+      justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
     },
     mobileMenu: {
       position: 'fixed', inset: 0,
@@ -246,7 +265,7 @@ export default function PublicLayout() {
             <span>LensTrybe</span>
           </div>
           <button type="button" style={styles.mobileMenuButton} onClick={() => setMobileMenuOpen(prev => !prev)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}>
-            
+            <HamburgerIcon open={mobileMenuOpen} />
           </button>
         </nav>
 

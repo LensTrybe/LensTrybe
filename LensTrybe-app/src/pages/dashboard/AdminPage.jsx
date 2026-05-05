@@ -542,33 +542,33 @@ export default function AdminPage() {
     if (loading || !['admin', 'staff'].includes(callerRole || '')) return undefined;
     let cancelled = false;
     (async () => {
-      let { data, error } = await supabase
+      const { data, error } = await supabase
         .from('reviews')
-        .select('*, profiles!reviews_creative_id_fkey(business_name)')
+        .select('*')
         .eq('flagged', true)
         .eq('flag_status', 'pending')
         .order('flagged_at', { ascending: false });
+
       console.log('flagged reviews:', data, error);
-      if (error) {
-        const second = await supabase
-          .from('reviews')
-          .select('*')
-          .eq('flagged', true)
-          .eq('flag_status', 'pending')
-          .order('flagged_at', { ascending: false });
-        data = second.data;
-        error = second.error;
-        console.log('flagged reviews:', data, error);
-      }
       if (cancelled || error) return;
-      const normalized = (data || []).map((r) => {
-        const p = r.profiles;
-        const joinedName = p && (Array.isArray(p) ? p[0]?.business_name : p?.business_name);
-        return {
-          ...r,
-          business_name: joinedName ?? r.creative_id ?? '—',
-        };
-      });
+
+      const ids = (data || []).map((r) => r.creative_id).filter(Boolean);
+      let businessNames = {};
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, business_name')
+          .in('id', ids);
+        (profiles || []).forEach((p) => {
+          businessNames[p.id] = p.business_name;
+        });
+      }
+
+      const normalized = (data || []).map((r) => ({
+        ...r,
+        business_name: businessNames[r.creative_id] || r.creative_id || '—',
+      }));
+
       if (!cancelled) setFlaggedReviews(normalized);
     })();
     return () => {
