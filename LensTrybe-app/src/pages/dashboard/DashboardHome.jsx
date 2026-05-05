@@ -76,19 +76,18 @@ function QuickAction({ icon, label, path, navigate, compact }) {
         background: hovered
           ? 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)'
           : GLASS_CARD.background,
-        padding: compact ? '10px 6px' : '16px',
+        padding: '12px 8px',
         cursor: 'pointer',
         transition: 'all 0.15s',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: compact ? '4px' : '10px',
+        gap: '8px',
         flex: compact ? 1 : undefined,
         minWidth: 0,
-        flexDirection: compact ? 'column' : 'row',
+        flexDirection: 'row',
       }}
     >
-      <span style={{ fontSize: compact ? 16 : 18, lineHeight: 1 }}>{icon}</span>
       <span
         style={{
           fontSize: compact ? 11 : 13,
@@ -124,10 +123,10 @@ export default function DashboardHome() {
   const DEFAULT_QUICK_ACTION_LABELS = ['New Message', 'New Invoice', 'Add Portfolio', 'New Delivery', 'New Contract', 'New Booking']
   const AVAILABLE_QUICK_ACTIONS = [
     { icon: '', label: 'New Message', path: '/dashboard/clients/messages' },
-    { icon: '◎', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
-    { icon: '◌', label: 'New Quote', path: '/dashboard/finance/quotes' },
+    { icon: '', label: 'New Invoice', path: '/dashboard/finance/invoicing' },
+    { icon: '', label: 'New Quote', path: '/dashboard/finance/quotes' },
     { icon: '', label: 'New Contract', path: '/dashboard/finance/contracts' },
-    { icon: '▦', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
+    { icon: '', label: 'Add Portfolio', path: '/dashboard/portfolio-design/portfolio-website' },
     { icon: '', label: 'New Delivery', path: '/dashboard/portfolio-design/deliver' },
     { icon: '', label: 'Add Client', path: '/dashboard/clients/crm' },
     { icon: '', label: 'New Booking', path: '/dashboard/my-work/my-bookings' },
@@ -691,7 +690,7 @@ export default function DashboardHome() {
             </Button>
           ) : null}
         </div>
-        <div style={isMobile ? { display: 'flex', flexWrap: 'wrap', gap: 8 } : { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
+        <div style={isMobile ? { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 } : { display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: 10 }}>
           {(quickActions.length ? quickActions : AVAILABLE_QUICK_ACTIONS.filter((a) => DEFAULT_QUICK_ACTION_LABELS.includes(a.label))).map((a) => (
             <QuickAction key={a.label} {...a} navigate={navigate} compact={isMobile} />
           ))}

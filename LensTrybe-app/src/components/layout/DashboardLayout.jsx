@@ -14,6 +14,16 @@ const GLASS_HAMBURGER = {
   boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
 }
 
+function HamburgerIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
+      <line x1="3" y1="6" x2="19" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="11" x2="19" y2="11" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="16" x2="19" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+    </svg>
+  )
+}
+
 export default function DashboardLayout() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
@@ -46,7 +56,6 @@ export default function DashboardLayout() {
             ...GLASS_HAMBURGER,
             color: '#ffffff',
             cursor: 'pointer',
-            fontSize: '20px',
             fontWeight: 600,
             letterSpacing: '-0.3px',
             display: 'flex',
@@ -57,7 +66,7 @@ export default function DashboardLayout() {
           }}
           aria-label="Open navigation menu"
         >
-          
+          <HamburgerIcon />
         </button>
       )}
       {isMobile && mobileSidebarOpen && (
