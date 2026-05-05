@@ -291,22 +291,16 @@ export default function ExplorePage() {
             {isMobile ? (
               <select
                 className={SELECT_CLASS}
-                multiple
-                size={CATEGORIES.length}
-                value={selectedTypes}
+                value={selectedTypes[0] || ''}
                 onChange={(e) => {
-                  const next = Array.from(e.target.selectedOptions, (opt) => opt.value)
-                  setSelectedTypes(next)
+                  const val = e.target.value
+                  setSelectedTypes(val ? [val] : [])
                   setFilters((prev) => ({ ...prev, specialty: '' }))
                 }}
-                aria-label="Creative types (select one or more)"
-                style={{
-                  ...styles.select,
-                  width: '100%',
-                  minHeight: '44px',
-                  padding: '8px 12px',
-                }}
+                aria-label="Creative type"
+                style={{ ...styles.select, width: '100%' }}
               >
+                <option value="">All creative types</option>
                 {CATEGORIES.map((cat) => (
                   <option key={cat.value} value={cat.value}>
                     {cat.label}
