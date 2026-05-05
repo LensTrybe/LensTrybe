@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 
 const PLATFORMS = ['Instagram', 'TikTok', 'YouTube', 'Facebook', 'LinkedIn', 'Podcast', 'Blog / Website', 'Other']
@@ -10,6 +10,12 @@ export default function CreatorPartnersPage() {
   const [loading, setLoading] = useState(false)
   const [submitted, setSubmitted] = useState(false)
   const [error, setError] = useState('')
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   const set = (field, value) => setForm(f => ({ ...f, [field]: value }))
 
@@ -68,7 +74,7 @@ export default function CreatorPartnersPage() {
     cardTitle: { fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 8 },
     cardDesc: { fontSize: 14, color: '#8b8a9a', lineHeight: 1.6 },
     divider: { height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 24px 80px' },
-    formWrap: { maxWidth: 620, margin: '0 auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '48px 40px' },
+    formWrap: { maxWidth: 620, margin: '0 auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: isMobile ? '28px 20px' : '48px 40px' },
     label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#8b8a9a', marginBottom: 8, letterSpacing: 0.3 },
     input: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' },
     select: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', appearance: 'none' },
@@ -131,7 +137,7 @@ export default function CreatorPartnersPage() {
       <div style={s.section}>
         <p style={s.sectionTitle}>What We Ask For</p>
         <p style={s.sectionSubtitle}>No scripted posts. No required hashtags. No minimum post count. Just your genuine experience.</p>
-        <div style={{ ...s.grid, gridTemplateColumns: 'repeat(4, 1fr)' }}>
+        <div style={s.grid}>
           {[
             { icon: '', title: 'Profile Setup Reel', desc: 'Walk your audience through setting up your LensTrybe profile — skills, portfolio, credentials. This is the most impactful content you can create.' },
             { icon: '', title: 'First Enquiry Post', desc: 'When you receive your first booking or enquiry through LensTrybe, share it. Real results from real usage is the most powerful content.' },
