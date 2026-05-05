@@ -772,7 +772,7 @@ export default function PortfolioWebsitePage() {
           <Button variant="primary" type="button" onClick={createFolder} disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'Creating…' : 'Create folder'}</Button>
         </div>
         {loadingContent ? <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>Loading…</p> : (
-          <div className="folder-grid-mobile" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : '1fr', gap: '12px' }}>
+          <div className="folder-grid-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
             <GeneralRow count={filesForFolder('general').length} manageOpen={manageTarget === 'general'} onManage={() => setManageTarget((t) => (t === 'general' ? null : 'general'))} onAddFiles={(fl) => uploadFilesToTarget(fl, 'general')} files={filesForFolder('general')} onDeleteFile={deleteFile} uploadingFiles={uploadingFiles} addFilesRef={addFilesRef} />
             {folders.map((folder) => (
               <FolderRow key={folder.id} folder={folder} fileCount={filesForFolder(folder.id).length} manageOpen={manageTarget === folder.id} onManage={() => setManageTarget((t) => (t === folder.id ? null : folder.id))} onDelete={() => deleteFolder(folder)} files={filesForFolder(folder.id)} onDeleteFile={deleteFile} onAddFiles={(fl) => uploadFilesToTarget(fl, folder.id)} uploadingFiles={uploadingFiles} />
@@ -787,12 +787,14 @@ export default function PortfolioWebsitePage() {
 function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFile, uploadingFiles, addFilesRef }) {
   return (
     <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <div style={{ width: 56, height: 56, borderRadius: 8, ...GLASS_CARD, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>General</div>
-          <div><div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>General</div><div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{count} file{count === 1 ? '' : 's'}</div></div>
+      <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+        <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>General</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{count} file{count === 1 ? '' : 's'}</div>
+          </div>
         </div>
-        <Button variant="secondary" size="sm" type="button" onClick={onManage}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
+        <Button variant="secondary" size="sm" type="button" onClick={onManage} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
       </div>
       {manageOpen ? <ManagePanel files={files} onDeleteFile={onDeleteFile} onPickFiles={(e) => { const fl = e.target.files; if (fl?.length) onAddFiles(Array.from(fl)) }} uploadingFiles={uploadingFiles} inputRef={addFilesRef} /> : null}
     </div>
@@ -800,15 +802,16 @@ function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFi
 }
 
 function FolderRow({ folder, fileCount, manageOpen, onManage, onDelete, files, onDeleteFile, onAddFiles, uploadingFiles }) {
+  const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false
   const localRef = useRef(null)
   return (
     <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', flexWrap: 'wrap', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
           {folder.cover_url ? <img src={folder.cover_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-default)' }} /> : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)' }} />}
           <div><div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{folder.name}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{fileCount} file{fileCount === 1 ? '' : 's'}</div></div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <Button variant="secondary" size="sm" type="button" onClick={onManage}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
           <Button variant="ghost" size="sm" type="button" onClick={onDelete}>Delete Folder</Button>
         </div>
