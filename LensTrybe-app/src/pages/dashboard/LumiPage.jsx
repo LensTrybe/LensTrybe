@@ -148,7 +148,8 @@ export default function LumiPage() {
   const [sending, setSending] = useState(false);
   const [loadingConvos, setLoadingConvos] = useState(true);
   const [usage, setUsage] = useState(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 768 : true);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const [openMenuId, setOpenMenuId] = useState(null);
   const [renamingId, setRenamingId] = useState(null);
   const [renameValue, setRenameValue] = useState('');
@@ -221,6 +222,12 @@ export default function LumiPage() {
       renameInputRef.current.select();
     }
   }, [renamingId]);
+
+  useEffect(() => {
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, []);
 
   function openConversation(convo) {
     if (renamingId) return;
@@ -452,17 +459,23 @@ export default function LumiPage() {
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', overflow: 'hidden', background: 'transparent', ...FONT }}>
+    <div style={{ display: 'flex', height: '100dvh', position: 'relative', overflow: 'hidden', background: 'transparent', ...FONT }}>
 
       {/* Sidebar */}
       <div style={{
-        width: sidebarOpen ? 260 : 0,
-        minWidth: sidebarOpen ? 260 : 0,
-        transition: 'width 0.2s ease, min-width 0.2s ease',
+        width: isMobile ? '100%' : (sidebarOpen ? 260 : 0),
+        minWidth: isMobile ? 'unset' : (sidebarOpen ? 260 : 0),
+        maxWidth: isMobile ? 280 : 'unset',
+        position: isMobile ? 'absolute' : 'relative',
+        top: 0,
+        left: 0,
+        height: '100%',
+        zIndex: isMobile ? 200 : 1,
+        transform: isMobile ? (sidebarOpen ? 'translateX(0)' : 'translateX(-100%)') : 'none',
+        transition: isMobile ? 'transform 0.25s ease' : 'width 0.2s ease, min-width 0.2s ease',
         overflow: 'hidden',
-        ...GLASS_CARD,
-        borderRadius: 0,
-        borderRight: '1px solid rgba(255,255,255,0.08)',
+        background: COLORS.panel,
+        borderRight: `1px solid ${COLORS.border}`,
         display: 'flex',
         flexDirection: 'column',
       }}>
@@ -540,12 +553,24 @@ export default function LumiPage() {
         )}
       </div>
 
+      {isMobile && sidebarOpen && (
+        <div
+          onClick={() => setSidebarOpen(false)}
+          style={{
+            position: 'absolute', inset: 0, zIndex: 199,
+            background: 'rgba(0,0,0,0.55)',
+            backdropFilter: 'blur(4px)',
+            WebkitBackdropFilter: 'blur(4px)',
+          }}
+        />
+      )}
+
       {/* Main chat area */}
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
         {/* Top bar */}
         <div style={{
-          padding: '14px 20px',
+          padding: isMobile ? '12px 14px' : '14px 20px',
           borderBottom: '1px solid rgba(255,255,255,0.08)',
           ...GLASS_CARD,
           borderRadius: 0,
@@ -703,7 +728,7 @@ export default function LumiPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: '14px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', ...GLASS_CARD, borderRadius: 0, flexShrink: 0 }}>
+            <div style={{ padding: isMobile ? '10px 12px' : '14px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', ...GLASS_CARD, borderRadius: 0, flexShrink: 0 }}>
               <div style={{
                 display: 'flex', gap: 10, alignItems: 'flex-end',
                 ...GLASS_CARD,
