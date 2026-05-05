@@ -7,15 +7,24 @@ import {
   TYPO,
 } from '../../lib/glassTokens'
 
+const IconCamera = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>)
+const IconVideo = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>)
+const IconDrone = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 12m-2 0a2 2 0 1 0 4 0a2 2 0 1 0 -4 0"/><path d="M4 4l4 4m8-4l-4 4m4 8l4 4m-12 0l4-4"/><circle cx="4" cy="4" r="1.5"/><circle cx="20" cy="4" r="1.5"/><circle cx="4" cy="20" r="1.5"/><circle cx="20" cy="20" r="1.5"/></svg>)
+const IconEdit = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>)
+const IconPhoto = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="M21 15l-5-5L5 21"/></svg>)
+const IconShare = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>)
+const IconMakeup = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>)
+const IconPhone = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>)
+
 const SKILLS = [
-  { key: 'photographer', label: 'Photographer', icon: '📷' },
-  { key: 'videographer', label: 'Videographer', icon: '🎬' },
-  { key: 'drone_pilot', label: 'Drone Pilot', icon: '🚁' },
-  { key: 'video_editor', label: 'Video Editor', icon: '🖥️' },
-  { key: 'photo_editor', label: 'Photo Editor', icon: '🖼️' },
-  { key: 'social_media_manager', label: 'Social Media Manager', icon: '📱' },
-  { key: 'hair_makeup_artist', label: 'Hair and Makeup Artist', icon: '💄' },
-  { key: 'ugc_creator', label: 'UGC Creator', icon: '🎥' },
+  { key: 'photographer', label: 'Photographer', icon: <IconCamera /> },
+  { key: 'videographer', label: 'Videographer', icon: <IconVideo /> },
+  { key: 'drone_pilot', label: 'Drone Pilot', icon: <IconDrone /> },
+  { key: 'video_editor', label: 'Video Editor', icon: <IconEdit /> },
+  { key: 'photo_editor', label: 'Photo Editor', icon: <IconPhoto /> },
+  { key: 'social_media_manager', label: 'Social Media Manager', icon: <IconShare /> },
+  { key: 'hair_makeup_artist', label: 'Hair and Makeup Artist', icon: <IconMakeup /> },
+  { key: 'ugc_creator', label: 'UGC Creator', icon: <IconPhone /> },
 ]
 
 const SKILL_FEATURES = {
@@ -161,7 +170,7 @@ export default function UpcomingFeaturesPage() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', fontSize: '18px' }}>
+                  <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'rgba(255,255,255,0.85)' }}>
                     {skill.icon}
                   </div>
                   <div style={{ fontSize: isMobile ? '14px' : '15px', marginBottom: '4px', lineHeight: 1.35, ...TYPO.heading }}>{skill.label}</div>
