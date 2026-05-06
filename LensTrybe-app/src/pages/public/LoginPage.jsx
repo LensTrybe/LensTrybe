@@ -169,7 +169,10 @@ export default function LoginPage() {
               } catch {
                 /* ignore */
               }
-              void supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}/` } })
+              void supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: `${window.location.origin}/` },
+              })
             }}
           >
             <svg width="18" height="18" viewBox="0 0 18 18" aria-hidden>

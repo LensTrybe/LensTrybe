@@ -84,18 +84,9 @@ export function AuthProvider({ children }) {
     }
 
     if (googleOAuthReturn && !profileData && !clientData) {
-      try {
-        sessionStorage.setItem(
-          LT_JOIN_FLASH_KEY,
-          JSON.stringify({
-            message: 'No LensTrybe account is linked to that Google sign-in yet. Create a creative or client account first, then you can use Google to log in next time.',
-          }),
-        )
-      } catch {
-        /* ignore */
+      if (window.location.pathname !== '/onboarding') {
+        window.location.replace(`${window.location.origin}/onboarding`)
       }
-      await supabase.auth.signOut()
-      window.location.replace(`${window.location.origin}/join`)
       return
     }
 

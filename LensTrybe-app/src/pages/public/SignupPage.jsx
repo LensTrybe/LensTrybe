@@ -96,6 +96,7 @@ export default function SignupPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [googleHover, setGoogleHover] = useState(false)
 
   const [form, setForm] = useState({
     tier: 'pro',
@@ -120,6 +121,23 @@ export default function SignupPage() {
 
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function continueWithGoogle() {
+    setError('')
+    const plan = searchParams.get('plan')
+    if (plan) {
+      try {
+        sessionStorage.setItem('lt_signup_plan', plan)
+      } catch {
+        /* ignore */
+      }
+    }
+    const { error: oauthError } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/onboarding` },
+    })
+    if (oauthError) setError(oauthError.message)
   }
 
   useEffect(() => {
@@ -564,6 +582,51 @@ export default function SignupPage() {
           {/* Step 1 — Account */}
           {step === 1 && (
             <>
+              <button
+                type="button"
+                onClick={() => void continueWithGoogle()}
+                onMouseEnter={() => setGoogleHover(true)}
+                onMouseLeave={() => setGoogleHover(false)}
+                style={{
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '12px',
+                  padding: '14px 20px',
+                  borderRadius: '12px',
+                  border: googleHover ? '2px solid #1DB954' : '2px solid rgba(255,255,255,0.18)',
+                  background: '#0a0a0f',
+                  color: '#fff',
+                  fontFamily: 'var(--font-ui)',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                  boxSizing: 'border-box',
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: 'Inter, system-ui, sans-serif',
+                    fontSize: '18px',
+                    fontWeight: 700,
+                    color: '#fff',
+                    width: '24px',
+                    textAlign: 'center',
+                    lineHeight: 1,
+                  }}
+                  aria-hidden
+                >
+                  G
+                </span>
+                Continue with Google
+              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', marginBottom: '8px' }}>
+                <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or</span>
+                <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+              </div>
               <Input label="Business name" placeholder="Golden Hour Studio" value={form.businessName} onChange={e => update('businessName', e.target.value)} />
               <div style={styles.row}>
                 <Input label="First name" placeholder="Sarah" value={form.firstName} onChange={e => update('firstName', e.target.value)} />

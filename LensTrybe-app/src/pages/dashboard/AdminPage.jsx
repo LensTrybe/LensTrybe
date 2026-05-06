@@ -529,7 +529,7 @@ export default function AdminPage() {
         navigate('/login');
         return;
       }
-      const { data: profile } = await supabase.from('profiles').select('role, is_admin').eq('id', session.user.id).single();
+      const { data: profile } = await supabase.from('profiles').select('role, is_admin').eq('id', session.user.id).maybeSingle();
       const allowed = ['admin', 'staff'].includes(profile?.role) || profile?.is_admin;
       if (!allowed) {
         navigate('/dashboard');

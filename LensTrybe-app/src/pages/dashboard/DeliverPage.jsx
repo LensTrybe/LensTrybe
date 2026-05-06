@@ -175,7 +175,7 @@ export default function DeliverPage() {
       .from('deliveries')
       .select('*')
       .eq('id', delivery.id)
-      .single()
+      .maybeSingle()
 
     await supabase.functions.invoke('send-delivery', {
       body: {

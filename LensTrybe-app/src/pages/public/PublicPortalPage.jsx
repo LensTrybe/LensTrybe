@@ -33,13 +33,13 @@ export default function PublicPortalPage() {
 
   const fetchPortal = async () => {
     const { data: portalData, error } = await supabase
-      .from('client_portals').select('*').eq('portal_token', token).single()
+      .from('client_portals').select('*').eq('portal_token', token).maybeSingle()
     if (error || !portalData) { setNotFound(true); setLoading(false); return }
     setPortal(portalData)
     const creativeId = portalData.creative_id
     const clientEmail = portalData.client_email
     const [prof, inv, quo, con, thr] = await Promise.all([
-      supabase.from('profiles').select('business_name, avatar_url, location, subscription_tier').eq('id', creativeId).eq('is_admin', false).single(),
+      supabase.from('profiles').select('business_name, avatar_url, location, subscription_tier').eq('id', creativeId).eq('is_admin', false).maybeSingle(),
       supabase.from('invoices').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
       supabase.from('quotes').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
       supabase.from('contracts').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),

@@ -77,7 +77,7 @@ export default function CRMPage() {
       if (updates.status === 'Booked') {
         let contact = contacts.find(c => c.id === id) ?? selected
         if (!contact) {
-          const { data } = await supabase.from('crm_contacts').select('*').eq('id', id).single()
+          const { data } = await supabase.from('crm_contacts').select('*').eq('id', id).maybeSingle()
           contact = data
         }
         if (contact) {

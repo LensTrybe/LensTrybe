@@ -21,7 +21,7 @@ export default function PortfolioPage() {
       .from("profiles")
       .select("*")
       .eq("id", id)
-      .single();
+      .maybeSingle();
 
     if (error || !prof) { setNotFound(true); setLoading(false); return; }
     setProfile(prof);

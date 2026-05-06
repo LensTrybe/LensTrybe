@@ -8,6 +8,7 @@ import PricingPage from './pages/public/PricingPage'
 import CreatorPartnersPage from './pages/public/CreatorPartnersPage'
 import UpcomingFeaturesPage from './pages/public/UpcomingFeaturesPage'
 import SignupPage from './pages/public/SignupPage'
+import OnboardingPage from './pages/public/OnboardingPage'
 import JoinHubPage from './pages/public/JoinHubPage'
 import ClientSignupPage from './pages/public/ClientSignupPage'
 import MessagesPage from './pages/dashboard/MessagesPage'
@@ -103,6 +104,7 @@ export default function App() {
     <Routes>
       <Route path="/reset-password" element={<PasswordResetPage />} />
       <Route path="/forgot-password" element={<PasswordResetPage />} />
+      <Route path="/onboarding" element={<OnboardingPage />} />
 
       {/* Public routes with navbar */}
       <Route element={<PublicLayout />}>

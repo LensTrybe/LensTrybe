@@ -28,7 +28,7 @@ export default function TeamJoinPage() {
         .select('*, profiles:creative_id(business_name, brand_primary_color)')
         .eq('token', token)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setError('This invitation link is invalid or has already been used.');

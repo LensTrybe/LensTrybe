@@ -18,7 +18,7 @@ export default function TeamAcceptPage() {
         .select('*, profiles:creative_id(business_name)')
         .eq('token', token)
         .eq('status', 'pending')
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
         setError('This invitation link is invalid or has already been used.');

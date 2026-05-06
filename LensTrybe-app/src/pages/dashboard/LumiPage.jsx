@@ -171,7 +171,7 @@ export default function LumiPage() {
       .from('profiles')
       .select('subscription_tier, business_name, tagline')
       .eq('id', user.id)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setProfile(data);

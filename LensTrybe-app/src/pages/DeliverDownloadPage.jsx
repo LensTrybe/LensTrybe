@@ -33,7 +33,7 @@ export default function DeliverDownloadPage() {
       .from('deliveries')
       .select('*')
       .eq('download_token', token)
-      .single()
+      .maybeSingle()
     if (error || !data) { setNotFound(true); setLoading(false); return }
     setDelivery(data)
     if (!data.password) setUnlocked(true)
