@@ -60,11 +60,11 @@ const PRICING_PAGE_TIERS = [
       '40 photos, 5 videos',
       'Unlimited message replies',
       'Custom contracts & e-signatures',
-      'CRM — 500 client records',
+      'CRM: 500 client records',
       'Client portals',
       'Brand kit',
       'Portfolio website',
-      'LensTrybe Deliver — 50GB',
+      'LensTrybe Deliver: 50GB',
       'Business insights',
       'Homepage rotation',
       'Gear marketplace listings (15)',
@@ -83,11 +83,11 @@ const PRICING_PAGE_TIERS = [
       'Unlimited photos & videos',
       'Unlimited message replies',
       'Everything in Expert',
-      'CRM — unlimited records',
-      'LensTrybe Deliver — 200GB',
+      'CRM: unlimited records',
+      'LensTrybe Deliver: 200GB',
       'Multi-page portfolio website',
       'Custom domain',
-      'Team — up to 5 members',
+      'Team: up to 5 members',
       'Studio profile page',
       'Team performance insights',
       'Elite spotlight on homepage',
@@ -297,7 +297,7 @@ export default function SettingsPage() {
     'Not getting enough enquiries',
     'Missing a feature I need',
     'Using a different platform',
-    'Temporary break — I will be back',
+    'Temporary break: I will be back',
     'Other',
   ]
 
@@ -740,7 +740,7 @@ export default function SettingsPage() {
             <>
               <div style={styles.stepTitle}>Are you sure?</div>
               <div style={styles.stepText}>
-                Deleting your account will immediately remove your profile from search results. All your data — portfolio, invoices, messages, reviews — will be permanently deleted after 30 days. You have a 30-day window to reactivate.
+                Deleting your account will immediately remove your profile from search results. All your data (portfolio, invoices, messages, reviews) will be permanently deleted after 30 days. You have a 30-day window to reactivate.
               </div>
               <div style={styles.modalActions}>
                 <Button variant="ghost" onClick={() => setShowDelete(false)}>Cancel</Button>

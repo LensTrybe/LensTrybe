@@ -160,7 +160,7 @@ export default function TeamJoinPage() {
             <div style={{ background: '#1e2a1e', border: `1px solid ${accentColor}`, borderRadius: '10px', padding: '14px 16px', marginBottom: '24px' }}>
               <div style={{ fontSize: '12px', fontWeight: '700', color: accentColor, marginBottom: '6px' }}>What&apos;s included</div>
               <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.7' }}>
-                <div>• Full <strong style={{ color: 'white' }}>Elite tier access</strong> — covered by your team owner</div>
+                <div>• Full <strong style={{ color: 'white' }}>Elite tier access</strong>, covered by your team owner</div>
                 <div>• Your own creative profile on LensTrybe</div>
                 <div>• Access to all business tools: invoicing, contracts, CRM, deliver and more</div>
                 <div>• No subscription payment required</div>

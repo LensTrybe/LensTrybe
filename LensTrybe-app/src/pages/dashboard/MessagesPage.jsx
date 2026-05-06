@@ -611,7 +611,7 @@ export default function MessagesPage() {
           <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
             <div style={{ fontSize: '16px', color: 'var(--text-primary)', marginBottom: '8px', ...TYPO.heading }}>New Message</div>
             <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', ...TYPO.body }}>
-              {"Send a portal link to a client. Enter their email address and they'll receive a link to view their invoices, quotes, contracts and messages with you — no account needed."}
+              {"Send a portal link to a client. Enter their email address and they'll receive a link to view their invoices, quotes, contracts and messages with you. No account needed."}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
               <div>

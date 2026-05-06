@@ -96,9 +96,9 @@ export default function TeamAcceptPage() {
               <div style={{ fontSize: '14px', color: '#e8e8e8', marginTop: '6px' }}><strong>Email:</strong> {invitation?.email}</div>
             </div>
             <div style={{ background: '#1e2a1e', border: '1px solid #39ff14', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#39ff14', marginBottom: '6px' }}>Important — Read before signing up</div>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#39ff14', marginBottom: '6px' }}>Important: read before signing up</div>
               <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.6' }}>
-                You are joining as a team member under an <strong style={{ color: 'white' }}>Elite subscription</strong>. When creating your profile, select the <strong style={{ color: 'white' }}>Basic (Free)</strong> plan — your team owner's Elite subscription covers all features for the whole team.
+                You are joining as a team member under an <strong style={{ color: 'white' }}>Elite subscription</strong>. When creating your profile, select the <strong style={{ color: 'white' }}>Basic (Free)</strong> plan. Your team owner&apos;s Elite subscription covers all features for the whole team.
               </div>
             </div>
             <button

@@ -473,7 +473,7 @@ export default function JobBoardPage() {
                           )}
                           {app.status === 'accepted' && (
                             <div style={{ marginTop: '12px', padding: '8px 12px', ...GLASS_CARD_GREEN, borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
-                              ✓ Accepted — message thread created
+                              ✓ Accepted: message thread created
                             </div>
                           )}
                           {app.status === 'declined' && (
@@ -636,7 +636,7 @@ export default function JobBoardPage() {
 
       <Modal isOpen={showPost} onClose={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }} title="Post a Job" size="lg">
         <div style={styles.formSection}>
-          <Input label="Job title" placeholder="Wedding Photographer needed — Brisbane" value={form.title} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, title: e.target.value })) }} />
+          <Input label="Job title" placeholder="Wedding Photographer needed, Brisbane" value={form.title} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, title: e.target.value })) }} />
           <div>
             <label style={styles.label}>Description</label>
             <textarea style={styles.textarea} placeholder="Describe the job, what you need, any requirements…" value={form.description} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, description: e.target.value })) }} />

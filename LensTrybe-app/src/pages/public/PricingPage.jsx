@@ -57,11 +57,11 @@ const tiers = [
       '40 photos, 5 videos',
       'Unlimited message replies',
       'Custom contracts & e-signatures',
-      'CRM — 500 client records',
+      'CRM: 500 client records',
       'Client portals',
       'Brand kit',
       'Portfolio website',
-      'LensTrybe Deliver — 50GB',
+      'LensTrybe Deliver: 50GB',
       'Business insights',
       'Homepage rotation',
       'Gear marketplace listings (15)',
@@ -80,11 +80,11 @@ const tiers = [
       'Unlimited photos & videos',
       'Unlimited message replies',
       'Everything in Expert',
-      'CRM — unlimited records',
-      'LensTrybe Deliver — 200GB',
+      'CRM: unlimited records',
+      'LensTrybe Deliver: 200GB',
       'Multi-page portfolio website',
       'Custom domain',
-      'Team — up to 5 members',
+      'Team: up to 5 members',
       'Studio profile page',
       'Team performance insights',
       'Elite spotlight on homepage',
@@ -376,7 +376,7 @@ export default function PricingPage() {
             No payments until July 1st, 2026
           </div>
           <div style={{ fontSize: '13px', color: '#8b8a9a', ...TYPO.body }}>
-            Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial — your card will never be charged early.
+            Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial. Your card will never be charged early.
           </div>
         </div>
         <div style={{ textAlign: 'center', fontSize: '13px', color: 'var(--text-muted)', marginTop: 20, ...TYPO.body }}>

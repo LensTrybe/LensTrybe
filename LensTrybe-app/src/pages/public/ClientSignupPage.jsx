@@ -136,7 +136,7 @@ export default function ClientSignupPage() {
         </div>
 
         <div style={styles.freeNote}>
-          ✓ Free forever — clients never pay to use LensTrybe
+          ✓ Free forever: clients never pay to use LensTrybe
         </div>
 
         {error && <div style={styles.errorBox}>{error}</div>}

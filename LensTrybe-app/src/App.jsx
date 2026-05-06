@@ -175,7 +175,7 @@ export default function App() {
       <Route path="/site/:slug" element={<PublicPortfolioWebsitePage />} />
 
       {/* Fallback */}
-      <Route path="*" element={<PlaceholderPage page="404 — Page Not Found" />} />
+      <Route path="*" element={<PlaceholderPage page="404: Page Not Found" />} />
     </Routes>
   )
 

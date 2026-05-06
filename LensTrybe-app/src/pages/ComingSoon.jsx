@@ -309,7 +309,7 @@ export default function ComingSoon() {
 
         <div className="badge">
           <div className="badge-dot" />
-          Opening May 1st, 2026 — Creatives only
+          Opening May 1st, 2026. Creatives only.
         </div>
 
         <h1>
@@ -319,7 +319,7 @@ export default function ComingSoon() {
         </h1>
 
         <p className="subtitle">
-          Australia's premium marketplace for visual creatives. Photographers, videographers, drone pilots and more — no commissions, ever.
+          Australia's premium marketplace for visual creatives. Photographers, videographers, drone pilots and more. No commissions, ever.
         </p>
 
         <div className="countdown">
@@ -349,7 +349,7 @@ export default function ComingSoon() {
 
           {submitted ? (
             <div className="success">
-              ✓ &nbsp;You're on the list — we'll be in touch soon.
+              ✓ &nbsp;You're on the list. We'll be in touch soon.
             </div>
           ) : (
             <>

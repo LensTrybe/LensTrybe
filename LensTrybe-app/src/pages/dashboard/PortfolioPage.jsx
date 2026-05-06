@@ -200,7 +200,7 @@ export default function PortfolioPage() {
         <div style={styles.uploadZone} onClick={() => document.getElementById('portfolio-upload').click()}>
           <div style={{ fontSize: '32px' }}></div>
           <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Upload your first photo or video</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>JPG, PNG, MP4 — drag and drop or click to browse</div>
+          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>JPG, PNG, MP4: drag and drop or click to browse</div>
         </div>
       ) : (
         <div style={styles.grid}>
@@ -232,7 +232,7 @@ export default function PortfolioPage() {
           )}
           <div style={styles.inputWrap}>
             <label style={styles.label}>Headline</label>
-            <input style={styles.input} placeholder="e.g. Golden Hour Wedding — Byron Bay" value={editForm.headline} onChange={e => setEditForm(p => ({ ...p, headline: e.target.value }))} />
+            <input style={styles.input} placeholder="e.g. Golden Hour Wedding, Byron Bay" value={editForm.headline} onChange={e => setEditForm(p => ({ ...p, headline: e.target.value }))} />
           </div>
           <div style={styles.inputWrap}>
             <label style={styles.label}>Description</label>

@@ -620,7 +620,7 @@ export default function SettingsPage() {
                   opacity: downgradeLoading ? 0.75 : 1,
                 }}
               >
-                {downgradeLoading ? 'Working…' : 'Downgrade to Basic — keep my account'}
+                {downgradeLoading ? 'Working…' : 'Downgrade to Basic, keep my account'}
               </button>
               <button
                 type="button"

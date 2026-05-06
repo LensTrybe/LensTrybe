@@ -165,7 +165,7 @@ export default function ClientSignupPage() {
         >
           <div style={{ fontSize: 22, fontWeight: 900, marginBottom: 6 }}>Create a client account</div>
           <div style={{ color: BRAND.muted, fontSize: 14, marginBottom: 28 }}>
-            Find creatives, post jobs, and send enquiries — free to join.
+            Find creatives, post jobs, and send enquiries, free to join.
           </div>
 
           <form onSubmit={handleSubmit}>

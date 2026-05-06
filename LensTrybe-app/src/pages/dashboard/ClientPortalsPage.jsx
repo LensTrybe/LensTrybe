@@ -135,13 +135,13 @@ export default function ClientPortalsPage() {
       <div style={styles.pageHeader}>
         <div>
           <h1 style={styles.title}>Client Portals</h1>
-          <p style={styles.subtitle}>Share a private project space with each client — no login required.</p>
+          <p style={styles.subtitle}>Share a private project space with each client, no login required.</p>
         </div>
         <Button variant="primary" onClick={() => setShowCreate(true)}>+ New Portal</Button>
       </div>
 
       <div style={styles.infoBox}>
-        Each portal gives your client a private link to view messages, invoices, contracts, bookings and delivered files for their project. No account needed — just share the link.
+        Each portal gives your client a private link to view messages, invoices, contracts, bookings and delivered files for their project. No account needed, just share the link.
       </div>
 
       {loading ? (
@@ -206,7 +206,7 @@ export default function ClientPortalsPage() {
             />
           </div>
           <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
-            A unique link will be generated for this portal. Share it with your client — they can access it without creating an account.
+            A unique link will be generated for this portal. Share it with your client: they can access it without creating an account.
           </div>
           <div style={styles.modalActions}>
             <Button variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Button>

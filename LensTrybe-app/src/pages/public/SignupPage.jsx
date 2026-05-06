@@ -500,8 +500,8 @@ export default function SignupPage() {
     { title: 'Create your account', sub: 'Your business details and login credentials.' },
     { title: 'Your creative skills', sub: 'Select all categories that apply to you.' },
     { title: 'Your specialties', sub: 'Choose your areas of focus.' },
-    { title: 'Your location', sub: 'Clients search by location — be discoverable.' },
-    { title: 'Credentials', sub: 'Optional — add trust badges to your profile.' },
+    { title: 'Your location', sub: 'Clients search by location, so be discoverable.' },
+    { title: 'Credentials', sub: 'Optional: add trust badges to your profile.' },
     { title: 'Profile photo', sub: 'Put a face to your business.' },
     { title: 'You\'re almost there', sub: 'Review your details before creating your account.' },
   ]
@@ -521,7 +521,7 @@ export default function SignupPage() {
 
         <div style={styles.header}>
           <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
-          <div style={styles.stepLabel}>Step {step + 1} of {STEPS.length} — {STEPS[step]}</div>
+          <div style={styles.stepLabel}>Step {step + 1} of {STEPS.length}: {STEPS[step]}</div>
           <h1 style={styles.title}>{stepTitles[step].title}</h1>
           <p style={styles.subtitle}>{stepTitles[step].sub}</p>
         </div>
@@ -669,7 +669,7 @@ export default function SignupPage() {
           {step === 5 && (
             <>
               <div style={{ ...GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
-                Credentials are optional. They appear as trust badges on your public profile. Documents are private — clients only see the badge, not the file.
+                Credentials are optional. They appear as trust badges on your public profile. Documents are private: clients only see the badge, not the file.
               </div>
               <Input label="ABN or ACN (optional)" placeholder="12 345 678 901" value={form.abn ?? ''} onChange={e => update('abn', e.target.value)} />
               <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
@@ -698,7 +698,7 @@ export default function SignupPage() {
                   update('avatarPreview', URL.createObjectURL(file))
                 }
               }} />
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', ...TYPO.body }}>Optional — you can add this from your dashboard later.</div>
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', ...TYPO.body }}>Optional: you can add this from your dashboard later.</div>
             </>
           )}
 

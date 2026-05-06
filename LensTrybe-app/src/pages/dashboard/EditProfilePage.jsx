@@ -663,7 +663,7 @@ export default function EditProfilePage() {
         <div style={styles.card}>
           <div style={styles.sectionTitle}>Trust & Credentials</div>
           <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px', lineHeight: 1.6 }}>
-            These documents are private — only the badges display publicly on your profile. Clients cannot view or download the actual files.
+            These documents are private: only the badges display publicly on your profile. Clients cannot view or download the actual files.
           </p>
 
           <Input label="ABN / ACN" value={credentials.abn} onChange={e => setCredentials(p => ({ ...p, abn: e.target.value }))} placeholder="12 345 678 901" />

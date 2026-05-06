@@ -690,7 +690,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             </div>
           ) : (
             <>
-              <Input label="Subject" placeholder="e.g. Wedding Photography — June 2026" value={enquiry.subject} onChange={e => { setEnquiryError(''); setEnquiry(p => ({ ...p, subject: e.target.value })) }} />
+              <Input label="Subject" placeholder="e.g. Wedding Photography, June 2026" value={enquiry.subject} onChange={e => { setEnquiryError(''); setEnquiry(p => ({ ...p, subject: e.target.value })) }} />
               <div>
                 <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Message</label>
                 <textarea

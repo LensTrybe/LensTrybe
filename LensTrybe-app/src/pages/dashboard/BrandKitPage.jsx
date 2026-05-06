@@ -1155,7 +1155,7 @@ function BrandKitInvoicePreview({ effective, headerTextColor, profile, user }) {
             boxSizing: 'border-box',
           }}
         >
-          Preview notes — your real invoices use the text you enter when creating them.
+          Preview notes: your real invoices use the text you enter when creating them.
         </div>
       </div>
 
@@ -1391,7 +1391,7 @@ function BrandKitQuotePreview({ effective, headerTextColor, profile, user }) {
             boxSizing: 'border-box',
           }}
         >
-          Preview notes — your real quotes use the text you enter when creating them.
+          Preview notes: your real quotes use the text you enter when creating them.
         </div>
       </div>
 
