@@ -129,6 +129,7 @@ function FanCarousel({ creatives, autoPlay = true }) {
   const intervalRef = useRef(null);
   const trackRef = useRef(null);
   const dragStartX = useRef(null);
+  const dragStartY = useRef(null);
   const dragDelta = useRef(0);
   const [dragOffset, setDragOffset] = useState(0);
   const CARD_WIDTH = 240;
@@ -151,14 +152,36 @@ function FanCarousel({ creatives, autoPlay = true }) {
 
   useEffect(() => { startAuto(); return () => clearInterval(intervalRef.current); }, [startAuto]);
 
-  const onPointerDown = (e) => { dragStartX.current = e.clientX; dragDelta.current = 0; clearInterval(intervalRef.current); };
-  const onPointerMove = (e) => { if (dragStartX.current === null) return; dragDelta.current = e.clientX - dragStartX.current; setDragOffset(dragDelta.current); };
+  const onPointerDown = (e) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+    dragStartX.current = e.clientX;
+    dragStartY.current = e.clientY;
+    dragDelta.current = 0;
+    clearInterval(intervalRef.current);
+  };
+  const onPointerMove = (e) => {
+    if (dragStartX.current === null) return;
+    const dx = e.clientX - dragStartX.current;
+    const dy = e.clientY - (dragStartY.current ?? e.clientY);
+    if (Math.abs(dy) > Math.abs(dx) + 5) {
+      dragStartX.current = null;
+      dragDelta.current = 0;
+      setDragOffset(0);
+      return;
+    }
+    if (Math.abs(dx) > 5) {
+      e.preventDefault();
+    }
+    dragDelta.current = dx;
+    setDragOffset(dx);
+  };
   const onPointerUp = () => {
     if (dragStartX.current === null) return;
     if (dragDelta.current < -60) next();
     else if (dragDelta.current > 60) prev();
     else setDragOffset(0);
     dragStartX.current = null;
+    dragStartY.current = null;
     startAuto();
   };
 
@@ -192,7 +215,7 @@ function FanCarousel({ creatives, autoPlay = true }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '32px' }}>
       <div ref={trackRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}
-        style={{ position: 'relative', height: '360px', width: '100%', perspective: '1400px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'grab', userSelect: 'none' }}>
+        style={{ position: 'relative', height: '360px', width: '100%', perspective: '1400px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'grab', userSelect: 'none', touchAction: 'pan-y', willChange: 'transform' }}>
         {visibleCards.map(({ creative, offset, idx }) => (
           <div key={idx} onClick={() => handleCardClick(creative)} style={{ position: 'absolute', width: `${CARD_WIDTH}px`, cursor: creative?.id ? 'pointer' : 'default', ...getCardProps(offset) }}>
             <CreativeCard creative={creative} isCenter={offset === 0} />
@@ -244,17 +267,17 @@ export default function HomePage() {
     const canvas = heroCanvasRef.current;
     const hero = heroSectionRef.current;
     if (!canvas || !hero) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true, desynchronized: true });
     if (!ctx) return;
-
     const colors = ['#FF4D8D', '#1DB954', '#ffffff', '#a855f7'];
     const particles = [];
     let rafId = 0;
     let running = true;
+    let lastFrame = 0;
     let lastSpawn = 0;
-
+    let scrollTimer = null;
+    let isScrolling = false;
     const random = (min, max) => Math.random() * (max - min) + min;
-
     const resizeCanvas = () => {
       const dpr = window.devicePixelRatio || 1;
       const width = hero.clientWidth;
@@ -265,7 +288,6 @@ export default function HomePage() {
       canvas.style.height = `${height}px`;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     };
-
     const spawnParticle = () => {
       const width = hero.clientWidth;
       const height = hero.clientHeight;
@@ -279,21 +301,21 @@ export default function HomePage() {
         color: colors[Math.floor(random(0, colors.length))],
       });
     };
-
     resizeCanvas();
-    for (let i = 0; i < 80; i += 1) spawnParticle();
-
+    for (let i = 0; i < 40; i += 1) spawnParticle();
     const draw = (time) => {
       if (!running) return;
+      rafId = requestAnimationFrame(draw);
+      if (isScrolling) return;
+      if (time - lastFrame < 33) return;
+      lastFrame = time;
       const width = hero.clientWidth;
       const height = hero.clientHeight;
       ctx.clearRect(0, 0, width, height);
-
-      if (time - lastSpawn > 50 && particles.length < 220) {
+      if (time - lastSpawn > 80 && particles.length < 160) {
         spawnParticle();
         lastSpawn = time;
       }
-
       for (let i = particles.length - 1; i >= 0; i -= 1) {
         const p = particles[i];
         p.y -= p.speedY;
@@ -308,15 +330,21 @@ export default function HomePage() {
         if (p.y < -6 || p.x < -20 || p.x > width + 20) particles.splice(i, 1);
       }
       ctx.globalAlpha = 1;
-      rafId = requestAnimationFrame(draw);
     };
-
+    const onScroll = () => {
+      isScrolling = true;
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => { isScrolling = false; }, 150);
+    };
     rafId = requestAnimationFrame(draw);
-    window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('resize', resizeCanvas, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => {
       running = false;
       cancelAnimationFrame(rafId);
+      clearTimeout(scrollTimer);
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('scroll', onScroll);
     };
   }, []);
 

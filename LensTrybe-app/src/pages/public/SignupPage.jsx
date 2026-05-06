@@ -395,15 +395,40 @@ export default function SignupPage() {
       borderRadius: 'var(--radius-full)',
       fontWeight: 600,
     },
-    tierCard: (selected, color) => ({
-      ...(selected ? glassCardAccentBorder(color) : GLASS_CARD),
-      padding: '20px',
-      cursor: 'pointer',
-      transition: 'all var(--transition-base)',
-      display: 'flex',
-      flexDirection: 'column',
-      gap: '6px',
-    }),
+    tierCard: (tierDef, selected) => {
+      const layout = {
+        padding: '20px',
+        cursor: 'pointer',
+        transition: 'all var(--transition-base)',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '6px',
+      }
+      /** Solid + RGB triple for neon (matches TIERS accents: blue, green, silver, gold). */
+      const TIER_NEON = {
+        basic: { hex: '#4A9EFF', rgb: [74, 158, 255] },
+        pro: { hex: '#1DB954', rgb: [29, 185, 84] },
+        expert: { hex: '#C0C8D8', rgb: [192, 200, 216] },
+        elite: { hex: '#EAB308', rgb: [234, 179, 8] },
+      }
+      const neon = TIER_NEON[tierDef.id]
+      if (neon && selected) {
+        const [r, g, b] = neon.rgb
+        return {
+          ...GLASS_CARD,
+          ...layout,
+          border: `2px solid ${neon.hex}`,
+          borderTop: `2px solid ${neon.hex}`,
+          borderLeft: `2px solid ${neon.hex}`,
+          background: `linear-gradient(135deg, rgba(${r},${g},${b},0.22) 0%, rgba(${r},${g},${b},0.07) 100%)`,
+          boxShadow: `0 0 0 2px ${neon.hex}, 0 0 20px rgba(${r},${g},${b},0.4), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)`,
+        }
+      }
+      return {
+        ...layout,
+        ...(selected ? glassCardAccentBorder(tierDef.color) : GLASS_CARD),
+      }
+    },
     tierName: { fontSize: '16px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
     tierPrice: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', ...TYPO.stat },
     tierAnnualMeta: { fontSize: '11px', color: 'var(--green)', fontFamily: 'var(--font-ui)', ...TYPO.body, fontWeight: 500 },
@@ -567,8 +592,8 @@ export default function SignupPage() {
                 </button>
               </div>
               <div style={styles.tierGrid}>
-                {TIERS.map(tier => (
-                  <div key={tier.id} style={styles.tierCard(form.tier === tier.id, tier.color)} onClick={() => update('tier', tier.id)}>
+                {TIERS.map((tier) => (
+                  <div key={tier.id} style={styles.tierCard(tier, form.tier === tier.id)} onClick={() => update('tier', tier.id)}>
                     <div style={styles.tierName}>{tier.name}</div>
                     <div style={styles.tierPrice}>{getPlanPrice(tier)}{getPlanPeriod(tier)}</div>
                     {getPlanAnnualMeta(tier) && <div style={styles.tierAnnualMeta}>{getPlanAnnualMeta(tier)}</div>}

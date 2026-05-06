@@ -75,7 +75,7 @@ export default function OnboardingPage() {
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
   const [country, setCountry] = useState('Australia')
-  const [tier, setTier] = useState('basic')
+  const [selectedTier, setSelectedTier] = useState('basic')
 
   const [avatarFile, setAvatarFile] = useState(null)
   const [avatarPreview, setAvatarPreview] = useState(null)
@@ -123,7 +123,7 @@ export default function OnboardingPage() {
       setBusinessName(suggestion)
       const av = googleAvatarUrl(u)
       if (av) setAvatarPreview(av)
-      setTier(readStoredPlanTier())
+      setSelectedTier(readStoredPlanTier())
       setChecking(false)
     })()
     return () => {
@@ -197,7 +197,7 @@ export default function OnboardingPage() {
       city: city.trim(),
       state,
       country: country.trim() || 'Australia',
-      subscription_tier: tier || 'basic',
+      subscription_tier: selectedTier || 'basic',
       account_type: 'creative',
       avatar_url: avatarUrl,
       display_name_preference: 'business_name',
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
       console.log('send-welcome-email failed', welcomeErr)
     }
 
-    const t = tier || 'basic'
+    const t = selectedTier || 'basic'
     if (t === 'basic') {
       navigate('/dashboard', { replace: true })
     } else {
@@ -535,23 +535,47 @@ export default function OnboardingPage() {
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 {PLAN_OPTIONS.map((p) => {
-                  const selected = tier === p.id
+                  const isBasic = p.id === 'basic'
+                  const paidSelected = selectedTier === p.id
+                  let cardBorder
+                  let cardBackground
+                  if (!isBasic) {
+                    cardBorder = paidSelected ? `2px solid ${GREEN}` : '1px solid rgba(255,255,255,0.14)'
+                    cardBackground = paidSelected ? 'rgba(29,185,84,0.1)' : 'rgba(255,255,255,0.04)'
+                  }
                   return (
                     <button
                       key={p.id}
                       type="button"
-                      onClick={() => setTier(p.id)}
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        padding: '14px 16px',
-                        borderRadius: 12,
-                        border: selected ? `2px solid ${GREEN}` : '1px solid rgba(255,255,255,0.14)',
-                        background: selected ? 'rgba(29,185,84,0.1)' : 'rgba(255,255,255,0.04)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                      }}
+                      onClick={() => setSelectedTier(p.id)}
+                      style={
+                        isBasic
+                          ? {
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              textAlign: 'left',
+                              padding: '16px',
+                              borderRadius: '12px',
+                              cursor: 'pointer',
+                              border: selectedTier === 'basic' ? '2px solid #4A9EFF' : '1px solid rgba(255,255,255,0.08)',
+                              background: selectedTier === 'basic' ? 'rgba(74,158,255,0.08)' : 'rgba(255,255,255,0.03)',
+                              boxShadow:
+                                selectedTier === 'basic' ? '0 0 0 2px #4A9EFF, 0 0 20px rgba(74,158,255,0.4)' : 'none',
+                              transition: 'all 0.2s ease',
+                            }
+                          : {
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              padding: '14px 16px',
+                              borderRadius: 12,
+                              border: cardBorder,
+                              background: cardBackground,
+                              cursor: 'pointer',
+                              textAlign: 'left',
+                            }
+                      }
                     >
                       <span style={{ fontWeight: 700, color: '#fff', fontSize: '15px' }}>{p.label}</span>
                       <span style={{ color: PINK, fontWeight: 600, fontSize: '14px' }}>{p.price}</span>
@@ -559,7 +583,7 @@ export default function OnboardingPage() {
                   )
                 })}
               </div>
-              {tier !== 'basic' ? (
+              {selectedTier !== 'basic' ? (
                 <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.55)' }}>
                   You&apos;ll be redirected to complete payment after setup.
                 </p>
