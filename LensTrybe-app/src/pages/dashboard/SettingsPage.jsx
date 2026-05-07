@@ -280,6 +280,10 @@ export default function SettingsPage() {
   const [emailMsg, setEmailMsg] = useState(null)
   const [pricingAnnual, setPricingAnnual] = useState(true)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [referralCode, setReferralCode] = useState('')
+  const [referralCount, setReferralCount] = useState(0)
+  const [referralCopied, setReferralCopied] = useState(false)
+  const [referralLoading, setReferralLoading] = useState(false)
 
   useEffect(() => {
     function handleResize() {
@@ -288,6 +292,23 @@ export default function SettingsPage() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  useEffect(() => {
+    if (activeTab !== 'referrals' || !user?.id) return
+    setReferralLoading(true)
+    supabase.from('profiles').select('referral_code, referral_count').eq('id', user.id).maybeSingle().then(({ data }) => {
+      if (data?.referral_code) {
+        setReferralCode(data.referral_code)
+        setReferralCount(data.referral_count || 0)
+        setReferralLoading(false)
+      } else {
+        supabase.functions.invoke('generate-referral-code', { body: { userId: user.id } }).then(({ data: fnData }) => {
+          if (fnData?.referral_code) setReferralCode(fnData.referral_code)
+          setReferralLoading(false)
+        }).catch(() => setReferralLoading(false))
+      }
+    })
+  }, [activeTab, user?.id])
 
   const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
   const tierColor = tierColors[tier] ?? 'var(--text-muted)'
@@ -444,9 +465,9 @@ export default function SettingsPage() {
       </div>
 
       <div style={styles.tabs}>
-        {['subscription', 'password', 'danger'].map(t => (
+        {['subscription', 'referrals', 'password', 'danger'].map(t => (
           <button key={t} style={styles.tab(activeTab === t)} onClick={() => setActiveTab(t)}>
-            {t === 'danger' ? 'Danger Zone' : (t === 'password' ? 'Email & Password' : t.charAt(0).toUpperCase() + t.slice(1))}
+            {t === 'danger' ? 'Danger Zone' : t === 'password' ? 'Email & Password' : t === 'referrals' ? 'Referrals' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -585,6 +606,51 @@ export default function SettingsPage() {
                   </div>
                 )
               })}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {activeTab === 'referrals' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={styles.sectionTitle}>Your Referral Code</div>
+            <div style={styles.sectionSub}>Share your code with other creatives. They get 10% off their first payment, and you get 10% off your next billing cycle for each successful referral.</div>
+            {referralLoading ? (
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading your code...</div>
+            ) : referralCode ? (
+              <>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: '22px', fontWeight: 700, color: 'var(--green)', letterSpacing: '0.05em', padding: '12px 20px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', flex: 1, minWidth: 0 }}>
+                    {referralCode}
+                  </div>
+                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
+                    {referralCopied ? 'Copied!' : 'Copy Code'}
+                  </Button>
+                </div>
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-lg)', padding: '12px 20px', flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}>
+                    {`https://app.lenstrybe.com/join?ref=${referralCode}`}
+                  </div>
+                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(`https://app.lenstrybe.com/join?ref=${referralCode}`); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
+                    Copy Link
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
+                Your referral code will appear here once you are on a paid plan.
+              </div>
+            )}
+          </div>
+          <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div style={styles.sectionTitle}>Your Referrals</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--green)', fontFamily: 'var(--font-ui)', lineHeight: 1 }}>{referralCount}</div>
+              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+                {referralCount === 1 ? 'successful referral' : 'successful referrals'}<br />
+                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Each confirmed referral earns you 10% off your next billing cycle.</span>
+              </div>
             </div>
           </div>
         </div>

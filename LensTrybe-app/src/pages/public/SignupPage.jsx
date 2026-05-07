@@ -117,10 +117,31 @@ export default function SignupPage() {
     bio: '',
     avatarFile: null,
     avatarPreview: null,
+    referralCode: '',
   })
+
+  const [referralCodeStatus, setReferralCodeStatus] = useState(null)
+  const [referralCodeReferrerName, setReferralCodeReferrerName] = useState('')
 
   function update(field, value) {
     setForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  async function validateReferralCode(code) {
+    if (!code.trim()) { setReferralCodeStatus(null); setReferralCodeReferrerName(''); return }
+    try {
+      const { data } = await supabase.functions.invoke('validate-referral-code', { body: { code: code.trim().toUpperCase() } })
+      if (data?.valid) {
+        setReferralCodeStatus('valid')
+        setReferralCodeReferrerName(data.referrer_name || '')
+      } else {
+        setReferralCodeStatus('invalid')
+        setReferralCodeReferrerName('')
+      }
+    } catch {
+      setReferralCodeStatus('invalid')
+      setReferralCodeReferrerName('')
+    }
   }
 
   async function continueWithGoogle() {
@@ -311,7 +332,7 @@ export default function SignupPage() {
         if (!priceId) {
           throw new Error(`Missing Stripe price ID for ${form.tier} (${form.billingInterval || 'monthly'})`)
         }
-        const requestBody = { priceId, userId, email }
+        const requestBody = { priceId, userId, email, referralCode: referralCodeStatus === 'valid' ? form.referralCode.trim().toUpperCase() : undefined }
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
           body: requestBody
         })
@@ -810,9 +831,36 @@ export default function SignupPage() {
                 </div>
               ))}
               {form.tier !== 'basic' && (
-                <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
-                  After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after.
-                </div>
+                <>
+                  <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
+                    After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after.
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        style={{ ...GLASS_NATIVE_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
+                        placeholder="e.g. LENS-SARAH123"
+                        value={form.referralCode}
+                        onChange={e => { update('referralCode', e.target.value.toUpperCase()); setReferralCodeStatus(null); setReferralCodeReferrerName('') }}
+                        onBlur={e => validateReferralCode(e.target.value)}
+                      />
+                      <Button variant="secondary" size="sm" type="button" onClick={() => validateReferralCode(form.referralCode)}>
+                        Apply
+                      </Button>
+                    </div>
+                    {referralCodeStatus === 'valid' && (
+                      <div style={{ fontSize: '12px', color: 'var(--green)', fontFamily: 'var(--font-ui)' }}>
+                        Code applied. You will receive 10% off your first payment, referred by {referralCodeReferrerName}.
+                      </div>
+                    )}
+                    {referralCodeStatus === 'invalid' && (
+                      <div style={{ fontSize: '12px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>
+                        Invalid referral code. Please check and try again.
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           )}
