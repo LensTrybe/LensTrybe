@@ -25,6 +25,7 @@ const nav = [
   { label: 'Job Board', path: '/dashboard/my-work/jobs', icon: '◈', section: 'Work' },
   { label: 'Edit Profile', path: '/dashboard/profile/edit-profile', icon: '◎', section: 'Account' },
   { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: '', section: 'Account' },
+  { label: 'Referrals', path: '/dashboard/referrals', icon: '', section: 'Account' },
   { label: 'Settings', path: '/dashboard/settings', icon: '', section: 'Account' },
 ]
 

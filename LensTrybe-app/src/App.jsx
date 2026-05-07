@@ -26,6 +26,7 @@ import CollaboratePage from './pages/dashboard/CollaboratePage'
 import EditProfilePage from './pages/dashboard/EditProfilePage'
 import ViewProfilePage from './pages/dashboard/ViewProfilePage'
 import SettingsPage from './pages/dashboard/SettingsPage'
+import ReferralsPage from './pages/dashboard/ReferralsPage'
 import SubscriptionPage from './pages/dashboard/SubscriptionPage'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage'
 import LumiPage from './pages/dashboard/LumiPage'
@@ -154,6 +155,7 @@ export default function App() {
         <Route path="profile/view-profile" element={<ViewProfilePage />} />
         <Route path="settings/subscription" element={<SubscriptionPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="referrals" element={<ReferralsPage />} />
         <Route path="lumi" element={<LumiPage />} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
