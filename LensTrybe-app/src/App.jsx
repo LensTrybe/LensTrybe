@@ -117,6 +117,7 @@ export default function App() {
         <Route path="/creator-partners" element={<CreatorPartnersPage />} />
         <Route path="/join" element={<JoinHubPage />} />
         <Route path="/join/creative" element={<SignupPage />} />
+        <Route path="/signup" element={<SignupPage />} />
         <Route path="/join/client" element={<ClientSignupPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/jobs" element={<JobBoardPage />} />

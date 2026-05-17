@@ -97,6 +97,7 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [googleHover, setGoogleHover] = useState(false)
+  const [isFoundingSignup, setIsFoundingSignup] = useState(false)
 
   const [form, setForm] = useState({
     tier: 'pro',
@@ -171,11 +172,17 @@ export default function SignupPage() {
 
   useEffect(() => {
     const plan = searchParams.get('plan')
-    if (!plan) return
-    const id = plan.toLowerCase()
-    const allowed = ['basic', 'pro', 'expert', 'elite']
-    if (!allowed.includes(id)) return
-    setForm(prev => (prev.tier === id ? prev : { ...prev, tier: id }))
+    const founding = searchParams.get('founding')
+    if (plan) {
+      const id = plan.toLowerCase()
+      const allowed = ['basic', 'pro', 'expert', 'elite']
+      if (allowed.includes(id)) {
+        setForm(prev => (prev.tier === id ? prev : { ...prev, tier: id }))
+        if (founding === '1' && id === 'expert') {
+          setIsFoundingSignup(true)
+        }
+      }
+    }
   }, [searchParams])
 
   useEffect(() => {
@@ -325,6 +332,17 @@ export default function SignupPage() {
         })
       } catch (welcomeEmailError) {
         console.log('send-welcome-email failed', welcomeEmailError)
+      }
+
+      if (form.tier === 'expert' && isFoundingSignup) {
+        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-founding-checkout', {
+          body: { userId, email, interval: form.billingInterval }
+        })
+        if (checkoutError) throw checkoutError
+        if (checkoutData?.url) {
+          window.location.href = checkoutData.url
+          return
+        }
       }
 
       if (form.tier !== 'basic') {
@@ -613,14 +631,43 @@ export default function SignupPage() {
                 </button>
               </div>
               <div style={styles.tierGrid}>
-                {TIERS.map((tier) => (
-                  <div key={tier.id} style={styles.tierCard(tier, form.tier === tier.id)} onClick={() => update('tier', tier.id)}>
+                {TIERS.map((tier) => {
+                  const isFoundingExpert = tier.id === 'expert' && isFoundingSignup
+                  const cardStyle = isFoundingExpert
+                    ? {
+                        ...styles.tierCard(tier, form.tier === tier.id),
+                        border: '2px solid #f59e0b',
+                        boxShadow: '0 0 20px rgba(245,158,11,0.25)',
+                      }
+                    : styles.tierCard(tier, form.tier === tier.id)
+                  return (
+                  <div key={tier.id} style={cardStyle} onClick={() => update('tier', tier.id)}>
+                    {isFoundingExpert && (
+                      <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                        Founding Member
+                      </div>
+                    )}
                     <div style={styles.tierName}>{tier.name}</div>
-                    <div style={styles.tierPrice}>{getPlanPrice(tier)}{getPlanPeriod(tier)}</div>
-                    {getPlanAnnualMeta(tier) && <div style={styles.tierAnnualMeta}>{getPlanAnnualMeta(tier)}</div>}
+                    {isFoundingExpert ? (
+                      <>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                          <span style={{ ...styles.tierPrice, color: '#f59e0b', fontWeight: 700, fontSize: '16px' }}>FREE</span>
+                          <span style={{ fontSize: '13px', color: '#8b8a9a', textDecoration: 'line-through', fontFamily: 'var(--font-ui)' }}>
+                            ${tier.monthly.toFixed(2)}
+                          </span>
+                        </div>
+                        <div style={{ color: '#f59e0b', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Free until 31 Dec 2026</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={styles.tierPrice}>{getPlanPrice(tier)}{getPlanPeriod(tier)}</div>
+                        {getPlanAnnualMeta(tier) && <div style={styles.tierAnnualMeta}>{getPlanAnnualMeta(tier)}</div>}
+                      </>
+                    )}
                     <div style={styles.tierDesc}>{tier.description}</div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </>
           )}
@@ -833,7 +880,9 @@ export default function SignupPage() {
               {form.tier !== 'basic' && (
                 <>
                   <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
-                    After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after.
+                    {isFoundingSignup && form.tier === 'expert'
+                      ? "You will be taken to Stripe to save your payment details. You will not be charged until 1 January 2027. Your Expert profile goes live immediately."
+                      : "After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after."}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
