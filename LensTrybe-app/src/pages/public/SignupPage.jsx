@@ -13,6 +13,9 @@ import {
   glassCardAccentBorder,
 } from '../../lib/glassTokens'
 
+const FOUNDING_CAP = 500
+const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
+
 const STEPS = ['Plan', 'Account', 'Skills', 'Specialties', 'Location', 'Credentials', 'Photo', 'Review']
 
 const TIERS = [
@@ -98,6 +101,9 @@ export default function SignupPage() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [googleHover, setGoogleHover] = useState(false)
   const [isFoundingSignup, setIsFoundingSignup] = useState(false)
+  const [foundingCount, setFoundingCount] = useState(0)
+
+  const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
 
   const [form, setForm] = useState({
     tier: 'pro',
@@ -168,6 +174,12 @@ export default function SignupPage() {
     }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
+  useEffect(() => {
+    supabase.rpc('get_founding_member_count').then(({ data }) => {
+      if (data !== null) setFoundingCount(data)
+    })
   }, [])
 
   useEffect(() => {
@@ -632,31 +644,39 @@ export default function SignupPage() {
               </div>
               <div style={styles.tierGrid}>
                 {TIERS.map((tier) => {
-                  const isFoundingExpert = tier.id === 'expert' && isFoundingSignup
-                  const cardStyle = isFoundingExpert
+                  const isExpertOffer = tier.id === 'expert' && offerActive
+                  const selected = form.tier === tier.id
+                  const cardStyle = isExpertOffer && selected
                     ? {
-                        ...styles.tierCard(tier, form.tier === tier.id),
+                        ...styles.tierCard(tier, selected),
                         border: '2px solid #f59e0b',
-                        boxShadow: '0 0 20px rgba(245,158,11,0.25)',
+                        boxShadow: '0 0 20px rgba(245,158,11,0.3)',
                       }
-                    : styles.tierCard(tier, form.tier === tier.id)
+                    : styles.tierCard(tier, selected)
                   return (
                   <div key={tier.id} style={cardStyle} onClick={() => update('tier', tier.id)}>
-                    {isFoundingExpert && (
-                      <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                    {isExpertOffer && (
+                      <div style={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        color: '#f59e0b',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.08em',
+                        marginBottom: '4px',
+                      }}>
                         Founding Member
                       </div>
                     )}
                     <div style={styles.tierName}>{tier.name}</div>
-                    {isFoundingExpert ? (
+                    {isExpertOffer ? (
                       <>
                         <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                          <span style={{ ...styles.tierPrice, color: '#f59e0b', fontWeight: 700, fontSize: '16px' }}>FREE</span>
-                          <span style={{ fontSize: '13px', color: '#8b8a9a', textDecoration: 'line-through', fontFamily: 'var(--font-ui)' }}>
-                            ${tier.monthly.toFixed(2)}
+                          <span style={{ fontSize: '22px', fontWeight: 800, color: '#f59e0b', fontFamily: 'var(--font-ui)' }}>FREE</span>
+                          <span style={{ textDecoration: 'line-through', color: '#8b8a9a', fontSize: '13px', fontFamily: 'var(--font-ui)' }}>
+                            {getPlanPrice(tier)}{getPlanPeriod(tier)}
                           </span>
                         </div>
-                        <div style={{ color: '#f59e0b', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>Free until 31 Dec 2026</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>Free until 31 Dec 2026</div>
                       </>
                     ) : (
                       <>
