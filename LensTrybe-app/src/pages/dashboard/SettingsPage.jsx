@@ -9,6 +9,9 @@ import Modal from '../../components/ui/Modal'
 import Badge from '../../components/ui/Badge'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
+const FOUNDING_CAP = 500
+const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
+
 const SUBSCRIPTION_PLAN_ORDER = { basic: 0, pro: 1, expert: 2, elite: 3 }
 
 /** Plan rows copied from src/pages/public/PricingPage.jsx `tiers`. */
@@ -284,6 +287,16 @@ export default function SettingsPage() {
   const [referralCount, setReferralCount] = useState(0)
   const [referralCopied, setReferralCopied] = useState(false)
   const [referralLoading, setReferralLoading] = useState(false)
+  const [foundingCount, setFoundingCount] = useState(0)
+  const [foundingLoading, setFoundingLoading] = useState(false)
+
+  const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
+
+  useEffect(() => {
+    supabase.rpc('get_founding_member_count').then(({ data }) => {
+      if (data !== null) setFoundingCount(data)
+    })
+  }, [])
 
   useEffect(() => {
     function handleResize() {
@@ -321,6 +334,27 @@ export default function SettingsPage() {
     'Temporary break: I will be back',
     'Other',
   ]
+
+  async function handleFoundingCheckout() {
+    if (!user?.id || !user?.email) return
+    setFoundingLoading(true)
+    try {
+      const currentInterval = pricingAnnual ? 'annual' : 'monthly'
+      const { data, error } = await supabase.functions.invoke('create-founding-checkout', {
+        body: { userId: user.id, email: user.email, interval: currentInterval },
+      })
+      if (error) throw error
+      if (data?.url) {
+        window.location.href = data.url
+        return
+      }
+      alert('Error: ' + (data?.error ?? 'Could not start checkout'))
+    } catch (err) {
+      alert(err?.message ?? 'Could not start checkout')
+    } finally {
+      setFoundingLoading(false)
+    }
+  }
 
   async function openBillingPortal() {
     if (!user?.id) return
@@ -551,13 +585,33 @@ export default function SettingsPage() {
                 const currentRank = SUBSCRIPTION_PLAN_ORDER[tier] ?? 0
                 const isCurrent = planKey === tier
                 const showUpgrade = planRank > currentRank
+                const isFoundingExpert = pt.name === 'Expert' && offerActive
+                const cardStyle = isFoundingExpert
+                  ? {
+                      ...PRICING_COMPARE_STYLES.card(pt.borderColor, true),
+                      border: '1px solid rgba(245,158,11,0.45)',
+                      boxShadow: '0 0 30px rgba(245,158,11,0.12)',
+                    }
+                  : PRICING_COMPARE_STYLES.card(pt.borderColor, !!pt.badge)
                 return (
-                  <div key={i} style={PRICING_COMPARE_STYLES.card(pt.borderColor, !!pt.badge)}>
-                    {pt.badge && (
+                  <div key={i} style={cardStyle}>
+                    {isFoundingExpert ? (
+                      <div style={{
+                        ...PRICING_COMPARE_STYLES.badgeStrip,
+                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                        color: '#000',
+                        fontWeight: 700,
+                        fontSize: '11px',
+                        letterSpacing: '0.08em',
+                        textTransform: 'uppercase',
+                      }}>
+                        Founding Member
+                      </div>
+                    ) : pt.badge ? (
                       <div style={PRICING_COMPARE_STYLES.badgeStrip}>
                         {pt.badge.label}
                       </div>
-                    )}
+                    ) : null}
 
                     <div style={PRICING_COMPARE_STYLES.cardTop}>
                       <div style={PRICING_COMPARE_STYLES.cardHeader}>
@@ -571,12 +625,39 @@ export default function SettingsPage() {
                       </div>
 
                       <div>
-                        <div style={PRICING_COMPARE_STYLES.price}>
-                          <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
-                          {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
-                        </div>
-                        {pricingAnnual && pt.monthly > 0 && (
-                          <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
+                        {isFoundingExpert ? (
+                          <>
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
+                              <span style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', fontFamily: 'var(--font-ui)', lineHeight: 1 }}>FREE</span>
+                              <span style={{ textDecoration: 'line-through', color: '#8b8a9a', fontSize: '14px', fontFamily: 'var(--font-ui)' }}>
+                                {getPricingComparePrice(pt)}{getPricingComparePeriod(pt)}
+                              </span>
+                            </div>
+                            <div style={{ color: '#f59e0b', fontWeight: 600, fontSize: '12px', fontFamily: 'var(--font-ui)', marginTop: '8px' }}>
+                              Free until 31 December 2026
+                            </div>
+                            <div style={{ color: '#8b8a9a', fontSize: '11px', fontFamily: 'var(--font-ui)', marginTop: '4px' }}>
+                              Then $749.90/yr (or $74.99/mo) from 1 Jan 2027
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', gap: '8px' }}>
+                              <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: '12px', fontFamily: 'var(--font-ui)' }}>
+                                {FOUNDING_CAP - foundingCount} spots remaining
+                              </span>
+                              <span style={{ color: '#8b8a9a', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>
+                                {foundingCount} of {FOUNDING_CAP} claimed
+                              </span>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div style={PRICING_COMPARE_STYLES.price}>
+                              <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
+                              {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
+                            </div>
+                            {pricingAnnual && pt.monthly > 0 && (
+                              <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
+                            )}
+                          </>
                         )}
                       </div>
 
@@ -593,7 +674,23 @@ export default function SettingsPage() {
                     </div>
 
                     <div style={{ marginTop: 'auto', width: '100%' }}>
-                      {showUpgrade ? (
+                      {isFoundingExpert ? (
+                        <button
+                          type="button"
+                          disabled={foundingLoading}
+                          onClick={() => void handleFoundingCheckout()}
+                          style={{
+                            ...PRICING_COMPARE_STYLES.upgradeLink('primary'),
+                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                            color: '#000',
+                            border: 'none',
+                            cursor: foundingLoading ? 'wait' : 'pointer',
+                            opacity: foundingLoading ? 0.7 : 1,
+                          }}
+                        >
+                          {foundingLoading ? 'Loading…' : 'Claim your spot'}
+                        </button>
+                      ) : showUpgrade ? (
                         <Link to="/pricing" style={PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant)}>
                           Upgrade
                         </Link>
