@@ -90,7 +90,7 @@ function PublicBgOrbs() {
 }
 
 export default function PublicLayout() {
-  const { user, profile, clientAccount, isCreative, loading } = useAuth()
+  const { user, profile, clientAccount, isCreative } = useAuth()
   const navigate = useNavigate()
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
@@ -341,20 +341,17 @@ export default function PublicLayout() {
           <span style={styles.tagline}>Connect. Capture. Create.</span>
         </div>
 
-        {/* Centre: Nav links */}
-        {!loading && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
-            <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
-            <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
-            <button style={navLinkStyle} onClick={() => navigate('/creator-partners')}>Creator Partner Program</button>
-            <button style={navLinkStyle} onClick={() => navigate('/pricing')}>Pricing For Creatives</button>
-          </div>
-        )}
+        {/* Centre: Nav links — always visible, no auth gate */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+          <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
+          <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
+          <button style={navLinkStyle} onClick={() => navigate('/creator-partners')}>Creator Partner Program</button>
+          <button style={navLinkStyle} onClick={() => navigate('/pricing')}>Pricing For Creatives</button>
+        </div>
 
-        {/* Right: Actions */}
+        {/* Right: Actions — show Log In/Join immediately; swap to user menu once auth resolves */}
         <div style={styles.actions}>
-          {!loading && (
-            user ? (
+          {user ? (
               <div style={{ position: 'relative' }} ref={dropdownRef}>
                 <button
                   style={styles.userBtn}
@@ -407,8 +404,7 @@ export default function PublicLayout() {
                 <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log In</Button>
                 <Button variant="primary" size="sm" onClick={() => navigate('/join')}>Join as a Creative</Button>
               </>
-            )
-          )}
+            )}
         </div>
       </nav>
 
