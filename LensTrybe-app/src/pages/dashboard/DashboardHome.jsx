@@ -245,10 +245,6 @@ export default function DashboardHome() {
     const now = new Date()
     const thisMonthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
     const thisYearStart = new Date(now.getFullYear(), 0, 1).toISOString()
-    const weekStart = new Date(now)
-    weekStart.setDate(weekStart.getDate() - 7)
-    const weekStartIso = weekStart.toISOString()
-
     const [
       invoicesRes,
       threadsRes,
@@ -262,21 +258,19 @@ export default function DashboardHome() {
       deliveriesRes,
       recentBookingsRes,
       recentReviewsRes,
-      profileViewsRes,
     ] = await Promise.all([
-      supabase.from('invoices').select('id, amount, status, created_at, due_date, client_name, paid_at').eq('creative_id', user.id),
-      supabase.from('message_threads').select('id, created_at, updated_at, client_name, subject').eq('creative_id', user.id).order('updated_at', { ascending: false }).limit(20),
-      supabase.from('bookings').select('id, created_at, status, booking_date, date, client_name, job_type').eq('creative_id', user.id).order('created_at', { ascending: false }),
+      supabase.from('invoices').select('id, amount, status, created_at, due_date, client_name').eq('creative_id', user.id),
+      supabase.from('message_threads').select('id, created_at, last_message_at, client_name, subject').eq('creative_id', user.id).order('last_message_at', { ascending: false }).limit(20),
+      supabase.from('bookings').select('id, created_at, status, booking_date, client_name, service').eq('creative_id', user.id).order('created_at', { ascending: false }),
       supabase.from('reviews').select('rating, created_at').eq('creative_id', user.id),
       supabase.from('quotes').select('id, amount, status, created_at, client_name').eq('creative_id', user.id),
       supabase.from('contracts').select('id, status, created_at, client_name').eq('creative_id', user.id),
       supabase.from('portfolio_items').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
-      supabase.from('messages').select('thread_id, body, created_at, sender_type, is_read, read_at').eq('creative_id', user.id).order('created_at', { ascending: false }).limit(120),
-      supabase.from('crm_contacts').select('id, created_at, updated_at, last_contact_at').eq('creative_id', user.id),
-      supabase.from('deliveries').select('id, created_at, sent_at').eq('creative_id', user.id),
-      supabase.from('bookings').select('id, booking_date, date, client_name, job_type, status').eq('creative_id', user.id),
+      supabase.from('messages').select('thread_id, body, created_at, sender_type, read').eq('creative_id', user.id).order('created_at', { ascending: false }).limit(120),
+      supabase.from('crm_contacts').select('id, created_at, last_contacted_at').eq('creative_id', user.id),
+      supabase.from('deliveries').select('id, created_at, downloaded_at, is_final').eq('creative_id', user.id),
+      supabase.from('bookings').select('id, booking_date, client_name, service, status').eq('creative_id', user.id),
       supabase.from('reviews').select('created_at, rating').eq('creative_id', user.id).order('created_at', { ascending: false }).limit(10),
-      supabase.from('profile_views').select('id').eq('creative_id', user.id).gte('created_at', weekStartIso),
     ])
 
     const invoices = invoicesRes.data ?? []
@@ -293,10 +287,10 @@ export default function DashboardHome() {
 
     const paidInvoices = invoices.filter((i) => i.status === 'paid')
     const thisMonthRevenue = paidInvoices
-      .filter((i) => (i.paid_at ?? i.created_at) >= thisMonthStart)
+      .filter((i) => i.created_at >= thisMonthStart)
       .reduce((sum, i) => sum + Number(i.amount || 0), 0)
     const ytdRevenue = paidInvoices
-      .filter((i) => (i.paid_at ?? i.created_at) >= thisYearStart)
+      .filter((i) => i.created_at >= thisYearStart)
       .reduce((sum, i) => sum + Number(i.amount || 0), 0)
     const overdueInvoices = invoices.filter((i) => i.due_date && i.status !== 'paid' && new Date(i.due_date) < now)
     const outstandingInvoices = invoices.filter((i) => i.status !== 'paid')
@@ -316,8 +310,7 @@ export default function DashboardHome() {
     const conversionRate = enquiries > 0 ? (bookings.length / enquiries) * 100 : 0
     const unreadMessages = messages.filter((m) => {
       if (m.sender_type && m.sender_type !== 'client') return false
-      if ('is_read' in m) return m.is_read !== true
-      if ('read_at' in m) return !m.read_at
+      if ('read' in m) return m.read !== true
       return false
     })
     const unreadThreadIds = new Set(unreadMessages.map((m) => m.thread_id).filter(Boolean))
@@ -329,18 +322,18 @@ export default function DashboardHome() {
         ...t,
         preview: String(firstMsg?.body || t.subject || 'No message yet').slice(0, 60),
         unread: unreadThreadIds.has(t.id),
-        when: t.updated_at || t.created_at,
+        when: t.last_message_at || t.created_at,
       }
     })
 
     const oldClientsCount = crmContacts.filter((c) => {
-      const last = c.last_contact_at || c.updated_at || c.created_at
+      const last = c.last_contacted_at || c.created_at
       return last && (now.getTime() - new Date(last).getTime()) / (1000 * 60 * 60 * 24) > 30
     }).length
 
     const upcomingThisWeek = recentBookings
       .filter((b) => {
-        const d = b.booking_date || b.date
+        const d = b.booking_date
         if (!d) return false
         const dt = new Date(d)
         const in7 = new Date(now)
@@ -354,7 +347,7 @@ export default function DashboardHome() {
       .map((i) => ({ ...i, days: Math.max(1, Math.floor((now - new Date(i.due_date)) / (1000 * 60 * 60 * 24))) }))
 
     const recentPayments = paidInvoices
-      .sort((a, b) => new Date(b.paid_at || b.created_at) - new Date(a.paid_at || a.created_at))
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
       .slice(0, 3)
 
     const months = Array.from({ length: 6 }, (_, i) => {
@@ -412,7 +405,7 @@ export default function DashboardHome() {
       .limit(5)
     setRecentInvoices(recent.data ?? [])
 
-    const viewsWeek = profileViewsRes.error ? null : (profileViewsRes.data ?? []).length
+    const viewsWeek = null
     const portfolioCount = portfolioCountRes.count ?? 0
 
     setDashboard({
@@ -438,7 +431,7 @@ export default function DashboardHome() {
         oldClientsCount,
         upcomingThisWeek,
         pendingContractsCount: awaitingContracts.length,
-        deliveriesUnsentCount: deliveries.filter((d) => !d.sent_at).length,
+        deliveriesUnsentCount: deliveries.filter((d) => d.is_final !== true).length,
         pendingQuotesCount: pendingQuotes.length,
         overdueList,
         recentPayments,
@@ -813,7 +806,7 @@ export default function DashboardHome() {
                   <div key={b.id} style={{ paddingBottom: 8 }}>
                     <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{b.client_name || 'Client'}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
-                      {(b.job_type || 'Booking').toString()} · {new Date(b.booking_date || b.date).toLocaleDateString('en-AU')}
+                      {(b.service || 'Booking').toString()} · {new Date(b.booking_date).toLocaleDateString('en-AU')}
                     </div>
                   </div>
                 ))
@@ -856,7 +849,7 @@ export default function DashboardHome() {
                 d.pipeline.recentPayments.map((i) => (
                   <div key={i.id} style={{ marginBottom: 8 }}>
                     <div style={{ fontSize: 13, color: '#86efac' }}>{i.client_name || 'Client'} · {currency(i.amount)}</div>
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(i.paid_at || i.created_at).toLocaleDateString('en-AU')}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{new Date(i.created_at).toLocaleDateString('en-AU')}</div>
                   </div>
                 ))
               )}
