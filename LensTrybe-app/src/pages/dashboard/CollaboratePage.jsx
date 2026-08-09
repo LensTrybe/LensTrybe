@@ -8,14 +8,14 @@ import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelect
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import Button from '../../components/ui/Button'
 
-const BG = '#0a0a0f'
+const BG = '#ffffff'
 const GREEN = '#1DB954'
 const PINK = '#FF2D78'
 const WHITE = '#ffffff'
 const MUTED = '#8888aa'
 const DIM = '#444466'
 const BORDER = '#1e1e2e'
-const PANEL = '#111118'
+const PANEL = '#ffffff'
 const FONT = { fontFamily: 'Inter, sans-serif' }
 
 const SPECIALTIES = [
@@ -672,7 +672,7 @@ export default function CollaboratePage() {
                                 fontSize: 10,
                                 padding: '2px 8px',
                                 borderRadius: 6,
-                                background: 'rgba(255,255,255,0.06)',
+                                background: 'rgba(20,17,26,0.06)',
                                 border: `1px solid ${BORDER}`,
                                 color: MUTED,
                               }}

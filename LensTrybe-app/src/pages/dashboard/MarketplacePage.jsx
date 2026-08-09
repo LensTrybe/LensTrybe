@@ -321,7 +321,7 @@ export default function MarketplacePage() {
     empty: { padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' },
     modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
     modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '560px', maxHeight: isMobile ? '100vh' : '90vh', minHeight: isMobile ? '100vh' : 'auto', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    modalHeader: { padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+    modalHeader: { padding: isMobile ? '12px 14px' : '20px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
     modalBody: { padding: isMobile ? '16px' : '24px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '14px' },
     label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' },
     input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', boxSizing: 'border-box', outline: 'none' },
@@ -515,7 +515,7 @@ export default function MarketplacePage() {
                         <button
                           type="button"
                           onClick={e => { e.stopPropagation(); setPhotoUrls(prev => prev.filter((_, j) => j !== i)) }}
-                          style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#fff', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                          style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: 'var(--text-primary)', fontSize: '10px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                         >✕</button>
                       </div>
                     ))}
@@ -636,7 +636,7 @@ export default function MarketplacePage() {
                       {editPhotoUrls.map((url, i) => (
                         <div key={i} style={{ position: 'relative' }}>
                           <img src={url} alt="" style={{ width: '72px', height: '72px', objectFit: 'cover', borderRadius: '8px', border: '1px solid var(--border-default)' }} />
-                          <button type="button" onClick={() => setEditPhotoUrls(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: '#fff', fontSize: '10px', cursor: 'pointer' }}>✕</button>
+                          <button type="button" onClick={() => setEditPhotoUrls(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: '-6px', right: '-6px', background: '#ef4444', border: 'none', borderRadius: '50%', width: '18px', height: '18px', color: 'var(--text-primary)', fontSize: '10px', cursor: 'pointer' }}>✕</button>
                         </div>
                       ))}
                       {editPhotoUrls.length < 5 && (
@@ -732,7 +732,7 @@ export default function MarketplacePage() {
           <button
             type="button"
             onClick={() => setLightbox(null)}
-            style={{ position: 'absolute', top: '20px', right: '24px', background: 'none', border: 'none', color: '#fff', fontSize: '28px', cursor: 'pointer', lineHeight: 1 }}
+            style={{ position: 'absolute', top: '20px', right: '24px', background: 'none', border: 'none', color: 'var(--text-primary)', fontSize: '28px', cursor: 'pointer', lineHeight: 1 }}
           >✕</button>
           <img
             src={lightbox}

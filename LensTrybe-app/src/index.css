@@ -1,5 +1,27 @@
 @import './styles/tokens.css';
 
+/* Light theme scoped to the public marketing site only.
+   The dashboard keeps the dark tokens from tokens.css. */
+.lt-public-light {
+  --bg-base:     #f6f5f3;
+  --bg-elevated: #ffffff;
+  --bg-overlay:  #ffffff;
+  --bg-subtle:   #eeece8;
+  --bg-sidebar:  #f0efec;
+
+  --border-default: rgba(20,17,26,0.10);
+  --border-subtle:  rgba(20,17,26,0.06);
+  --border-strong:  rgba(20,17,26,0.16);
+
+  --text-primary:   #14111a;
+  --text-secondary: #565560;
+  --text-muted:     #8a8995;
+
+  --silver:        #565560;
+  --silver-dim:    rgba(20,17,26,0.10);
+  --silver-bright: #14111a;
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;

@@ -24,24 +24,24 @@ const glassBase = {
 
 const variantBase = {
   primary: {
-    background: 'linear-gradient(135deg, rgba(29,185,84,0.25), rgba(29,185,84,0.12))',
-    border: '1px solid rgba(29,185,84,0.45)',
-    borderTop: '1px solid rgba(29,185,84,0.6)',
-    color: '#1DB954',
-    boxShadow: '0 4px 16px rgba(29,185,84,0.15), inset 0 1px 0 rgba(255,255,255,0.08)',
+    background: 'linear-gradient(180deg, #1ED760 0%, #17a94b 100%)',
+    border: '1px solid rgba(16,120,55,0.45)',
+    borderTop: '1px solid rgba(120,235,165,0.7)',
+    color: '#ffffff',
+    boxShadow: '0 6px 18px -6px rgba(29,185,84,0.5), inset 0 1px 0 rgba(255,255,255,0.25)',
   },
   secondary: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderTop: '1px solid rgba(255,255,255,0.16)',
-    color: 'rgba(255,255,255,0.8)',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))',
+    border: '1px solid rgba(20,17,26,0.12)',
+    borderTop: '1px solid rgba(255,255,255,0.9)',
+    color: 'var(--text-secondary)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
   },
   ghost: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-    border: '1px solid rgba(255,255,255,0.1)',
-    borderTop: '1px solid rgba(255,255,255,0.16)',
-    color: 'rgba(255,255,255,0.8)',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))',
+    border: '1px solid rgba(20,17,26,0.12)',
+    borderTop: '1px solid rgba(255,255,255,0.9)',
+    color: 'var(--text-secondary)',
     boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
   },
   danger: {
@@ -55,19 +55,19 @@ const variantBase = {
 
 const variantHover = {
   primary: {
-    background: 'linear-gradient(135deg, rgba(29,185,84,0.35), rgba(29,185,84,0.18))',
-    borderColor: 'rgba(29,185,84,0.55)',
-    boxShadow: '0 6px 20px rgba(29,185,84,0.22), inset 0 1px 0 rgba(255,255,255,0.12)',
+    background: 'linear-gradient(180deg, #22e067 0%, #159a45 100%)',
+    borderColor: 'rgba(16,120,55,0.55)',
+    boxShadow: '0 8px 22px -6px rgba(29,185,84,0.55), inset 0 1px 0 rgba(255,255,255,0.3)',
   },
   secondary: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))',
-    borderColor: 'rgba(255,255,255,0.18)',
-    color: 'rgba(255,255,255,0.95)',
+    background: 'linear-gradient(160deg, rgba(255,255,255,1), rgba(255,255,255,0.75))',
+    borderColor: 'rgba(20,17,26,0.18)',
+    color: 'var(--text-primary)',
   },
   ghost: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.06))',
-    borderColor: 'rgba(255,255,255,0.18)',
-    color: 'rgba(255,255,255,0.95)',
+    background: 'linear-gradient(160deg, rgba(255,255,255,1), rgba(255,255,255,0.75))',
+    borderColor: 'rgba(20,17,26,0.18)',
+    color: 'var(--text-primary)',
   },
   danger: {
     background: 'linear-gradient(135deg, rgba(255,45,120,0.35), rgba(255,45,120,0.18))',
@@ -78,15 +78,15 @@ const variantHover = {
 
 const variantActive = {
   primary: {
-    background: 'linear-gradient(135deg, rgba(29,185,84,0.2), rgba(29,185,84,0.1))',
+    background: 'linear-gradient(180deg, #1bc457 0%, #12833b 100%)',
     transform: 'translateY(1px)',
   },
   secondary: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55))',
     transform: 'translateY(1px)',
   },
   ghost: {
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.85), rgba(255,255,255,0.55))',
     transform: 'translateY(1px)',
   },
   danger: {

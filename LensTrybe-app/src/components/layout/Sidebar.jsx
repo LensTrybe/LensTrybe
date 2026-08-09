@@ -59,8 +59,8 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     return [...navItems.slice(0, settingsIndex + 1), adminItem, ...navItems.slice(settingsIndex + 1)]
   })()
 
-  const tierColors = { basic: 'rgba(255,255,255,0.45)', pro: '#FF2D78', expert: '#1DB954', elite: '#EAB308' }
-  const tierColor = tierColors[tier] ?? 'rgba(255,255,255,0.45)'
+  const tierColors = { basic: 'var(--text-secondary)', pro: '#FF2D78', expert: '#1DB954', elite: '#EAB308' }
+  const tierColor = tierColors[tier] ?? 'var(--text-secondary)'
 
   const styles = {
     sidebar: {
@@ -68,9 +68,9 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       minHeight: '100vh',
       backdropFilter: 'blur(40px) saturate(180%)',
       WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%)',
-      borderRight: '1px solid rgba(255,255,255,0.06)',
-      boxShadow: 'inset -1px 0 0 rgba(255,255,255,0.03)',
+      background: 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.5) 100%)',
+      borderRight: '1px solid rgba(20,17,26,0.08)',
+      boxShadow: 'inset -1px 0 0 rgba(20,17,26,0.03)',
       display: 'flex',
       flexDirection: 'column',
       transition: 'width var(--transition-slow)',
@@ -82,7 +82,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     },
     logo: {
       padding: collapsed ? '20px 0' : '20px 20px 20px 60px',
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: '1px solid rgba(20,17,26,0.08)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: collapsed ? 'center' : 'space-between',
@@ -92,7 +92,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     logoText: {
       fontFamily: 'var(--font-display)',
       fontSize: '18px',
-      color: '#ffffff',
+      color: 'var(--text-primary)',
       fontWeight: 600,
       letterSpacing: '-0.3px',
       lineHeight: 1.6,
@@ -102,10 +102,10 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     collapseBtn: {
       backdropFilter: 'blur(20px)',
       WebkitBackdropFilter: 'blur(20px)',
-      background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-      border: '1px solid rgba(255,255,255,0.1)',
-      borderTop: '1px solid rgba(255,255,255,0.16)',
-      color: 'rgba(255,255,255,0.55)',
+      background: 'linear-gradient(160deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))',
+      border: '1px solid rgba(20,17,26,0.12)',
+      borderTop: '1px solid rgba(255,255,255,0.9)',
+      color: 'var(--text-secondary)',
       cursor: 'pointer',
       padding: '6px 8px',
       borderRadius: '8px',
@@ -127,7 +127,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       fontWeight: 400,
       letterSpacing: '0.08em',
       textTransform: 'uppercase',
-      color: 'rgba(255,255,255,0.35)',
+      color: 'var(--text-muted)',
       lineHeight: 1.6,
       padding: collapsed ? '16px 0 4px' : '16px 20px 4px',
       textAlign: collapsed ? 'center' : 'left',
@@ -145,11 +145,11 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       fontWeight: active ? 600 : 400,
       letterSpacing: active ? '-0.3px' : '0',
       lineHeight: 1.6,
-      color: locked ? 'rgba(255,255,255,0.35)' : active ? '#ffffff' : 'rgba(255,255,255,0.75)',
+      color: locked ? 'var(--text-muted)' : active ? 'var(--text-primary)' : 'var(--text-secondary)',
       background: active
-        ? 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)'
+        ? 'linear-gradient(135deg, rgba(29,185,84,0.10) 0%, rgba(29,185,84,0.03) 100%)'
         : 'transparent',
-      borderLeft: active ? '2px solid #FF2D78' : '2px solid transparent',
+      borderLeft: active ? '2px solid #1DB954' : '2px solid transparent',
       backdropFilter: active ? 'blur(20px)' : 'none',
       WebkitBackdropFilter: active ? 'blur(20px)' : 'none',
       cursor: locked ? 'not-allowed' : 'pointer',
@@ -164,7 +164,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     lockIcon: { marginLeft: 'auto', fontSize: '10px', opacity: 0.5, display: collapsed ? 'none' : 'block' },
     profile: {
       padding: collapsed ? '16px 0' : '16px 20px',
-      borderTop: '1px solid rgba(255,255,255,0.06)',
+      borderTop: '1px solid rgba(20,17,26,0.08)',
       display: 'flex',
       alignItems: 'center',
       gap: '10px',
@@ -195,7 +195,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       fontWeight: 500,
       letterSpacing: '-0.3px',
       lineHeight: 1.6,
-      color: '#ffffff',
+      color: 'var(--text-primary)',
       whiteSpace: 'nowrap',
       overflow: 'hidden',
       textOverflow: 'ellipsis',
@@ -262,7 +262,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
           </nav>
 
           {profile && (
-            <div style={{ padding: collapsed ? '8px 0' : '8px 12px 16px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+            <div style={{ padding: collapsed ? '8px 0' : '8px 12px 16px', borderTop: '1px solid rgba(20,17,26,0.08)' }}>
               <NavLink
                 to="/the-trybe-edit"
                 style={({ isActive }) => ({
@@ -300,13 +300,13 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
               fontWeight: 400,
               lineHeight: 1.6,
               letterSpacing: '-0.3px',
-              color: 'rgba(255,255,255,0.45)',
+              color: 'var(--text-secondary)',
               cursor: 'pointer',
-              fontFamily: 'var(--font-ui)', borderTop: '1px solid rgba(255,255,255,0.06)',
+              fontFamily: 'var(--font-ui)', borderTop: '1px solid rgba(20,17,26,0.08)',
               transition: 'color var(--transition-fast)',
             }}
             onMouseEnter={e => { e.currentTarget.style.color = '#FF2D78' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
           >
             <span style={{ fontSize: '13px' }}>→</span>
             {!collapsed && <span>Sign Out</span>}

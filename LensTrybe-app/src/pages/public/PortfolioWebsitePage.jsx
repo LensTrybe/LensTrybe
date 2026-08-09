@@ -294,7 +294,7 @@ export default function PortfolioWebsitePage() {
                   height: 112,
                   borderRadius: '50%',
                   objectFit: 'cover',
-                  border: '4px solid rgba(255,255,255,0.95)',
+                  border: '4px solid rgba(20,17,26,0.95)',
                   boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
                   marginBottom: 24,
                 }}
@@ -305,7 +305,7 @@ export default function PortfolioWebsitePage() {
                 margin: 0,
                 fontSize: 'clamp(28px, 5vw, 44px)',
                 fontWeight: 700,
-                color: '#fff',
+                color: 'var(--text-primary)',
                 letterSpacing: '-0.02em',
                 lineHeight: 1.15,
                 maxWidth: 800,
@@ -314,7 +314,7 @@ export default function PortfolioWebsitePage() {
               {headline}
             </h1>
             {tagline ? (
-              <p style={{ margin: '16px 0 0', fontSize: 'clamp(15px, 2.4vw, 18px)', color: 'rgba(255,255,255,0.9)', maxWidth: 640, lineHeight: 1.55 }}>
+              <p style={{ margin: '16px 0 0', fontSize: 'clamp(15px, 2.4vw, 18px)', color: 'rgba(20,17,26,0.9)', maxWidth: 640, lineHeight: 1.55 }}>
                 {tagline}
               </p>
             ) : null}
@@ -328,7 +328,7 @@ export default function PortfolioWebsitePage() {
           position: 'sticky',
           top: 0,
           zIndex: 40,
-          background: 'rgba(255,255,255,0.92)',
+          background: 'rgba(20,17,26,0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid rgba(0,0,0,0.06)',
           boxShadow: '0 4px 24px rgba(0,0,0,0.04)',
@@ -500,7 +500,7 @@ export default function PortfolioWebsitePage() {
                       borderRadius: 12,
                       border: 'none',
                       background: accent,
-                      color: '#fff',
+                      color: 'var(--text-primary)',
                       fontWeight: 700,
                       fontSize: 15,
                       cursor: contactSending ? 'wait' : 'pointer',
@@ -678,7 +678,7 @@ function FileCard({ file, accent }) {
               alignItems: 'center',
               justifyContent: 'center',
               fontSize: 40,
-              color: '#fff',
+              color: 'var(--text-primary)',
               textShadow: '0 4px 20px rgba(0,0,0,0.5)',
             }}
           >
@@ -718,7 +718,7 @@ function FileCard({ file, accent }) {
             padding: '10px 18px',
             borderRadius: 10,
             background: accent,
-            color: '#fff',
+            color: 'var(--text-primary)',
             fontWeight: 700,
             fontSize: 14,
             textDecoration: 'none',

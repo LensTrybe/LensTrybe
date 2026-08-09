@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@100..900&family=Playfair+Display:wght@400;600;700;800&display=swap');
 
 :root {
-  /* Backgrounds */
-  --bg-base:     #080810;
-  --bg-elevated: #0d0d1a;
-  --bg-overlay:  #111120;
-  --bg-subtle:   #1a1a2e;
-  --bg-sidebar:  #0a0a18;
+  /* Backgrounds (light) */
+  --bg-base:     #f6f5f3;
+  --bg-elevated: #ffffff;
+  --bg-overlay:  #ffffff;
+  --bg-subtle:   #eeece8;
+  --bg-sidebar:  #f0efec;
 
-  /* Borders */
-  --border-default: #1e1e32;
-  --border-subtle:  #161625;
-  --border-strong:  #2a2a45;
+  /* Borders (light) */
+  --border-default: rgba(20,17,26,0.10);
+  --border-subtle:  rgba(20,17,26,0.06);
+  --border-strong:  rgba(20,17,26,0.16);
 
-  /* Text */
-  --text-primary:   #F1F5F9;
-  --text-secondary: #94A3B8;
-  --text-muted:     #475569;
+  /* Text (light) */
+  --text-primary:   #14111a;
+  --text-secondary: #565560;
+  --text-muted:     #8a8995;
 
   /* Brand — Primary */
   --green:        #1DB954;
@@ -24,20 +24,20 @@
   --green-bright: #1ED760;
   --green-muted:  rgba(29, 185, 84, 0.08);
 
-  /* Brand — Accent (silver/white) */
-  --silver:        #C0C8D8;
-  --silver-dim:    rgba(192, 200, 216, 0.12);
-  --silver-bright: #E8ECF2;
+  /* Brand — Accent (was silver on dark; now ink on light) */
+  --silver:        #565560;
+  --silver-dim:    rgba(20,17,26,0.10);
+  --silver-bright: #14111a;
 
   /* Remove pink — replaced by green as primary action colour */
   --pink:     #1DB954;
   --pink-dim: rgba(29, 185, 84, 0.15);
 
   /* Semantic */
-  --success: #4ADE80;
-  --warning: #F59E0B;
-  --error:   #EF4444;
-  --info:    #60A5FA;
+  --success: #16A34A;
+  --warning: #B45309;
+  --error:   #DC2626;
+  --info:    #2563EB;
 
   /* Font families */
   --font-display: 'Instrument Serif', serif;
@@ -63,10 +63,10 @@
   --radius-full: 9999px;
 
   /* Shadows */
-  --shadow-sm:    0 1px 3px rgba(0, 0, 0, 0.4);
-  --shadow-md:    0 4px 12px rgba(0, 0, 0, 0.5);
-  --shadow-lg:    0 8px 32px rgba(0, 0, 0, 0.6);
-  --shadow-green: 0 0 24px rgba(29, 185, 84, 0.2);
+  --shadow-sm:    0 1px 3px rgba(40, 30, 60, 0.10);
+  --shadow-md:    0 8px 24px -12px rgba(40, 30, 60, 0.16);
+  --shadow-lg:    0 18px 44px -18px rgba(40, 30, 60, 0.22);
+  --shadow-green: 0 0 24px rgba(29, 185, 84, 0.18);
 
   /* Transitions */
   --transition-fast: 100ms ease;

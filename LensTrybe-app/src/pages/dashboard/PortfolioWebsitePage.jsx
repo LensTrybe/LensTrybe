@@ -834,7 +834,7 @@ function ManagePanel({ files, onDeleteFile, onPickFiles, uploadingFiles, inputRe
       {files.length === 0 ? <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No files yet. Add images, video or PDF.</p> : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {files.map((f) => (
-            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(20,17,26,0.08)' }}>
               <FileThumb url={f.file_url} mime={f.mime_type} label="PDF" />
               <div style={{ flex: '1 1 120px', minWidth: 0 }}>
                 <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', wordBreak: 'break-word' }}>{f.filename}</div>

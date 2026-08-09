@@ -21,15 +21,15 @@ function ToastItem({ toast, onRemove }) {
   const itemStyle = {
     backdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
     WebkitBackdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
-    border: '1px solid rgba(255,255,255,0.12)',
-    borderTop: '1px solid rgba(255,255,255,0.2)',
+    background: 'linear-gradient(160deg, rgba(255,255,255,0.96) 0%, rgba(255,255,255,0.82) 100%)',
+    border: '1px solid rgba(20,17,26,0.08)',
+    borderTop: '1px solid rgba(255,255,255,0.9)',
     borderLeft: `3px solid ${accent}`,
     borderRadius: '20px',
     padding: '14px 16px',
     minWidth: '280px',
     maxWidth: '380px',
-    boxShadow: '0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)',
+    boxShadow: '0 16px 40px -16px rgba(40,30,60,0.28), inset 0 1px 0 rgba(255,255,255,0.9)',
     display: 'flex',
     alignItems: 'flex-start',
     gap: '12px',
@@ -42,7 +42,7 @@ function ToastItem({ toast, onRemove }) {
   };
 
   const titleStyle = {
-    color: '#ffffff',
+    color: 'var(--text-primary)',
     fontSize: '14px',
     fontWeight: 600,
     letterSpacing: '-0.3px',
@@ -51,7 +51,7 @@ function ToastItem({ toast, onRemove }) {
   };
 
   const messageStyle = {
-    color: 'rgba(255,255,255,0.75)',
+    color: 'var(--text-secondary)',
     fontSize: '13px',
     fontWeight: 400,
     lineHeight: 1.6,

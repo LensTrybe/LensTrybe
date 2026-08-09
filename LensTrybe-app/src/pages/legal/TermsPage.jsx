@@ -10,7 +10,7 @@ export default function TermsPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-terms-page">
+    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-terms-page">
       <style>{`
         @media (max-width: 767px) {
           .legal-terms-page h1 { font-size: 24px !important; }
@@ -19,9 +19,9 @@ export default function TermsPage() {
           .legal-terms-page p, .legal-terms-page div, .legal-terms-page span { font-size: max(14px, 0.875rem) !important; }
         }
       `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: '#ccc', lineHeight: 1.8 }}>
-        <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Terms and Conditions</h1>
-        <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
+      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Terms and Conditions</h1>
+        <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
 
         {[
           { title: '1. Acceptance of Terms', body: 'These Terms and Conditions ("Terms") govern your use of the LensTrybe platform operated by Michael Trybe (Sole Trader), Queensland, Australia ("LensTrybe", "we", "us"). By creating an account or using LensTrybe, you agree to be bound by these Terms. If you do not agree, do not use the platform.' },
@@ -42,7 +42,7 @@ export default function TermsPage() {
           { title: '16. Contact', body: 'For any questions regarding these Terms, contact us at connect@lenstrybe.com.' },
         ].map((section, i) => (
           <div key={i} style={{ marginBottom: '40px' }}>
-            <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(20,17,26,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
             {section.body.split('\n\n').map((para, j) => (
               <p key={j} style={{ marginBottom: '12px', whiteSpace: 'pre-line' }}>{para}</p>
             ))}
@@ -50,8 +50,8 @@ export default function TermsPage() {
         ))}
 
         <div style={{ marginTop: '60px', padding: '32px', background: 'rgba(57,255,20,0.05)', border: '1px solid rgba(57,255,20,0.15)', borderRadius: '12px' }}>
-          <h2 style={{ color: '#fff', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Refund Policy</h2>
-          <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '32px' }}>LensTrybe · Effective Date: March 14, 2026</p>
+          <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Refund Policy</h2>
+          <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '32px' }}>LensTrybe · Effective Date: March 14, 2026</p>
           {[
             { title: '1. Overview', body: 'This Refund Policy applies to all paid subscriptions on the LensTrybe platform. By subscribing to a paid tier, you agree to this policy.' },
             { title: '2. Monthly Subscriptions', body: 'Monthly subscriptions are non-refundable. If you cancel a monthly subscription, you will retain access to your paid tier features until the end of the current billing period. Your subscription will not renew after that date and you will not be charged again.\n\nNo partial refunds are issued for unused days in a monthly billing period.' },
@@ -64,7 +64,7 @@ export default function TermsPage() {
             { title: '9. Contact', body: 'For all refund enquiries, contact us at connect@lenstrybe.com.' },
           ].map((section, i) => (
             <div key={i} style={{ marginBottom: '32px' }}>
-              <h3 style={{ color: '#fff', fontSize: '16px', fontWeight: 600, marginBottom: '10px' }}>{section.title}</h3>
+              <h3 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600, marginBottom: '10px' }}>{section.title}</h3>
               {section.body.split('\n\n').map((para, j) => (
                 <p key={j} style={{ marginBottom: '10px', whiteSpace: 'pre-line' }}>{para}</p>
               ))}
@@ -72,7 +72,7 @@ export default function TermsPage() {
           ))}
         </div>
 
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#666' }}>
+        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(20,17,26,0.08)', fontSize: '13px', color: 'var(--text-muted)' }}>
           <p>LensTrybe · Queensland, Australia · lenstrybe.com</p>
           <p>© 2026 LensTrybe. All rights reserved.</p>
         </div>

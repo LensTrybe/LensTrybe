@@ -283,7 +283,7 @@ export default function AvailabilityPage() {
 
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
               <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
-              <button type="button" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ padding: '9px 18px', background: '#ef4444', border: 'none', borderRadius: '8px', color: '#fff', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: saving ? 0.6 : 1 }}>
+              <button type="button" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ padding: '9px 18px', background: '#ef4444', border: 'none', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: saving ? 0.6 : 1 }}>
                 {saving ? 'Blocking…' : 'Block Date'}
               </button>
             </div>

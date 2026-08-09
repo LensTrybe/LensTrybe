@@ -5,17 +5,17 @@ import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BA
 import Button from '../../components/ui/Button'
 
 const COLORS = {
-  bg: '#0a0a0f',
-  panel: '#111118',
+  bg: '#ffffff',
+  panel: '#ffffff',
   panelAlt: '#16161f',
   border: '#1e1e2e',
   green: '#1DB954',
   greenDim: 'rgba(29,185,84,0.12)',
   pink: '#FF2D78',
   pinkDim: 'rgba(255,45,120,0.12)',
-  white: '#ffffff',
-  muted: '#8888aa',
-  dim: '#444466',
+  white: '#14111a',
+  muted: '#6a6976',
+  dim: '#8a8995',
   lumiGrad: 'linear-gradient(135deg, #1DB954 0%, #FF2D78 100%)',
 };
 
@@ -393,7 +393,7 @@ export default function LumiPage() {
               onClick={e => e.stopPropagation()}
               style={{
                 width: '100%',
-                background: '#0a0a0f',
+                background: '#ffffff',
                 border: `1px solid ${COLORS.green}`,
                 borderRadius: 4,
                 padding: '2px 6px',
@@ -479,7 +479,7 @@ export default function LumiPage() {
         display: 'flex',
         flexDirection: 'column',
       }}>
-        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+        <div style={{ padding: '20px 16px 12px', borderBottom: '1px solid rgba(20,17,26,0.08)', flexShrink: 0 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
             <span style={{ fontSize: 18 }}></span>
             <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.white }}>Conversations</span>
@@ -492,7 +492,7 @@ export default function LumiPage() {
               width: '100%',
               padding: '8px 12px',
               borderRadius: 8,
-              color: COLORS.green,
+              color: '#ffffff',
               fontSize: 13,
               fontWeight: 600,
               display: 'flex',
@@ -535,7 +535,7 @@ export default function LumiPage() {
         </div>
 
         {!isLocked && monthlyLimit !== null && (
-          <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(255,255,255,0.08)', flexShrink: 0 }}>
+          <div style={{ padding: '12px 16px', borderTop: '1px solid rgba(20,17,26,0.08)', flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
               <span style={{ fontSize: 11, color: COLORS.muted }}>Monthly messages</span>
               <span style={{ fontSize: 11, color: COLORS.muted }}>{usedMonthly} / {monthlyLimit}</span>
@@ -571,7 +571,7 @@ export default function LumiPage() {
         {/* Top bar */}
         <div style={{
           padding: isMobile ? '12px 14px' : '14px 20px',
-          borderBottom: '1px solid rgba(255,255,255,0.08)',
+          borderBottom: '1px solid rgba(20,17,26,0.08)',
           ...GLASS_CARD,
           borderRadius: 0,
           display: 'flex',
@@ -728,7 +728,7 @@ export default function LumiPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <div style={{ padding: isMobile ? '10px 12px' : '14px 20px', borderTop: '1px solid rgba(255,255,255,0.08)', ...GLASS_CARD, borderRadius: 0, flexShrink: 0 }}>
+            <div style={{ padding: isMobile ? '10px 12px' : '14px 20px', borderTop: '1px solid rgba(20,17,26,0.08)', ...GLASS_CARD, borderRadius: 0, flexShrink: 0 }}>
               <div style={{
                 display: 'flex', gap: 10, alignItems: 'flex-end',
                 ...GLASS_CARD,

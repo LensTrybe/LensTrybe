@@ -7,7 +7,7 @@ import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BA
 import Button from '../../components/ui/Button'
 
 const PAGE = {
-  bg: '#0a0a0f',
+  bg: '#ffffff',
   text: 'rgb(242, 242, 242)',
   card: '#13131a',
   border: '1px solid #1e1e1e',
@@ -68,7 +68,7 @@ export default function DashboardJobsPage() {
     margin: '0 0 14px',
     fontSize: 16,
     fontWeight: 700,
-    color: '#fff',
+    color: 'var(--text-primary)',
     ...font,
   }
 
@@ -99,7 +99,7 @@ export default function DashboardJobsPage() {
       </Link>
 
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 8 }}>
-        <h1 style={{ ...TYPO.heading, margin: 0, fontSize: 24, fontWeight: 700, color: '#fff' }}>Jobs</h1>
+        <h1 style={{ ...TYPO.heading, margin: 0, fontSize: 24, fontWeight: 700, color: 'var(--text-primary)' }}>Jobs</h1>
         <Link
           to="/dashboard/job-board"
           style={{
@@ -132,7 +132,7 @@ export default function DashboardJobsPage() {
             ) : (
               posted.map((job) => (
                 <div key={job.id} style={cardStyle}>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 8 }}>{job.title}</div>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 8 }}>{job.title}</div>
                   {job.budget_range ? (
                     <div style={{ fontSize: 14, fontWeight: 700, color: PAGE.pink, marginBottom: 6 }}>{formatJobBudget(job.budget_range)}</div>
                   ) : null}
@@ -157,7 +157,7 @@ export default function DashboardJobsPage() {
                 const job = jobById[app.job_id]
                 return (
                   <div key={app.id} style={cardStyle}>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: '#fff', marginBottom: 8 }}>
+                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 8 }}>
                       {job?.title || 'Job listing'}
                     </div>
                     {app.quoted_budget ? (

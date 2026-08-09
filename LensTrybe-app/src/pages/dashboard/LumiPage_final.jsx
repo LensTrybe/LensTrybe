@@ -3,8 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 
 const COLORS = {
-  bg: '#0a0a0f',
-  panel: '#111118',
+  bg: '#ffffff',
+  panel: '#ffffff',
   panelAlt: '#16161f',
   border: '#1e1e2e',
   green: '#1DB954',
@@ -384,7 +384,7 @@ export default function LumiPage() {
               onClick={e => e.stopPropagation()}
               style={{
                 width: '100%',
-                background: '#0a0a0f',
+                background: '#ffffff',
                 border: `1px solid ${COLORS.green}`,
                 borderRadius: 4,
                 padding: '2px 6px',

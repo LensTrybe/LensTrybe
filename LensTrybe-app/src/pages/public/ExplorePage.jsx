@@ -8,7 +8,7 @@ import {
   GLASS_NATIVE_FIELD,
   TYPO,
   glassCardAccentBorder,
-} from '../../lib/glassTokens'
+} from '../../lib/glassTokensLight'
 
 const CATEGORIES = [
   { value: 'Photographer', label: 'Photographer' },
@@ -37,9 +37,9 @@ const TIER_ORDER = { elite: 0, expert: 1, pro: 2, basic: 3 }
 
 /** Dark select styling for Find a Creative filters (matches page chrome). */
 const SELECT_DARK = {
-  background: '#111118',
-  color: '#ffffff',
-  border: '1px solid #1e1e2e',
+  background: '#ffffff',
+  color: '#14111a',
+  border: '1px solid rgba(20,17,26,0.12)',
   borderRadius: '10px',
   boxSizing: 'border-box',
   outline: 'none',
@@ -267,12 +267,12 @@ export default function ExplorePage() {
       <style>{`
         .${SELECT_CLASS},
         .${SELECT_CLASS} option {
-          background: #111118;
-          color: #ffffff;
-          border: 1px solid #1e1e2e;
+          background: #ffffff;
+          color: #14111a;
+          border: 1px solid rgba(20,17,26,0.12);
         }
         .${SELECT_CLASS} {
-          color-scheme: dark;
+          color-scheme: light;
         }
         .${SELECT_CLASS}:disabled {
           opacity: 0.55;

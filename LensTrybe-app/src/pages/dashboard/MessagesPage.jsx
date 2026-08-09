@@ -373,13 +373,13 @@ export default function MessagesPage() {
 
   const styles = {
     page: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: isMobile ? 'auto' : 'calc(100vh - 64px)', minHeight: isMobile ? 'calc(100vh - 140px)' : 'auto', gap: '0', ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    sidebar: { width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid rgba(255,255,255,0.12)', borderBottom: isMobile ? '1px solid rgba(255,255,255,0.08)' : 'none', display: 'flex', flexDirection: 'column', flexShrink: 0, maxHeight: isMobile ? '280px' : 'none' },
+    sidebar: { width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid rgba(20,17,26,0.12)', borderBottom: isMobile ? '1px solid rgba(20,17,26,0.08)' : 'none', display: 'flex', flexDirection: 'column', flexShrink: 0, maxHeight: isMobile ? '280px' : 'none' },
     sidebarHeader: { padding: '20px', fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
     threadList: { flex: 1, overflowY: 'auto' },
     thread: (active) => ({
       padding: '16px 20px',
       cursor: 'pointer',
-      background: active ? 'rgba(255,255,255,0.06)' : 'transparent',
+      background: active ? 'rgba(20,17,26,0.06)' : 'transparent',
       borderLeft: active ? '2px solid var(--green)' : '2px solid transparent',
       transition: 'all var(--transition-fast)',
     }),
@@ -462,7 +462,7 @@ export default function MessagesPage() {
             ...TYPO.body,
             ...(creativeMonthlyRepliesBlocked
               ? { background: 'rgba(239,68,68,0.12)', color: '#fecaca', border: '1px solid rgba(239,68,68,0.35)' }
-              : { background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)' }),
+              : { background: 'rgba(20,17,26,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(20,17,26,0.1)' }),
           }}
         >
           {replyUsage.used} / {monthlyReplyCap} message replies this calendar month (UTC). Resets on the 1st.

@@ -179,7 +179,7 @@ export default function JobPostModal({
           aria-modal="true"
           aria-labelledby="job-post-title"
           style={{
-            background: '#111118',
+            background: '#ffffff',
             border: '1px solid #2a2a36',
             borderRadius: 14,
             padding: 24,

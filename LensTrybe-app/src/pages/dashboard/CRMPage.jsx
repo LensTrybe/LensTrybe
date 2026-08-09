@@ -138,8 +138,8 @@ export default function CRMPage() {
     viewBtn: (active) => ({ padding: '8px 16px', borderRadius: '8px', border: '1px solid var(--border-default)', background: active ? 'var(--bg-elevated)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }),
     addBtn: { padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' },
     table: { width: '100%', borderCollapse: 'collapse', minWidth: isMobile ? '720px' : '100%' },
-    th: { ...TYPO.label, textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(255,255,255,0.08)' },
-    td: { ...TYPO.body, padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid rgba(255,255,255,0.08)', cursor: 'pointer' },
+    th: { ...TYPO.label, textAlign: 'left', padding: '10px 16px', fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', borderBottom: '1px solid rgba(20,17,26,0.08)' },
+    td: { ...TYPO.body, padding: '14px 16px', fontSize: '14px', color: 'var(--text-primary)', borderBottom: '1px solid rgba(20,17,26,0.08)', cursor: 'pointer' },
     badge: (status) => {
       const colors = { Lead: '#6b7280', 'In Discussion': '#3b82f6', Booked: '#1DB954', Completed: '#a855f7', Archived: '#374151' }
       const c = colors[status] ?? '#6b7280'

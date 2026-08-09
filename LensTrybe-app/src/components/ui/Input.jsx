@@ -22,9 +22,9 @@ export default function Input({
   };
 
   const labelStyle = {
-    color: 'rgba(255,255,255,0.35)',
+    color: 'var(--text-secondary)',
     fontSize: '13px',
-    fontWeight: 400,
+    fontWeight: 500,
     letterSpacing: '0.08em',
     textTransform: 'uppercase',
     fontFamily: 'var(--font-ui)',
@@ -33,11 +33,11 @@ export default function Input({
   };
 
   const glassRest = {
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    background: 'rgba(255,255,255,0.04)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    borderTop: '1px solid rgba(255,255,255,0.12)',
+    backdropFilter: 'blur(16px)',
+    WebkitBackdropFilter: 'blur(16px)',
+    background: 'rgba(255,255,255,0.75)',
+    border: '1px solid rgba(20,17,26,0.12)',
+    borderTop: '1px solid rgba(20,17,26,0.1)',
     borderRadius: '10px',
     boxShadow: 'none',
   };
@@ -71,7 +71,7 @@ export default function Input({
     display: 'flex',
     alignItems: 'center',
     padding: '0 10px',
-    color: 'rgba(255,255,255,0.45)',
+    color: 'var(--text-muted)',
     fontFamily: 'var(--font-ui)',
     fontSize: 'var(--text-sm)',
     flexShrink: 0,
@@ -93,12 +93,12 @@ export default function Input({
     fontSize: 'var(--text-base)',
     fontWeight: 400,
     lineHeight: 1.6,
-    color: '#ffffff',
+    color: 'var(--text-primary)',
     cursor: disabled ? 'not-allowed' : 'text',
   };
 
   const hintStyle = {
-    color: 'rgba(255,255,255,0.45)',
+    color: 'var(--text-muted)',
     fontSize: '12px',
     fontFamily: 'var(--font-ui)',
     marginTop: '4px',
@@ -107,7 +107,7 @@ export default function Input({
   };
 
   const errorStyle = {
-    color: '#FF2D78',
+    color: '#c11f5a',
     fontSize: '12px',
     fontFamily: 'var(--font-ui)',
     marginTop: '4px',

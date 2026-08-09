@@ -12,7 +12,7 @@ const tiers = [
     annual: 0,
     description: 'Get discovered. Build your presence.',
     badge: null,
-    borderColor: 'rgba(255,255,255,0.12)',
+    borderColor: 'rgba(20,17,26,0.1)',
     features: [
       '5 portfolio photos',
       'Public profile listing',
@@ -212,7 +212,7 @@ export default function PricingPage() {
           </div>
           <div style={{
             height: '4px',
-            background: 'rgba(255,255,255,0.08)',
+            background: 'rgba(20,17,26,0.08)',
             borderRadius: '2px',
             overflow: 'hidden',
           }}>
@@ -261,7 +261,7 @@ export default function PricingPage() {
           fontFamily: font,
           fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 5vw, 56px)',
           fontWeight: 700,
-          color: '#ffffff',
+          color: '#14111a',
           maxWidth: '600px',
           margin: 0,
           lineHeight: 1.15,
@@ -298,8 +298,8 @@ export default function PricingPage() {
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.1)',
+          background: 'rgba(20,17,26,0.05)',
+          border: '1px solid rgba(20,17,26,0.1)',
           borderRadius: '999px',
           padding: '4px',
           margin: '0 auto',
@@ -370,14 +370,14 @@ export default function PricingPage() {
 
           const cardStyle = isFoundingExpert
             ? {
-                background: 'linear-gradient(160deg, #1a1508 0%, #0f0f0a 100%)',
+                background: 'linear-gradient(160deg, #fff7e6 0%, #ffffff 100%)',
                 border: '1px solid rgba(245,158,11,0.45)',
-                boxShadow: '0 0 40px rgba(245,158,11,0.12)',
+                boxShadow: '0 14px 40px -16px rgba(180,120,10,0.28)',
               }
             : {
-                background: 'rgba(255,255,255,0.04)',
+                background: '#ffffff',
                 border: `1px solid ${tier.borderColor}`,
-                boxShadow: 'none',
+                boxShadow: '0 10px 30px -16px rgba(40,30,60,0.18)',
               }
 
           return (
@@ -445,7 +445,7 @@ export default function PricingPage() {
                   top: 0,
                   left: 0,
                   right: 0,
-                  background: 'rgba(255,255,255,0.1)',
+                  background: '#14111a',
                   color: '#ffffff',
                   fontSize: '11px',
                   fontWeight: 700,
@@ -468,7 +468,7 @@ export default function PricingPage() {
                 minHeight: isMobile ? undefined : '200px',
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ fontSize: '18px', color: '#ffffff', fontWeight: 600, fontFamily: font }}>
+                  <div style={{ fontSize: '18px', color: '#14111a', fontWeight: 600, fontFamily: font }}>
                     {tier.name}
                   </div>
                   <div style={{ fontSize: '14px', color: '#8b8a9a', fontFamily: font }}>
@@ -486,7 +486,7 @@ export default function PricingPage() {
                           fontFamily: font,
                           fontSize: '40px',
                           fontWeight: 700,
-                          color: '#ffffff',
+                          color: '#14111a',
                           lineHeight: 1,
                         }}>
                           {getPrice(tier)}
@@ -514,7 +514,7 @@ export default function PricingPage() {
 
                 <div style={{
                   height: '1px',
-                  background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.12), transparent)',
+                  background: 'linear-gradient(90deg, transparent, rgba(20,17,26,0.12), transparent)',
                 }} />
               </div>
 
@@ -571,9 +571,9 @@ export default function PricingPage() {
                           color: '#000',
                         }
                       : {
-                          background: 'rgba(255,255,255,0.1)',
+                          background: '#14111a',
                           color: '#ffffff',
-                          border: '1px solid rgba(255,255,255,0.15)',
+                          border: 'none',
                         }),
                 }}
               >
@@ -601,20 +601,6 @@ export default function PricingPage() {
         margin: '32px auto 0',
         padding: isMobile ? '0 16px' : '0 40px',
       }}>
-        <div style={{
-          background: 'rgba(29,185,84,0.08)',
-          border: '1px solid rgba(29,185,84,0.25)',
-          borderRadius: '12px',
-          padding: '20px 28px',
-          textAlign: 'center',
-        }}>
-          <div style={{ fontSize: '15px', color: '#1DB954', marginBottom: 6, fontFamily: font, fontWeight: 600 }}>
-            No payments until July 1st, 2026
-          </div>
-          <div style={{ fontSize: '13px', color: '#8b8a9a', fontFamily: font, lineHeight: 1.5 }}>
-            Sign up today and enjoy full access completely free until our public launch. All paid plans also include a 14-day free trial. Your card will never be charged early.
-          </div>
-        </div>
         <div style={{
           textAlign: 'center',
           fontSize: '13px',

@@ -20,7 +20,7 @@ import {
   GLASS_MODAL_PANEL,
   GLASS_NATIVE_FIELD,
   TYPO,
-} from '../../lib/glassTokens'
+} from '../../lib/glassTokensLight'
 
 function StarRating({ value }) {
   return (

@@ -5,7 +5,7 @@ import {
   GLASS_CARD,
   GLASS_NATIVE_FIELD,
   TYPO,
-} from '../../lib/glassTokens'
+} from '../../lib/glassTokensLight'
 
 const IconCamera = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>)
 const IconVideo = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>)
@@ -130,11 +130,11 @@ export default function UpcomingFeaturesPage() {
   }
 
   return (
-    <div style={{ background: 'transparent', color: '#fff', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body }}>
+    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body }}>
       <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Upcoming Features</h1>
-          <p style={{ margin: '14px auto 0', maxWidth: '720px', color: 'rgba(255,255,255,0.65)', fontSize: '16px', ...TYPO.body }}>
+          <p style={{ margin: '14px auto 0', maxWidth: '720px', color: 'var(--text-secondary)', fontSize: '16px', ...TYPO.body }}>
             See what is coming to LensTrybe and shape the future of the platform.
           </p>
           <Button
@@ -150,7 +150,7 @@ export default function UpcomingFeaturesPage() {
         {!selectedSkill ? (
           <section>
             <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Browse by Skill</h2>
-            <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.55)', ...TYPO.body }}>Select your skill to see what is coming next.</p>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Select your skill to see what is coming next.</p>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
               {SKILLS.map((skill) => (
                 <button
@@ -163,18 +163,18 @@ export default function UpcomingFeaturesPage() {
                     padding: isMobile ? '16px 12px' : '24px 16px',
                     cursor: 'pointer',
                     textAlign: 'left',
-                    color: '#fff',
+                    color: 'var(--text-primary)',
                     minHeight: isMobile ? '140px' : '160px',
                     display: 'flex',
                     flexDirection: 'column',
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'rgba(255,255,255,0.85)' }}>
+                  <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(20,17,26,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'var(--text-primary)' }}>
                     {skill.icon}
                   </div>
                   <div style={{ fontSize: isMobile ? '14px' : '15px', marginBottom: '4px', lineHeight: 1.35, ...TYPO.heading }}>{skill.label}</div>
-                  <div style={{ fontSize: '13px', color: 'rgba(255,255,255,0.45)', marginTop: 'auto', ...TYPO.body }}>View features →</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: 'auto', ...TYPO.body }}>View features →</div>
                 </button>
               ))}
             </div>
@@ -186,7 +186,7 @@ export default function UpcomingFeaturesPage() {
             </Button>
 
             <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>{selectedSkillLabel} upcoming features</h2>
-            <p style={{ margin: '0 0 24px', color: 'rgba(255,255,255,0.55)', ...TYPO.body }}>Planned features for this skill category.</p>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Planned features for this skill category.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               {selectedSkillFeatures.map((feature) => (
@@ -197,7 +197,7 @@ export default function UpcomingFeaturesPage() {
                       Coming Soon
                     </span>
                   </div>
-                  <div style={{ color: 'rgba(255,255,255,0.58)', fontSize: '14px', ...TYPO.body }}>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '14px', ...TYPO.body }}>
                     {feature.description}
                   </div>
                 </div>
@@ -208,10 +208,10 @@ export default function UpcomingFeaturesPage() {
 
         <section id="request-feature-form" style={{ margin: '64px auto 0', maxWidth: '640px' }}>
           <h2 style={{ margin: 0, fontSize: isMobile ? '28px' : '36px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Request a Feature</h2>
-          <p style={{ margin: '10px 0 24px', color: 'rgba(255,255,255,0.55)', ...TYPO.body }}>Tell us what would help your workflow most.</p>
+          <p style={{ margin: '10px 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Tell us what would help your workflow most.</p>
 
           <form onSubmit={handleSubmit} style={{ ...GLASS_CARD, padding: isMobile ? '18px' : '24px' }}>
-            {error ? <div style={{ color: '#FF4D8D', marginBottom: '12px', fontSize: '13px', ...TYPO.body }}>{error}</div> : null}
+            {error ? <div style={{ color: '#c11f5a', marginBottom: '12px', fontSize: '13px', ...TYPO.body }}>{error}</div> : null}
             {submitted ? (
               <div style={{ marginBottom: '12px', color: '#1DB954', fontSize: '13px', ...TYPO.body }}>Thanks. Your feature request has been submitted.</div>
             ) : null}

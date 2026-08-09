@@ -1,4 +1,5 @@
-/** Shared glass + typography tokens (light theme, app-wide). */
+/** Light-theme glass + typography tokens for the public marketing site.
+   Mirrors the exports of glassTokens.js (which stays dark for the dashboard). */
 
 export const GLASS_CARD = {
   backdropFilter: 'blur(22px) saturate(150%)',

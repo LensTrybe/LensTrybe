@@ -52,8 +52,8 @@ export default function BookingRequestsPage() {
       fontFamily: 'var(--font-ui)',
     },
     tableWrap: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
     emptyState: {
       padding: '64px 24px',
       textAlign: 'center',

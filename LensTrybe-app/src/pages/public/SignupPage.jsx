@@ -11,7 +11,7 @@ import {
   GLASS_NATIVE_FIELD,
   TYPO,
   glassCardAccentBorder,
-} from '../../lib/glassTokens'
+} from '../../lib/glassTokensLight'
 
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
@@ -471,8 +471,8 @@ export default function SignupPage() {
           border: `2px solid ${neon.hex}`,
           borderTop: `2px solid ${neon.hex}`,
           borderLeft: `2px solid ${neon.hex}`,
-          background: `linear-gradient(135deg, rgba(${r},${g},${b},0.22) 0%, rgba(${r},${g},${b},0.07) 100%)`,
-          boxShadow: `0 0 0 2px ${neon.hex}, 0 0 20px rgba(${r},${g},${b},0.4), 0 8px 32px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.1)`,
+          background: `linear-gradient(160deg, rgba(${r},${g},${b},0.12) 0%, rgba(255,255,255,0.6) 100%)`,
+          boxShadow: `0 0 16px rgba(${r},${g},${b},0.22), 0 12px 30px -14px rgba(40,30,60,0.2), inset 0 1px 0 rgba(255,255,255,0.7)`,
         }
       }
       return {
@@ -650,7 +650,10 @@ export default function SignupPage() {
                     ? {
                         ...styles.tierCard(tier, selected),
                         border: '2px solid #f59e0b',
-                        boxShadow: '0 0 20px rgba(245,158,11,0.3)',
+                        borderTop: '2px solid #f59e0b',
+                        borderLeft: '2px solid #f59e0b',
+                        background: 'linear-gradient(160deg, rgba(245,158,11,0.10) 0%, rgba(255,255,255,0.6) 100%)',
+                        boxShadow: '0 12px 34px -14px rgba(245,158,11,0.35), inset 0 1px 0 rgba(255,255,255,0.7)',
                       }
                     : styles.tierCard(tier, selected)
                   return (

@@ -57,35 +57,35 @@ export default function CreatorPartnersPage() {
   }
 
   const s = {
-    page: { background: '#0a0a0f', minHeight: '100vh', color: '#fff', fontFamily: 'Inter, sans-serif' },
+    page: { background: 'transparent', minHeight: '100vh', color: '#14111a', fontFamily: 'Inter, sans-serif' },
     hero: { textAlign: 'center', padding: '80px 24px 64px', maxWidth: 760, margin: '0 auto' },
-    eyebrow: { fontSize: 12, letterSpacing: 4, textTransform: 'uppercase', color: '#1DB954', fontWeight: 600, marginBottom: 20 },
-    h1: { fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 700, lineHeight: 1.1, margin: '0 0 24px', fontFamily: 'Georgia, serif' },
-    pink: { color: '#FF2D78' },
-    green: { color: '#1DB954' },
-    subtitle: { fontSize: 17, color: '#8b8a9a', lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px' },
-    ctaBtn: { background: '#1DB954', color: '#000', border: 'none', borderRadius: 100, padding: '14px 32px', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'Inter, sans-serif' },
+    eyebrow: { fontSize: 12, letterSpacing: 4, textTransform: 'uppercase', color: '#0f7a37', fontWeight: 600, marginBottom: 20 },
+    h1: { fontSize: 'clamp(36px, 6vw, 64px)', fontWeight: 700, lineHeight: 1.1, margin: '0 0 24px', fontFamily: 'Georgia, serif', color: '#14111a' },
+    pink: { color: '#c11f5a' },
+    green: { color: '#0f7a37' },
+    subtitle: { fontSize: 17, color: '#565560', lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px' },
+    ctaBtn: { background: '#14111a', color: '#fff', border: 'none', borderRadius: 100, padding: '14px 32px', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'Inter, sans-serif' },
     section: { maxWidth: 900, margin: '0 auto', padding: '0 24px 80px' },
-    sectionTitle: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#FF2D78', marginBottom: 12, textAlign: 'center' },
-    sectionSubtitle: { fontSize: 15, color: '#8b8a9a', textAlign: 'center', marginBottom: 48, lineHeight: 1.6 },
+    sectionTitle: { fontSize: 'clamp(24px, 4vw, 36px)', fontWeight: 700, fontFamily: 'Georgia, serif', color: '#14111a', marginBottom: 12, textAlign: 'center' },
+    sectionSubtitle: { fontSize: 15, color: '#565560', textAlign: 'center', marginBottom: 48, lineHeight: 1.6 },
     grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 },
-    card: { background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 28 },
+    card: { background: '#ffffff', border: '1px solid rgba(20,17,26,0.08)', borderRadius: 16, padding: 28, boxShadow: '0 8px 24px -14px rgba(40,30,60,0.18)' },
     cardIcon: { fontSize: 28, marginBottom: 14 },
-    cardTitle: { fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 8 },
-    cardDesc: { fontSize: 14, color: '#8b8a9a', lineHeight: 1.6 },
-    divider: { height: 1, background: 'rgba(255,255,255,0.06)', margin: '0 24px 80px' },
-    formWrap: { maxWidth: 620, margin: '0 auto', background: '#12111a', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: isMobile ? '28px 20px' : '48px 40px' },
-    label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#8b8a9a', marginBottom: 8, letterSpacing: 0.3 },
-    input: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' },
-    select: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', appearance: 'none' },
-    textarea: { width: '100%', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 10, padding: '13px 16px', color: '#fff', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', resize: 'vertical', minHeight: 120 },
+    cardTitle: { fontSize: 16, fontWeight: 700, color: '#14111a', marginBottom: 8 },
+    cardDesc: { fontSize: 14, color: '#565560', lineHeight: 1.6 },
+    divider: { height: 1, background: 'rgba(20,17,26,0.08)', margin: '0 24px 80px' },
+    formWrap: { maxWidth: 620, margin: '0 auto', background: '#ffffff', border: '1px solid rgba(20,17,26,0.08)', borderRadius: 20, padding: isMobile ? '28px 20px' : '48px 40px', boxShadow: '0 12px 34px -18px rgba(40,30,60,0.22)' },
+    label: { display: 'block', fontSize: 13, fontWeight: 600, color: '#565560', marginBottom: 8, letterSpacing: 0.3 },
+    input: { width: '100%', background: '#faf9f7', border: '1px solid rgba(20,17,26,0.12)', borderRadius: 10, padding: '13px 16px', color: '#14111a', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box' },
+    select: { width: '100%', background: '#faf9f7', border: '1px solid rgba(20,17,26,0.12)', borderRadius: 10, padding: '13px 16px', color: '#14111a', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', appearance: 'none' },
+    textarea: { width: '100%', background: '#faf9f7', border: '1px solid rgba(20,17,26,0.12)', borderRadius: 10, padding: '13px 16px', color: '#14111a', fontSize: 14, fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', resize: 'vertical', minHeight: 120 },
     fieldWrap: { marginBottom: 20 },
-    submitBtn: { width: '100%', background: '#1DB954', color: '#000', border: 'none', borderRadius: 100, padding: '16px', fontWeight: 700, fontSize: 15, cursor: 'pointer', fontFamily: 'Inter, sans-serif', marginTop: 8 },
-    errorMsg: { color: '#FF2D78', fontSize: 13, marginBottom: 16 },
+    submitBtn: { width: '100%', background: '#14111a', color: '#fff', border: 'none', borderRadius: 100, padding: '16px', fontWeight: 600, fontSize: 15, cursor: 'pointer', fontFamily: 'Inter, sans-serif', marginTop: 8 },
+    errorMsg: { color: '#c11f5a', fontSize: 13, marginBottom: 16 },
     successWrap: { textAlign: 'center', padding: '48px 24px' },
     successIcon: { fontSize: 48, marginBottom: 16 },
-    successTitle: { fontSize: 28, fontWeight: 700, color: '#1DB954', fontFamily: 'Georgia, serif', marginBottom: 12 },
-    successText: { fontSize: 15, color: '#8b8a9a', lineHeight: 1.7 },
+    successTitle: { fontSize: 28, fontWeight: 700, color: '#0f7a37', fontFamily: 'Georgia, serif', marginBottom: 12 },
+    successText: { fontSize: 15, color: '#565560', lineHeight: 1.7 },
   }
 
   return (
@@ -194,9 +194,9 @@ export default function CreatorPartnersPage() {
                         style={{
                           padding: '8px 16px',
                           borderRadius: 100,
-                          border: selected ? '1px solid #1DB954' : '1px solid rgba(255,255,255,0.15)',
-                          background: selected ? 'rgba(29,185,84,0.15)' : 'transparent',
-                          color: selected ? '#1DB954' : '#8b8a9a',
+                          border: selected ? '1px solid #1DB954' : '1px solid rgba(20,17,26,0.15)',
+                          background: selected ? 'rgba(29,185,84,0.12)' : 'transparent',
+                          color: selected ? '#0f7a37' : '#565560',
                           fontSize: 13,
                           fontWeight: 600,
                           cursor: 'pointer',
@@ -211,8 +211,8 @@ export default function CreatorPartnersPage() {
                 </div>
 
                 {form.platforms.map(p => (
-                  <div key={p.name} style={{ background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, padding: '16px', marginBottom: 12 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: '#1DB954', marginBottom: 12 }}>{p.name}</div>
+                  <div key={p.name} style={{ background: '#faf9f7', border: '1px solid rgba(20,17,26,0.08)', borderRadius: 12, padding: '16px', marginBottom: 12 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#0f7a37', marginBottom: 12 }}>{p.name}</div>
                     <div style={{ marginBottom: 10 }}>
                       <label style={{ ...s.label, fontSize: 12 }}>Handle or Profile URL</label>
                       <input

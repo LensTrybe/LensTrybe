@@ -1,11 +1,11 @@
-/** Native <select> dark styling for dashboard pages (control + option list hints). */
+/** Native <select> styling for dashboard pages (light theme). */
 
 export const LT_DASHBOARD_SELECT_CLASS = 'lt-dashboard-select-dark'
 
 export const LT_DASHBOARD_SELECT_STYLE = {
-  background: '#111118',
-  color: '#ffffff',
-  border: '1px solid #1e1e2e',
+  background: '#ffffff',
+  color: '#14111a',
+  border: '1px solid rgba(20,17,26,0.12)',
   boxSizing: 'border-box',
   cursor: 'pointer',
 }
@@ -16,16 +16,16 @@ export function LtDashboardSelectDarkStyles() {
   return (
     <style>{`
       .${c} {
-        color-scheme: dark;
+        color-scheme: light;
       }
       .${c},
       .${c} option {
-        background-color: #111118;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #14111a;
       }
       .${c} optgroup {
-        background-color: #111118;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #14111a;
         font-weight: 600;
       }
       .${c}:disabled {

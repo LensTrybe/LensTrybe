@@ -3,23 +3,23 @@ import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 
 const PAGE_BG =
-  'linear-gradient(135deg, #060610 0%, #0a0a1a 30%, #060d06 70%, #0a060d 100%)'
+  'linear-gradient(135deg, #f7f6f4 0%, #f3f2f0 50%, #f5f4f6 100%)'
 
 const GLASS_HAMBURGER = {
-  backdropFilter: 'blur(40px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderTop: '1px solid rgba(255,255,255,0.16)',
-  boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+  backdropFilter: 'blur(20px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(150%)',
+  background: 'linear-gradient(160deg, rgba(255,255,255,0.92), rgba(255,255,255,0.7))',
+  border: '1px solid rgba(20,17,26,0.12)',
+  borderTop: '1px solid rgba(255,255,255,0.9)',
+  boxShadow: '0 4px 16px -6px rgba(40,30,60,0.2)',
 }
 
 function HamburgerIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
-      <line x1="3" y1="6" x2="19" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <line x1="3" y1="11" x2="19" y2="11" stroke="white" strokeWidth="2" strokeLinecap="round" />
-      <line x1="3" y1="16" x2="19" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="6" x2="19" y2="6" stroke="#14111a" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="11" x2="19" y2="11" stroke="#14111a" strokeWidth="2" strokeLinecap="round" />
+      <line x1="3" y1="16" x2="19" y2="16" stroke="#14111a" strokeWidth="2" strokeLinecap="round" />
     </svg>
   )
 }
@@ -54,7 +54,7 @@ export default function DashboardLayout() {
             height: '44px',
             borderRadius: '10px',
             ...GLASS_HAMBURGER,
-            color: '#ffffff',
+            color: '#14111a',
             cursor: 'pointer',
             fontWeight: 600,
             letterSpacing: '-0.3px',
@@ -77,7 +77,7 @@ export default function DashboardLayout() {
             inset: 0,
             backdropFilter: 'blur(8px)',
             WebkitBackdropFilter: 'blur(8px)',
-            background: 'rgba(0,0,0,0.55)',
+            background: 'rgba(20,17,26,0.35)',
             zIndex: 999,
           }}
         />

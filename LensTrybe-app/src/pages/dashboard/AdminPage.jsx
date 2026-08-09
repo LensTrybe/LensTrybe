@@ -13,10 +13,10 @@ import Button from '../../components/ui/Button';
 import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark';
 
 const COLORS = {
-  bg: '#0a0a0f',
-  panel: '#111118',
-  panelAlt: '#16161f',
-  border: '#1e1e2e',
+  bg: '#ffffff',
+  panel: '#ffffff',
+  panelAlt: 'rgba(20,17,26,0.05)',
+  border: 'rgba(20,17,26,0.12)',
   green: '#1DB954',
   greenDim: 'rgba(29,185,84,0.12)',
   pink: '#FF2D78',
@@ -25,9 +25,9 @@ const COLORS = {
   yellowDim: 'rgba(245,166,35,0.12)',
   blue: '#4A9EFF',
   blueDim: 'rgba(74,158,255,0.12)',
-  white: '#ffffff',
-  muted: '#8888aa',
-  dim: '#444466',
+  white: '#14111a',
+  muted: '#6a6976',
+  dim: '#8a8995',
 };
 
 const FONT = { fontFamily: 'Inter, sans-serif' };
@@ -814,7 +814,7 @@ export default function AdminPage() {
             padding: '12px 20px',
             borderRadius: 10,
             background: toast.type === 'error' ? COLORS.pink : COLORS.green,
-            color: '#fff',
+            color: 'var(--text-primary)',
             fontSize: 13,
             fontWeight: 600,
             boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
@@ -1659,7 +1659,7 @@ export default function AdminPage() {
               display: 'grid',
               gridTemplateColumns: '2fr 1.5fr 1fr 1fr 1fr 140px',
               padding: '10px 16px',
-              borderBottom: '1px solid rgba(255,255,255,0.08)',
+              borderBottom: '1px solid rgba(20,17,26,0.08)',
               fontSize: 11,
               fontWeight: 700,
               color: COLORS.dim,
@@ -1709,7 +1709,7 @@ export default function AdminPage() {
                   background: panelUserId === u.id ? 'rgba(29,185,84,0.06)' : 'transparent',
                 }}
                 onMouseEnter={(e) => {
-                  if (panelUserId !== u.id) e.currentTarget.style.background = 'rgba(255,255,255,0.03)';
+                  if (panelUserId !== u.id) e.currentTarget.style.background = 'rgba(20,17,26,0.03)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.background = panelUserId === u.id ? 'rgba(29,185,84,0.06)' : 'transparent';

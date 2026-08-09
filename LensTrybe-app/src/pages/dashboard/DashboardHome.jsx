@@ -39,7 +39,7 @@ function Skeleton({ height = 16, width = '100%' }) {
         width,
         height,
         borderRadius: 8,
-        background: 'linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04))',
+        background: 'linear-gradient(90deg, rgba(20,17,26,0.04), rgba(20,17,26,0.08), rgba(20,17,26,0.04))',
       }}
     />
   )
@@ -114,7 +114,7 @@ export default function DashboardHome() {
   const [editingQuickActions, setEditingQuickActions] = useState(false)
   const [draftQuickActions, setDraftQuickActions] = useState([])
   const [quickActionsError, setQuickActionsError] = useState('')
-  const [isAvailable, setIsAvailable] = useState(profile?.is_available ?? false)
+  const [isAvailable, setIsAvailable] = useState(profile?.is_available ?? true)
   const [availabilityColumn, setAvailabilityColumn] = useState(null)
   const [availabilityError, setAvailabilityError] = useState('')
   const [toast, setToast] = useState(null)
@@ -157,20 +157,13 @@ export default function DashboardHome() {
 
   useEffect(() => {
     if (!profile) return
-    if (availabilityColumn === 'available') {
-      if (typeof profile.available === 'boolean') setIsAvailable(profile.available)
-      return
-    }
-    if (availabilityColumn === 'availability_status') {
-      if (typeof profile.availability_status === 'string') {
-        setIsAvailable(profile.availability_status.toLowerCase() === 'available')
-      }
-      return
-    }
+    // Once loadAvailability has resolved the real column, it owns the value —
+    // don't let a stale context profile override it back to unavailable.
+    if (availabilityColumn) return
     if (typeof profile.is_available === 'boolean') {
       setIsAvailable(profile.is_available)
     } else {
-      setIsAvailable(false)
+      setIsAvailable(true)
     }
   }, [profile, availabilityColumn])
 
@@ -204,13 +197,14 @@ export default function DashboardHome() {
       const { data, error } = await supabase.from('profiles').select(col).eq('id', user.id).maybeSingle()
       if (error) throw error
       if (col === 'availability_status') {
-        setIsAvailable(String(data?.availability_status || '').toLowerCase() === 'available')
+        const status = String(data?.availability_status || '').toLowerCase()
+        setIsAvailable(status ? status === 'available' : true)
       } else {
         const value = col === 'available' ? data?.available : data?.is_available
-        setIsAvailable(typeof value === 'boolean' ? value : false)
+        setIsAvailable(typeof value === 'boolean' ? value : true)
       }
     } catch {
-      setIsAvailable(false)
+      setIsAvailable(true)
       setAvailabilityError('Could not load availability status right now.')
     }
   }
@@ -594,7 +588,7 @@ export default function DashboardHome() {
             padding: '10px 14px',
             borderRadius: 10,
             background: toast.type === 'error' ? '#ef4444' : '#1DB954',
-            color: '#fff',
+            color: 'var(--text-primary)',
             fontSize: 12,
             boxShadow: '0 10px 24px rgba(0,0,0,0.35)',
           }}
@@ -626,8 +620,8 @@ export default function DashboardHome() {
               fontWeight: 700,
               padding: '3px 10px',
               borderRadius: 999,
-              background: 'rgba(255,255,255,0.06)',
-              border: '1px solid rgba(255,255,255,0.12)',
+              background: 'rgba(20,17,26,0.06)',
+              border: '1px solid rgba(20,17,26,0.12)',
               color: '#cbd5e1',
             }}
           >
@@ -655,8 +649,8 @@ export default function DashboardHome() {
               color: 'var(--text-muted)',
               padding: '4px 10px',
               borderRadius: 999,
-              background: 'rgba(255,255,255,0.03)',
-              border: '1px solid rgba(255,255,255,0.08)',
+              background: 'rgba(20,17,26,0.03)',
+              border: '1px solid rgba(20,17,26,0.08)',
             }}
           >
             {liveTime.toLocaleTimeString('en-AU')} ({Intl.DateTimeFormat().resolvedOptions().timeZone})
@@ -774,7 +768,7 @@ export default function DashboardHome() {
             <div style={{ fontSize: 13, color: 'var(--text-muted)' }}>No message threads yet.</div>
           ) : (
             d.pipeline.threadSummaries.map((t) => (
-              <div key={t.id} style={{ padding: '9px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={t.id} style={{ padding: '9px 0', borderBottom: '1px solid rgba(20,17,26,0.06)' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
                   <div style={{ fontSize: 13, color: 'var(--text-primary)' }}>{t.client_name || 'Client'}</div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -841,7 +835,7 @@ export default function DashboardHome() {
                   </div>
                 ))
               )}
-              <div style={{ height: 1, background: 'rgba(255,255,255,0.08)', margin: '10px 0' }} />
+              <div style={{ height: 1, background: 'rgba(20,17,26,0.08)', margin: '10px 0' }} />
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 }}>Recent payments received</div>
               {d.pipeline.recentPayments.length === 0 ? (
                 <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No payments received yet.</div>
@@ -864,7 +858,7 @@ export default function DashboardHome() {
           <div style={{ fontSize: 13, color: 'var(--text-primary)', marginBottom: 10, ...TYPO.heading }}>Profile health</div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center' }}>
             <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden>
-              <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="8" />
+              <circle cx="44" cy="44" r="36" fill="none" stroke="rgba(20,17,26,0.1)" strokeWidth="8" />
               <circle
                 cx="44"
                 cy="44"
@@ -889,7 +883,7 @@ export default function DashboardHome() {
               profileChecklist
                 .filter((x) => !x.ok)
                 .map((item) => (
-                  <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                  <div key={item.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '7px 0', borderBottom: '1px solid rgba(20,17,26,0.06)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       <span style={{ width: 7, height: 7, borderRadius: '50%', background: '#ef4444' }} />
                       <span style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{item.label}</span>
@@ -918,8 +912,8 @@ export default function DashboardHome() {
             style={{
               ...GLASS_CARD,
               borderRadius: 999,
-              border: `1px solid ${isAvailable ? 'rgba(29,185,84,0.4)' : 'rgba(255,255,255,0.18)'}`,
-              background: isAvailable ? 'linear-gradient(135deg, rgba(29,185,84,0.2), rgba(29,185,84,0.08))' : 'rgba(255,255,255,0.03)',
+              border: `1px solid ${isAvailable ? 'rgba(29,185,84,0.4)' : 'rgba(20,17,26,0.18)'}`,
+              background: isAvailable ? 'linear-gradient(135deg, rgba(29,185,84,0.2), rgba(29,185,84,0.08))' : 'rgba(20,17,26,0.03)',
               padding: '8px 12px',
               display: 'flex',
               alignItems: 'center',
@@ -933,7 +927,7 @@ export default function DashboardHome() {
                 width: 28,
                 height: 16,
                 borderRadius: 999,
-                background: isAvailable ? 'rgba(29,185,84,0.35)' : 'rgba(255,255,255,0.2)',
+                background: isAvailable ? 'rgba(29,185,84,0.35)' : 'rgba(20,17,26,0.2)',
                 position: 'relative',
                 transition: 'all 0.2s ease',
               }}
@@ -997,7 +991,7 @@ export default function DashboardHome() {
             <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>No recent activity yet.</div>
           ) : (
             d.activity.map((e, idx) => (
-              <div key={`${e.at}-${idx}`} style={{ display: 'flex', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <div key={`${e.at}-${idx}`} style={{ display: 'flex', gap: 10, padding: '7px 0', borderBottom: '1px solid rgba(20,17,26,0.06)' }}>
                 <div style={{ width: 20, color: '#1DB954' }}>{e.icon}</div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-primary)' }}>{e.text}</div>

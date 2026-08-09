@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../../components/ui/Button'
-import { GLASS_CARD, TYPO } from '../../lib/glassTokens'
+import { GLASS_CARD, TYPO } from '../../lib/glassTokensLight'
 
 const ISSUE_01 = {
   issueNumber: 1,

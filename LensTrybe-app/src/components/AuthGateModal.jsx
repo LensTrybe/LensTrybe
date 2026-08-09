@@ -2,7 +2,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 
 const PINK = '#D946EF'
-const CARD = '#111118'
+const CARD = '#ffffff'
 
 /**
  * @param {{
@@ -69,7 +69,7 @@ export default function AuthGateModal({ open, onClose, variant, creativeName = '
         onClick={(e) => e.stopPropagation()}
         style={{
           background: CARD,
-          border: '1px solid rgba(255,255,255,0.12)',
+          border: '1px solid rgba(20,17,26,0.12)',
           borderRadius: 16,
           padding: 28,
           maxWidth: 440,
@@ -79,11 +79,11 @@ export default function AuthGateModal({ open, onClose, variant, creativeName = '
         }}
       >
         <div style={{ textAlign: 'center', marginBottom: 18 }}>
-          <div style={{ color: '#fff', fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>LensTrybe</div>
+          <div style={{ color: 'var(--text-primary)', fontSize: 20, fontWeight: 900, letterSpacing: '-0.02em' }}>LensTrybe</div>
           <div style={{ color: PINK, fontSize: 11, fontWeight: 700, marginTop: 4 }}>Connect. Capture. Create.</div>
         </div>
 
-        <h2 id="auth-gate-title" style={{ color: '#fff', fontSize: 18, fontWeight: 900, margin: '0 0 12px', lineHeight: 1.3 }}>
+        <h2 id="auth-gate-title" style={{ color: 'var(--text-primary)', fontSize: 18, fontWeight: 900, margin: '0 0 12px', lineHeight: 1.3 }}>
           {copy.title}
         </h2>
         <p style={{ color: '#888', fontSize: 14, lineHeight: 1.55, margin: '0 0 22px' }}>{copy.body}</p>
@@ -96,7 +96,7 @@ export default function AuthGateModal({ open, onClose, variant, creativeName = '
               display: 'block',
               textAlign: 'center',
               background: PINK,
-              color: '#fff',
+              color: 'var(--text-primary)',
               fontWeight: 800,
               fontSize: 14,
               padding: '14px 18px',
@@ -113,7 +113,7 @@ export default function AuthGateModal({ open, onClose, variant, creativeName = '
               display: 'block',
               textAlign: 'center',
               background: 'transparent',
-              border: '1px solid rgba(255,255,255,0.22)',
+              border: '1px solid rgba(20,17,26,0.22)',
               color: '#e5e5e5',
               fontWeight: 700,
               fontSize: 14,

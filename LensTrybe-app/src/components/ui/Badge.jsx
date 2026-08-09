@@ -7,11 +7,11 @@ const variantStyles = {
   default: {
     backdropFilter: 'blur(8px)',
     WebkitBackdropFilter: 'blur(8px)',
-    background: 'linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.03))',
-    color: 'rgba(255,255,255,0.85)',
-    border: '1px solid rgba(255,255,255,0.15)',
-    borderTop: '1px solid rgba(255,255,255,0.22)',
-    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)',
+    background: 'rgba(20,17,26,0.06)',
+    color: 'var(--text-secondary)',
+    border: '1px solid rgba(20,17,26,0.12)',
+    borderTop: '1px solid rgba(20,17,26,0.1)',
+    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.6)',
   },
   pink: {
     backdropFilter: 'blur(8px)',

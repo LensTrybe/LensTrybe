@@ -4,7 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { DIVIDER_GRADIENT_STYLE, GLASS_CARD, TYPO } from '../../lib/glassTokens'
+import { DIVIDER_GRADIENT_STYLE, GLASS_CARD, TYPO } from '../../lib/glassTokensLight'
 
 export default function LoginPage() {
   const navigate = useNavigate()

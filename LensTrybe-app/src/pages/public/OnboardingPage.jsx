@@ -8,7 +8,7 @@ import {
   PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
 } from '../../lib/moderateContent'
 
-const PAGE_BG = '#0a0a0f'
+const PAGE_BG = '#ffffff'
 const GREEN = '#1DB954'
 const PINK = '#FF2D78'
 
@@ -243,7 +243,7 @@ export default function OnboardingPage() {
     display: 'block',
     fontSize: '12px',
     fontWeight: 600,
-    color: 'rgba(255,255,255,0.72)',
+    color: 'rgba(20,17,26,0.72)',
     marginBottom: '6px',
     letterSpacing: '0.04em',
     textTransform: 'uppercase',
@@ -254,9 +254,9 @@ export default function OnboardingPage() {
     boxSizing: 'border-box',
     padding: '12px 14px',
     borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.14)',
-    background: 'rgba(255,255,255,0.06)',
-    color: '#fff',
+    border: '1px solid rgba(20,17,26,0.14)',
+    background: 'rgba(20,17,26,0.06)',
+    color: 'var(--text-primary)',
     fontSize: '15px',
     fontFamily: "'Inter', system-ui, sans-serif",
     outline: 'none',
@@ -278,9 +278,9 @@ export default function OnboardingPage() {
   const btnGhost = {
     padding: '12px 22px',
     borderRadius: '10px',
-    border: '1px solid rgba(255,255,255,0.2)',
+    border: '1px solid rgba(20,17,26,0.2)',
     background: 'transparent',
-    color: '#fff',
+    color: 'var(--text-primary)',
     fontWeight: 600,
     fontSize: '15px',
     fontFamily: "'Inter', system-ui, sans-serif",
@@ -296,7 +296,7 @@ export default function OnboardingPage() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'rgba(255,255,255,0.5)',
+          color: 'rgba(20,17,26,0.5)',
           fontFamily: "'Inter', system-ui, sans-serif",
         }}
       >
@@ -325,8 +325,8 @@ export default function OnboardingPage() {
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         .onboarding-root * { box-sizing: border-box; }
         .onboarding-root input::placeholder,
-        .onboarding-root select { color: rgba(255,255,255,0.45); }
-        .onboarding-root select option { background: #12121a; color: #fff; }
+        .onboarding-root select { color: rgba(20,17,26,0.6); color-scheme: light; }
+        .onboarding-root select option { background: #ffffff; color: #14111a; }
       `}</style>
 
       <div
@@ -335,8 +335,8 @@ export default function OnboardingPage() {
           maxWidth: 520,
           padding: '32px 28px',
           borderRadius: 20,
-          background: 'rgba(255,255,255,0.06)',
-          border: '1px solid rgba(255,255,255,0.12)',
+          background: 'rgba(20,17,26,0.06)',
+          border: '1px solid rgba(20,17,26,0.12)',
           boxShadow: '0 12px 48px rgba(0,0,0,0.45)',
           backdropFilter: 'blur(20px)',
           WebkitBackdropFilter: 'blur(20px)',
@@ -347,13 +347,13 @@ export default function OnboardingPage() {
             <span style={{ fontSize: '12px', fontWeight: 600, color: PINK, letterSpacing: '0.06em' }}>
               STEP {step + 1} OF 3
             </span>
-            <span style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>LensTrybe</span>
+            <span style={{ fontSize: '12px', color: 'rgba(20,17,26,0.5)' }}>LensTrybe</span>
           </div>
           <div
             style={{
               height: 4,
               borderRadius: 999,
-              background: 'rgba(255,255,255,0.1)',
+              background: 'rgba(20,17,26,0.1)',
               overflow: 'hidden',
             }}
           >
@@ -394,10 +394,10 @@ export default function OnboardingPage() {
         >
           {step === 0 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: '#fff', lineHeight: 1.25 }}>
+              <h1 style={{ margin: 0, fontSize: '24px', fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.25 }}>
                 Welcome to LensTrybe, {welcomeName}!
               </h1>
-              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.65)', lineHeight: 1.5 }}>
+              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(20,17,26,0.65)', lineHeight: 1.5 }}>
                 Let&apos;s set up your creative profile. You can change these details later in settings.
               </p>
 
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
                       borderRadius: '50%',
                       overflow: 'hidden',
                       border: `2px solid ${GREEN}`,
-                      background: 'rgba(255,255,255,0.06)',
+                      background: 'rgba(20,17,26,0.06)',
                     }}
                   >
                     {avatarPreview ? (
@@ -448,8 +448,8 @@ export default function OnboardingPage() {
 
           {step === 1 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#fff' }}>Your creative work</h2>
-              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>Your creative work</h2>
+              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(20,17,26,0.65)' }}>
                 What type of creative are you? Choose at least one.
               </p>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
@@ -463,9 +463,9 @@ export default function OnboardingPage() {
                       style={{
                         padding: '10px 12px',
                         borderRadius: 10,
-                        border: on ? `2px solid ${GREEN}` : '1px solid rgba(255,255,255,0.14)',
-                        background: on ? 'rgba(29,185,84,0.12)' : 'rgba(255,255,255,0.04)',
-                        color: on ? '#fff' : 'rgba(255,255,255,0.85)',
+                        border: on ? `2px solid ${GREEN}` : '1px solid rgba(20,17,26,0.14)',
+                        background: on ? 'rgba(29,185,84,0.12)' : 'rgba(20,17,26,0.04)',
+                        color: on ? '#fff' : 'rgba(20,17,26,0.85)',
                         fontSize: '13px',
                         fontWeight: on ? 600 : 500,
                         cursor: 'pointer',
@@ -493,7 +493,7 @@ export default function OnboardingPage() {
               <div>
                 <label style={labelStyle}>State</label>
                 <select
-                  style={{ ...inputStyle, cursor: 'pointer', color: state ? '#fff' : 'rgba(255,255,255,0.45)' }}
+                  style={{ ...inputStyle, cursor: 'pointer', color: state ? '#fff' : 'rgba(20,17,26,0.45)' }}
                   value={state}
                   onChange={(e) => setState(e.target.value)}
                 >
@@ -529,8 +529,8 @@ export default function OnboardingPage() {
 
           {step === 2 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#fff' }}>Choose your plan</h2>
-              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(255,255,255,0.65)' }}>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>Choose your plan</h2>
+              <p style={{ margin: 0, fontSize: '14px', color: 'rgba(20,17,26,0.65)' }}>
                 Pick the tier that fits you. You can change this later in subscription settings.
               </p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -540,8 +540,8 @@ export default function OnboardingPage() {
                   let cardBorder
                   let cardBackground
                   if (!isBasic) {
-                    cardBorder = paidSelected ? `2px solid ${GREEN}` : '1px solid rgba(255,255,255,0.14)'
-                    cardBackground = paidSelected ? 'rgba(29,185,84,0.1)' : 'rgba(255,255,255,0.04)'
+                    cardBorder = paidSelected ? `2px solid ${GREEN}` : '1px solid rgba(20,17,26,0.14)'
+                    cardBackground = paidSelected ? 'rgba(29,185,84,0.1)' : 'rgba(20,17,26,0.04)'
                   }
                   return (
                     <button
@@ -558,8 +558,8 @@ export default function OnboardingPage() {
                               padding: '16px',
                               borderRadius: '12px',
                               cursor: 'pointer',
-                              border: selectedTier === 'basic' ? '2px solid #4A9EFF' : '1px solid rgba(255,255,255,0.08)',
-                              background: selectedTier === 'basic' ? 'rgba(74,158,255,0.08)' : 'rgba(255,255,255,0.03)',
+                              border: selectedTier === 'basic' ? '2px solid #4A9EFF' : '1px solid rgba(20,17,26,0.08)',
+                              background: selectedTier === 'basic' ? 'rgba(74,158,255,0.08)' : 'rgba(20,17,26,0.03)',
                               boxShadow:
                                 selectedTier === 'basic' ? '0 0 0 2px #4A9EFF, 0 0 20px rgba(74,158,255,0.4)' : 'none',
                               transition: 'all 0.2s ease',
@@ -577,14 +577,14 @@ export default function OnboardingPage() {
                             }
                       }
                     >
-                      <span style={{ fontWeight: 700, color: '#fff', fontSize: '15px' }}>{p.label}</span>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '15px' }}>{p.label}</span>
                       <span style={{ color: PINK, fontWeight: 600, fontSize: '14px' }}>{p.price}</span>
                     </button>
                   )
                 })}
               </div>
               {selectedTier !== 'basic' ? (
-                <p style={{ margin: 0, fontSize: '13px', color: 'rgba(255,255,255,0.55)' }}>
+                <p style={{ margin: 0, fontSize: '13px', color: 'rgba(20,17,26,0.55)' }}>
                   You&apos;ll be redirected to complete payment after setup.
                 </p>
               ) : null}

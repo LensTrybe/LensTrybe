@@ -2,66 +2,114 @@ import { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
-import Button from '../ui/Button'
+
+const FONT = "'Inter', sans-serif"
 
 const PAGE_BG =
-  'linear-gradient(135deg, #060610 0%, #0a0a1a 30%, #060d06 70%, #0a060d 100%)'
+  'linear-gradient(135deg, #f7f6f4 0%, #f4f3f1 50%, #f6f5f7 100%)'
+
+const TEXT_PRIMARY = '#14111a'
+const TEXT_SECONDARY = '#55545f'
+const TEXT_MUTED = '#8a8995'
 
 const GLASS_NAV = {
-  backdropFilter: 'blur(40px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-  background: 'rgba(255,255,255,0.03)',
-  borderBottom: '1px solid rgba(255,255,255,0.06)',
-  boxShadow: '0 1px 0 rgba(255,255,255,0.04)',
+  backdropFilter: 'blur(24px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(24px) saturate(160%)',
+  background: 'rgba(255,255,255,0.72)',
+  borderBottom: '1px solid rgba(20,17,26,0.06)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
 }
 
 const GLASS_CARD = {
-  backdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
-  WebkitBackdropFilter: 'blur(40px) saturate(200%) brightness(1.1)',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.03) 100%)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  borderTop: '1px solid rgba(255,255,255,0.2)',
-  borderLeft: '1px solid rgba(255,255,255,0.16)',
+  backdropFilter: 'blur(22px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
+  background: 'linear-gradient(160deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%)',
+  border: '1px solid rgba(20,17,26,0.07)',
   borderRadius: '20px',
-  boxShadow: '0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)',
+  boxShadow: '0 10px 30px -12px rgba(40,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.85)',
 }
 
 const GLASS_MODAL = {
-  backdropFilter: 'blur(60px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(60px) saturate(180%)',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.04) 100%)',
-  border: '1px solid rgba(255,255,255,0.15)',
-  borderTop: '1px solid rgba(255,255,255,0.25)',
+  backdropFilter: 'blur(30px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(30px) saturate(150%)',
+  background: 'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.7) 100%)',
+  border: '1px solid rgba(20,17,26,0.08)',
   borderRadius: '24px',
-  boxShadow: '0 24px 64px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.1)',
+  boxShadow: '0 24px 64px -20px rgba(40,30,60,0.35), inset 0 1px 0 rgba(255,255,255,0.9)',
 }
 
 const GLASS_GHOST_BTN = {
-  backdropFilter: 'blur(20px)',
-  WebkitBackdropFilter: 'blur(20px)',
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.07), rgba(255,255,255,0.03))',
-  border: '1px solid rgba(255,255,255,0.1)',
-  borderTop: '1px solid rgba(255,255,255,0.16)',
+  backdropFilter: 'blur(16px)',
+  WebkitBackdropFilter: 'blur(16px)',
+  background: 'linear-gradient(160deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))',
+  border: '1px solid rgba(20,17,26,0.1)',
+  boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.9)',
 }
 
-const DIVIDER_LINE = 'linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)'
+const DIVIDER_LINE = 'linear-gradient(90deg, transparent, rgba(20,17,26,0.08), transparent)'
 
 function HamburgerIcon({ open }) {
+  const stroke = TEXT_PRIMARY
   return (
     <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg" style={{ display: 'block' }}>
       {open ? (
         <>
-          <line x1="4" y1="4" x2="18" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          <line x1="18" y1="4" x2="4" y2="18" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="4" y1="4" x2="18" y2="18" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+          <line x1="18" y1="4" x2="4" y2="18" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
         </>
       ) : (
         <>
-          <line x1="3" y1="6" x2="19" y2="6" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          <line x1="3" y1="11" x2="19" y2="11" stroke="white" strokeWidth="2" strokeLinecap="round" />
-          <line x1="3" y1="16" x2="19" y2="16" stroke="white" strokeWidth="2" strokeLinecap="round" />
+          <line x1="3" y1="6" x2="19" y2="6" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+          <line x1="3" y1="11" x2="19" y2="11" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
+          <line x1="3" y1="16" x2="19" y2="16" stroke={stroke} strokeWidth="2" strokeLinecap="round" />
         </>
       )}
     </svg>
+  )
+}
+
+function SolidButton({ onClick, children, style }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: hover ? '#2a2733' : '#14111a',
+        color: '#fff', border: 'none', borderRadius: '8px',
+        padding: '9px 18px', fontWeight: 500, fontSize: '13px',
+        fontFamily: FONT, cursor: 'pointer', lineHeight: 1.4,
+        boxShadow: '0 1px 2px rgba(20,17,26,0.25), inset 0 1px 0 rgba(255,255,255,0.12)',
+        transition: 'background 0.15s ease', whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {children}
+    </button>
+  )
+}
+
+function GhostButton({ onClick, children, style }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        background: hover ? 'rgba(20,17,26,0.05)' : 'transparent',
+        color: TEXT_PRIMARY, border: '1px solid rgba(20,17,26,0.12)', borderRadius: '8px',
+        padding: '9px 16px', fontWeight: 500, fontSize: '13px',
+        fontFamily: FONT, cursor: 'pointer', lineHeight: 1.4,
+        transition: 'background 0.15s ease', whiteSpace: 'nowrap',
+        ...style,
+      }}
+    >
+      {children}
+    </button>
   )
 }
 
@@ -72,7 +120,7 @@ function PublicBgOrbs() {
       style={{
         position: 'fixed',
         borderRadius: '50%',
-        filter: 'blur(100px)',
+        filter: 'blur(110px)',
         pointerEvents: 'none',
         zIndex: 0,
         ...style,
@@ -81,10 +129,10 @@ function PublicBgOrbs() {
   )
   return (
     <>
-      {orb({ top: '-8%', left: '-10%', width: 'min(520px, 90vw)', height: 'min(520px, 90vw)', background: '#1DB954', opacity: 0.28 })}
-      {orb({ top: '-12%', right: '-8%', width: 'min(480px, 85vw)', height: 'min(480px, 85vw)', background: '#FF2D78', opacity: 0.22 })}
-      {orb({ bottom: '-10%', right: '-6%', width: 'min(500px, 88vw)', height: 'min(500px, 88vw)', background: '#1DB954', opacity: 0.18 })}
-      {orb({ bottom: '-8%', left: '-8%', width: 'min(460px, 82vw)', height: 'min(460px, 82vw)', background: '#a855f7', opacity: 0.2 })}
+      {orb({ top: '-10%', left: '-10%', width: 'min(520px, 90vw)', height: 'min(520px, 90vw)', background: '#1DB954', opacity: 0.07 })}
+      {orb({ top: '-12%', right: '-8%', width: 'min(480px, 85vw)', height: 'min(480px, 85vw)', background: '#FF2D78', opacity: 0.055 })}
+      {orb({ bottom: '-10%', right: '-6%', width: 'min(500px, 88vw)', height: 'min(500px, 88vw)', background: '#1DB954', opacity: 0.05 })}
+      {orb({ bottom: '-8%', left: '-8%', width: 'min(460px, 82vw)', height: 'min(460px, 82vw)', background: '#a855f7', opacity: 0.05 })}
     </>
   )
 }
@@ -126,14 +174,14 @@ export default function PublicLayout() {
   const navLinkStyle = {
     background: 'none',
     border: 'none',
-    color: '#ffffff',
-    fontSize: '14px',
-    fontWeight: 600,
-    letterSpacing: '-0.3px',
+    color: TEXT_SECONDARY,
+    fontSize: '13px',
+    fontWeight: 500,
+    letterSpacing: '-0.1px',
     cursor: 'pointer',
-    opacity: 0.95,
+    opacity: 1,
     whiteSpace: 'nowrap',
-    fontFamily: 'var(--font-ui)',
+    fontFamily: FONT,
     padding: 0,
     lineHeight: 1.6,
   }
@@ -149,34 +197,33 @@ export default function PublicLayout() {
       gap: '16px',
     },
     logo: {
-      fontFamily: 'var(--font-display)', fontSize: '20px',
-      fontWeight: 600,
-      letterSpacing: '-0.3px',
-      color: '#ffffff', cursor: 'pointer',
-      display: 'flex', alignItems: 'center', gap: '8px',
+      fontFamily: FONT, fontSize: '19px',
+      fontWeight: 700,
+      letterSpacing: '-0.03em',
+      color: TEXT_PRIMARY, cursor: 'pointer',
+      display: 'flex', alignItems: 'baseline', gap: '9px',
       lineHeight: 1.6,
     },
     tagline: {
-      fontSize: '11px',
-      fontWeight: 400,
-      letterSpacing: '0.08em',
-      textTransform: 'uppercase',
-      color: 'rgba(255,255,255,0.35)',
-      fontFamily: 'var(--font-ui)',
+      fontSize: '10.5px',
+      fontWeight: 500,
+      letterSpacing: '0.01em',
+      color: TEXT_MUTED,
+      fontFamily: FONT,
       lineHeight: 1.6,
     },
     actions: { display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'flex-end' },
     mobileMenuButton: {
       width: '44px', height: '44px', borderRadius: '10px',
       ...GLASS_GHOST_BTN,
-      color: '#ffffff', display: 'flex', alignItems: 'center',
+      color: TEXT_PRIMARY, display: 'flex', alignItems: 'center',
       justifyContent: 'center', cursor: 'pointer', flexShrink: 0,
     },
     mobileMenu: {
       position: 'fixed', inset: 0,
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      background: 'rgba(0,0,0,0.55)',
+      backdropFilter: 'blur(6px)',
+      WebkitBackdropFilter: 'blur(6px)',
+      background: 'rgba(20,17,26,0.28)',
       zIndex: 300, display: 'flex', justifyContent: 'flex-end',
       flexDirection: 'column', padding: '16px', paddingTop: '80px',
     },
@@ -188,13 +235,10 @@ export default function PublicLayout() {
     },
     mobileMenuLink: {
       width: '100%', minHeight: '52px', borderRadius: '10px',
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      background: 'rgba(255,255,255,0.04)',
-      border: '1px solid rgba(255,255,255,0.08)',
-      borderTop: '1px solid rgba(255,255,255,0.12)',
-      color: '#ffffff', fontSize: '16px', fontFamily: 'var(--font-ui)',
-      fontWeight: 600,
+      background: 'rgba(255,255,255,0.6)',
+      border: '1px solid rgba(20,17,26,0.08)',
+      color: TEXT_PRIMARY, fontSize: '16px', fontFamily: FONT,
+      fontWeight: 500,
       textAlign: 'left', padding: '12px 14px', cursor: 'pointer',
       lineHeight: 1.6,
       transition: 'all 0.2s',
@@ -207,57 +251,55 @@ export default function PublicLayout() {
     },
     userBtn: {
       display: 'flex', alignItems: 'center', gap: '8px',
-      padding: '6px 12px', borderRadius: 'var(--radius-lg)',
+      padding: '6px 12px', borderRadius: '10px',
       ...GLASS_GHOST_BTN,
-      color: '#ffffff', fontSize: '13px', fontFamily: 'var(--font-ui)',
-      fontWeight: 600,
+      color: TEXT_PRIMARY, fontSize: '13px', fontFamily: FONT,
+      fontWeight: 500,
       cursor: 'pointer', transition: 'all var(--transition-fast)',
       lineHeight: 1.6,
     },
     avatar: {
-      width: '28px', height: '28px', borderRadius: 'var(--radius-full)',
-      background: 'rgba(29,185,84,0.15)',
+      width: '28px', height: '28px', borderRadius: '9999px',
+      background: 'rgba(29,185,84,0.14)',
       border: '1px solid rgba(29,185,84,0.3)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '11px', color: '#1DB954', fontWeight: 700, letterSpacing: '-0.5px', flexShrink: 0,
+      fontSize: '11px', color: '#0f7a37', fontWeight: 700, letterSpacing: '-0.5px', flexShrink: 0,
     },
-    chevron: { fontSize: '10px', color: 'rgba(255,255,255,0.45)', transition: 'transform var(--transition-fast)' },
+    chevron: { fontSize: '10px', color: TEXT_MUTED, transition: 'transform var(--transition-fast)' },
     dropdown: {
       position: 'absolute', top: '100%', right: 0, marginTop: '8px',
       ...GLASS_CARD,
-      borderRadius: '20px',
+      borderRadius: '16px',
       minWidth: '180px',
       overflow: 'hidden', zIndex: 200,
     },
     dropdownItem: {
       display: 'flex', alignItems: 'center', gap: '10px',
-      padding: '12px 16px', fontSize: '13px', fontFamily: 'var(--font-ui)',
-      fontWeight: 400,
+      padding: '12px 16px', fontSize: '13px', fontFamily: FONT,
+      fontWeight: 500,
       lineHeight: 1.6,
-      color: 'rgba(255,255,255,0.85)', cursor: 'pointer',
+      color: TEXT_PRIMARY, cursor: 'pointer',
       transition: 'all var(--transition-fast)', border: 'none',
       background: 'transparent', width: '100%', textAlign: 'left',
     },
     dropdownDivider: { height: '1px', background: DIVIDER_LINE, margin: '4px 0' },
     dropdownName: {
-      padding: '12px 16px 8px', fontSize: '12px',
-      fontWeight: 400,
+      padding: '12px 16px 8px', fontSize: '11px',
+      fontWeight: 600,
       letterSpacing: '0.08em',
       textTransform: 'uppercase',
-      color: 'rgba(255,255,255,0.35)',
-      fontFamily: 'var(--font-ui)',
+      color: TEXT_MUTED,
+      fontFamily: FONT,
       lineHeight: 1.6,
-      borderBottom: '1px solid rgba(255,255,255,0.06)',
+      borderBottom: '1px solid rgba(20,17,26,0.06)',
     },
   }
 
-  const footerLinkStyle = { color: 'rgba(255,255,255,0.45)', fontSize: '13px', textDecoration: 'none', fontWeight: 400, lineHeight: 1.6 }
+  const footerLinkStyle = { color: TEXT_MUTED, fontSize: '13px', textDecoration: 'none', fontWeight: 400, lineHeight: 1.6 }
 
   if (isMobile) {
     return (
-      <div style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
+      <div className="lt-public-light" style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
         <PublicBgOrbs />
         <div style={{ position: 'relative', zIndex: 1 }}>
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, ...GLASS_NAV, padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -279,7 +321,7 @@ export default function PublicLayout() {
                       ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                       : (displayName[0] ?? 'U').toUpperCase()}
                   </div>
-                  <div style={{ fontSize: '14px', color: '#ffffff', fontFamily: 'var(--font-ui)', fontWeight: 400, lineHeight: 1.6 }}>{shortName}</div>
+                  <div style={{ fontSize: '14px', color: TEXT_PRIMARY, fontFamily: FONT, fontWeight: 500, lineHeight: 1.6 }}>{shortName}</div>
                 </div>
               )}
               {[
@@ -302,7 +344,7 @@ export default function PublicLayout() {
                 </button>
               ))}
               {user && (
-                <button type="button" style={{ ...styles.mobileMenuLink, color: 'var(--error)' }} onClick={() => { setMobileMenuOpen(false); signOut() }}>
+                <button type="button" style={{ ...styles.mobileMenuLink, color: '#c11f5a' }} onClick={() => { setMobileMenuOpen(false); signOut() }}>
                   Sign Out
                 </button>
               )}
@@ -316,7 +358,7 @@ export default function PublicLayout() {
 
         <footer style={{ background: 'transparent', position: 'relative' }}>
           <div style={{ height: '1px', background: DIVIDER_LINE }} />
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', alignItems: 'center', padding: '24px 16px', fontSize: '13px', color: 'rgba(255,255,255,0.45)', fontWeight: 400, lineHeight: 1.6 }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', alignItems: 'center', padding: '24px 16px', fontSize: '13px', color: TEXT_MUTED, fontWeight: 400, lineHeight: 1.6 }}>
             <div>© 2026 LensTrybe</div>
             <a href="mailto:connect@lenstrybe.com" style={footerLinkStyle}>connect@lenstrybe.com</a>
             <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>
@@ -331,7 +373,7 @@ export default function PublicLayout() {
   }
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
+    <div className="lt-public-light" style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
       <PublicBgOrbs />
       <div style={{ position: 'relative', zIndex: 1 }}>
       <nav style={styles.nav}>
@@ -342,7 +384,7 @@ export default function PublicLayout() {
         </div>
 
         {/* Centre: Nav links — always visible, no auth gate */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
           <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
           <button style={navLinkStyle} onClick={() => navigate('/creator-partners')}>Creator Partner Program</button>
@@ -357,7 +399,7 @@ export default function PublicLayout() {
                   style={styles.userBtn}
                   onClick={() => setDropdownOpen(p => !p)}
                   onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(29,185,84,0.45)'; e.currentTarget.style.boxShadow = '0 0 0 3px rgba(29,185,84,0.08)' }}
-                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.boxShadow = 'none' }}
+                  onMouseLeave={e => { e.currentTarget.style.borderColor = 'rgba(20,17,26,0.1)'; e.currentTarget.style.boxShadow = 'inset 0 1px 0 rgba(255,255,255,0.9)' }}
                 >
                   <div style={styles.avatar}>
                     {profile?.avatar_url
@@ -374,7 +416,7 @@ export default function PublicLayout() {
                     <button
                       style={styles.dropdownItem}
                       onClick={() => { setDropdownOpen(false); navigate(isCreative ? '/dashboard' : '/client-dashboard') }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,17,26,0.04)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
                       ⊞ Dashboard
@@ -382,16 +424,16 @@ export default function PublicLayout() {
                     <button
                       style={styles.dropdownItem}
                       onClick={() => { setDropdownOpen(false); navigate('/dashboard/settings') }}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,17,26,0.04)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
                        Settings
                     </button>
                     <div style={styles.dropdownDivider} />
                     <button
-                      style={{ ...styles.dropdownItem, color: '#FF2D78' }}
+                      style={{ ...styles.dropdownItem, color: '#c11f5a' }}
                       onClick={signOut}
-                      onMouseEnter={e => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.06) 100%)' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'rgba(20,17,26,0.04)' }}
                       onMouseLeave={e => { e.currentTarget.style.background = 'transparent' }}
                     >
                       → Sign Out
@@ -401,8 +443,8 @@ export default function PublicLayout() {
               </div>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => navigate('/login')}>Log In</Button>
-                <Button variant="primary" size="sm" onClick={() => navigate('/join')}>Join as a Creative</Button>
+                <GhostButton onClick={() => navigate('/login')}>Log In</GhostButton>
+                <SolidButton onClick={() => navigate('/join')}>Join as a Creative</SolidButton>
               </>
             )}
         </div>
@@ -414,7 +456,7 @@ export default function PublicLayout() {
 
       <footer style={{ background: 'transparent', position: 'relative' }}>
         <div style={{ height: '1px', background: DIVIDER_LINE }} />
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', alignItems: 'center', padding: '24px 16px', fontSize: '13px', color: 'rgba(255,255,255,0.45)', fontWeight: 400, lineHeight: 1.6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center', alignItems: 'center', padding: '24px 16px', fontSize: '13px', color: TEXT_MUTED, fontWeight: 400, lineHeight: 1.6 }}>
           <div>© 2026 LensTrybe</div>
           <a href="mailto:connect@lenstrybe.com" style={footerLinkStyle}>connect@lenstrybe.com</a>
           <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>

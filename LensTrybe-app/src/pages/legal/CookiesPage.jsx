@@ -21,7 +21,7 @@ export default function CookiesPage() {
   ]
 
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-cookies-page">
+    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-cookies-page">
       <style>{`
         @media (max-width: 767px) {
           .legal-cookies-page h1 { font-size: 24px !important; }
@@ -29,18 +29,18 @@ export default function CookiesPage() {
           .legal-cookies-page p, .legal-cookies-page div, .legal-cookies-page span { font-size: max(14px, 0.875rem) !important; }
         }
       `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: '#ccc', lineHeight: 1.8 }}>
-        <h1 style={{ color: '#fff', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Cookies Policy</h1>
-        <p style={{ color: '#39ff14', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
+      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
+        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Cookies Policy</h1>
+        <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
         {sections.map((section, i) => (
           <div key={i} style={{ marginBottom: '40px' }}>
-            <h2 style={{ color: '#fff', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
+            <h2 style={{ color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(20,17,26,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
             {section.body.split('\n\n').map((para, j) => (
               <p key={j} style={{ marginBottom: '12px', whiteSpace: 'pre-line' }}>{para}</p>
             ))}
           </div>
         ))}
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(255,255,255,0.08)', fontSize: '13px', color: '#666' }}>
+        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(20,17,26,0.08)', fontSize: '13px', color: 'var(--text-muted)' }}>
           <p>LensTrybe · Queensland, Australia · lenstrybe.com</p>
           <p>© 2026 LensTrybe. All rights reserved.</p>
         </div>
