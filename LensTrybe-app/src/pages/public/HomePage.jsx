@@ -65,29 +65,41 @@ const GLASS_CARD_AURORA = {
   overflow: 'hidden',
 };
 
+/* Clean frosted-glass card with a thin brand gradient accent line along the top.
+   Translucent + strong blur so the drifting tiles read softly through it. */
+const GLASS_CARD_ACCENT = {
+  backdropFilter: 'blur(26px) saturate(150%)',
+  WebkitBackdropFilter: 'blur(26px) saturate(150%)',
+  background: 'linear-gradient(90deg, #1DB954, #d4537e 55%, #7f77dd) top/100% 3px no-repeat, linear-gradient(160deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.6) 100%)',
+  border: '1px solid rgba(20,17,26,0.06)',
+  borderRadius: '16px',
+  boxShadow: '0 14px 34px -18px rgba(40,30,60,0.22), inset 0 1px 0 rgba(255,255,255,0.7)',
+  overflow: 'hidden',
+};
+
 const DIVIDER_GRADIENT = 'linear-gradient(90deg, transparent, rgba(20,17,26,0.08), transparent)';
 
 const TILE_GRADS = [
-  'linear-gradient(135deg,#3a4a5c,#6b8299)',
-  'linear-gradient(135deg,#c9a48a,#8a6f5e)',
-  'linear-gradient(135deg,#7a8b6f,#4d5f4a)',
-  'linear-gradient(135deg,#d4a5b5,#a76d84)',
-  'linear-gradient(135deg,#b0a89c,#847c70)',
+  'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
+  'linear-gradient(135deg,#f3bcd6,#e894bd)',
+  'linear-gradient(135deg,#cdbcf3,#a98be8)',
+  'linear-gradient(135deg,#aee6cb,#7fd0aa)',
+  'linear-gradient(135deg,#f6ccb0,#efab82)',
 ];
 
 const TILE_COLUMNS = [
-  { dir: 'up', dur: 30, start: 0 },
-  { dir: 'down', dur: 26, start: 3 },
-  { dir: 'up', dur: 34, start: 1 },
-  { dir: 'down', dur: 30, start: 4 },
-  { dir: 'up', dur: 28, start: 2 },
+  { dir: 'up', dur: 120, start: 0 },
+  { dir: 'down', dur: 104, start: 3 },
+  { dir: 'up', dur: 136, start: 1 },
+  { dir: 'down', dur: 120, start: 4 },
+  { dir: 'up', dur: 112, start: 2 },
 ];
 
 function DriftingTiles() {
   return (
     <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', padding: '8px', zIndex: 0 }}>
       {TILE_COLUMNS.map((col, ci) => {
-        const seq = Array.from({ length: 6 }, (_, i) => TILE_GRADS[(col.start + i) % TILE_GRADS.length]);
+        const seq = Array.from({ length: 24 }, (_, i) => TILE_GRADS[(col.start + i) % TILE_GRADS.length]);
         const tiles = [...seq, ...seq];
         return (
           <div key={ci} style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
@@ -371,19 +383,31 @@ export default function HomePage() {
     <div style={{ background: 'transparent', color: TEXT_PRIMARY, fontFamily: FONT, overflowX: 'hidden' }}>
       {showEntrance && <CinematicEntrance onComplete={() => setShowEntrance(false)} />}
 
-      {/* HERO */}
-      <section style={{
-        position: 'relative', overflow: 'hidden',
-        minHeight: isMobile ? 'auto' : '520px',
-        padding: isMobile ? '56px 20px 56px' : '0',
-      }}>
+      {/* CONTINUOUS TILE FIELD — one drifting field behind hero + mid sections */}
+      <div style={{ position: 'relative', overflow: 'hidden' }}>
         {!isMobile && <DriftingTiles />}
+        {/* hero clearing — confined to the top so the headline stays readable */}
+        {!isMobile && (
+          <div aria-hidden style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: '560px', zIndex: 1,
+            background: `radial-gradient(ellipse 52% 78% at 24% 46%, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 40%, rgba(${PAGE_TONE},0.3) 70%, rgba(${PAGE_TONE},0) 100%)`,
+          }} />
+        )}
+        {/* whole-field downward fade — dissolves the tiles to page colour toward the bottom */}
         {!isMobile && (
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
-            background: `radial-gradient(ellipse 52% 82% at 24% 50%, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 40%, rgba(${PAGE_TONE},0.3) 70%, rgba(${PAGE_TONE},0) 100%)`,
+            background: `linear-gradient(180deg, rgba(${PAGE_TONE},0) 0%, rgba(${PAGE_TONE},0) 42%, rgba(${PAGE_TONE},0.4) 66%, rgba(${PAGE_TONE},0.85) 88%, rgba(${PAGE_TONE},1) 100%)`,
           }} />
         )}
+        <div style={{ position: 'relative', zIndex: 2 }}>
+
+      {/* HERO */}
+      <section style={{
+        position: 'relative',
+        minHeight: isMobile ? 'auto' : '520px',
+        padding: isMobile ? '56px 20px 56px' : '0',
+      }}>
 
         <div style={{
           position: 'relative', zIndex: 2,
@@ -429,8 +453,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div style={{ height: '1px', width: '100%', maxWidth: '960px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
-
       {/* VALUE PROPS */}
       <section style={{ padding: isMobile ? '56px 16px 72px' : '80px 24px 96px', position: 'relative' }}>
         <div style={{ maxWidth: '960px', margin: '0 auto', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' }}>
@@ -439,7 +461,7 @@ export default function HomePage() {
             { title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
             { title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
           ].map(item => (
-            <div key={item.title} style={{ ...GLASS_CARD_AURORA, padding: '28px 24px', fontFamily: FONT }}>
+            <div key={item.title} style={{ ...GLASS_CARD_ACCENT, padding: '28px 24px', fontFamily: FONT }}>
               <div style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.4, color: TEXT_PRIMARY, marginBottom: '10px' }}>{item.title}</div>
               <div style={{ fontSize: '14px', fontWeight: 400, color: TEXT_SECONDARY, lineHeight: 1.6 }}>{item.desc}</div>
             </div>
@@ -493,8 +515,8 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
-                ...GLASS_CARD_AURORA,
-                borderRadius: '14px',
+                ...GLASS_CARD_ACCENT,
+                borderRadius: '16px',
                 padding: isMobile ? '16px 12px' : '24px 16px',
                 cursor: 'pointer', textAlign: 'left', color: TEXT_PRIMARY,
                 minHeight: isMobile ? '140px' : '160px', display: 'flex', flexDirection: 'column',
@@ -507,8 +529,8 @@ export default function HomePage() {
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = GLASS_CARD.boxShadow;
-                e.currentTarget.style.borderColor = 'rgba(20,17,26,0.07)';
+                e.currentTarget.style.boxShadow = GLASS_CARD_ACCENT.boxShadow;
+                e.currentTarget.style.borderColor = 'rgba(20,17,26,0.06)';
               }}
               >
                 <div style={{
@@ -526,10 +548,12 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+        </div>
+      </div>
 
       <style>{`
-        @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-864px); } }
-        @keyframes ltHeroDown { from { transform: translateY(-864px); } to { transform: translateY(0); } }
+        @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-3456px); } }
+        @keyframes ltHeroDown { from { transform: translateY(-3456px); } to { transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
       `}</style>

@@ -2,11 +2,11 @@ import { useEffect, useRef, useState } from 'react'
 import { LensMark } from './BrandLogo'
 
 const TILE_GRADS = [
-  'linear-gradient(135deg,#3a4a5c,#6b8299)',
-  'linear-gradient(135deg,#c9a48a,#8a6f5e)',
-  'linear-gradient(135deg,#7a8b6f,#4d5f4a)',
-  'linear-gradient(135deg,#d4a5b5,#a76d84)',
-  'linear-gradient(135deg,#b0a89c,#847c70)',
+  'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
+  'linear-gradient(135deg,#f3bcd6,#e894bd)',
+  'linear-gradient(135deg,#cdbcf3,#a98be8)',
+  'linear-gradient(135deg,#aee6cb,#7fd0aa)',
+  'linear-gradient(135deg,#f6ccb0,#efab82)',
 ]
 
 const TILE_COLUMNS = [
