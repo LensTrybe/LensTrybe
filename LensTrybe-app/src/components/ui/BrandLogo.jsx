@@ -64,6 +64,8 @@ export default function BrandLogo({
               fontFamily: "'Instrument Serif', Georgia, serif",
               fontStyle: 'italic',
               fontWeight: 400,
+              display: 'inline-block',
+              paddingRight: '0.16em',
               backgroundImage: 'linear-gradient(120deg, #1DB954, #d4537e 60%, #7f77dd)',
               WebkitBackgroundClip: 'text',
               backgroundClip: 'text',

@@ -292,7 +292,7 @@ export default function CinematicEntrance({ onComplete }) {
         </div>
 
         <div style={{ ...baseStagger(1400, 40), marginTop: 26, fontSize: 46, fontWeight: 800, letterSpacing: '-0.02em', color: '#14111a', lineHeight: 1 }}>
-          Lens<span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: 'italic', fontWeight: 400, backgroundImage: 'linear-gradient(120deg, #1DB954, #d4537e 60%, #7f77dd)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Trybe</span>
+          Lens<span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: 'italic', fontWeight: 400, display: 'inline-block', paddingRight: '0.16em', backgroundImage: 'linear-gradient(120deg, #1DB954, #d4537e 60%, #7f77dd)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Trybe</span>
         </div>
 
         <div
