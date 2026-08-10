@@ -381,7 +381,7 @@ export default function HomePage() {
         {!isMobile && (
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
-            background: `linear-gradient(90deg, rgba(${PAGE_TONE},1) 0%, rgba(${PAGE_TONE},1) 32%, rgba(${PAGE_TONE},0.82) 50%, rgba(${PAGE_TONE},0.34) 78%, rgba(${PAGE_TONE},0.1) 100%)`,
+            background: `radial-gradient(ellipse 52% 82% at 24% 50%, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 40%, rgba(${PAGE_TONE},0.3) 70%, rgba(${PAGE_TONE},0) 100%)`,
           }} />
         )}
 
