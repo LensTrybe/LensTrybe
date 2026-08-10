@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
+import BrandLogo from '../ui/BrandLogo'
 
 const FONT = "'Inter', sans-serif"
 
@@ -201,7 +202,7 @@ export default function PublicLayout() {
       fontWeight: 700,
       letterSpacing: '-0.03em',
       color: TEXT_PRIMARY, cursor: 'pointer',
-      display: 'flex', alignItems: 'baseline', gap: '9px',
+      display: 'flex', alignItems: 'center', gap: '10px',
       lineHeight: 1.6,
     },
     tagline: {
@@ -304,7 +305,7 @@ export default function PublicLayout() {
         <div style={{ position: 'relative', zIndex: 1 }}>
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, ...GLASS_NAV, padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={styles.logo} onClick={() => navigate('/')}>
-            <span>LensTrybe</span>
+            <BrandLogo markSize={24} fontSize={17} />
           </div>
           <button type="button" style={styles.mobileMenuButton} onClick={() => setMobileMenuOpen(prev => !prev)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}>
             <HamburgerIcon open={mobileMenuOpen} />
@@ -379,7 +380,7 @@ export default function PublicLayout() {
       <nav style={styles.nav}>
         {/* Left: Logo */}
         <div style={styles.logo} onClick={() => navigate('/')}>
-          <span>LensTrybe</span>
+          <BrandLogo markSize={26} fontSize={18} />
           <span style={styles.tagline}>Connect. Capture. Create.</span>
         </div>
 

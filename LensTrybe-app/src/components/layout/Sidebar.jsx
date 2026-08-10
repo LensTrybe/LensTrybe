@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { supabase } from '../../lib/supabaseClient'
+import BrandLogo from '../ui/BrandLogo'
 
 const nav = [
   { label: 'Dashboard', path: '/dashboard', icon: '⊞', section: null },
@@ -225,7 +226,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     >
       <aside style={{ ...styles.sidebar, width: isMobile ? '100%' : styles.sidebar.width, maxWidth: isMobile ? '100%' : undefined, boxSizing: 'border-box' }}>
           <div style={styles.logo} onClick={() => navigate('/')}>
-            <span style={styles.logoText}>LensTrybe</span>
+            <BrandLogo markSize={24} fontSize={18} showWordmark={!collapsed} />
             {!isMobile && (
               <button style={styles.collapseBtn} onClick={e => { e.stopPropagation(); setCollapsed(p => !p) }}>
                 {collapsed ? '→' : '←'}

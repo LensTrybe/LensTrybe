@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { LensMark } from './BrandLogo'
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#3a4a5c,#6b8299)',
@@ -265,22 +266,7 @@ export default function CinematicEntrance({ onComplete }) {
         />
 
         <div style={{ ...baseStagger(1300), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <div
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: '50%',
-              border: '1.5px solid rgba(29,185,84,0.4)',
-              background: 'rgba(29,185,84,0.08)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
-          >
-            <div style={{ width: 12, height: 12, borderRadius: '50%', border: '1px solid rgba(20,17,26,0.25)' }} />
-            <div style={{ width: 4, height: 4, borderRadius: '50%', background: '#1DB954', position: 'absolute' }} />
-          </div>
+          <LensMark size={34} />
           <div
             style={{
               fontSize: 9,
@@ -306,7 +292,7 @@ export default function CinematicEntrance({ onComplete }) {
         </div>
 
         <div style={{ ...baseStagger(1400, 40), marginTop: 26, fontSize: 46, fontWeight: 800, letterSpacing: '-0.02em', color: '#14111a', lineHeight: 1 }}>
-          Lens<span style={{ color: '#1DB954' }}>Trybe</span>
+          Lens<span style={{ fontFamily: "'Instrument Serif', Georgia, serif", fontStyle: 'italic', fontWeight: 400, backgroundImage: 'linear-gradient(120deg, #1DB954, #d4537e 60%, #7f77dd)', WebkitBackgroundClip: 'text', backgroundClip: 'text', WebkitTextFillColor: 'transparent', color: 'transparent' }}>Trybe</span>
         </div>
 
         <div

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="ltGlass" cx="35%" cy="30%" r="75%">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.3" stop-color="#c1e9d4"/>
+      <stop offset="0.7" stop-color="#f4aecb"/>
+      <stop offset="1" stop-color="#c1acf2"/>
+    </radialGradient>
+    <linearGradient id="ltBarrel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#7f9fb8"/>
+      <stop offset="0.5" stop-color="#a76d84"/>
+      <stop offset="1" stop-color="#7f77dd"/>
+    </linearGradient>
+  </defs>
+  <circle cx="32" cy="32" r="29" fill="none" stroke="url(#ltBarrel)" stroke-width="6"/>
+  <circle cx="32" cy="32" r="19" fill="url(#ltGlass)"/>
+  <ellipse cx="26" cy="25" rx="7" ry="4.5" fill="#ffffff" opacity="0.65"/>
+</svg>
