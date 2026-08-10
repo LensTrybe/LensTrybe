@@ -16,7 +16,7 @@ import {
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
 
-const STEPS = ['Plan', 'Account', 'Skills', 'Specialties', 'Location', 'Credentials', 'Photo', 'Review']
+const STEPS = ['Plan', 'Account']
 
 const TIERS = [
   { id: 'basic', name: 'Basic', monthly: 0, annual: 0, description: 'Get discovered for free', color: 'var(--border-default)' },
@@ -346,7 +346,7 @@ export default function SignupPage() {
         console.log('send-welcome-email failed', welcomeEmailError)
       }
 
-      if (form.tier === 'expert' && isFoundingSignup) {
+      if (form.tier === 'expert' && (isFoundingSignup || offerActive)) {
         const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-founding-checkout', {
           body: { userId, email, interval: form.billingInterval }
         })

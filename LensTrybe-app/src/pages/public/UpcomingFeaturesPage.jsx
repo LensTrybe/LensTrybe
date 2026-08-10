@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import Button from '../../components/ui/Button'
 import {
   GLASS_CARD,
+  GLASS_CARD_AURORA,
   GLASS_NATIVE_FIELD,
   TYPO,
 } from '../../lib/glassTokensLight'
@@ -158,7 +159,7 @@ export default function UpcomingFeaturesPage() {
                   type="button"
                   onClick={() => setSelectedSkill(skill.key)}
                   style={{
-                    ...GLASS_CARD,
+                    ...GLASS_CARD_AURORA,
                     borderRadius: '12px',
                     padding: isMobile ? '16px 12px' : '24px 16px',
                     cursor: 'pointer',
@@ -170,7 +171,7 @@ export default function UpcomingFeaturesPage() {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <div style={{ width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px', background: 'rgba(20,17,26,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: 'var(--text-primary)' }}>
+                  <div style={{ width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', borderRadius: '12px', background: '#ffffff', border: '1px solid rgba(20,17,26,0.05)', boxShadow: '0 6px 16px -6px rgba(40,30,60,0.22)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '12px' : '16px', color: 'var(--text-primary)' }}>
                     {skill.icon}
                   </div>
                   <div style={{ fontSize: isMobile ? '14px' : '15px', marginBottom: '4px', lineHeight: 1.35, ...TYPO.heading }}>{skill.label}</div>

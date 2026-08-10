@@ -12,6 +12,12 @@ export const GLASS_CARD = {
   boxShadow: '0 10px 30px -12px rgba(40,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.85)',
 }
 
+export const GLASS_CARD_AURORA = {
+  ...GLASS_CARD,
+  background: 'radial-gradient(circle at 100% 0%, rgba(29,185,84,0.16), transparent 42%), radial-gradient(circle at 84% 8%, rgba(255,45,120,0.12), transparent 40%), linear-gradient(160deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%)',
+  overflow: 'hidden',
+}
+
 export const GLASS_CARD_GREEN = {
   backdropFilter: 'blur(22px) saturate(150%)',
   WebkitBackdropFilter: 'blur(22px) saturate(150%)',

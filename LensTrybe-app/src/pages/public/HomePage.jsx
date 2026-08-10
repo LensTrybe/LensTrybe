@@ -59,6 +59,12 @@ const GLASS_CARD_GREEN = {
   boxShadow: '0 12px 34px -12px rgba(29,120,70,0.2), inset 0 1px 0 rgba(255,255,255,0.85)',
 };
 
+const GLASS_CARD_AURORA = {
+  ...GLASS_CARD,
+  background: 'radial-gradient(circle at 100% 0%, rgba(29,185,84,0.16), transparent 42%), radial-gradient(circle at 84% 8%, rgba(255,45,120,0.12), transparent 40%), linear-gradient(160deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.6) 100%)',
+  overflow: 'hidden',
+};
+
 const DIVIDER_GRADIENT = 'linear-gradient(90deg, transparent, rgba(20,17,26,0.08), transparent)';
 
 const TILE_GRADS = [
@@ -433,7 +439,7 @@ export default function HomePage() {
             { title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
             { title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
           ].map(item => (
-            <div key={item.title} style={{ ...GLASS_CARD, padding: '28px 24px', fontFamily: FONT }}>
+            <div key={item.title} style={{ ...GLASS_CARD_AURORA, padding: '28px 24px', fontFamily: FONT }}>
               <div style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.4, color: TEXT_PRIMARY, marginBottom: '10px' }}>{item.title}</div>
               <div style={{ fontSize: '14px', fontWeight: 400, color: TEXT_SECONDARY, lineHeight: 1.6 }}>{item.desc}</div>
             </div>
@@ -487,7 +493,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
             {CATEGORIES.map(cat => (
               <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
-                ...GLASS_CARD,
+                ...GLASS_CARD_AURORA,
                 borderRadius: '14px',
                 padding: isMobile ? '16px 12px' : '24px 16px',
                 cursor: 'pointer', textAlign: 'left', color: TEXT_PRIMARY,
@@ -506,9 +512,10 @@ export default function HomePage() {
               }}
               >
                 <div style={{
-                  width: isMobile ? '36px' : '40px', height: isMobile ? '36px' : '40px', borderRadius: '10px',
-                  background: 'rgba(20,17,26,0.04)', border: '1px solid rgba(20,17,26,0.07)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '10px' : '14px', color: TEXT_PRIMARY,
+                  width: isMobile ? '38px' : '44px', height: isMobile ? '38px' : '44px', borderRadius: '12px',
+                  background: '#ffffff', border: '1px solid rgba(20,17,26,0.05)',
+                  boxShadow: '0 6px 16px -6px rgba(40,30,60,0.22)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: isMobile ? '12px' : '16px', color: TEXT_PRIMARY,
                 }}>
                   {CATEGORY_ICONS[cat.key]}
                 </div>
