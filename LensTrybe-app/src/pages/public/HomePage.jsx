@@ -2,17 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import CinematicEntrance from '../../components/ui/CinematicEntrance';
+import { LIQUID_GLASS } from '../../lib/glassTokensLight';
 
 const CATEGORIES = [
-  { key: 'photographer', label: 'Photographers' },
-  { key: 'videographer', label: 'Videographers' },
-  { key: 'drone_pilot', label: 'Drone Pilots' },
-  { key: 'video_editor', label: 'Video Editors' },
-  { key: 'photo_editor', label: 'Photo Editors' },
-  { key: 'social_media_manager', label: 'Social Media Managers' },
-  { key: 'hair_makeup_artist', label: 'Hair & Makeup Artists' },
-  { key: 'ugc_creator', label: 'UGC Creators' },
+  { key: 'photographer', value: 'Photographer', label: 'Photographers' },
+  { key: 'videographer', value: 'Videographer', label: 'Videographers' },
+  { key: 'drone_pilot', value: 'Drone Pilot', label: 'Drone Pilots' },
+  { key: 'video_editor', value: 'Video Editor', label: 'Video Editors' },
+  { key: 'photo_editor', value: 'Photo Editor', label: 'Photo Editors' },
+  { key: 'social_media_manager', value: 'Social Media Manager', label: 'Social Media Managers' },
+  { key: 'hair_makeup_artist', value: 'Hair & Makeup Artist', label: 'Hair & Makeup Artists' },
+  { key: 'ugc_creator', value: 'UGC Creator', label: 'UGC Creators' },
 ];
+
+const AU_STATES = ['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'];
 
 const IconCamera = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>);
 const IconVideo = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>);
@@ -42,21 +45,23 @@ const TEXT_MUTED = '#8a8995';
 const PAGE_TONE = '246,245,243';
 
 const GLASS_CARD = {
-  backdropFilter: 'blur(22px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
-  background: 'linear-gradient(160deg, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.55) 100%)',
-  border: '1px solid rgba(20,17,26,0.07)',
+  backdropFilter: 'blur(14px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+  background: 'linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.32) 100%)',
+  border: '1px solid rgba(255,255,255,0.5)',
+  borderTop: '1px solid rgba(255,255,255,0.75)',
   borderRadius: '20px',
-  boxShadow: '0 10px 30px -12px rgba(40,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.85)',
+  boxShadow: '0 12px 34px -16px rgba(40,30,60,0.18), inset 0 1px 0 rgba(255,255,255,0.5)',
 };
 
 const GLASS_CARD_GREEN = {
-  backdropFilter: 'blur(22px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(22px) saturate(150%)',
-  background: 'linear-gradient(160deg, rgba(29,185,84,0.12) 0%, rgba(255,255,255,0.55) 100%)',
-  border: '1px solid rgba(29,185,84,0.28)',
+  backdropFilter: 'blur(14px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+  background: 'linear-gradient(160deg, rgba(29,185,84,0.16) 0%, rgba(255,255,255,0.3) 100%)',
+  border: '1px solid rgba(29,185,84,0.3)',
+  borderTop: '1px solid rgba(255,255,255,0.6)',
   borderRadius: '20px',
-  boxShadow: '0 12px 34px -12px rgba(29,120,70,0.2), inset 0 1px 0 rgba(255,255,255,0.85)',
+  boxShadow: '0 12px 34px -14px rgba(29,120,70,0.2), inset 0 1px 0 rgba(255,255,255,0.55)',
 };
 
 const GLASS_CARD_AURORA = {
@@ -68,16 +73,41 @@ const GLASS_CARD_AURORA = {
 /* Clean frosted-glass card with a thin brand gradient accent line along the top.
    Translucent + strong blur so the drifting tiles read softly through it. */
 const GLASS_CARD_ACCENT = {
-  backdropFilter: 'blur(26px) saturate(150%)',
-  WebkitBackdropFilter: 'blur(26px) saturate(150%)',
-  background: 'linear-gradient(90deg, #1DB954, #d4537e 55%, #7f77dd) top/100% 3px no-repeat, linear-gradient(160deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.6) 100%)',
-  border: '1px solid rgba(20,17,26,0.06)',
+  backdropFilter: 'blur(14px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+  background: 'linear-gradient(90deg, #1DB954, #d4537e 55%, #7f77dd) top/100% 3px no-repeat, linear-gradient(160deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.32) 100%)',
+  border: '1px solid rgba(255,255,255,0.5)',
   borderRadius: '16px',
-  boxShadow: '0 14px 34px -18px rgba(40,30,60,0.22), inset 0 1px 0 rgba(255,255,255,0.7)',
+  boxShadow: '0 14px 34px -18px rgba(40,30,60,0.2), inset 0 1px 0 rgba(255,255,255,0.55)',
   overflow: 'hidden',
 };
 
+/* Liquid-glass surface for the many content cards. Same glossy look as the hero
+   LIQUID_GLASS (specular sheen + bright bevel + clarity) but with a cheap blur
+   instead of the GPU-heavy #liquidLens refraction, since these repeat 10+ times. */
+const LIQUID_GLASS_CARD = {
+  ...LIQUID_GLASS,
+  backdropFilter: 'blur(5px) saturate(175%) brightness(1.04)',
+  WebkitBackdropFilter: 'blur(5px) saturate(175%) brightness(1.04)',
+  background:
+    'linear-gradient(125deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.05) 56%), ' +
+    'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.18) 100%)',
+};
+
 const DIVIDER_GRADIENT = 'linear-gradient(90deg, transparent, rgba(20,17,26,0.08), transparent)';
+
+const HERO_FIELD = {
+  flex: '1 1 150px', minWidth: 0,
+  background: 'rgba(255,255,255,0.72)',
+  border: '1px solid rgba(20,17,26,0.1)',
+  borderRadius: '11px',
+  padding: '12px 13px',
+  fontSize: '14px',
+  color: TEXT_PRIMARY,
+  fontFamily: FONT,
+  outline: 'none',
+  colorScheme: 'light',
+};
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
@@ -87,31 +117,105 @@ const TILE_GRADS = [
   'linear-gradient(135deg,#f6ccb0,#efab82)',
 ];
 
-const TILE_COLUMNS = [
-  { dir: 'up', dur: 120, start: 0 },
-  { dir: 'down', dur: 104, start: 3 },
-  { dir: 'up', dur: 136, start: 1 },
-  { dir: 'down', dur: 120, start: 4 },
-  { dir: 'up', dur: 112, start: 2 },
-];
+const TILE_GAP = 10;
+const TILE_SINGLE_H = 210;      // big square
+const TILE_PAIR_H = 100;        // each of a side-by-side pair
+// per-column vertical rhythm: 's' = one big square, 'p' = two half-squares side by side
+const TILE_PATTERN = ['s', 'p', 's', 'p', 'p', 's'];
+// seamless loop distance = height of exactly one pattern (incl. gaps)
+const TILE_LOOP = TILE_PATTERN.reduce((sum, c) => sum + (c === 's' ? TILE_SINGLE_H : TILE_PAIR_H) + TILE_GAP, 0);
 
-function DriftingTiles() {
+function MosaicColumn({ index }) {
+  const dir = index % 2 === 0 ? 'up' : 'down';
+  const dur = 44 + (index % 5) * 7;                 // 44–72s, varied per column
+  const rot = index % TILE_PATTERN.length;
+  const rotated = [...TILE_PATTERN.slice(rot), ...TILE_PATTERN.slice(0, rot)];
+  const cells = Array.from({ length: 6 }).flatMap(() => rotated);   // repeat to fill tall fields
+  let g = index * 2;
   return (
-    <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '8px', padding: '8px', zIndex: 0 }}>
-      {TILE_COLUMNS.map((col, ci) => {
-        const seq = Array.from({ length: 24 }, (_, i) => TILE_GRADS[(col.start + i) % TILE_GRADS.length]);
-        const tiles = [...seq, ...seq];
-        return (
-          <div key={ci} style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-            <div style={{ display: 'flex', flexDirection: 'column', willChange: 'transform', animation: `${col.dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${col.dur}s linear infinite` }}>
-              {tiles.map((bg, i) => (
-                <div key={i} style={{ height: '136px', marginBottom: '8px', borderRadius: '11px', background: bg }} />
-              ))}
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', willChange: 'transform', animation: `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` }}>
+        {cells.map((c, i) => {
+          if (c === 's') {
+            const bg = TILE_GRADS[g++ % TILE_GRADS.length];
+            return <div key={i} style={{ height: `${TILE_SINGLE_H}px`, marginBottom: `${TILE_GAP}px`, borderRadius: '12px', background: bg }} />;
+          }
+          const a = TILE_GRADS[g++ % TILE_GRADS.length];
+          const b = TILE_GRADS[g++ % TILE_GRADS.length];
+          return (
+            <div key={i} style={{ display: 'flex', gap: `${TILE_GAP}px`, marginBottom: `${TILE_GAP}px` }}>
+              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: a }} />
+              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: b }} />
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
+  );
+}
+
+function DriftingTiles({ colCount = 8 }) {
+  return (
+    <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0 }}>
+      {Array.from({ length: colCount }).map((_, i) => (
+        <MosaicColumn key={i} index={i} />
+      ))}
+    </div>
+  );
+}
+
+function LiquidSelect({ value, onChange, options, placeholder, ariaLabel }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+  useEffect(() => {
+    function onDoc(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, []);
+  const selected = options.find(o => o.value === value);
+  return (
+    <div ref={ref} style={{ position: 'relative', flex: '1 1 150px', minWidth: 0 }}>
+      <button type="button" aria-label={ariaLabel} onClick={() => setOpen(o => !o)}
+        style={{ ...HERO_FIELD, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', cursor: 'pointer', textAlign: 'left' }}>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: selected && selected.value ? TEXT_PRIMARY : TEXT_MUTED }}>{selected ? selected.label : placeholder}</span>
+        <span style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease', color: TEXT_MUTED, fontSize: '10px', flexShrink: 0 }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 30, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(22px) saturate(140%)', WebkitBackdropFilter: 'blur(22px) saturate(140%)', border: '1px solid rgba(20,17,26,0.08)', borderRadius: '16px', boxShadow: '0 24px 54px -16px rgba(40,30,60,0.32)', padding: '6px', maxHeight: '264px', overflowY: 'auto' }}>
+          {options.map(o => (
+            <div key={o.value || 'all'} onClick={() => { onChange(o.value); setOpen(false); }}
+              style={{ padding: '10px 12px', borderRadius: '11px', cursor: 'pointer', fontSize: '14px', fontFamily: FONT, color: o.value === value ? GREEN : TEXT_PRIMARY, fontWeight: o.value === value ? 600 : 400, background: o.value === value ? 'rgba(29,185,84,0.12)' : 'transparent', transition: 'background 0.12s ease' }}
+              onMouseEnter={(e) => { if (o.value !== value) e.currentTarget.style.background = 'rgba(20,17,26,0.06)'; }}
+              onMouseLeave={(e) => { if (o.value !== value) e.currentTarget.style.background = 'transparent'; }}>
+              {o.label}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function LiquidPill({ onClick, children, primary }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button type="button" onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+      style={{
+        ...LIQUID_GLASS,
+        borderRadius: '999px',
+        padding: '15px 22px',
+        fontFamily: FONT, fontWeight: 600, fontSize: '14px', color: TEXT_PRIMARY, cursor: 'pointer',
+        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+        flex: '1 1 0', whiteSpace: 'nowrap',
+        background: primary
+          ? 'linear-gradient(125deg, rgba(255,255,255,0.55) 0%, rgba(255,255,255,0.06) 26%, rgba(255,255,255,0) 52%), linear-gradient(135deg, rgba(29,185,84,0.34) 0%, rgba(29,185,84,0.14) 100%)'
+          : LIQUID_GLASS.background,
+        transform: hover ? 'translateY(-2px)' : 'none',
+        transition: 'transform 0.18s ease, box-shadow 0.18s ease',
+        boxShadow: hover
+          ? '0 30px 64px -18px rgba(40,30,60,0.5), inset 0 1px 1px rgba(255,255,255,0.95), inset 0 -12px 28px rgba(255,255,255,0.22)'
+          : LIQUID_GLASS.boxShadow,
+      }}>{children}</button>
   );
 }
 
@@ -333,10 +437,31 @@ export default function HomePage() {
   const [eliteCreatives, setEliteCreatives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
+  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8));
+
+  // Hero "Find a Creative" search
+  const [hType, setHType] = useState('');
+  const [hState, setHState] = useState('');
+  const [hCity, setHCity] = useState('');
+  const [hName, setHName] = useState('');
+
+  const handleHeroSearch = (e) => {
+    if (e) e.preventDefault();
+    const p = new URLSearchParams();
+    if (hType) p.set('type', hType);
+    if (hState) p.set('state', hState);
+    if (hCity.trim()) p.set('city', hCity.trim());
+    if (hName.trim()) p.set('name', hName.trim());
+    const qs = p.toString();
+    navigate(`/creatives${qs ? `?${qs}` : ''}`);
+  };
 
   useEffect(() => { fetchCreatives(); }, []);
   useEffect(() => {
-    function handleResize() { setIsMobile(window.innerWidth < 768); }
+    function handleResize() {
+      setIsMobile(window.innerWidth < 768);
+      setColCount(Math.max(6, Math.ceil(window.innerWidth / 240)));
+    }
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -381,11 +506,19 @@ export default function HomePage() {
 
   return (
     <div style={{ background: 'transparent', color: TEXT_PRIMARY, fontFamily: FONT, overflowX: 'hidden' }}>
+      {/* Liquid-glass refraction filter — lenses/distorts whatever sits behind any LIQUID_GLASS surface */}
+      <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
+        <filter id="liquidLens" x="-25%" y="-25%" width="150%" height="150%" colorInterpolationFilters="sRGB">
+          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.011" numOctaves="2" seed="7" result="turb" />
+          <feGaussianBlur in="turb" stdDeviation="2.2" result="soft" />
+          <feDisplacementMap in="SourceGraphic" in2="soft" scale="22" xChannelSelector="R" yChannelSelector="G" />
+        </filter>
+      </svg>
       {showEntrance && <CinematicEntrance onComplete={() => setShowEntrance(false)} />}
 
       {/* CONTINUOUS TILE FIELD — one drifting field behind hero + mid sections */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {!isMobile && <DriftingTiles />}
+        {!isMobile && <DriftingTiles colCount={colCount} />}
         {/* hero clearing — confined to the top so the headline stays readable */}
         {!isMobile && (
           <div aria-hidden style={{
@@ -411,44 +544,64 @@ export default function HomePage() {
 
         <div style={{
           position: 'relative', zIndex: 2,
-          maxWidth: isMobile ? '100%' : '620px',
-          padding: isMobile ? '0' : '72px 40px',
-          textAlign: isMobile ? 'center' : 'left',
-          margin: isMobile ? '0 auto' : '0',
+          display: isMobile ? 'block' : 'flex',
+          alignItems: 'flex-start', justifyContent: 'flex-start',
+          gap: 'clamp(24px, 4vw, 72px)',
+          padding: isMobile ? '0' : 'clamp(72px, 6vw, 120px) clamp(40px, 4.5vw, 88px)',
         }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: '11px', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: '22px' }}>
-            <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: GREEN, display: 'inline-block', boxShadow: '0 0 6px rgba(29,185,84,0.6)' }} />
-            Australia's creative platform · Live
+          {/* LEFT — copy */}
+          <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : '620px', textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : '0' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: isMobile ? '11px' : 'clamp(11px, 0.85vw, 14px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: '22px' }}>
+              <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: GREEN, display: 'inline-block', boxShadow: '0 0 6px rgba(29,185,84,0.6)' }} />
+              Australia's creative platform · Live
+            </div>
+
+            <h1 style={{
+              fontSize: isMobile ? 'clamp(38px, 12vw, 52px)' : 'clamp(52px, 4.6vw, 88px)',
+              fontWeight: 600, lineHeight: 1.04, margin: '0 0 22px',
+              letterSpacing: '-0.02em', fontFamily: FONT, color: TEXT_PRIMARY,
+            }}>
+              Connect. Capture.<br />
+              <span style={{ fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic', fontSize: '1.16em', letterSpacing: 0 }}>Create.</span>
+            </h1>
+
+            <p style={{ fontSize: isMobile ? '16px' : 'clamp(16px, 1.15vw, 21px)', color: TEXT_SECONDARY, maxWidth: isMobile ? '440px' : 'clamp(440px, 34vw, 560px)', lineHeight: 1.6, fontWeight: 400, margin: isMobile ? '0 auto 30px' : '0 0 30px', fontFamily: FONT }}>
+              Australia's home for visual creatives. No commissions, ever. Your marketplace profile, invoicing, contracts, portfolio, and client delivery. One subscription. Everything you need to run your creative business.
+            </p>
+
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '18px', ...GLASS_CARD, borderRadius: '13px', padding: '13px 22px' }}>
+              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>0%</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Commission</div></div>
+              <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
+              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>8</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Creative types</div></div>
+              <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
+              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>AU</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Australia-wide</div></div>
+            </div>
           </div>
 
-          <h1 style={{
-            fontSize: isMobile ? 'clamp(38px, 12vw, 52px)' : 'clamp(48px, 5.5vw, 56px)',
-            fontWeight: 600, lineHeight: 1.04, margin: '0 0 22px',
-            letterSpacing: '-0.02em', fontFamily: FONT, color: TEXT_PRIMARY,
-          }}>
-            Connect. Capture.<br />
-            <span style={{ fontFamily: SERIF, fontWeight: 400, fontStyle: 'italic', fontSize: '1.16em', letterSpacing: 0 }}>Create.</span>
-          </h1>
+          {/* RIGHT — liquid glass search + pills, centred in the open space, top-aligned with the headline */}
+          <div style={{ flex: isMobile ? '1 1 auto' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : 'auto', marginTop: isMobile ? '32px' : '42px', display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'stretch' : 'center', gap: '14px' }}>
+            <form onSubmit={handleHeroSearch} style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 5, padding: isMobile ? '16px' : '24px', width: '100%', maxWidth: '660px' }}>
+              <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_SECONDARY, marginBottom: '14px', textAlign: 'left' }}>Find a Creative</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+                <LiquidSelect value={hType} onChange={setHType} ariaLabel="Creative type" placeholder="All creative types"
+                  options={[{ value: '', label: 'All creative types' }, ...CATEGORIES.map(c => ({ value: c.value, label: c.label }))]} />
+                <LiquidSelect value={hState} onChange={setHState} ariaLabel="State" placeholder="All states"
+                  options={[{ value: '', label: 'All states' }, ...AU_STATES.map(s => ({ value: s, label: s }))]} />
+                <input value={hCity} onChange={(e) => setHCity(e.target.value)} placeholder="City (e.g. Brisbane)" aria-label="City" style={HERO_FIELD} />
+                <input value={hName} onChange={(e) => setHName(e.target.value)} placeholder="Search by name…" aria-label="Name" style={HERO_FIELD} />
+                <button type="submit" style={{
+                  flex: '1 1 100%', background: '#14111a', color: '#fff', border: 'none', borderRadius: '12px',
+                  padding: '14px 20px', fontWeight: 600, fontSize: '14px', fontFamily: FONT, cursor: 'pointer',
+                  marginTop: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                  boxShadow: '0 10px 26px -8px rgba(20,17,26,0.42), inset 0 1px 0 rgba(255,255,255,0.14)',
+                }}>Find a Creative <IconArrow /></button>
+              </div>
+            </form>
 
-          <p style={{ fontSize: isMobile ? '16px' : '15.5px', color: TEXT_SECONDARY, maxWidth: '440px', lineHeight: 1.6, fontWeight: 400, margin: isMobile ? '0 auto 30px' : '0 0 30px', fontFamily: FONT }}>
-            Australia's home for visual creatives. No commissions, ever. Your marketplace profile, invoicing, contracts, portfolio, and client delivery. One subscription. Everything you need to run your creative business.
-          </p>
-
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', justifyContent: isMobile ? 'center' : 'flex-start' }}>
-            <HeroSolidButton onClick={() => navigate('/join')}>Join as a Creative</HeroSolidButton>
-            <HeroGlassButton onClick={() => navigate('/creatives')}>Find a Creative</HeroGlassButton>
-            <HeroTextButton onClick={() => navigate('/jobs')}>Post a Job</HeroTextButton>
-          </div>
-
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '18px', marginTop: '34px',
-            ...GLASS_CARD, borderRadius: '13px', padding: '13px 22px',
-          }}>
-            <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>0%</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Commission</div></div>
-            <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
-            <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>8</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Creative types</div></div>
-            <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
-            <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>AU</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Australia-wide</div></div>
+            <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '660px', position: 'relative', zIndex: 1 }}>
+              <LiquidPill primary onClick={() => navigate('/join')}>Join as a Creative</LiquidPill>
+              <LiquidPill onClick={() => navigate('/jobs')}>Post a Job</LiquidPill>
+            </div>
           </div>
         </div>
       </section>
@@ -461,7 +614,7 @@ export default function HomePage() {
             { title: 'Built for Australian creatives', desc: 'Designed specifically for the Australian market. Find local clients, work with local businesses, grow locally.' },
             { title: 'Everything in one place', desc: 'Bookings, invoices, contracts, file delivery, CRM, portfolio. Your whole creative business, one platform.' },
           ].map(item => (
-            <div key={item.title} style={{ ...GLASS_CARD_ACCENT, padding: '28px 24px', fontFamily: FONT }}>
+            <div key={item.title} style={{ ...LIQUID_GLASS_CARD, borderRadius: '18px', padding: '28px 24px', fontFamily: FONT }}>
               <div style={{ fontSize: '16px', fontWeight: 600, letterSpacing: '-0.01em', lineHeight: 1.4, color: TEXT_PRIMARY, marginBottom: '10px' }}>{item.title}</div>
               <div style={{ fontSize: '14px', fontWeight: 400, color: TEXT_SECONDARY, lineHeight: 1.6 }}>{item.desc}</div>
             </div>
@@ -514,23 +667,23 @@ export default function HomePage() {
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
             {CATEGORIES.map(cat => (
-              <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${cat.key}`)} style={{
-                ...GLASS_CARD_ACCENT,
+              <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${encodeURIComponent(cat.value)}`)} style={{
+                ...LIQUID_GLASS_CARD,
                 borderRadius: '16px',
                 padding: isMobile ? '16px 12px' : '24px 16px',
                 cursor: 'pointer', textAlign: 'left', color: TEXT_PRIMARY,
                 minHeight: isMobile ? '140px' : '160px', display: 'flex', flexDirection: 'column',
-                fontFamily: FONT, transition: 'all 0.2s ease',
+                fontFamily: FONT, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = '0 18px 44px -14px rgba(40,30,60,0.28), inset 0 1px 0 rgba(255,255,255,0.9)';
-                e.currentTarget.style.borderColor = 'rgba(20,17,26,0.12)';
+                e.currentTarget.style.boxShadow = '0 26px 56px -16px rgba(31,38,90,0.36), inset 0 1px 1px rgba(255,255,255,1), inset 0 -1.5px 3px rgba(255,255,255,0.6)';
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = '';
-                e.currentTarget.style.boxShadow = GLASS_CARD_ACCENT.boxShadow;
-                e.currentTarget.style.borderColor = 'rgba(20,17,26,0.06)';
+                e.currentTarget.style.boxShadow = LIQUID_GLASS_CARD.boxShadow;
+                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)';
               }}
               >
                 <div style={{
@@ -552,8 +705,8 @@ export default function HomePage() {
       </div>
 
       <style>{`
-        @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-3456px); } }
-        @keyframes ltHeroDown { from { transform: translateY(-3456px); } to { transform: translateY(0); } }
+        @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-${TILE_LOOP}px); } }
+        @keyframes ltHeroDown { from { transform: translateY(-${TILE_LOOP}px); } to { transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
         * { box-sizing: border-box; }
       `}</style>

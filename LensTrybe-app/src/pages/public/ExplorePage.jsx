@@ -161,11 +161,19 @@ export default function ExplorePage() {
 
   useEffect(() => {
     const type = searchParams.get('type')
+    const qState = searchParams.get('state') || ''
+    const qCity = searchParams.get('city') || ''
+    const qName = searchParams.get('name') || ''
+    if (!type && !qState && !qCity && !qName) return
+    const nextFilters = { ...filters, state: qState, city: qCity, name: qName }
+    let types = selectedTypes
     if (type) {
       const label = CATEGORIES.find(c => c.value === type)?.label ?? type
+      types = [label]
       setSelectedTypes([label])
-      handleSearch([label], filters)
     }
+    setFilters(nextFilters)
+    handleSearch(types, nextFilters)
   }, [])
 
   useEffect(() => {
