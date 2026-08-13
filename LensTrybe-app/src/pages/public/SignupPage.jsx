@@ -2,16 +2,17 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { moderateText, moderateImage, PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE } from '../../lib/moderateContent'
-import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
 import {
   DIVIDER_GRADIENT_STYLE,
-  GLASS_CARD,
   GLASS_CARD_GREEN,
-  GLASS_NATIVE_FIELD,
+  LIQUID_GLASS_CARD,
+  LIQUID_FIELD,
   TYPO,
   glassCardAccentBorder,
 } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
@@ -391,15 +392,17 @@ export default function SignupPage() {
     page: {
       minHeight: '100vh',
       background: 'transparent',
+      position: 'relative',
+      overflow: 'hidden',
       display: 'flex',
       alignItems: 'flex-start',
       justifyContent: 'center',
       padding: isMobile ? '24px 16px 48px' : '48px 24px 80px',
     },
-    container: { width: '100%', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '40px' },
+    container: { width: '100%', maxWidth: '560px', display: 'flex', flexDirection: 'column', gap: '40px', position: 'relative', zIndex: 2 },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    logo: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', ...TYPO.heading },
+    logo: { fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: '19px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
+    title: { fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, fontSize: isMobile ? '26px' : '32px', color: 'var(--text-primary)' },
     subtitle: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
     progress: { display: 'flex', gap: '6px' },
     progressDot: (active, done) => ({
@@ -417,7 +420,7 @@ export default function SignupPage() {
       display: 'flex',
       alignItems: 'center',
       gap: '12px',
-      ...GLASS_CARD,
+      ...LIQUID_GLASS_CARD,
       borderRadius: 'var(--radius-full)',
       padding: '4px',
       width: 'fit-content',
@@ -466,7 +469,7 @@ export default function SignupPage() {
       if (neon && selected) {
         const [r, g, b] = neon.rgb
         return {
-          ...GLASS_CARD,
+          ...LIQUID_GLASS_CARD,
           ...layout,
           border: `2px solid ${neon.hex}`,
           borderTop: `2px solid ${neon.hex}`,
@@ -477,7 +480,7 @@ export default function SignupPage() {
       }
       return {
         ...layout,
-        ...(selected ? glassCardAccentBorder(tierDef.color) : GLASS_CARD),
+        ...(selected ? glassCardAccentBorder(tierDef.color) : LIQUID_GLASS_CARD),
       }
     },
     tierName: { fontSize: '16px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
@@ -488,13 +491,13 @@ export default function SignupPage() {
     skillChip: (selected, disabled) => ({
       padding: '10px 16px',
       ...(disabled
-        ? { ...GLASS_CARD, cursor: 'not-allowed', opacity: 0.55 }
+        ? { ...LIQUID_GLASS_CARD, cursor: 'not-allowed', opacity: 0.55 }
         : selected
           ? {
               ...glassCardAccentBorder('var(--green)'),
               background: 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)',
             }
-          : GLASS_CARD),
+          : LIQUID_GLASS_CARD),
       borderRadius: 'var(--radius-lg)',
       color: disabled ? 'var(--text-muted)' : selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '13px',
@@ -520,7 +523,7 @@ export default function SignupPage() {
             ...glassCardAccentBorder('var(--green)'),
             background: 'linear-gradient(135deg, rgba(29,185,84,0.14) 0%, rgba(29,185,84,0.05) 100%)',
           }
-          : GLASS_CARD),
+          : LIQUID_GLASS_CARD),
       borderRadius: 'var(--radius-full)',
       color: selected ? 'var(--green)' : 'var(--text-secondary)',
       fontSize: '13px',
@@ -532,7 +535,7 @@ export default function SignupPage() {
     row: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     sectionTitle: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', marginBottom: '-8px', ...TYPO.heading },
     avatarUpload: {
-      ...GLASS_CARD,
+      ...LIQUID_GLASS_CARD,
       border: '2px dashed rgba(255,255,255,0.12)',
       padding: '40px',
       textAlign: 'center',
@@ -611,6 +614,11 @@ export default function SignupPage() {
           .signup-page [style*="justify-content: space-between"] > button { width: 100%; }
         }
       `}</style>
+      <LiquidLensFilter />
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      {!isMobile && (
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+      )}
       <div style={styles.container}>
 
         <div style={styles.header}>
@@ -698,46 +706,13 @@ export default function SignupPage() {
           {/* Step 1 — Account */}
           {step === 1 && (
             <>
-              <button
-                type="button"
+              <LiquidPill
                 onClick={() => void continueWithGoogle()}
-                onMouseEnter={() => setGoogleHover(true)}
-                onMouseLeave={() => setGoogleHover(false)}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '12px',
-                  padding: '14px 20px',
-                  borderRadius: '12px',
-                  border: googleHover ? '2px solid #1DB954' : '2px solid rgba(255,255,255,0.18)',
-                  background: '#0a0a0f',
-                  color: '#fff',
-                  fontFamily: 'var(--font-ui)',
-                  fontSize: '15px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                  boxSizing: 'border-box',
-                }}
+                style={{ width: '100%', display: 'inline-flex', padding: '14px 20px', gap: '12px', fontSize: '15px' }}
               >
-                <span
-                  style={{
-                    fontFamily: 'Inter, system-ui, sans-serif',
-                    fontSize: '18px',
-                    fontWeight: 700,
-                    color: '#fff',
-                    width: '24px',
-                    textAlign: 'center',
-                    lineHeight: 1,
-                  }}
-                  aria-hidden
-                >
-                  G
-                </span>
+                <span style={{ fontFamily: 'Inter, system-ui, sans-serif', fontSize: '18px', fontWeight: 700, color: '#14111a', width: '24px', textAlign: 'center', lineHeight: 1 }} aria-hidden>G</span>
                 Continue with Google
-              </button>
+              </LiquidPill>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '4px', marginBottom: '8px' }}>
                 <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
                 <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or</span>
@@ -836,10 +811,7 @@ export default function SignupPage() {
               <Input label="City or suburb" placeholder="Brisbane" value={form.city} onChange={e => update('city', e.target.value)} />
               <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                 <label style={{ fontSize: '13px', ...TYPO.label }}>State</label>
-                <select value={form.state} onChange={e => update('state', e.target.value)} style={{ padding: '10px 14px', cursor: 'pointer', color: form.state ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '15px', ...GLASS_NATIVE_FIELD }}>
-                  <option value="">Select state</option>
-                  {AU_STATES.map(s => <option key={s} value={s}>{s}</option>)}
-                </select>
+                <LiquidSelect value={form.state} onChange={(v) => update('state', v)} ariaLabel="State" placeholder="Select state" style={{ flex: '1 1 100%' }} options={[{ value: '', label: 'Select state' }, ...AU_STATES.map(s => ({ value: s, label: s }))]} />
               </div>
             </>
           )}
@@ -847,7 +819,7 @@ export default function SignupPage() {
           {/* Step 5 — Credentials (optional) */}
           {step === 5 && (
             <>
-              <div style={{ ...GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
+              <div style={{ ...LIQUID_GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
                 Credentials are optional. They appear as trust badges on your public profile. Documents are private: clients only see the badge, not the file.
               </div>
               <Input label="ABN or ACN (optional)" placeholder="12 345 678 901" value={form.abn ?? ''} onChange={e => update('abn', e.target.value)} />
@@ -911,15 +883,15 @@ export default function SignupPage() {
                     <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <input
-                        style={{ ...GLASS_NATIVE_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
+                        style={{ ...LIQUID_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
                         placeholder="e.g. LENS-SARAH123"
                         value={form.referralCode}
                         onChange={e => { update('referralCode', e.target.value.toUpperCase()); setReferralCodeStatus(null); setReferralCodeReferrerName('') }}
                         onBlur={e => validateReferralCode(e.target.value)}
                       />
-                      <Button variant="secondary" size="sm" type="button" onClick={() => validateReferralCode(form.referralCode)}>
+                      <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px' }} onClick={() => validateReferralCode(form.referralCode)}>
                         Apply
-                      </Button>
+                      </LiquidPill>
                     </div>
                     {referralCodeStatus === 'valid' && (
                       <div style={{ fontSize: '12px', color: 'var(--green)', fontFamily: 'var(--font-ui)' }}>
@@ -941,12 +913,12 @@ export default function SignupPage() {
 
         <div style={styles.actions}>
           {step > 0
-            ? <Button variant="ghost" size="md" onClick={() => { setStep(s => s - 1); setError('') }}>← Back</Button>
-            : <Button variant="ghost" size="md" onClick={() => navigate('/login')}>Already have an account?</Button>
+            ? <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => { setStep(s => s - 1); setError('') }}>← Back</LiquidPill>
+            : <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => navigate('/login')}>Already have an account?</LiquidPill>
           }
           {step < STEPS.length - 1
-            ? <Button variant="primary" size="md" disabled={!canProceed()} onClick={() => { setError(''); setStep(s => s + 1) }}>Continue →</Button>
-            : <Button variant="primary" size="md" disabled={loading} onClick={handleSubmit}>{loading ? 'Creating account…' : form.tier === 'basic' ? 'Create Account' : 'Create Account & Pay'}</Button>
+            ? <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: !canProceed() ? 0.6 : 1 }} disabled={!canProceed()} onClick={() => { setError(''); setStep(s => s + 1) }}>Continue →</LiquidPill>
+            : <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: loading ? 0.6 : 1 }} disabled={loading} onClick={handleSubmit}>{loading ? 'Creating account…' : form.tier === 'basic' ? 'Create Account' : 'Create Account & Pay'}</LiquidPill>
           }
         </div>
 

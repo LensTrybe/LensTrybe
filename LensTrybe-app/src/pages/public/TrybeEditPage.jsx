@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import Button from '../../components/ui/Button'
-import { GLASS_CARD, TYPO } from '../../lib/glassTokensLight'
+import { TYPO, LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 const ISSUE_01 = {
   issueNumber: 1,
@@ -32,12 +33,13 @@ export default function TrybeEditPage() {
       gap: '16px',
     },
     title: {
-      fontFamily: 'var(--font-display)',
-      fontSize: 'clamp(36px, 5vw, 56px)',
+      fontFamily: "'Inter', sans-serif",
+      fontWeight: 600,
+      letterSpacing: '-0.02em',
+      fontSize: 'clamp(36px, 4.6vw, 64px)',
       color: 'var(--text-primary)',
       margin: 0,
-      ...TYPO.heading,
-      lineHeight: 1.1,
+      lineHeight: 1.04,
     },
     subtitle: {
       fontSize: isMobile ? '14px' : '17px',
@@ -55,8 +57,8 @@ export default function TrybeEditPage() {
       padding: isMobile ? '0 16px' : '0 24px',
     },
     card: {
-      ...GLASS_CARD,
-      padding: isMobile ? '16px' : '24px',
+      ...LIQUID_GLASS_CARD,
+      padding: isMobile ? '20px' : '26px',
       display: 'flex',
       flexDirection: 'column',
       gap: '12px',
@@ -70,9 +72,10 @@ export default function TrybeEditPage() {
     cardTitle: {
       fontSize: '18px',
       color: 'var(--text-primary)',
-      fontFamily: 'var(--font-display)',
+      fontFamily: "'Inter', sans-serif",
+      fontWeight: 600,
+      letterSpacing: '-0.01em',
       margin: 0,
-      ...TYPO.heading,
       lineHeight: 1.3,
     },
     cardMeta: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
@@ -91,30 +94,34 @@ export default function TrybeEditPage() {
 
   return (
     <div style={{ ...styles.page, position: 'relative', overflow: 'hidden' }} className="trybe-edit-page">
+      <LiquidLensFilter />
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      {!isMobile && (
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+      )}
       <style>{`
         @media (max-width: 767px) {
           .trybe-edit-page button, .trybe-edit-page a { min-height: 44px; }
           .trybe-edit-page * { font-size: max(14px, 0.875rem); }
         }
       `}</style>
-      <div style={styles.glow} aria-hidden />
 
-      <header style={{ ...styles.header, position: 'relative', zIndex: 1 }}>
+      <header style={{ ...styles.header, position: 'relative', zIndex: 2 }}>
         <h1 style={styles.title}>The Trybe Edit</h1>
         <p style={styles.subtitle}>
           Monthly insights, inspiration and updates for Australian visual creatives.
         </p>
       </header>
 
-      <section style={{ position: 'relative', zIndex: 1 }}>
+      <section style={{ position: 'relative', zIndex: 2 }}>
         <div style={styles.grid}>
           <article style={styles.card}>
             <span style={styles.issueBadge}>Issue {ISSUE_01.issueNumber}</span>
             <h2 style={styles.cardTitle}>{ISSUE_01.title}</h2>
             <p style={styles.cardMeta}>{ISSUE_01.monthYear}</p>
-            <Button variant="ghost" size="sm" style={{ marginTop: '8px', width: 'fit-content' }} onClick={() => navigate('/the-trybe-edit/issue-01')}>
+            <LiquidPill primary onClick={() => navigate('/the-trybe-edit/issue-01')} style={{ flex: '0 0 auto', width: 'fit-content', marginTop: '8px', padding: '11px 22px', fontSize: '13px' }}>
               Read Issue
-            </Button>
+            </LiquidPill>
           </article>
         </div>
       </section>

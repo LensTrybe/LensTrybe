@@ -196,10 +196,10 @@ function LiquidSelect({ value, onChange, options, placeholder, ariaLabel }) {
   );
 }
 
-function LiquidPill({ onClick, children, primary }) {
+function LiquidPill({ onClick, children, primary, type = 'button', style }) {
   const [hover, setHover] = useState(false);
   return (
-    <button type="button" onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
+    <button type={type} onClick={onClick} onMouseEnter={() => setHover(true)} onMouseLeave={() => setHover(false)}
       style={{
         ...LIQUID_GLASS,
         borderRadius: '999px',
@@ -215,6 +215,7 @@ function LiquidPill({ onClick, children, primary }) {
         boxShadow: hover
           ? '0 30px 64px -18px rgba(40,30,60,0.5), inset 0 1px 1px rgba(255,255,255,0.95), inset 0 -12px 28px rgba(255,255,255,0.22)'
           : LIQUID_GLASS.boxShadow,
+        ...style,
       }}>{children}</button>
   );
 }
@@ -522,8 +523,8 @@ export default function HomePage() {
         {/* hero clearing — confined to the top so the headline stays readable */}
         {!isMobile && (
           <div aria-hidden style={{
-            position: 'absolute', top: 0, left: 0, right: 0, height: '560px', zIndex: 1,
-            background: `radial-gradient(ellipse 52% 78% at 24% 46%, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 40%, rgba(${PAGE_TONE},0.3) 70%, rgba(${PAGE_TONE},0) 100%)`,
+            position: 'absolute', inset: 0, zIndex: 1,
+            background: `radial-gradient(ellipse 760px 460px at 26% 300px, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 42%, rgba(${PAGE_TONE},0.32) 70%, rgba(${PAGE_TONE},0) 100%)`,
           }} />
         )}
         {/* whole-field downward fade — dissolves the tiles to page colour toward the bottom */}
@@ -569,13 +570,6 @@ export default function HomePage() {
               Australia's home for visual creatives. No commissions, ever. Your marketplace profile, invoicing, contracts, portfolio, and client delivery. One subscription. Everything you need to run your creative business.
             </p>
 
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '18px', ...GLASS_CARD, borderRadius: '13px', padding: '13px 22px' }}>
-              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>0%</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Commission</div></div>
-              <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
-              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>8</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Creative types</div></div>
-              <div style={{ width: '1px', height: '26px', background: 'rgba(20,17,26,0.1)' }} />
-              <div style={{ textAlign: 'center' }}><div style={{ fontWeight: 700, fontSize: '16px', color: TEXT_PRIMARY }}>AU</div><div style={{ fontSize: '11px', color: TEXT_MUTED, letterSpacing: '0.03em' }}>Australia-wide</div></div>
-            </div>
           </div>
 
           {/* RIGHT — liquid glass search + pills, centred in the open space, top-aligned with the headline */}
@@ -589,12 +583,7 @@ export default function HomePage() {
                   options={[{ value: '', label: 'All states' }, ...AU_STATES.map(s => ({ value: s, label: s }))]} />
                 <input value={hCity} onChange={(e) => setHCity(e.target.value)} placeholder="City (e.g. Brisbane)" aria-label="City" style={HERO_FIELD} />
                 <input value={hName} onChange={(e) => setHName(e.target.value)} placeholder="Search by name…" aria-label="Name" style={HERO_FIELD} />
-                <button type="submit" style={{
-                  flex: '1 1 100%', background: '#14111a', color: '#fff', border: 'none', borderRadius: '12px',
-                  padding: '14px 20px', fontWeight: 600, fontSize: '14px', fontFamily: FONT, cursor: 'pointer',
-                  marginTop: '2px', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-                  boxShadow: '0 10px 26px -8px rgba(20,17,26,0.42), inset 0 1px 0 rgba(255,255,255,0.14)',
-                }}>Find a Creative <IconArrow /></button>
+                <LiquidPill type="submit" primary style={{ flex: '1 1 100%', marginTop: '2px' }}>Find a Creative <IconArrow /></LiquidPill>
               </div>
             </form>
 

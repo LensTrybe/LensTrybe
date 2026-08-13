@@ -19,8 +19,11 @@ import {
   GLASS_MODAL_OVERLAY_BASE,
   GLASS_MODAL_PANEL,
   GLASS_NATIVE_FIELD,
+  LIQUID_GLASS_CARD,
+  LIQUID_FIELD,
   TYPO,
 } from '../../lib/glassTokensLight'
+import TileField from '../../components/ui/TileField'
 
 function StarRating({ value }) {
   return (
@@ -220,7 +223,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   if (!profile) return (
     <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
-      <div style={{ fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', ...TYPO.heading }}>Profile not found</div>
+      <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', color: 'var(--text-primary)', ...TYPO.heading }}>Profile not found</div>
       <Button variant="secondary" onClick={() => navigate('/creatives')}>Back to Search</Button>
     </div>
   )
@@ -251,23 +254,23 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const badge = tierBadge[tier]
 
   const styles = {
-    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px' },
-    hero: { ...GLASS_CARD, padding: isMobile ? '32px 16px' : '48px 40px', maxWidth: '1280px', margin: '0 auto' },
+    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px', position: 'relative', overflow: 'hidden' },
+    hero: { ...LIQUID_GLASS_CARD, padding: isMobile ? '32px 16px' : '48px 40px', maxWidth: '1280px', margin: '0 auto' },
     heroInner: { display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', gap: '32px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
     avatar: { width: '120px', height: '120px', borderRadius: 'var(--radius-full)', objectFit: 'cover', border: '2px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' },
     heroContent: { flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto', textAlign: isMobile ? 'center' : 'left' },
     nameRow: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '8px', justifyContent: isMobile ? 'center' : 'flex-start' },
-    name: { fontFamily: 'var(--font-display)', fontSize: 'clamp(28px, 4vw, 40px)', color: 'var(--text-primary)', ...TYPO.heading },
+    name: { fontFamily: "'Inter', sans-serif", fontSize: 'clamp(28px, 4vw, 40px)', color: 'var(--text-primary)', ...TYPO.heading },
     location: { fontSize: '14px', color: 'var(--text-muted)', marginBottom: '12px', ...TYPO.body },
     skillRow: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '16px', overflowX: 'visible', justifyContent: isMobile ? 'center' : 'flex-start', paddingBottom: '0' },
     bio: { fontSize: '15px', color: 'var(--text-secondary)', maxWidth: '640px', marginBottom: '20px', ...TYPO.body },
     heroActions: { display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', width: isMobile ? '100%' : 'auto' },
     ratingRow: { display: 'flex', alignItems: 'center', gap: '8px' },
-    ratingNum: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', ...TYPO.stat },
+    ratingNum: { fontFamily: "'Inter', sans-serif", fontSize: '20px', color: 'var(--text-primary)', ...TYPO.stat },
     ratingCount: { fontSize: '13px', color: 'var(--text-muted)', ...TYPO.body },
     body: { maxWidth: '1280px', margin: '0 auto', padding: isMobile ? '24px 16px' : '40px' },
     section: { marginBottom: '48px' },
-    sectionTitle: { fontFamily: 'var(--font-display)', fontSize: '24px', color: 'var(--text-primary)', marginBottom: '24px', ...TYPO.heading },
+    sectionTitle: { fontFamily: "'Inter', sans-serif", fontSize: '24px', color: 'var(--text-primary)', marginBottom: '24px', ...TYPO.heading },
     portfolioGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' },
     portfolioItem: {
       borderRadius: 'var(--radius-lg)',
@@ -275,14 +278,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       aspectRatio: '1',
       cursor: 'pointer',
       transition: 'transform var(--transition-base)',
-      border: GLASS_CARD.border,
-      borderTop: GLASS_CARD.borderTop,
-      boxShadow: GLASS_CARD.boxShadow,
+      border: LIQUID_GLASS_CARD.border,
+      borderTop: LIQUID_GLASS_CARD.borderTop,
+      boxShadow: LIQUID_GLASS_CARD.boxShadow,
     },
     portfolioImg: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
     reviewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' },
     reviewCard: {
-      ...GLASS_CARD,
+      ...LIQUID_GLASS_CARD,
       padding: '14px 16px',
       display: 'flex',
       flexDirection: 'column',
@@ -308,11 +311,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
     profileFlagModalHint: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, marginBottom: '12px', ...TYPO.body },
-    profileFlagTextarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
+    profileFlagTextarea: { ...LIQUID_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
   }
 
   return (
     <div style={styles.page} className="public-profile-page">
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      <div style={{ position: 'relative', zIndex: 2 }}>
       <div style={styles.hero}>
         <div style={styles.heroInner}>
           {profile.avatar_url
@@ -558,7 +563,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                       value={reviewForm.reviewer_name}
                       onChange={e => { setReviewModerationError(''); setReviewForm(p => ({ ...p, reviewer_name: e.target.value })) }}
                       placeholder="Jane Smith"
-                      style={{ width: '100%', padding: '10px 14px', ...GLASS_NATIVE_FIELD }}
+                      style={{ width: '100%', padding: '10px 14px', ...LIQUID_FIELD }}
                     />
                   </div>
                   <div>
@@ -568,7 +573,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                       value={reviewEmail}
                       onChange={(e) => { setReviewModerationError(''); setReviewEmail(e.target.value) }}
                       placeholder="your@email.com"
-                      style={{ width: '100%', padding: '10px 14px', ...GLASS_NATIVE_FIELD }}
+                      style={{ width: '100%', padding: '10px 14px', ...LIQUID_FIELD }}
                     />
                   </div>
                   <div>
@@ -617,7 +622,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                       value={reviewForm.body}
                       onChange={e => { setReviewModerationError(''); setReviewForm(p => ({ ...p, body: e.target.value })) }}
                       placeholder="Share your experience working with this creative..."
-                      style={{ width: '100%', padding: '10px 14px', minHeight: '100px', resize: 'vertical', ...GLASS_NATIVE_FIELD }}
+                      style={{ width: '100%', padding: '10px 14px', minHeight: '100px', resize: 'vertical', ...LIQUID_FIELD }}
                     />
                   </div>
                 </div>
@@ -694,7 +699,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <div>
                 <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Message</label>
                 <textarea
-                  style={{ width: '100%', minHeight: '120px', padding: '10px 14px', resize: 'vertical', boxSizing: 'border-box', ...GLASS_NATIVE_FIELD }}
+                  style={{ width: '100%', minHeight: '120px', padding: '10px 14px', resize: 'vertical', boxSizing: 'border-box', ...LIQUID_FIELD }}
                   placeholder="Tell them about your project, date, location and what you need…"
                   value={enquiry.message}
                   onChange={e => { setEnquiryError(''); setEnquiry(p => ({ ...p, message: e.target.value })) }}
@@ -754,6 +759,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           }
         }
       `}</style>
+      </div>
     </div>
   )
 }

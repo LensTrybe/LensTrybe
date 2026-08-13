@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
+import TileField from '../../components/ui/TileField'
 
 export default function PrivacyPage() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -23,7 +25,8 @@ export default function PrivacyPage() {
   ]
 
   return (
-    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-privacy-page">
+    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }} className="legal-privacy-page">
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
       <style>{`
         @media (max-width: 767px) {
           .legal-privacy-page h1 { font-size: 24px !important; }
@@ -31,8 +34,8 @@ export default function PrivacyPage() {
           .legal-privacy-page p, .legal-privacy-page div, .legal-privacy-page span { font-size: max(14px, 0.875rem) !important; }
         }
       `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Privacy Policy</h1>
+      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8, ...LIQUID_GLASS_CARD, position: 'relative', zIndex: 2, padding: isMobile ? '28px 20px' : '48px 56px', borderRadius: '20px' }}>
+        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '8px' }}>Privacy Policy</h1>
         <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
         {sections.map((section, i) => (
           <div key={i} style={{ marginBottom: '40px' }}>

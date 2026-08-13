@@ -7,6 +7,9 @@ import {
   MODERATION_BLOCKED_USER_MESSAGE,
   PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
 } from '../../lib/moderateContent'
+import { LIQUID_GLASS, LIQUID_FIELD } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 const PAGE_BG = '#ffffff'
 const GREEN = '#1DB954'
@@ -250,16 +253,10 @@ export default function OnboardingPage() {
   }
 
   const inputStyle = {
+    ...LIQUID_FIELD,
     width: '100%',
     boxSizing: 'border-box',
-    padding: '12px 14px',
-    borderRadius: '10px',
-    border: '1px solid rgba(20,17,26,0.14)',
-    background: 'rgba(20,17,26,0.06)',
-    color: 'var(--text-primary)',
     fontSize: '15px',
-    fontFamily: "'Inter', system-ui, sans-serif",
-    outline: 'none',
   }
 
   const btnPrimary = {
@@ -313,7 +310,9 @@ export default function OnboardingPage() {
       className="onboarding-root"
       style={{
         minHeight: '100vh',
-        background: PAGE_BG,
+        background: 'transparent',
+        position: 'relative',
+        overflow: 'hidden',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -328,18 +327,17 @@ export default function OnboardingPage() {
         .onboarding-root select { color: rgba(20,17,26,0.6); color-scheme: light; }
         .onboarding-root select option { background: #ffffff; color: #14111a; }
       `}</style>
+      <LiquidLensFilter />
+      <TileField animated={false} opacity={0.22} />
 
       <div
         style={{
           width: '100%',
           maxWidth: 520,
           padding: '32px 28px',
-          borderRadius: 20,
-          background: 'rgba(20,17,26,0.06)',
-          border: '1px solid rgba(20,17,26,0.12)',
-          boxShadow: '0 12px 48px rgba(0,0,0,0.45)',
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
+          ...LIQUID_GLASS,
+          position: 'relative',
+          zIndex: 2,
         }}
       >
         <div style={{ marginBottom: '20px' }}>
@@ -420,9 +418,9 @@ export default function OnboardingPage() {
                       <div style={{ width: '100%', height: '100%' }} />
                     )}
                   </div>
-                  <button type="button" style={btnGhost} onClick={() => fileRef.current?.click()}>
+                  <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '11px 20px', fontSize: '14px' }} onClick={() => fileRef.current?.click()}>
                     Change photo
-                  </button>
+                  </LiquidPill>
                   <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickPhoto} />
                 </div>
               </div>
@@ -439,9 +437,9 @@ export default function OnboardingPage() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
-                <button type="button" style={btnPrimary} disabled={!canStep1} onClick={() => bumpStep(1)}>
+                <LiquidPill primary type="button" disabled={!canStep1} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: !canStep1 ? 0.6 : 1 }} onClick={() => bumpStep(1)}>
                   Next
-                </button>
+                </LiquidPill>
               </div>
             </div>
           )}
@@ -465,7 +463,7 @@ export default function OnboardingPage() {
                         borderRadius: 10,
                         border: on ? `2px solid ${GREEN}` : '1px solid rgba(20,17,26,0.14)',
                         background: on ? 'rgba(29,185,84,0.12)' : 'rgba(20,17,26,0.04)',
-                        color: on ? '#fff' : 'rgba(20,17,26,0.85)',
+                        color: on ? '#0f7a37' : 'rgba(20,17,26,0.85)',
                         fontSize: '13px',
                         fontWeight: on ? 600 : 500,
                         cursor: 'pointer',
@@ -492,18 +490,7 @@ export default function OnboardingPage() {
               </div>
               <div>
                 <label style={labelStyle}>State</label>
-                <select
-                  style={{ ...inputStyle, cursor: 'pointer', color: state ? '#fff' : 'rgba(20,17,26,0.45)' }}
-                  value={state}
-                  onChange={(e) => setState(e.target.value)}
-                >
-                  <option value="">Select state</option>
-                  {AU_STATES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))}
-                </select>
+                <LiquidSelect value={state} onChange={setState} ariaLabel="State" placeholder="Select state" style={{ flex: '1 1 100%' }} options={[{ value: '', label: 'Select state' }, ...AU_STATES.map((s) => ({ value: s, label: s }))]} />
               </div>
               <div>
                 <label style={labelStyle}>Country</label>
@@ -517,12 +504,12 @@ export default function OnboardingPage() {
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
-                <button type="button" style={btnGhost} onClick={() => bumpStep(0)}>
+                <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '15px' }} onClick={() => bumpStep(0)}>
                   Back
-                </button>
-                <button type="button" style={btnPrimary} disabled={!canStep2} onClick={() => bumpStep(2)}>
+                </LiquidPill>
+                <LiquidPill primary type="button" disabled={!canStep2} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: !canStep2 ? 0.6 : 1 }} onClick={() => bumpStep(2)}>
                   Next
-                </button>
+                </LiquidPill>
               </div>
             </div>
           )}
@@ -590,12 +577,12 @@ export default function OnboardingPage() {
               ) : null}
 
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
-                <button type="button" style={btnGhost} disabled={submitting} onClick={() => bumpStep(1)}>
+                <LiquidPill type="button" disabled={submitting} style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '15px' }} onClick={() => bumpStep(1)}>
                   Back
-                </button>
-                <button type="button" style={btnPrimary} disabled={submitting} onClick={() => void completeSetup()}>
+                </LiquidPill>
+                <LiquidPill primary type="button" disabled={submitting} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: submitting ? 0.6 : 1 }} onClick={() => void completeSetup()}>
                   {submitting ? 'Saving…' : 'Complete setup'}
-                </button>
+                </LiquidPill>
               </div>
             </div>
           )}

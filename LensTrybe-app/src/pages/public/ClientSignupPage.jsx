@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
+import { LIQUID_GLASS } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 export default function ClientSignupPage() {
   const navigate = useNavigate()
@@ -87,16 +89,18 @@ export default function ClientSignupPage() {
   const styles = {
     page: {
       minHeight: '100vh',
-      background: 'var(--bg-base)',
+      background: 'transparent',
+      position: 'relative',
+      overflow: 'hidden',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '40px 24px',
     },
-    card: { width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '32px' },
+    card: { width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '32px', ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '36px 32px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    logo: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
-    title: { fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
+    logo: { fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: '19px', color: 'var(--text-primary)', cursor: 'pointer', marginBottom: '8px' },
+    title: { fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, fontSize: '30px', color: 'var(--text-primary)' },
     subtitle: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
     form: { display: 'flex', flexDirection: 'column', gap: '16px' },
     row: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
@@ -127,6 +131,8 @@ export default function ClientSignupPage() {
 
   return (
     <div style={styles.page}>
+      <LiquidLensFilter />
+      <TileField animated={false} opacity={0.22} />
       <div style={styles.card}>
 
         <div style={styles.header}>
@@ -161,9 +167,9 @@ export default function ClientSignupPage() {
             </button>
           </div>
 
-          <Button variant="primary" size="lg" disabled={loading || !canSubmit} onClick={handleSubmit}>
+          <LiquidPill primary type="submit" disabled={loading || !canSubmit} style={{ width: '100%', display: 'inline-flex', padding: '15px 22px', opacity: loading || !canSubmit ? 0.6 : 1 }} onClick={handleSubmit}>
             {loading ? 'Creating account…' : 'Create Free Account'}
-          </Button>
+          </LiquidPill>
         </form>
 
         <div style={styles.divider}>

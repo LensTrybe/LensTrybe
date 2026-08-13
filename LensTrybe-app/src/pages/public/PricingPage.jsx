@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
+import TileField from '../../components/ui/TileField'
 
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
@@ -234,9 +236,15 @@ export default function PricingPage() {
       background: 'transparent',
       minHeight: '100vh',
       paddingBottom: '80px',
-      overflowX: 'hidden',
+      overflow: 'hidden',
+      position: 'relative',
       fontFamily: font,
     }}>
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      {!isMobile && (
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '240px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.92) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+      )}
+      <div style={{ position: 'relative', zIndex: 2 }}>
       <div style={{
         padding: isMobile ? '48px 16px 32px' : '80px 40px 48px',
         maxWidth: '1280px',
@@ -259,12 +267,13 @@ export default function PricingPage() {
         </div>
         <h1 style={{
           fontFamily: font,
-          fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 5vw, 56px)',
-          fontWeight: 700,
+          fontSize: isMobile ? 'clamp(24px, 9vw, 34px)' : 'clamp(36px, 4.6vw, 60px)',
+          fontWeight: 600,
+          letterSpacing: '-0.02em',
           color: '#14111a',
           maxWidth: '600px',
           margin: 0,
-          lineHeight: 1.15,
+          lineHeight: 1.1,
         }}>
           Simple, transparent pricing.
         </h1>
@@ -370,14 +379,14 @@ export default function PricingPage() {
 
           const cardStyle = isFoundingExpert
             ? {
-                background: 'linear-gradient(160deg, #fff7e6 0%, #ffffff 100%)',
-                border: '1px solid rgba(245,158,11,0.45)',
-                boxShadow: '0 14px 40px -16px rgba(180,120,10,0.28)',
+                ...LIQUID_GLASS_CARD,
+                background: 'linear-gradient(160deg, rgba(245,158,11,0.18) 0%, rgba(245,158,11,0.04) 55%), linear-gradient(125deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.05) 56%), linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.18) 100%)',
+                border: '1px solid rgba(245,158,11,0.5)',
+                boxShadow: '0 18px 44px -16px rgba(180,120,10,0.32), inset 0 1px 1px rgba(255,255,255,0.9)',
               }
             : {
-                background: '#ffffff',
+                ...LIQUID_GLASS_CARD,
                 border: `1px solid ${tier.borderColor}`,
-                boxShadow: '0 10px 30px -16px rgba(40,30,60,0.18)',
               }
 
           return (
@@ -610,6 +619,7 @@ export default function PricingPage() {
         }}>
           All prices in AUD. Annual billing saves 2 months. Cancel anytime from your dashboard.
         </div>
+      </div>
       </div>
     </div>
   )

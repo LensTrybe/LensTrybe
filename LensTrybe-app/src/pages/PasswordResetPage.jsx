@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { LIQUID_GLASS, LIQUID_FIELD } from '../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill } from '../components/ui/liquidGlass'
+import TileField from '../components/ui/TileField'
 
 export default function PasswordResetPage() {
   const navigate = useNavigate()
@@ -47,36 +50,38 @@ export default function PasswordResetPage() {
     setLoading(false)
   }
 
-  const inputStyle = { width: '100%', padding: '11px 14px', background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: '#fff', fontSize: '14px', fontFamily: 'Inter, sans-serif', outline: 'none', boxSizing: 'border-box', paddingRight: '44px' }
+  const inputStyle = { ...LIQUID_FIELD, width: '100%', fontSize: '14px', boxSizing: 'border-box', paddingRight: '44px' }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0a0a0f', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: '#13131f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '16px', padding: '40px', width: '100%', maxWidth: '420px' }}>
-        <div style={{ fontSize: '22px', fontWeight: 700, color: '#fff', marginBottom: '20px' }}>Reset Password</div>
+    <div style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+      <LiquidLensFilter />
+      <TileField animated={false} opacity={0.22} />
+      <div style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '40px', width: '100%', maxWidth: '420px' }}>
+        <div style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.02em', color: '#14111a', marginBottom: '20px' }}>Reset Password</div>
         {success ? (
           <div style={{ color: '#1DB954', fontSize: '15px', fontWeight: 600 }}>✓ Password updated! Redirecting…</div>
         ) : !ready && !error ? (
-          <div style={{ color: '#666', fontSize: '14px' }}>Verifying your reset link…</div>
+          <div style={{ color: '#8a8995', fontSize: '14px' }}>Verifying your reset link…</div>
         ) : (
           <>
             {error && <div style={{ color: '#ef4444', fontSize: '13px', marginBottom: '16px', padding: '10px 14px', background: 'rgba(239,68,68,0.1)', borderRadius: '8px' }}>{error}</div>}
             <div style={{ marginBottom: '14px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: '#888', display: 'block', marginBottom: '6px' }}>New Password</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#565560', display: 'block', marginBottom: '6px' }}>New Password</label>
               <div style={{ position: 'relative' }}>
                 <input type={showPassword ? 'text' : 'password'} value={password} onChange={e => setPassword(e.target.value)} placeholder="Min 6 characters" style={inputStyle} />
-                <button onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px', padding: 0 }}>{showPassword ? '' : ''}</button>
+                <button onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8a8995', cursor: 'pointer', fontSize: '16px', padding: 0 }}>{showPassword ? '' : ''}</button>
               </div>
             </div>
             <div style={{ marginBottom: '24px' }}>
-              <label style={{ fontSize: '12px', fontWeight: 600, color: '#888', display: 'block', marginBottom: '6px' }}>Confirm Password</label>
+              <label style={{ fontSize: '12px', fontWeight: 600, color: '#565560', display: 'block', marginBottom: '6px' }}>Confirm Password</label>
               <div style={{ position: 'relative' }}>
                 <input type={showConfirm ? 'text' : 'password'} value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Repeat new password" onKeyDown={e => e.key === 'Enter' && handleReset()} style={inputStyle} />
-                <button onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#666', cursor: 'pointer', fontSize: '16px', padding: 0 }}>{showConfirm ? '' : ''}</button>
+                <button onClick={() => setShowConfirm(!showConfirm)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#8a8995', cursor: 'pointer', fontSize: '16px', padding: 0 }}>{showConfirm ? '' : ''}</button>
               </div>
             </div>
-            <button onClick={handleReset} disabled={loading} style={{ width: '100%', padding: '12px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '15px', fontWeight: 700, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}>
+            <LiquidPill primary onClick={handleReset} disabled={loading} style={{ width: '100%', display: 'inline-flex', padding: '14px', fontSize: '15px', opacity: loading ? 0.6 : 1 }}>
               {loading ? 'Updating…' : 'Set New Password'}
-            </button>
+            </LiquidPill>
           </>
         )}
       </div>

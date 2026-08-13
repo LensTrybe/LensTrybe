@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
 import Input from '../../components/ui/Input'
-import { DIVIDER_GRADIENT_STYLE, GLASS_CARD, TYPO } from '../../lib/glassTokensLight'
+import { DIVIDER_GRADIENT_STYLE, LIQUID_GLASS, TYPO } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -74,14 +75,14 @@ export default function LoginPage() {
 
   const styles = {
     page: {
-      minHeight: '100vh', background: 'transparent',
+      minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: isMobile ? '24px' : '40px 24px',
     },
-    card: { width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '32px', ...GLASS_CARD, padding: isMobile ? '28px 24px' : '32px 36px' },
+    card: { width: '100%', maxWidth: '420px', display: 'flex', flexDirection: 'column', gap: '32px', ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: isMobile ? '28px 24px' : '36px 40px' },
     header: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    logo: { fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' },
-    title: { fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', ...TYPO.heading },
+    logo: { fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: '20px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' },
+    title: { fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, fontSize: isMobile ? '26px' : '32px', color: 'var(--text-primary)' },
     subtitle: { fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body },
     form: { display: 'flex', flexDirection: 'column', gap: '16px' },
     passwordWrap: { position: 'relative' },
@@ -112,6 +113,8 @@ export default function LoginPage() {
           .login-page input, .login-page textarea, .login-page select { width: 100% !important; font-size: 14px !important; }
         }
       `}</style>
+      <LiquidLensFilter />
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
@@ -148,21 +151,19 @@ export default function LoginPage() {
           <span style={styles.forgotLink} onClick={() => navigate('/forgot-password')}>
             Forgot your password?
           </span>
-          <Button
-            variant="primary"
-            size="lg"
+          <LiquidPill
+            primary
             type="submit"
             disabled={loading || !email || !password}
+            style={{ width: '100%', display: 'inline-flex', padding: '15px 22px', opacity: loading || !email || !password ? 0.6 : 1 }}
           >
             {loading ? 'Signing in…' : 'Sign In'}
-          </Button>
+          </LiquidPill>
         </form>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-          <Button
-            variant="secondary"
-            size="lg"
-            style={{ width: '100%', justifyContent: 'center', gap: '10px' }}
+          <LiquidPill
+            style={{ width: '100%', display: 'inline-flex', padding: '14px 22px', gap: '10px' }}
             onClick={() => {
               try {
                 sessionStorage.setItem(LT_GOOGLE_OAUTH_PENDING_KEY, '1')
@@ -182,7 +183,7 @@ export default function LoginPage() {
               <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 0 0 1.83 5.4L4.5 7.49a4.77 4.77 0 0 1 4.48-3.31z"/>
             </svg>
             Continue with Google
-          </Button>
+          </LiquidPill>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>

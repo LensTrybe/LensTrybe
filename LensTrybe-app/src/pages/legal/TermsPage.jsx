@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react'
+import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
+import TileField from '../../components/ui/TileField'
 
 export default function TermsPage() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -10,7 +12,8 @@ export default function TermsPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   return (
-    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflowX: 'hidden' }} className="legal-terms-page">
+    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }} className="legal-terms-page">
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
       <style>{`
         @media (max-width: 767px) {
           .legal-terms-page h1 { font-size: 24px !important; }
@@ -19,8 +22,8 @@ export default function TermsPage() {
           .legal-terms-page p, .legal-terms-page div, .legal-terms-page span { font-size: max(14px, 0.875rem) !important; }
         }
       `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8 }}>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Terms and Conditions</h1>
+      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8, ...LIQUID_GLASS_CARD, position: 'relative', zIndex: 2, padding: isMobile ? '28px 20px' : '48px 56px', borderRadius: '20px' }}>
+        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '8px' }}>Terms and Conditions</h1>
         <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
 
         {[

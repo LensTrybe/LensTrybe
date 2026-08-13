@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import Button from '../../components/ui/Button'
 import {
-  GLASS_CARD,
-  GLASS_CARD_AURORA,
-  GLASS_NATIVE_FIELD,
   TYPO,
+  LIQUID_GLASS,
+  LIQUID_GLASS_CARD,
+  LIQUID_FIELD,
 } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 const IconCamera = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>)
 const IconVideo = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>)
@@ -131,26 +132,30 @@ export default function UpcomingFeaturesPage() {
   }
 
   return (
-    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body }}>
-      <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
+      <LiquidLensFilter />
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      {!isMobile && (
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+      )}
+      <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: '32px' }}>
-          <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Upcoming Features</h1>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Upcoming Features</h1>
           <p style={{ margin: '14px auto 0', maxWidth: '720px', color: 'var(--text-secondary)', fontSize: '16px', ...TYPO.body }}>
             See what is coming to LensTrybe and shape the future of the platform.
           </p>
-          <Button
-            variant="primary"
-            size="lg"
-            style={{ minHeight: '44px', marginTop: '24px' }}
+          <LiquidPill
+            primary
+            style={{ flex: '0 0 auto', display: 'inline-flex', marginTop: '24px', padding: '14px 26px' }}
             onClick={() => document.getElementById('request-feature-form')?.scrollIntoView({ behavior: 'smooth' })}
           >
             Request a Feature
-          </Button>
+          </LiquidPill>
         </div>
 
         {!selectedSkill ? (
           <section>
-            <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Browse by Skill</h2>
+            <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Browse by Skill</h2>
             <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Select your skill to see what is coming next.</p>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
               {SKILLS.map((skill) => (
@@ -159,8 +164,8 @@ export default function UpcomingFeaturesPage() {
                   type="button"
                   onClick={() => setSelectedSkill(skill.key)}
                   style={{
-                    ...GLASS_CARD_AURORA,
-                    borderRadius: '12px',
+                    ...LIQUID_GLASS_CARD,
+                    borderRadius: '16px',
                     padding: isMobile ? '16px 12px' : '24px 16px',
                     cursor: 'pointer',
                     textAlign: 'left',
@@ -182,16 +187,16 @@ export default function UpcomingFeaturesPage() {
           </section>
         ) : (
           <section>
-            <Button variant="ghost" size="sm" style={{ marginBottom: '20px' }} onClick={() => setSelectedSkill(null)}>
-              Back
-            </Button>
+            <LiquidPill style={{ flex: '0 0 auto', display: 'inline-flex', marginBottom: '20px', padding: '11px 20px', fontSize: '13px' }} onClick={() => setSelectedSkill(null)}>
+              ← Back
+            </LiquidPill>
 
-            <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>{selectedSkillLabel} upcoming features</h2>
+            <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{selectedSkillLabel} upcoming features</h2>
             <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Planned features for this skill category.</p>
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               {selectedSkillFeatures.map((feature) => (
-                <div key={feature.name} style={{ ...GLASS_CARD, borderRadius: '14px', padding: '18px' }}>
+                <div key={feature.name} style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
                     <div style={{ fontSize: '16px', ...TYPO.heading }}>{feature.name}</div>
                     <span style={{ borderRadius: '999px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: '#1DB954', border: '1px solid rgba(29,185,84,0.35)', background: 'rgba(29,185,84,0.12)' }}>
@@ -208,10 +213,10 @@ export default function UpcomingFeaturesPage() {
         )}
 
         <section id="request-feature-form" style={{ margin: '64px auto 0', maxWidth: '640px' }}>
-          <h2 style={{ margin: 0, fontSize: isMobile ? '28px' : '36px', fontFamily: 'var(--font-display)', ...TYPO.heading }}>Request a Feature</h2>
+          <h2 style={{ margin: 0, fontSize: isMobile ? '28px' : '36px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Request a Feature</h2>
           <p style={{ margin: '10px 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Tell us what would help your workflow most.</p>
 
-          <form onSubmit={handleSubmit} style={{ ...GLASS_CARD, padding: isMobile ? '18px' : '24px' }}>
+          <form onSubmit={handleSubmit} style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
             {error ? <div style={{ color: '#c11f5a', marginBottom: '12px', fontSize: '13px', ...TYPO.body }}>{error}</div> : null}
             {submitted ? (
               <div style={{ marginBottom: '12px', color: '#1DB954', fontSize: '13px', ...TYPO.body }}>Thanks. Your feature request has been submitted.</div>
@@ -223,28 +228,26 @@ export default function UpcomingFeaturesPage() {
                 placeholder="Business name"
                 value={form.business_name}
                 onChange={(e) => set('business_name', e.target.value)}
-                style={{ width: '100%', padding: '13px 14px', ...GLASS_NATIVE_FIELD }}
+                style={{ width: '100%', padding: '13px 14px', ...LIQUID_FIELD }}
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
-                style={{ width: '100%', padding: '13px 14px', ...GLASS_NATIVE_FIELD }}
+                style={{ width: '100%', padding: '13px 14px', ...LIQUID_FIELD }}
               />
             </div>
 
             <div style={{ marginBottom: '12px' }}>
-              <select
+              <LiquidSelect
                 value={form.skill}
-                onChange={(e) => set('skill', e.target.value)}
-                style={{ width: '100%', padding: '13px 14px', ...GLASS_NATIVE_FIELD }}
-              >
-                <option value="">Your skill</option>
-                {SKILLS.map((skill) => (
-                  <option key={skill.key} value={skill.label}>{skill.label}</option>
-                ))}
-              </select>
+                onChange={(v) => set('skill', v)}
+                ariaLabel="Your skill"
+                placeholder="Your skill"
+                style={{ flex: '1 1 100%' }}
+                options={[{ value: '', label: 'Your skill' }, ...SKILLS.map((skill) => ({ value: skill.label, label: skill.label }))]}
+              />
             </div>
 
             <div style={{ marginBottom: '14px' }}>
@@ -253,13 +256,13 @@ export default function UpcomingFeaturesPage() {
                 value={form.feature_request}
                 onChange={(e) => set('feature_request', e.target.value)}
                 rows={5}
-                style={{ width: '100%', padding: '13px 14px', resize: 'vertical', ...GLASS_NATIVE_FIELD }}
+                style={{ width: '100%', padding: '13px 14px', resize: 'vertical', ...LIQUID_FIELD }}
               />
             </div>
 
-            <Button type="submit" variant="primary" size="lg" disabled={loading} style={{ minHeight: '44px', opacity: loading ? 0.7 : 1 }}>
+            <LiquidPill type="submit" primary disabled={loading} style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px', opacity: loading ? 0.7 : 1 }}>
               {loading ? 'Submitting...' : 'Submit'}
-            </Button>
+            </LiquidPill>
           </form>
         </section>
       </div>

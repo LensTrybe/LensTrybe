@@ -35,6 +35,31 @@ export const LIQUID_GLASS = {
   boxShadow: '0 18px 50px -14px rgba(31,38,90,0.3), inset 0 1px 1px rgba(255,255,255,0.95), inset 0 -1.5px 3px rgba(255,255,255,0.55), inset 1.5px 0 4px rgba(255,255,255,0.35), inset -1.5px 0 4px rgba(255,255,255,0.35)',
 }
 
+/* Input / select-trigger field used inside liquid-glass panels. */
+export const LIQUID_FIELD = {
+  flex: '1 1 150px', minWidth: 0,
+  background: 'rgba(255,255,255,0.72)',
+  border: '1px solid rgba(20,17,26,0.1)',
+  borderRadius: '11px',
+  padding: '12px 13px',
+  fontSize: '14px',
+  color: '#14111a',
+  fontFamily: "'Inter', sans-serif",
+  outline: 'none',
+  colorScheme: 'light',
+}
+
+/* Performant liquid-glass for repeated content cards (cheap blur, no per-card
+   refraction). Same glossy look as LIQUID_GLASS. */
+export const LIQUID_GLASS_CARD = {
+  ...LIQUID_GLASS,
+  backdropFilter: 'blur(5px) saturate(175%) brightness(1.04)',
+  WebkitBackdropFilter: 'blur(5px) saturate(175%) brightness(1.04)',
+  background:
+    'linear-gradient(125deg, rgba(255,255,255,0.62) 0%, rgba(255,255,255,0.16) 28%, rgba(255,255,255,0.05) 56%), ' +
+    'linear-gradient(135deg, rgba(255,255,255,0.24) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0.18) 100%)',
+}
+
 export const GLASS_CARD_GREEN = {
   backdropFilter: 'blur(14px) saturate(140%)',
   WebkitBackdropFilter: 'blur(14px) saturate(140%)',

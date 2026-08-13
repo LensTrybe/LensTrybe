@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import Button from '../../components/ui/Button'
 import { LT_JOIN_FLASH_KEY } from '../../context/AuthContext'
+import { LIQUID_GLASS } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
 export default function JoinHubPage() {
   const navigate = useNavigate()
@@ -32,7 +34,9 @@ export default function JoinHubPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'var(--bg-base)',
+      background: 'transparent',
+      position: 'relative',
+      overflow: 'hidden',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -40,16 +44,18 @@ export default function JoinHubPage() {
       fontFamily: 'var(--font-ui)',
     }}
     >
-      <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <LiquidLensFilter />
+      <TileField animated={false} opacity={0.22} />
+      <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '24px', ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '36px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div
-            style={{ fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' }}
+            style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, letterSpacing: '-0.02em', fontSize: '20px', color: 'var(--text-primary)', marginBottom: '8px', cursor: 'pointer' }}
             onClick={() => navigate('/')}
             role="presentation"
           >
             LensTrybe
           </div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', fontWeight: 400, color: 'var(--text-primary)', margin: '0 0 8px' }}>
+          <h1 style={{ fontFamily: "'Inter', sans-serif", fontSize: '30px', fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)', margin: '0 0 8px' }}>
             Create an account
           </h1>
           <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>
@@ -88,12 +94,12 @@ export default function JoinHubPage() {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <Button variant="primary" size="lg" style={{ width: '100%' }} onClick={goCreative}>
+          <LiquidPill primary style={{ width: '100%', display: 'inline-flex', padding: '15px 22px' }} onClick={goCreative}>
             Join as a Creative
-          </Button>
-          <Button variant="secondary" size="lg" style={{ width: '100%' }} onClick={goClient}>
+          </LiquidPill>
+          <LiquidPill style={{ width: '100%', display: 'inline-flex', padding: '15px 22px' }} onClick={goClient}>
             Join as a Client
-          </Button>
+          </LiquidPill>
         </div>
 
         <p style={{ fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', margin: 0 }}>
