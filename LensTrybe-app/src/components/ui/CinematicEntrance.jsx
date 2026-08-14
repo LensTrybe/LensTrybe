@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { LensMark } from './BrandLogo'
 import TileField from './TileField'
+import { LiquidLensFilter } from './liquidGlass'
+import { LIQUID_GLASS } from '../../lib/glassTokensLight'
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
@@ -139,6 +141,9 @@ export default function CinematicEntrance({ onComplete }) {
         overflow: 'hidden',
       }}
     >
+      {/* Liquid-lens displacement filter — powers the LIQUID_GLASS card */}
+      <LiquidLensFilter />
+
       {/* Moving pastel tiles — same as the hero */}
       <div
         aria-hidden
@@ -197,19 +202,12 @@ export default function CinematicEntrance({ onComplete }) {
 
       <div
         style={{
+          ...LIQUID_GLASS,
           zIndex: 2,
           width: 440,
           maxWidth: 'calc(100vw - 40px)',
-          background:
-            'linear-gradient(160deg, rgba(255,255,255,0.92) 0%, rgba(255,255,255,0.68) 100%)',
-          border: '1px solid rgba(20,17,26,0.07)',
-          borderTop: '1px solid rgba(255,255,255,0.9)',
           borderRadius: 32,
-          backdropFilter: 'blur(30px) saturate(150%)',
-          WebkitBackdropFilter: 'blur(30px) saturate(150%)',
           padding: '48px 52px 44px',
-          boxShadow:
-            '0 40px 100px -30px rgba(40,30,60,0.38), inset 0 1px 0 rgba(255,255,255,0.9)',
           position: 'relative',
           overflow: 'hidden',
           transform: entered ? 'translateY(0) scale(1)' : 'translateY(80px) scale(0.88)',
