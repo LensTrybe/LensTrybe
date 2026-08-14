@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { LensMark } from './BrandLogo'
+import TileField from './TileField'
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
@@ -144,35 +145,12 @@ export default function CinematicEntrance({ onComplete }) {
         style={{
           position: 'absolute',
           inset: 0,
-          display: 'grid',
-          gridTemplateColumns: 'repeat(5, 1fr)',
-          gap: 8,
-          padding: 8,
           zIndex: 0,
           opacity: entered ? 1 : 0,
           transition: 'opacity 1.4s ease',
         }}
       >
-        {TILE_COLUMNS.map((col, ci) => {
-          const seq = Array.from({ length: 6 }, (_, i) => TILE_GRADS[(col.start + i) % TILE_GRADS.length])
-          const tiles = [...seq, ...seq]
-          return (
-            <div key={ci} style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  willChange: 'transform',
-                  animation: `${col.dir === 'up' ? 'ltIntroUp' : 'ltIntroDown'} ${col.dur}s linear infinite`,
-                }}
-              >
-                {tiles.map((bg, i) => (
-                  <div key={i} style={{ height: 160, marginBottom: 8, borderRadius: 10, background: bg }} />
-                ))}
-              </div>
-            </div>
-          )
-        })}
+        <TileField twinkle />
       </div>
 
       {/* Soft clearing so the card reads clearly */}

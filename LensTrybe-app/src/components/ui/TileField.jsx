@@ -19,27 +19,35 @@ const TILE_PATTERN = ['s', 'p', 's', 'p', 'p', 's']
 const TILE_REPEATS = 10
 const TILE_LOOP = TILE_PATTERN.reduce((sum, c) => sum + (c === 's' ? TILE_SINGLE_H : TILE_PAIR_H) + TILE_GAP, 0)
 
-function MosaicColumn({ index, animated }) {
+function MosaicColumn({ index, animated, twinkle }) {
   const dir = index % 2 === 0 ? 'up' : 'down'
   const dur = 44 + (index % 5) * 7
   const rot = index % TILE_PATTERN.length
   const rotated = [...TILE_PATTERN.slice(rot), ...TILE_PATTERN.slice(0, rot)]
-  const cells = Array.from({ length: TILE_REPEATS }).flatMap(() => rotated)
+  const reps = twinkle ? 2 : TILE_REPEATS
+  const cells = Array.from({ length: reps }).flatMap(() => rotated)
   let g = index * 2
+  let t = index * 3
+  const twk = () => {
+    const n = t++
+    return twinkle
+      ? { animation: `ltTwinkle ${(2.6 + (n % 6) * 0.5).toFixed(2)}s ease-in-out ${((n * 0.47) % 4).toFixed(2)}s infinite`, willChange: 'opacity' }
+      : null
+  }
   return (
     <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', willChange: animated ? 'transform' : 'auto', animation: animated ? `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` : 'none' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', willChange: animated && !twinkle ? 'transform' : 'auto', animation: animated && !twinkle ? `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` : 'none' }}>
         {cells.map((c, i) => {
           if (c === 's') {
             const bg = TILE_GRADS[g++ % TILE_GRADS.length]
-            return <div key={i} style={{ height: `${TILE_SINGLE_H}px`, marginBottom: `${TILE_GAP}px`, borderRadius: '12px', background: bg }} />
+            return <div key={i} style={{ height: `${TILE_SINGLE_H}px`, marginBottom: `${TILE_GAP}px`, borderRadius: '12px', background: bg, ...twk() }} />
           }
           const a = TILE_GRADS[g++ % TILE_GRADS.length]
           const b = TILE_GRADS[g++ % TILE_GRADS.length]
           return (
             <div key={i} style={{ display: 'flex', gap: `${TILE_GAP}px`, marginBottom: `${TILE_GAP}px` }}>
-              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: a }} />
-              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: b }} />
+              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: a, ...twk() }} />
+              <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: b, ...twk() }} />
             </div>
           )
         })}
@@ -48,7 +56,7 @@ function MosaicColumn({ index, animated }) {
   )
 }
 
-export default function TileField({ animated = true, opacity = 1 }) {
+export default function TileField({ animated = true, opacity = 1, twinkle = false }) {
   const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
   useEffect(() => {
     function onResize() { setColCount(Math.max(6, Math.ceil(window.innerWidth / 240))) }
@@ -58,11 +66,16 @@ export default function TileField({ animated = true, opacity = 1 }) {
   return (
     <>
       <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity }}>
-        {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} />)}
+        {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} twinkle={twinkle} />)}
       </div>
       <style>{`
         @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-${TILE_LOOP}px); } }
         @keyframes ltHeroDown { from { transform: translateY(-${TILE_LOOP}px); } to { transform: translateY(0); } }
+        @keyframes ltTwinkle {
+          0%, 30% { opacity: 0.2; filter: saturate(0.55) brightness(1.1); }
+          50% { opacity: 1; filter: saturate(1.75) brightness(0.9); }
+          70%, 100% { opacity: 0.2; filter: saturate(0.55) brightness(1.1); }
+        }
       `}</style>
     </>
   )
