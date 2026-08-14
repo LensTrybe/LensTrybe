@@ -240,6 +240,7 @@ export default function JobBoardPage() {
 
   async function postJob() {
     setJobPostModerationError('')
+    if (!user?.id) { setJobPostModerationError('Your session expired — please sign in again to post.'); return }
     const jobText = [form.title, form.description, form.location, form.budget].filter(Boolean).join('\n')
     const jobMod = await moderateText(jobText)
     if (jobMod?.blocked) {
@@ -249,7 +250,7 @@ export default function JobBoardPage() {
     if (jobMod?.flagged) console.warn('[moderation] Flagged job listing text', jobMod.reason)
     setSaving(true)
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
-    await supabase.from('job_listings').insert({
+    const { error: postError } = await supabase.from('job_listings').insert({
       posted_by: user.id,
       title: form.title,
       description: form.description,
@@ -262,6 +263,11 @@ export default function JobBoardPage() {
       poster_email: profile?.business_email ?? user?.email ?? null,
       poster_name: profile?.business_name ?? profile?.full_name ?? user?.email ?? null,
     })
+    if (postError) {
+      setJobPostModerationError('Could not post job: ' + postError.message)
+      setSaving(false)
+      return
+    }
     await loadJobs()
     await loadMyPostedJobs()
     setShowPost(false)

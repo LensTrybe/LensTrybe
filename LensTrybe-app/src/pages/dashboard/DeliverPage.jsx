@@ -118,6 +118,7 @@ export default function DeliverPage() {
   }
 
   async function createDelivery() {
+    if (!user?.id) { showToast('Your session expired — please sign in again to save.', 'error'); return }
     setSaving(true)
     const download_token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -134,7 +135,7 @@ export default function DeliverPage() {
       files: [],
     }).select().single()
 
-    if (error) { setSaving(false); return }
+    if (error) { setSaving(false); showToast('Could not save delivery: ' + error.message, 'error'); return }
 
     if (form.files.length > 0) {
       setUploading(true)

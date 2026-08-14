@@ -51,6 +51,7 @@ export default function ClientPortalsPage() {
   }
 
   async function createPortal() {
+    if (!user?.id) { showToast('Your session expired — please sign in again to save.', 'error'); return }
     setSaving(true)
     try {
       const token = crypto.randomUUID()
