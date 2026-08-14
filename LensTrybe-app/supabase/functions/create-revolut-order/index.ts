@@ -1,15 +1,16 @@
 // Supabase Edge Function: create-revolut-order
-// Client-facing (verify_jwt = false). Creates/returns a Revolut customer,
-// creates a payment order with that customer attached, records a pending
-// subscription row, and returns the checkout token for the Merchant Web SDK.
+// Client-facing (verify_jwt = false). Creates a Revolut customer and a
+// ZERO-AMOUNT setup order that saves the customer's card for future
+// merchant-initiated charges (no charge now). Records a "trialing" subscription
+// with the correct first-charge date:
+//   - Expert: first charge 1 Jan 2027 (free until then)
+//   - Pro / Elite: 14-day free trial, first charge day 14
+// The recurring-charge cron makes the first real charge on next_charge_date.
 //
 // Receives: { userId, email, tier, billing, fullName? }
-// Returns:  { token, orderId, amount, currency, env }
+// Returns:  { token, orderId, env, trialEnd }
 //
-// Required secrets:
-// - REVOLUT_SECRET_KEY        (sk_... ; sandbox while testing)
-// - REVOLUT_ENV               ('sandbox' | 'production' ; defaults to sandbox)
-// - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-provided)
+// Secrets: REVOLUT_SECRET_KEY, REVOLUT_ENV, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -20,8 +21,10 @@ const corsHeaders = {
 
 const REVOLUT_API_VERSION = '2026-04-20'
 const CURRENCY = 'AUD'
+const TRIAL_DAYS = 14
+const EXPERT_FIRST_CHARGE = '2027-01-01T00:00:00+11:00'
 
-// Plan prices in AUD minor units (cents). Mirrors PricingCards.jsx.
+// Real plan prices in AUD minor units (cents). Charged later by the cron.
 const PLANS: Record<string, Record<string, number>> = {
   pro: { monthly: 2499, annual: 24990 },
   expert: { monthly: 7499, annual: 74990 },
@@ -80,9 +83,19 @@ Deno.serve(async (req) => {
   const amount = PLANS?.[tier]?.[billing]
   if (!amount) return json({ error: `Unknown plan: ${tier}/${billing}` }, 400)
 
+  // First-charge date: Expert deferred to 2027-01-01, everyone else a 14-day trial.
+  const now = new Date()
+  const isExpert = tier === 'expert'
+  const firstCharge = isExpert
+    ? new Date(EXPERT_FIRST_CHARGE)
+    : new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+  // Use the intended calendar date. For Expert this is exactly 2027-01-01 (the
+  // promised date); deriving it from the UTC instant would slip it back a day.
+  const firstChargeDate = isExpert ? '2027-01-01' : firstCharge.toISOString().slice(0, 10)
+
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-  // 1. Reuse or create the Revolut customer for this user.
+  // 1. Reuse or create the Revolut customer.
   const { data: prof } = await sb
     .from('profiles')
     .select('revolut_customer_id')
@@ -90,12 +103,8 @@ Deno.serve(async (req) => {
     .maybeSingle()
 
   let customerId = prof?.revolut_customer_id ? String(prof.revolut_customer_id) : ''
-
   if (!customerId) {
-    const cust = await revolut('/customers', REVOLUT_SECRET_KEY, {
-      full_name: fullName || email,
-      email,
-    })
+    const cust = await revolut('/customers', REVOLUT_SECRET_KEY, { full_name: fullName || email, email })
     if (!cust.ok || !cust.body?.id) {
       return json({ error: 'Failed to create Revolut customer', detail: cust.body }, 502)
     }
@@ -103,43 +112,44 @@ Deno.serve(async (req) => {
     await sb.from('profiles').update({ revolut_customer_id: customerId }).eq('id', userId)
   }
 
-  // 2. Create the order with the customer attached (nested customer.id).
+  // 2. Zero-amount setup order: authorises the card for future charges, no charge now.
   const order = await revolut('/orders', REVOLUT_SECRET_KEY, {
-    amount,
+    amount: 0,
     currency: CURRENCY,
-    capture_mode: 'automatic',
     customer: { id: customerId },
     merchant_order_data: { reference: userId },
   })
   if (!order.ok || !order.body?.token || !order.body?.id) {
-    return json({ error: 'Failed to create Revolut order', detail: order.body }, 502)
+    return json({ error: 'Failed to create Revolut setup order', detail: order.body }, 502)
   }
   const orderId = String(order.body.id)
   const token = String(order.body.token)
 
-  // 3. Record a pending subscription keyed to this order for webhook mapping.
-  await sb.from('subscriptions').upsert(
+  // 3. Record a trialing subscription with the real price + first-charge date.
+  const { error: upsertErr } = await sb.from('subscriptions').upsert(
     {
       user_id: userId,
       provider: 'revolut',
       tier,
       billing,
-      status: 'pending',
+      status: 'trialing',
       revolut_customer_id: customerId,
       revolut_last_order_id: orderId,
       amount_minor: amount,
       currency: CURRENCY,
-      founding_member: false,
+      current_period_end: firstCharge.toISOString(),
+      next_charge_date: firstChargeDate,
+      founding_member: isExpert,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },
   )
+  if (upsertErr) return json({ error: 'Failed to record subscription', detail: upsertErr.message }, 500)
 
   return json({
     token,
     orderId,
-    amount,
-    currency: CURRENCY,
+    trialEnd: firstChargeDate,
     env: (Deno.env.get('REVOLUT_ENV') || 'sandbox').toLowerCase(),
   })
 })

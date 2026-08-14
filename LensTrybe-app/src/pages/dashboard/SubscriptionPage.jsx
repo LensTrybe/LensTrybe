@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { payWithRevolut } from '../../lib/revolut.js'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
@@ -66,34 +67,36 @@ export default function SubscriptionPage() {
     if (!user?.id) return
     if (plan.id === tier) return
     if (plan.id === 'basic') {
-      // Downgrade to basic — open billing portal to cancel
+      // Cancel subscription — keeps access until the period ends, then downgrades.
       setLoading('basic')
-      const { data } = await supabase.functions.invoke('create-stripe-portal', {
-        body: { userId: user.id, email: user.email, name: profile?.business_name ?? user.email, returnUrl: window.location.href },
-      })
-      if (data?.url) window.location.href = data.url
-      else showToast('Could not open billing portal', 'error')
+      const { data, error } = await supabase.functions.invoke('cancel-revolut-subscription')
+      if (error || !data?.ok) {
+        showToast('Could not cancel: ' + (error?.message ?? 'Unknown error'), 'error')
+      } else {
+        const until = data.accessUntil
+          ? new Date(data.accessUntil).toLocaleDateString()
+          : 'the end of your billing period'
+        showToast(`Subscription canceled. You keep access until ${until}.`)
+      }
       setLoading(null)
       return
     }
 
-    // Upgrade/change plan — create checkout session
+    // Upgrade / change plan — save the card via Revolut and switch tier.
     setLoading(plan.id)
-    const priceId = billing === 'annual' ? plan.priceIdAnnual : plan.priceIdMonthly
-    const { data, error } = await supabase.functions.invoke('create-checkout-session', {
-      body: {
-        priceId,
-        userId: user.id,
-        email: user.email,
-        name: profile?.business_name ?? user.email,
-        successUrl: 'https://lenstrybe.com/dashboard/settings?upgraded=true',
-        cancelUrl: window.location.href,
-      },
-    })
-    if (data?.url) {
-      window.location.href = data.url
-    } else {
-      showToast('Could not start checkout: ' + (error?.message ?? 'Unknown error'), 'error')
+    try {
+      const result = await payWithRevolut({
+        user: { id: user.id, email: user.email },
+        tier: plan.id,
+        billing,
+        fullName: profile?.business_name ?? user.email,
+      })
+      if (result === 'success') {
+        showToast('Plan updated!')
+        setTimeout(() => window.location.reload(), 1200)
+      }
+    } catch (e) {
+      showToast('Could not start checkout: ' + (e?.message ?? 'Unknown error'), 'error')
     }
     setLoading(null)
   }

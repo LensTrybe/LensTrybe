@@ -67,13 +67,26 @@ Deno.serve(async (req) => {
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
   const today = new Date().toISOString().slice(0, 10)
+  const nowIso = new Date().toISOString()
 
-  // Due = active Revolut subs with a saved card whose charge date has arrived.
+  // Downgrade canceled subs whose paid access period has now ended → Basic.
+  const { data: expiredCanceled } = await sb
+    .from('subscriptions')
+    .select('id, user_id')
+    .eq('provider', 'revolut')
+    .eq('status', 'canceled')
+    .lt('current_period_end', nowIso)
+  for (const s of expiredCanceled || []) {
+    await sb.from('subscriptions').update({ status: 'expired', updated_at: nowIso }).eq('id', s.id)
+    await sb.from('profiles').update({ subscription_tier: 'basic', subscription_status: 'canceled' }).eq('id', s.user_id)
+  }
+
+  // Charge both trialing subs whose trial has ended and active subs due for renewal.
   const { data: due, error } = await sb
     .from('subscriptions')
     .select('id, user_id, tier, billing, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end')
     .eq('provider', 'revolut')
-    .eq('status', 'active')
+    .in('status', ['active', 'trialing'])
     .not('revolut_payment_method_id', 'is', null)
     .lte('next_charge_date', today)
 
@@ -113,6 +126,7 @@ Deno.serve(async (req) => {
       const nextEnd = addPeriod(base, sub.billing)
 
       await sb.from('subscriptions').update({
+        status: 'active',
         revolut_last_order_id: orderId,
         current_period_end: nextEnd.toISOString(),
         next_charge_date: nextEnd.toISOString().slice(0, 10),

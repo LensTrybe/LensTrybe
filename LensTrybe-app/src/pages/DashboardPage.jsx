@@ -501,23 +501,16 @@ export default function DashboardPage() {
   const statusActive =
     String(stats?.subscriptionStatus || 'active').toLowerCase() === 'active'
 
-  const handleManageBilling = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('create-stripe-portal')
-      if (error) throw error
-      const url = data?.url
-      if (url) window.location.href = url
-    } catch (e) {
-      const msg = e?.message || 'Could not open billing portal.'
-      alert(msg)
-    }
+  const handleManageBilling = () => {
+    // Revolut has no hosted portal — send them to the in-app subscription page.
+    navigate('/dashboard/settings/subscription')
   }
 
   const handleCancelSubscription = async () => {
     const ok = window.confirm('Cancel your subscription? You will keep access until the end of your current billing period.')
     if (!ok) return
     try {
-      const { error } = await supabase.functions.invoke('cancel-subscription')
+      const { error } = await supabase.functions.invoke('cancel-revolut-subscription')
       if (error) throw error
       await fetchStats()
       alert('Subscription cancelled.')

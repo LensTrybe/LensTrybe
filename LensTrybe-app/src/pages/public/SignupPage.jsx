@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { moderateText, moderateImage, PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE } from '../../lib/moderateContent'
+import { payWithRevolut } from '../../lib/revolut.js'
 import Input from '../../components/ui/Input'
 import {
   DIVIDER_GRADIENT_STYLE,
@@ -52,15 +53,6 @@ const SKILL_TYPE_LIMIT_BY_TIER = {
   elite: Infinity,
 }
 
-const PRICE_IDS = {
-  pro_monthly: 'price_1TKKXSHW7LVs8k6s2IW7TXsd',
-  pro_annual: 'price_1TKKXVHW7LVs8k6snGkHjQE5',
-  expert_monthly: 'price_1TKKXYHW7LVs8k6sboOI02xE',
-  expert_annual: 'price_1TKKXbHW7LVs8k6shpoFmKAi',
-  elite_monthly: 'price_1TKKXjHW7LVs8k6sQNNIkiCf',
-  elite_annual: 'price_1TKKXfHW7LVs8k6s99ish4aV',
-}
-
 function maxSkillTypesForTier(tierId) {
   const n = SKILL_TYPE_LIMIT_BY_TIER[tierId]
   return n === undefined ? Infinity : n
@@ -82,11 +74,6 @@ function skillTypeLimitHint(tierId) {
     return `Your ${tierName} plan includes up to ${max} skill types. Upgrade to Elite to add more.`
   }
   return `Your plan includes up to ${max} skill types.`
-}
-
-function getCheckoutPriceId(tierId, billingInterval = 'monthly') {
-  const interval = billingInterval === 'annual' ? 'annual' : 'monthly'
-  return PRICE_IDS[`${tierId}_${interval}`] || ''
 }
 
 export default function SignupPage() {
@@ -347,36 +334,26 @@ export default function SignupPage() {
         console.log('send-welcome-email failed', welcomeEmailError)
       }
 
-      if (form.tier === 'expert' && (isFoundingSignup || offerActive)) {
-        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-founding-checkout', {
-          body: { userId, email, interval: form.billingInterval }
-        })
-        if (checkoutError) throw checkoutError
-        if (checkoutData?.url) {
-          window.location.href = checkoutData.url
-          return
-        }
-      }
-
+      // Paid tiers: save the card via Revolut (zero-amount setup order → card-on-file).
+      // Expert defers the first charge to 1 Jan 2027; Pro/Elite get a 14-day trial.
+      // The recurring-charge job makes the first real charge on the due date.
       if (form.tier !== 'basic') {
-        const priceId = getCheckoutPriceId(form.tier, form.billingInterval)
-        if (!priceId) {
-          throw new Error(`Missing Stripe price ID for ${form.tier} (${form.billingInterval || 'monthly'})`)
-        }
-        const requestBody = { priceId, userId, email, referralCode: referralCodeStatus === 'valid' ? form.referralCode.trim().toUpperCase() : undefined }
-        const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('create-checkout-session', {
-          body: requestBody
-        })
-        if (checkoutError) {
-          console.log('[SignupPage] create-checkout-session error', {
-            error: checkoutError,
-            data: checkoutData,
-            requestBody,
+        try {
+          const result = await payWithRevolut({
+            user: { id: userId, email },
+            tier: form.tier,
+            billing: form.billingInterval,
+            fullName: `${form.firstName} ${form.lastName}`.trim(),
           })
-          throw checkoutError
-        }
-        if (checkoutData?.url) {
-          window.location.href = checkoutData.url
+          if (result !== 'success') {
+            // Card widget was closed/cancelled — the account exists, so let them
+            // finish adding billing from the dashboard rather than blocking signup.
+            navigate('/dashboard?billing=incomplete')
+            return
+          }
+        } catch (e) {
+          setError(e.message || 'Card setup failed. You can add billing from your dashboard.')
+          setLoading(false)
           return
         }
       }

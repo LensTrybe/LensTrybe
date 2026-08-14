@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { payWithRevolut } from '../../lib/revolut.js'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
@@ -340,15 +341,15 @@ export default function SettingsPage() {
     setFoundingLoading(true)
     try {
       const currentInterval = pricingAnnual ? 'annual' : 'monthly'
-      const { data, error } = await supabase.functions.invoke('create-founding-checkout', {
-        body: { userId: user.id, email: user.email, interval: currentInterval },
+      const result = await payWithRevolut({
+        user: { id: user.id, email: user.email },
+        tier: 'expert',
+        billing: currentInterval,
+        fullName: profile?.business_name ?? user.email,
       })
-      if (error) throw error
-      if (data?.url) {
-        window.location.href = data.url
-        return
+      if (result === 'success') {
+        window.location.href = '/dashboard?founding=1'
       }
-      alert('Error: ' + (data?.error ?? 'Could not start checkout'))
     } catch (err) {
       alert(err?.message ?? 'Could not start checkout')
     } finally {
@@ -360,20 +361,8 @@ export default function SettingsPage() {
     if (!user?.id) return
     setLoading(true)
     try {
-      const { data, error } = await supabase.functions.invoke('create-stripe-portal', {
-        body: {
-          userId: user.id,
-          email: user.email,
-          name: profile?.business_name ?? user.email,
-          returnUrl: 'https://lenstrybe.com/dashboard/settings',
-        },
-      })
-      console.log('Portal response:', data, error)
-      if (data?.url) {
-        window.location.href = data.url
-      } else {
-        alert('Error: ' + (data?.error ?? JSON.stringify(data) ?? error?.message ?? 'Unknown'))
-      }
+      // Revolut has no hosted portal — send them to the in-app subscription page.
+      navigate('/dashboard/settings/subscription')
     } finally {
       setLoading(false)
     }

@@ -110,8 +110,14 @@ Deno.serve(async (req) => {
 
   if (!sub) return json({ received: true, note: 'no matching subscription' })
 
+  // Verify the order's REAL state directly with Revolut (defends against forged
+  // webhook calls without needing a signing secret). We drive off this state,
+  // not the claimed event name.
+  const ord = await revolutGet(`/orders/${orderId}`, REVOLUT_SECRET_KEY)
+  const state = String((ord.body as Record<string, unknown>)?.state || '').toLowerCase()
+
   try {
-    if (event === 'ORDER_COMPLETED') {
+    if (state === 'completed' || state === 'authorised') {
       // Retrieve the customer's saved payment method for future merchant-initiated charges.
       let pmId: string | null = null
       if (sub.revolut_customer_id) {
@@ -125,17 +131,16 @@ Deno.serve(async (req) => {
       const now = new Date()
       const hasFuturePeriod = sub.current_period_end && new Date(sub.current_period_end) > now
 
-      const updates: Record<string, unknown> = {
-        status: 'active',
-        updated_at: now.toISOString(),
-      }
-      // Only capture the payment method if we found one (renewals already have it).
+      const updates: Record<string, unknown> = { updated_at: now.toISOString() }
+      // Capture the saved card when we find one (renewals already have it).
       if (pmId) updates.revolut_payment_method_id = pmId
-      // Set the billing period only on initial activation. Renewals are advanced
-      // by the recurring-charge job, so we must not overwrite a future period here.
+      // A future period means this is the zero-amount setup order completing (trial
+      // or Expert deferral): keep the trialing status + first-charge date the order
+      // function set. Only when there is no future period do we treat this as an
+      // immediate activation (fallback path).
       if (!hasFuturePeriod) {
-        // Founding members: card saved now, first real charge deferred to 2027-01-01.
-        const periodEnd = sub.founding_member ? new Date('2027-01-01T00:00:00+11:00') : addPeriod(now, sub.billing)
+        updates.status = 'active'
+        const periodEnd = addPeriod(now, sub.billing)
         updates.current_period_end = periodEnd.toISOString()
         updates.next_charge_date = periodEnd.toISOString().slice(0, 10)
       }
@@ -146,14 +151,14 @@ Deno.serve(async (req) => {
         subscription_tier: sub.tier,
         subscription_status: 'active',
       }).eq('id', sub.user_id)
-    } else if (event === 'ORDER_PAYMENT_DECLINED' || event === 'ORDER_PAYMENT_FAILED') {
+    } else if (state === 'failed' || state === 'declined') {
       await sb.from('subscriptions').update({ status: 'past_due', updated_at: new Date().toISOString() }).eq('id', sub.id)
       await sb.from('profiles').update({ subscription_status: 'past_due' }).eq('id', sub.user_id)
-    } else if (event === 'ORDER_CANCELLED') {
+    } else if (state === 'cancelled') {
       await sb.from('subscriptions').update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('id', sub.id)
     }
 
-    return json({ received: true })
+    return json({ received: true, event, state })
   } catch (e) {
     return json({ error: e instanceof Error ? e.message : String(e) }, 500)
   }
