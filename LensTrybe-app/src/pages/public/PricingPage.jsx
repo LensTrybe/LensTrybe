@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
 import TileField from '../../components/ui/TileField'
+import { payWithRevolut } from '../../lib/revolut.js'
 
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
@@ -96,6 +97,7 @@ export default function PricingPage() {
   const [foundingCount, setFoundingCount] = useState(0)
   const [countLoading, setCountLoading] = useState(true)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+  const [revLoading, setRevLoading] = useState('')
 
   const currentInterval = annual ? 'annual' : 'monthly'
   const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
@@ -162,6 +164,33 @@ export default function PricingPage() {
       return
     }
     navigate(`/join/creative?plan=${planId}`)
+  }
+
+  // TEMP sandbox test: Revolut checkout alongside the existing Stripe flow.
+  async function startRevolutTest(tier) {
+    const planId = tier.name.toLowerCase()
+    setRevLoading(tier.name)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        alert('Sign in first to test the Revolut checkout.')
+        setRevLoading('')
+        return
+      }
+      const result = await payWithRevolut({
+        user: { id: user.id, email: user.email },
+        tier: planId,
+        billing: currentInterval,
+      })
+      if (result === 'success') {
+        navigate('/dashboard?revolut=success')
+      } else {
+        setRevLoading('')
+      }
+    } catch (e) {
+      alert(e?.message || 'Revolut checkout failed.')
+      setRevLoading('')
+    }
   }
 
   function renderExpertFoundingPrice(tier) {
@@ -588,6 +617,29 @@ export default function PricingPage() {
               >
                 {isFoundingExpert ? tier.foundingCta : tier.cta}
               </button>
+
+              {import.meta.env.DEV && tier.monthly > 0 && (
+                <button
+                  type="button"
+                  onClick={() => startRevolutTest(tier)}
+                  disabled={revLoading === tier.name}
+                  style={{
+                    minHeight: '40px',
+                    marginTop: '-12px',
+                    width: '100%',
+                    background: 'transparent',
+                    border: '1px dashed rgba(20,17,26,0.35)',
+                    borderRadius: '10px',
+                    fontSize: '12px',
+                    fontWeight: 700,
+                    color: 'rgba(20,17,26,0.6)',
+                    cursor: revLoading === tier.name ? 'not-allowed' : 'pointer',
+                    fontFamily: font,
+                  }}
+                >
+                  {revLoading === tier.name ? 'Opening Revolut…' : 'Pay with Revolut (sandbox test)'}
+                </button>
+              )}
 
               {isFoundingExpert && (
                 <p style={{

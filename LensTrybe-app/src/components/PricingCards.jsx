@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import useAuthUser from '../hooks/useAuthUser.js'
 import { getPriceId, redirectToCheckout } from '../lib/stripe.js'
+import { payWithRevolut } from '../lib/revolut.js'
 
 export default function PricingCards({
   billing,
@@ -232,6 +233,50 @@ export default function PricingCards({
     startCheckout(t)
   }
 
+  // TEMP sandbox test: Revolut checkout alongside Stripe. Remove at cutover.
+  const startRevolutTest = async (t) => {
+    if (!user) {
+      alert('Sign in first to test the Revolut checkout.')
+      return
+    }
+    setCheckoutLoading('rev-' + t)
+    try {
+      const result = await payWithRevolut({ user, tier: t, billing })
+      if (result === 'success') {
+        window.location.href = '/dashboard?revolut=success'
+      } else {
+        setCheckoutLoading('')
+      }
+    } catch (e) {
+      alert(e?.message || 'Revolut checkout failed.')
+      setCheckoutLoading('')
+    }
+  }
+
+  const revolutTestBtn = (t) =>
+    mode === 'pricing' && import.meta.env.DEV ? (
+      <button
+        type="button"
+        onClick={() => startRevolutTest(t)}
+        disabled={checkoutLoading === 'rev-' + t}
+        style={{
+          marginTop: 8,
+          width: '100%',
+          background: 'transparent',
+          border: '1px dashed rgba(20,17,26,0.35)',
+          color: 'rgba(20,17,26,0.7)',
+          fontWeight: 700,
+          borderRadius: 10,
+          padding: '9px 14px',
+          cursor: checkoutLoading === 'rev-' + t ? 'not-allowed' : 'pointer',
+          fontFamily: 'Inter, sans-serif',
+          fontSize: 12,
+        }}
+      >
+        {checkoutLoading === 'rev-' + t ? 'Opening Revolut…' : 'Pay with Revolut (sandbox test)'}
+      </button>
+    ) : null
+
   const BasicCard = () => (
     <div style={{ ...cardBase, border: basicSelected ? `2px solid ${BRAND.green}` : cardBase.border }}>
       <div style={cardHeadStyle}>
@@ -360,6 +405,7 @@ export default function PricingCards({
       >
         {mode === 'pricing' && checkoutLoading === 'pro' ? 'Redirecting…' : 'Select Plan'}
       </button>
+      {revolutTestBtn('pro')}
     </div>
   )
 
@@ -466,6 +512,7 @@ export default function PricingCards({
       >
         {mode === 'pricing' && checkoutLoading === 'expert' ? 'Redirecting…' : 'Select Plan'}
       </button>
+      {revolutTestBtn('expert')}
     </div>
   )
 
@@ -550,6 +597,7 @@ export default function PricingCards({
       >
         {mode === 'pricing' && checkoutLoading === 'elite' ? 'Redirecting…' : 'Select Plan'}
       </button>
+      {revolutTestBtn('elite')}
     </div>
   )
 
