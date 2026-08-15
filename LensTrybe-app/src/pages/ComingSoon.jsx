@@ -379,10 +379,10 @@ function SuccessView({ result }) {
 
   const heading = founding ? `You're in. Founding creative #${pos}.` : "You're on the list."
   const sub = founding
-    ? "Three months free when we open on 1 January. We've sent a confirmation to your inbox."
+    ? 'Three months free when we open on 1 January.'
     : isClient
-      ? "We'll let you know the moment you can start booking Australian creatives. We've sent a confirmation to your inbox."
-      : "You'll be first through the doors on 1 January. We've sent a confirmation to your inbox."
+      ? "We'll let you know the moment you can start booking Australian creatives."
+      : "You'll be first through the doors on 1 January."
 
   return (
     <div style={{ textAlign: 'center', padding: '8px 4px 6px' }}>
@@ -390,7 +390,12 @@ function SuccessView({ result }) {
         <span style={{ color: GREEN, fontSize: 26, fontWeight: 700 }}>✓</span>
       </div>
       <h2 style={{ margin: '0 0 10px', fontSize: 22, fontWeight: 600, letterSpacing: '-0.01em', color: TEXT_PRIMARY }}>{heading}</h2>
-      <p style={{ margin: '0 0 16px', fontSize: 14.5, lineHeight: 1.6, color: TEXT_SECONDARY }}>{sub}</p>
+      <p style={{ margin: '0 0 14px', fontSize: 14.5, lineHeight: 1.6, color: TEXT_SECONDARY }}>{sub}</p>
+      <div style={{ background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.22)', borderRadius: 12, padding: '11px 14px', margin: '0 0 14px' }}>
+        <p style={{ margin: 0, fontSize: 13, lineHeight: 1.55, color: TEXT_SECONDARY }}>
+          Keep an eye out for your welcome email. If it's not in your inbox, check your spam or promotions folder and mark us as safe so you don't miss any updates.
+        </p>
+      </div>
       <p style={{ margin: 0, fontSize: 13, color: TEXT_MUTED }}>
         Follow <a href="https://instagram.com/lenstrybe" target="_blank" rel="noopener noreferrer" style={{ color: GREEN, fontWeight: 600, textDecoration: 'none' }}>@lenstrybe</a> to keep up with our progress.
       </p>
