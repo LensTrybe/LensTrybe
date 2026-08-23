@@ -2,8 +2,12 @@ import { useEffect, useState } from 'react'
 import { Outlet } from 'react-router-dom'
 import Sidebar from './Sidebar'
 
-const PAGE_BG =
-  'linear-gradient(135deg, #f7f6f4 0%, #f3f2f0 50%, #f5f4f6 100%)'
+// Dark base + drifting pastel "northern lights" wash behind the whole dashboard.
+const AURORA_WRAP = {
+  position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none',
+  background: 'radial-gradient(1200px 900px at 15% -12%, #100f20 0%, transparent 55%), radial-gradient(1000px 820px at 100% 116%, #0a1622 0%, transparent 55%), #07060c',
+}
+const auroraBlob = (c, o) => ({ position: 'absolute', borderRadius: '50%', background: c, filter: 'blur(100px)', mixBlendMode: 'screen', opacity: o })
 
 const GLASS_HAMBURGER = {
   backdropFilter: 'blur(20px) saturate(150%)',
@@ -27,6 +31,15 @@ function HamburgerIcon() {
 export default function DashboardLayout() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
+  const [theme, setTheme] = useState(() => (typeof window !== 'undefined' && localStorage.getItem('lt_dash_theme')) || 'light')
+  const dark = theme === 'dark'
+  function toggleTheme() {
+    setTheme((p) => {
+      const n = p === 'dark' ? 'light' : 'dark'
+      try { localStorage.setItem('lt_dash_theme', n) } catch { /* ignore */ }
+      return n
+    })
+  }
 
   useEffect(() => {
     function handleResize() {
@@ -40,6 +53,18 @@ export default function DashboardLayout() {
 
   return (
     <>
+      <div aria-hidden style={AURORA_WRAP}>
+        <div style={{ ...auroraBlob('#22e39a', 0.5), width: 720, height: 480, top: '-14%', left: '-6%', animation: 'auroraA 22s ease-in-out infinite alternate' }} />
+        <div style={{ ...auroraBlob('#38bdf8', 0.5), width: 640, height: 540, top: '-10%', right: '-2%', animation: 'auroraB 26s ease-in-out infinite alternate' }} />
+        <div style={{ ...auroraBlob('#7c5cff', 0.5), width: 780, height: 560, bottom: '-18%', right: '-8%', animation: 'auroraC 24s ease-in-out infinite alternate' }} />
+        <div style={{ ...auroraBlob('#e0559a', 0.38), width: 560, height: 460, bottom: '-16%', left: '4%', animation: 'auroraD 28s ease-in-out infinite alternate' }} />
+      </div>
+      <style>{`
+        @keyframes auroraA { from { transform: translate(0,0) scale(1) } to { transform: translate(46px,34px) scale(1.12) } }
+        @keyframes auroraB { from { transform: translate(0,0) scale(1) } to { transform: translate(-44px,42px) scale(1.08) } }
+        @keyframes auroraC { from { transform: translate(0,0) scale(1) } to { transform: translate(-34px,-44px) scale(1.14) } }
+        @keyframes auroraD { from { transform: translate(0,0) scale(1) } to { transform: translate(44px,-32px) scale(1.06) } }
+      `}</style>
       {isMobile && (
         <button
           type="button"
@@ -82,8 +107,8 @@ export default function DashboardLayout() {
           }}
         />
       )}
-      <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: PAGE_BG, width: '100%', position: 'relative', zIndex: 1 }}>
-        {!isMobile && <Sidebar isMobile={false} mobileOpen={false} onCloseMobile={() => setMobileSidebarOpen(false)} />}
+      <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: 'transparent', colorScheme: dark ? 'dark' : 'light', width: '100%', position: 'relative', zIndex: 1 }}>
+        {!isMobile && <Sidebar isMobile={false} mobileOpen={false} onCloseMobile={() => setMobileSidebarOpen(false)} theme={theme} />}
         <main style={{
           flex: 1,
           minWidth: 0,
@@ -102,12 +127,12 @@ export default function DashboardLayout() {
             margin: '0 auto',
             boxSizing: 'border-box',
           }} className="dash-main">
-            <Outlet />
+            <Outlet context={{ theme, toggleTheme, dark }} />
           </div>
         </main>
       </div>
       {isMobile && (
-        <Sidebar isMobile mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} />
+        <Sidebar isMobile mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} theme={theme} />
       )}
     </>
   )

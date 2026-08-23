@@ -1,318 +1,284 @@
-import { useState } from 'react'
-import { NavLink, useNavigate } from 'react-router-dom'
+import { useMemo, useState } from 'react'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { supabase } from '../../lib/supabaseClient'
 import BrandLogo from '../ui/BrandLogo'
+import NavIcon from './navIcons'
 
-const nav = [
-  { label: 'Dashboard', path: '/dashboard', icon: '⊞', section: null },
-  { label: 'Find a Creative', path: '/creatives', icon: '', section: null },
-  { label: 'Messages', path: '/dashboard/clients/messages', icon: '', section: 'Clients' },
-  { label: 'CRM', path: '/dashboard/clients/crm', icon: '◈', section: 'Clients', feature: 'crm' },
-  { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: '◎', section: 'Finance', feature: 'invoicing' },
-  { label: 'Quotes', path: '/dashboard/finance/quotes', icon: '◌', section: 'Finance', feature: 'invoicing' },
-  { label: 'Contracts', path: '/dashboard/finance/contracts', icon: '✦', section: 'Finance', feature: 'contracts' },
-  { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: '◉', section: 'Portfolio', feature: 'brandKit' },
-  { label: 'Portfolio Website', path: '/dashboard/portfolio-design/portfolio-website', icon: '', section: 'Portfolio' },
-  { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: '', section: 'Portfolio', feature: 'deliver' },
-  { label: 'Reviews', path: '/dashboard/business/reviews', icon: '', section: 'Business' },
-  { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: '◆', section: 'Business' },
-  { label: 'Collaborate', path: '/dashboard/collaborate', icon: '', section: 'Business' },
-  { label: 'Team', path: '/dashboard/business/team', icon: '⬡', section: 'Business', feature: 'team' },
-  { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
-  { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: '◷', section: 'Work' },
-  { label: 'Availability', path: '/dashboard/my-work/availability', icon: '', section: 'Work' },
-  { label: 'Job Board', path: '/dashboard/my-work/jobs', icon: '◈', section: 'Work' },
-  { label: 'Edit Profile', path: '/dashboard/profile/edit-profile', icon: '◎', section: 'Account' },
-  { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: '', section: 'Account' },
-  { label: 'Referrals', path: '/dashboard/referrals', icon: '', section: 'Account' },
-  { label: 'Settings', path: '/dashboard/settings', icon: '', section: 'Account' },
+const TEXT = '#eef2fb'
+const ICON = '#c2cde3'
+const MUTED = '#8a97b4'
+const GREEN = '#34e39a'
+const PINK = '#ff5c93'
+const FONT = "'Inter', sans-serif"
+const SERIF = "'Instrument Serif', Georgia, serif"
+
+const RAIL = 64
+const OPEN_W = 236
+const MARGIN = 14
+const FLY_GAP = 10
+const FLY_W = 230
+const SPACER = MARGIN + RAIL + 14
+
+// Dark liquid glass (light content sits on it, aurora glows through).
+const GLASS = {
+  background: 'linear-gradient(160deg, rgba(26,32,54,0.62) 0%, rgba(14,18,36,0.44) 100%)',
+  backdropFilter: 'blur(38px) saturate(185%)',
+  WebkitBackdropFilter: 'blur(38px) saturate(185%)',
+  border: '1px solid rgba(255,255,255,0.12)',
+  boxShadow: '0 34px 80px -26px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.16), inset 0 -2px 10px rgba(0,0,0,0.25)',
+}
+
+function sheen(radius) {
+  return (
+    <div aria-hidden style={{
+      position: 'absolute', inset: 0, borderRadius: radius, pointerEvents: 'none',
+      background: 'linear-gradient(150deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 26%, rgba(255,255,255,0) 52%)',
+    }} />
+  )
+}
+
+const TOP = [
+  { label: 'Dashboard', path: '/dashboard', icon: 'grid' },
+  { label: 'Find a Creative', path: '/creatives', icon: 'search' },
+]
+
+const BASE_SECTIONS = [
+  { label: 'Clients', icon: 'message', items: [
+    { label: 'Messages', path: '/dashboard/clients/messages', icon: 'message' },
+    { label: 'CRM', path: '/dashboard/clients/crm', icon: 'contact', feature: 'crm' },
+  ] },
+  { label: 'Finance', icon: 'receipt', items: [
+    { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: 'dollar', feature: 'invoicing' },
+    { label: 'Quotes', path: '/dashboard/finance/quotes', icon: 'file', feature: 'invoicing' },
+    { label: 'Contracts', path: '/dashboard/finance/contracts', icon: 'fileCheck', feature: 'contracts' },
+  ] },
+  { label: 'Portfolio', icon: 'image', items: [
+    { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: 'palette', feature: 'brandKit' },
+    { label: 'Portfolio Website', path: '/dashboard/portfolio-design/portfolio-website', icon: 'globe' },
+    { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: 'upload', feature: 'deliver' },
+  ] },
+  { label: 'Business', icon: 'briefcase', items: [
+    { label: 'Reviews', path: '/dashboard/business/reviews', icon: 'star' },
+    { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: 'bag' },
+    { label: 'Collaborate', path: '/dashboard/collaborate', icon: 'users' },
+    { label: 'Team', path: '/dashboard/business/team', icon: 'users', feature: 'team' },
+    { label: 'Lumi AI', path: '/dashboard/lumi', icon: 'sparkle' },
+  ] },
+  { label: 'Work', icon: 'calendar', items: [
+    { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: 'calendar' },
+    { label: 'Availability', path: '/dashboard/my-work/availability', icon: 'clock' },
+    { label: 'Job Board', path: '/dashboard/my-work/jobs', icon: 'briefcase' },
+  ] },
+  { label: 'Account', icon: 'user', items: [
+    { label: 'Edit Profile', path: '/dashboard/profile/edit-profile', icon: 'edit' },
+    { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: 'eye' },
+    { label: 'Referrals', path: '/dashboard/referrals', icon: 'gift' },
+    { label: 'Settings', path: '/dashboard/settings', icon: 'settings' },
+  ] },
 ]
 
 export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseMobile }) {
   const { profile, user } = useAuth()
   const { hasFeature, tier } = useSubscription()
   const navigate = useNavigate()
-  const [collapsed, setCollapsed] = useState(false)
-  const navItems = nav.some(item => item.path === '/dashboard/lumi')
-    ? nav
-    : [
-        ...nav.slice(0, 21),
-        { label: 'Lumi AI', path: '/dashboard/lumi', icon: '✦', section: 'Business' },
-        ...nav.slice(21),
-      ]
+  const { pathname } = useLocation()
+  const [hover, setHover] = useState(false)
+  const [selected, setSelected] = useState(null)
+  const expanded = isMobile || hover
 
-  const isAdminUser = Boolean(
-    profile && (
-      profile.is_admin === true
-      || profile.is_admin === 'true'
-      || profile.is_admin === 1
-      || profile.is_admin === '1'
-    ),
-  )
+  const isAdmin = Boolean(profile && (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1 || profile.is_admin === '1'))
 
-  const navItemsWithAdmin = (() => {
-    if (!isAdminUser) return navItems
-    const adminItem = { label: 'Admin', path: '/dashboard/admin', icon: '', section: 'Account' }
-    const settingsIndex = navItems.findIndex(x => x.path === '/dashboard/settings')
-    if (settingsIndex === -1) return [...navItems, adminItem]
-    return [...navItems.slice(0, settingsIndex + 1), adminItem, ...navItems.slice(settingsIndex + 1)]
-  })()
+  const sections = useMemo(() => {
+    if (!isAdmin) return BASE_SECTIONS
+    return BASE_SECTIONS.map((s) => s.label === 'Account'
+      ? { ...s, items: [...s.items, { label: 'Admin', path: '/dashboard/admin', icon: 'shield' }] }
+      : s)
+  }, [isAdmin])
 
-  const tierColors = { basic: 'var(--text-secondary)', pro: '#FF2D78', expert: '#1DB954', elite: '#EAB308' }
-  const tierColor = tierColors[tier] ?? 'var(--text-secondary)'
-
-  const styles = {
-    sidebar: {
-      width: collapsed ? '64px' : '240px',
-      minHeight: '100vh',
-      backdropFilter: 'blur(40px) saturate(180%)',
-      WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-      background: 'linear-gradient(180deg, rgba(255,255,255,0.82) 0%, rgba(255,255,255,0.5) 100%)',
-      borderRight: '1px solid rgba(20,17,26,0.08)',
-      boxShadow: 'inset -1px 0 0 rgba(20,17,26,0.03)',
-      display: 'flex',
-      flexDirection: 'column',
-      transition: 'width var(--transition-slow)',
-      overflow: 'hidden',
-      flexShrink: 0,
-      position: 'sticky',
-      top: 0,
-      height: '100vh',
-    },
-    logo: {
-      padding: collapsed ? '20px 0' : '20px 20px 20px 60px',
-      borderBottom: '1px solid rgba(20,17,26,0.08)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: collapsed ? 'center' : 'space-between',
-      gap: '10px',
-      cursor: 'pointer',
-    },
-    logoText: {
-      fontFamily: 'var(--font-display)',
-      fontSize: '18px',
-      color: 'var(--text-primary)',
-      fontWeight: 600,
-      letterSpacing: '-0.3px',
-      lineHeight: 1.6,
-      display: collapsed ? 'none' : 'block',
-      whiteSpace: 'nowrap',
-    },
-    collapseBtn: {
-      backdropFilter: 'blur(20px)',
-      WebkitBackdropFilter: 'blur(20px)',
-      background: 'linear-gradient(160deg, rgba(255,255,255,0.9), rgba(255,255,255,0.6))',
-      border: '1px solid rgba(20,17,26,0.12)',
-      borderTop: '1px solid rgba(255,255,255,0.9)',
-      color: 'var(--text-secondary)',
-      cursor: 'pointer',
-      padding: '6px 8px',
-      borderRadius: '8px',
-      fontSize: '12px',
-      fontWeight: 600,
-      letterSpacing: '-0.3px',
-      lineHeight: 1.6,
-      display: 'flex',
-      alignItems: 'center',
-      transition: 'all 0.2s',
-    },
-    nav: {
-      flex: 1,
-      overflowY: 'auto',
-      padding: '12px 0',
-    },
-    sectionLabel: {
-      fontSize: '10px',
-      fontWeight: 400,
-      letterSpacing: '0.08em',
-      textTransform: 'uppercase',
-      color: 'var(--text-muted)',
-      lineHeight: 1.6,
-      padding: collapsed ? '16px 0 4px' : '16px 20px 4px',
-      textAlign: collapsed ? 'center' : 'left',
-      display: 'block',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-    },
-    navItem: (active, locked) => ({
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-      padding: collapsed ? '8px 0' : '8px 20px',
-      justifyContent: collapsed ? 'center' : 'flex-start',
-      fontSize: 'var(--text-sm)',
-      fontWeight: active ? 600 : 400,
-      letterSpacing: active ? '-0.3px' : '0',
-      lineHeight: 1.6,
-      color: locked ? 'var(--text-muted)' : active ? 'var(--text-primary)' : 'var(--text-secondary)',
-      background: active
-        ? 'linear-gradient(135deg, rgba(29,185,84,0.10) 0%, rgba(29,185,84,0.03) 100%)'
-        : 'transparent',
-      borderLeft: active ? '2px solid #1DB954' : '2px solid transparent',
-      backdropFilter: active ? 'blur(20px)' : 'none',
-      WebkitBackdropFilter: active ? 'blur(20px)' : 'none',
-      cursor: locked ? 'not-allowed' : 'pointer',
-      transition: 'all var(--transition-fast)',
-      textDecoration: 'none',
-      width: '100%',
-      boxSizing: 'border-box',
-      opacity: locked ? 0.5 : 1,
-    }),
-    icon: { fontSize: '14px', flexShrink: 0, width: '16px', textAlign: 'center', display: collapsed ? 'inline' : 'none' },
-    label: { whiteSpace: 'nowrap', display: collapsed ? 'none' : 'block' },
-    lockIcon: { marginLeft: 'auto', fontSize: '10px', opacity: 0.5, display: collapsed ? 'none' : 'block' },
-    profile: {
-      padding: collapsed ? '16px 0' : '16px 20px',
-      borderTop: '1px solid rgba(20,17,26,0.08)',
-      display: 'flex',
-      alignItems: 'center',
-      gap: '10px',
-      justifyContent: collapsed ? 'center' : 'flex-start',
-    },
-    avatar: {
-      width: '32px',
-      height: '32px',
-      borderRadius: 'var(--radius-full)',
-      background: 'rgba(255,45,120,0.15)',
-      border: '1px solid rgba(255,45,120,0.3)',
-      backdropFilter: 'blur(8px)',
-      WebkitBackdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      fontSize: '12px',
-      color: '#FF2D78',
-      fontWeight: 600,
-      letterSpacing: '-0.3px',
-      lineHeight: 1.6,
-      flexShrink: 0,
-      overflow: 'hidden',
-    },
-    profileInfo: { display: collapsed ? 'none' : 'block', overflow: 'hidden' },
-    profileName: {
-      fontSize: '13px',
-      fontWeight: 500,
-      letterSpacing: '-0.3px',
-      lineHeight: 1.6,
-      color: 'var(--text-primary)',
-      whiteSpace: 'nowrap',
-      overflow: 'hidden',
-      textOverflow: 'ellipsis',
-    },
-    profileTier: { fontSize: '11px', color: tierColor, fontWeight: 400, lineHeight: 1.6, textTransform: 'capitalize' },
+  function itemActive(path) {
+    if (path === '/dashboard') return pathname === '/dashboard'
+    return pathname === path || pathname.startsWith(path + '/')
   }
 
-  let currentSection = null
+  const activeSection = useMemo(() => {
+    const isAct = (path) => (path === '/dashboard' ? pathname === '/dashboard' : (pathname === path || pathname.startsWith(path + '/')))
+    return sections.find((s) => s.items.some((i) => isAct(i.path)))?.label || null
+  }, [sections, pathname])
 
-  return (
-    <div
-      className={isMobile ? '' : `sidebar-drawer${mobileOpen ? ' open' : ''}`}
-      style={isMobile ? {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        width: '100%',
-        maxWidth: '100%',
-        height: '100dvh',
-        minHeight: '100dvh',
-        zIndex: 1001,
-        transition: 'transform 0.25s ease',
-        transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)',
-        pointerEvents: mobileOpen ? 'auto' : 'none',
-        boxSizing: 'border-box',
-      } : undefined}
-    >
-      <aside style={{ ...styles.sidebar, width: isMobile ? '100%' : styles.sidebar.width, maxWidth: isMobile ? '100%' : undefined, boxSizing: 'border-box' }}>
-          <div style={styles.logo} onClick={() => navigate('/')}>
-            <BrandLogo markSize={24} fontSize={18} showWordmark={!collapsed} />
-            {!isMobile && (
-              <button style={styles.collapseBtn} onClick={e => { e.stopPropagation(); setCollapsed(p => !p) }}>
-                {collapsed ? '→' : '←'}
-              </button>
-            )}
-          </div>
+  const tierColors = { basic: MUTED, pro: PINK, expert: GREEN, elite: '#f6c552' }
+  const tierColor = tierColors[tier] ?? MUTED
 
-          <nav style={styles.nav}>
-            {navItemsWithAdmin.map((item) => {
-              const locked = item.feature ? !hasFeature(item.feature) : false
-              const showSection = item.section !== currentSection
-              if (showSection) currentSection = item.section
+  function closeAll() { setHover(false); setSelected(null) }
+  async function signOut() { await supabase.auth.signOut(); closeAll(); onCloseMobile?.(); navigate('/') }
 
-              return (
-                <div key={item.path}>
-                  {showSection && item.section && (
-                    <span style={styles.sectionLabel}>{collapsed ? '·' : item.section}</span>
-                  )}
-                  {locked ? (
-                    <div style={styles.navItem(false, true)}>
-                      <span style={styles.icon}>{item.icon}</span>
-                      <span style={styles.label}>{item.label}</span>
-                      <span style={styles.lockIcon}></span>
-                    </div>
-                  ) : (
-                    <NavLink to={item.path} style={({ isActive }) => styles.navItem(isActive, false)} onClick={() => onCloseMobile?.()}>
-                      <span style={styles.icon}>{item.icon}</span>
-                      <span style={styles.label}>{item.label}</span>
-                    </NavLink>
-                  )}
-                </div>
-              )
-            })}
-          </nav>
+  // Rounded glass chip holding an icon.
+  function chip(iconName, active, locked) {
+    return (
+      <span style={{
+        width: 38, height: 38, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        background: active ? 'linear-gradient(135deg, rgba(52,227,154,0.26), rgba(52,227,154,0.06))' : 'rgba(255,255,255,0.05)',
+        border: active ? '1px solid rgba(52,227,154,0.45)' : '1px solid rgba(255,255,255,0.09)',
+        color: locked ? MUTED : active ? GREEN : ICON,
+        boxShadow: active ? '0 0 16px -4px rgba(52,227,154,0.55)' : 'none',
+        transition: 'background .15s ease, border-color .15s ease, color .15s ease',
+      }}>
+        <NavIcon name={iconName} size={19} />
+      </span>
+    )
+  }
 
-          {profile && (
-            <div style={{ padding: collapsed ? '8px 0' : '8px 12px 16px', borderTop: '1px solid rgba(20,17,26,0.08)' }}>
-              <NavLink
-                to="/the-trybe-edit"
-                style={({ isActive }) => ({
-                  ...styles.navItem(isActive, false),
-                  borderRadius: 'var(--radius-md)',
-                  margin: collapsed ? '0 8px' : '0 8px',
-                })}
-                onClick={() => onCloseMobile?.()}
-              >
-                <span style={styles.icon}></span>
-                <span style={styles.label}>The Trybe Edit</span>
-              </NavLink>
+  function rowStyle(active) {
+    return {
+      display: 'flex', alignItems: 'center', gap: expanded ? 11 : 0,
+      padding: expanded ? '5px 12px' : '5px 0', justifyContent: expanded ? 'flex-start' : 'center',
+      margin: '3px 12px', borderRadius: 13, width: 'auto', boxSizing: 'border-box',
+      color: active ? GREEN : TEXT, background: expanded && active ? 'rgba(52,227,154,0.09)' : 'transparent',
+      fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450, textDecoration: 'none',
+      cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', transition: 'background .15s ease, color .15s ease',
+    }
+  }
+  const hoverBg = (active) => ({
+    onMouseEnter: (e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' },
+    onMouseLeave: (e) => { if (!active) e.currentTarget.style.background = 'transparent' },
+  })
+
+  function panelRow({ id, icon, label, active, to, onClick, chevron, chevronOpen, title }) {
+    const inner = (
+      <>
+        {chip(icon, active)}
+        {expanded && <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
+        {expanded && chevron && <NavIcon name="chevron" size={14} style={{ color: MUTED, transform: chevronOpen ? 'rotate(90deg)' : 'none', transition: 'transform .18s ease' }} />}
+      </>
+    )
+    if (to) return <Link key={id} to={to} title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
+    return <button key={id} type="button" title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={onClick}>{inner}</button>
+  }
+
+  function flyItem(item) {
+    const active = itemActive(item.path)
+    const locked = item.feature ? !hasFeature(item.feature) : false
+    const inner = (
+      <>
+        {chip(item.icon, active, locked)}
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: locked ? MUTED : active ? GREEN : TEXT }}>{item.label}</span>
+        {locked && <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>🔒</span>}
+      </>
+    )
+    const style = {
+      display: 'flex', alignItems: 'center', gap: 11, padding: '5px 10px', margin: '3px 8px', borderRadius: 13,
+      background: active ? 'rgba(52,227,154,0.09)' : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
+      textDecoration: 'none', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.6 : 1, transition: 'background .15s ease',
+    }
+    if (locked) return <div key={item.path} style={style} title={item.label}>{inner}</div>
+    return <Link key={item.path} to={item.path} title={item.label} style={style} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
+  }
+
+  const avatar = (
+    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,92,147,0.16)', border: '1px solid rgba(255,92,147,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: PINK, fontWeight: 600, overflow: 'hidden', fontFamily: FONT, flexShrink: 0 }}>
+      {profile?.avatar_url
+        ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()}
+    </div>
+  )
+
+  const wordmark = (
+    <span style={{ fontSize: 19, fontWeight: 700, color: TEXT, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+      Lens<span style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: '1.12em', color: GREEN }}>Trybe</span>
+    </span>
+  )
+
+  const firstBody = (
+    <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+      <div onClick={() => { navigate('/dashboard'); closeAll(); onCloseMobile?.() }} title="LensTrybe"
+        style={{ minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: expanded ? 'flex-start' : 'center', gap: 10, padding: expanded ? '0 18px' : 0, cursor: 'pointer', flexShrink: 0 }}>
+        <BrandLogo markSize={26} fontSize={19} showWordmark={false} />
+        {expanded && wordmark}
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2px 0' }}>
+        {TOP.map((it) => panelRow({ id: it.path, icon: it.icon, label: it.label, active: itemActive(it.path), to: it.path, title: it.label }))}
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: expanded ? '8px 18px' : '8px 14px' }} />
+        {sections.map((s) => panelRow({
+          id: s.label, icon: s.icon, label: s.label,
+          active: activeSection === s.label || selected === s.label,
+          onClick: () => { if (expanded) setSelected((v) => (v === s.label ? null : s.label)); else navigate(s.items[0].path) },
+          chevron: true, chevronOpen: selected === s.label, title: s.label,
+        }))}
+      </div>
+      <div style={{ flexShrink: 0, padding: '6px 0 8px' }}>
+        <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: expanded ? '2px 18px 6px' : '2px 14px 6px' }} />
+        <div onClick={() => { navigate('/dashboard/profile/view-profile'); closeAll(); onCloseMobile?.() }} title="Profile"
+          style={{ display: 'flex', alignItems: 'center', gap: 11, justifyContent: expanded ? 'flex-start' : 'center', padding: expanded ? '6px 18px' : '6px 0', cursor: 'pointer' }}>
+          {avatar}
+          {expanded && (
+            <div style={{ overflow: 'hidden' }}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, fontFamily: FONT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
+              <div style={{ fontSize: 11, color: tierColor, fontFamily: FONT, textTransform: 'capitalize' }}>{tier} plan</div>
             </div>
           )}
-
-          <div style={styles.profile}>
-            <div style={styles.avatar}>
-              {profile?.avatar_url
-                ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()
-              }
-            </div>
-            <div style={styles.profileInfo}>
-              <div style={styles.profileName}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
-              <div style={styles.profileTier}>{tier} plan</div>
-            </div>
-          </div>
-          <div
-            onClick={async () => { await supabase.auth.signOut(); onCloseMobile?.(); navigate('/') }}
-            style={{
-              padding: collapsed ? '12px 0' : '12px 20px',
-              display: 'flex', alignItems: 'center', gap: '10px',
-              justifyContent: collapsed ? 'center' : 'flex-start',
-              fontSize: '13px',
-              fontWeight: 400,
-              lineHeight: 1.6,
-              letterSpacing: '-0.3px',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              fontFamily: 'var(--font-ui)', borderTop: '1px solid rgba(20,17,26,0.08)',
-              transition: 'color var(--transition-fast)',
-            }}
-            onMouseEnter={e => { e.currentTarget.style.color = '#FF2D78' }}
-            onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)' }}
-          >
-            <span style={{ fontSize: '13px' }}>→</span>
-            {!collapsed && <span>Sign Out</span>}
-          </div>
-      </aside>
+        </div>
+        <div onClick={signOut} title="Sign out" style={{ ...rowStyle(false), color: MUTED }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = PINK }} onMouseLeave={(e) => { e.currentTarget.style.color = MUTED }}>
+          {chip('logout', false)}
+          {expanded && <span>Sign Out</span>}
+        </div>
+      </div>
     </div>
+  )
+
+  // ── MOBILE ──────────────────────────────────────────────────
+  if (isMobile) {
+    return (
+      <div className={`sidebar-drawer${mobileOpen ? ' open' : ''}`}
+        style={{ position: 'fixed', top: 0, left: 0, width: '86%', maxWidth: 320, height: '100dvh', zIndex: 1001, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', ...GLASS, borderRadius: '0 20px 20px 0', overflow: 'hidden', boxSizing: 'border-box' }}>
+        {sheen('0 20px 20px 0')}
+        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+          <div onClick={() => { navigate('/dashboard'); onCloseMobile?.() }} style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}>
+            <BrandLogo markSize={26} fontSize={19} showWordmark={false} />{wordmark}
+          </div>
+          <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 0 8px' }}>
+            {TOP.map((it) => flyItem({ ...it }))}
+            {sections.map((s) => (
+              <div key={s.label}>
+                <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: MUTED, padding: '14px 20px 4px', fontFamily: FONT }}>{s.label}</div>
+                {s.items.map((it) => flyItem(it))}
+              </div>
+            ))}
+          </nav>
+        </div>
+      </div>
+    )
+  }
+
+  // ── DESKTOP ─────────────────────────────────────────────────
+  const selSection = selected ? sections.find((s) => s.label === selected) : null
+
+  return (
+    <>
+      <div aria-hidden style={{ width: SPACER, flexShrink: 0 }} />
+      <div onMouseEnter={() => setHover(true)} onMouseLeave={closeAll}
+        style={{ position: 'fixed', left: MARGIN, top: MARGIN, bottom: MARGIN, zIndex: 60, display: 'flex', alignItems: 'stretch', gap: FLY_GAP }}>
+        <aside style={{ position: 'relative', width: expanded ? OPEN_W : RAIL, ...GLASS, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', transition: 'width .2s cubic-bezier(.4,0,.2,1)' }}>
+          {sheen(24)}
+          {firstBody}
+        </aside>
+
+        {selSection && (
+          <div style={{ position: 'relative', width: FLY_W, alignSelf: 'stretch', ...GLASS, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', animation: 'ltflyin .18s ease' }}>
+            {sheen(24)}
+            <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+              <div style={{ padding: '20px 18px 12px', flexShrink: 0 }}>
+                <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 24, color: TEXT, lineHeight: 1 }}>{selSection.label}</div>
+              </div>
+              <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 10 }}>
+                {selSection.items.map((it) => flyItem(it))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+      <style>{`@keyframes ltflyin { from { opacity: 0; transform: translateX(-8px) } to { opacity: 1; transform: none } }`}</style>
+    </>
   )
 }
