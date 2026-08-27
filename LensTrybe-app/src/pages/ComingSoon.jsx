@@ -259,7 +259,7 @@ export default function ComingSoon() {
             <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : 620, textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : 0 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: isMobile ? 11 : 'clamp(11px,0.85vw,13px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: 22 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: GREEN, boxShadow: '0 0 6px rgba(29,185,84,0.6)', animation: 'ltpulse 2s infinite' }} />
-                The waitlist is open · Launching 1 October 2026
+                The waitlist is open · Launching October 1st 2026
               </div>
 
               <h1 style={{ fontSize: isMobile ? 'clamp(40px,12vw,54px)' : 'clamp(52px,4.6vw,84px)', fontWeight: 600, lineHeight: 1.04, margin: '0 0 22px', letterSpacing: '-0.02em', color: TEXT_PRIMARY }}>
@@ -268,7 +268,7 @@ export default function ComingSoon() {
               </h1>
 
               <p style={{ fontSize: isMobile ? 16 : 'clamp(16px,1.15vw,20px)', color: TEXT_SECONDARY, maxWidth: isMobile ? 460 : 'clamp(440px,34vw,560px)', lineHeight: 1.6, margin: isMobile ? '0 auto' : 0 }}>
-                Australia's home for visual creatives opens 1 October. Showcase your work, get booked, and run your whole business in one place. No commissions, ever.
+                Australia's home for visual creatives opens October 1st. Showcase your work, get booked, and run your whole business in one place. No commissions, ever.
               </p>
             </div>
 
@@ -379,10 +379,10 @@ function SuccessView({ result }) {
 
   const heading = founding ? `You're in. Founding creative #${pos}.` : "You're on the list."
   const sub = founding
-    ? 'Three months free when we open on 1 October.'
+    ? 'Three months free when we open on October 1st.'
     : isClient
       ? "We'll let you know the moment you can start booking Australian creatives."
-      : "You'll be first through the doors on 1 October."
+      : "You'll be first through the doors on October 1st."
 
   return (
     <div style={{ textAlign: 'center', padding: '8px 4px 6px' }}>
