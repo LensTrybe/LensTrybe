@@ -3,7 +3,7 @@ import { supabase } from '../lib/supabaseClient'
 import { LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD, GLASS_CARD_GREEN } from '../lib/glassTokensLight'
 
 // ── Launch config ───────────────────────────────────────────────
-const LAUNCH = new Date('2027-01-01T00:00:00+11:00')
+const LAUNCH = new Date('2026-10-01T00:00:00+10:00')
 const FOUNDING_SPOTS = 250
 const SITE = 'https://lenstrybe.com'
 
@@ -259,7 +259,7 @@ export default function ComingSoon() {
             <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : 620, textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : 0 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: isMobile ? 11 : 'clamp(11px,0.85vw,13px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: 22 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: GREEN, boxShadow: '0 0 6px rgba(29,185,84,0.6)', animation: 'ltpulse 2s infinite' }} />
-                The waitlist is open · Launching 1 Jan 2027
+                The waitlist is open · Launching 1 October 2026
               </div>
 
               <h1 style={{ fontSize: isMobile ? 'clamp(40px,12vw,54px)' : 'clamp(52px,4.6vw,84px)', fontWeight: 600, lineHeight: 1.04, margin: '0 0 22px', letterSpacing: '-0.02em', color: TEXT_PRIMARY }}>

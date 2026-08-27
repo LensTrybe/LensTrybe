@@ -54,7 +54,7 @@ import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 
-const LAUNCH_DATE = new Date('2027-01-01T00:00:00+11:00')
+const LAUNCH_DATE = new Date('2026-10-01T00:00:00+10:00')
 
 function PlaceholderPage({ page }) {
   return (
