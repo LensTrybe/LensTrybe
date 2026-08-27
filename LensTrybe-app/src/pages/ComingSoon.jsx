@@ -268,7 +268,7 @@ export default function ComingSoon() {
               </h1>
 
               <p style={{ fontSize: isMobile ? 16 : 'clamp(16px,1.15vw,20px)', color: TEXT_SECONDARY, maxWidth: isMobile ? 460 : 'clamp(440px,34vw,560px)', lineHeight: 1.6, margin: isMobile ? '0 auto' : 0 }}>
-                Australia's home for visual creatives opens 1 January. Showcase your work, get booked, and run your whole business in one place. No commissions, ever.
+                Australia's home for visual creatives opens 1 October. Showcase your work, get booked, and run your whole business in one place. No commissions, ever.
               </p>
             </div>
 
@@ -379,10 +379,10 @@ function SuccessView({ result }) {
 
   const heading = founding ? `You're in. Founding creative #${pos}.` : "You're on the list."
   const sub = founding
-    ? 'Three months free when we open on 1 January.'
+    ? 'Three months free when we open on 1 October.'
     : isClient
       ? "We'll let you know the moment you can start booking Australian creatives."
-      : "You'll be first through the doors on 1 January."
+      : "You'll be first through the doors on 1 October."
 
   return (
     <div style={{ textAlign: 'center', padding: '8px 4px 6px' }}>
