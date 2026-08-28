@@ -83,6 +83,7 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   const navigate = useNavigate()
+  const { user } = useAuth()
 
   useEffect(() => {
     const hash = window.location.hash
@@ -189,10 +190,13 @@ export default function App() {
   }
   const isPreview = sessionStorage.getItem('lt_preview') === 'true'
   const isLaunched = new Date() >= LAUNCH_DATE
+  // Signed-in users (verified creatives/clients) always get the real app, even before
+  // launch, so the founding cohort can use their dashboard while the public sees the waitlist.
+  const showWaitlist = !isLaunched && !isPreview && !user
 
   return (
     <>
-      {(!isLaunched && !isPreview) ? <ComingSoon /> : routes}
+      {showWaitlist ? <ComingSoon /> : routes}
       <CinematicIntro />
     </>
   )

@@ -96,7 +96,9 @@ export default function SignupPage() {
   // After a successful signup we show a "verify your email" screen instead of navigating.
   const [submitted, setSubmitted] = useState(false)
   const [submittedEmail, setSubmittedEmail] = useState('')
-  const [cardSkipped, setCardSkipped] = useState(false)
+  // Once the account is created we remember it, so a card retry re-opens the payment
+  // window without trying to sign up again (which would error as "already registered").
+  const [createdUser, setCreatedUser] = useState(null)
 
   const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
 
@@ -269,92 +271,105 @@ export default function SignupPage() {
 
     const email = String(form.email || '').trim()
     const password = String(form.password || '')
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address.')
-      setLoading(false)
-      return
-    }
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
-      setLoading(false)
-      return
-    }
-
-    const businessNameModeration = await moderateText(form.businessName)
-    if (businessNameModeration?.blocked) {
-      setError(businessNameModeration.reason || 'This business name cannot be used.')
-      setLoading(false)
-      return
-    }
-
     // A founding invite code always means Expert (free until 1 Oct 2027, applied by the trigger).
     const effectiveTier = foundingCode ? 'expert' : (form.tier || 'basic')
 
     try {
-      // Email confirmation is on, so signUp does NOT return a session. The database
-      // trigger (handle_new_user) builds the profile from this metadata and applies the
-      // founding code, so nothing here needs an authenticated session.
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login?verified=1`,
-          data: {
-            account_type: 'creative',
-            business_name: form.businessName,
-            first_name: form.firstName,
-            last_name: form.lastName,
-            display_name_preference: form.displayNamePreference || 'business_only',
-            country: form.country || 'Australia',
-            subscription_tier: effectiveTier,
-            ...(foundingCode ? { founding_code: foundingCode } : {}),
+      let userId = createdUser?.id
+      let userEmail = createdUser?.email || email
+
+      // Create the account once. On a retry after a cancelled card, skip signUp and go
+      // straight back to the payment window (signing up again would fail as "already registered").
+      if (!userId) {
+        if (!isValidEmail(email)) {
+          setError('Please enter a valid email address.')
+          setLoading(false)
+          return
+        }
+        if (password.length < 8) {
+          setError('Password must be at least 8 characters.')
+          setLoading(false)
+          return
+        }
+
+        const businessNameModeration = await moderateText(form.businessName)
+        if (businessNameModeration?.blocked) {
+          setError(businessNameModeration.reason || 'This business name cannot be used.')
+          setLoading(false)
+          return
+        }
+
+        // Email confirmation is on, so signUp does NOT return a session. The database
+        // trigger (handle_new_user) builds the profile from this metadata and applies the
+        // founding code, so nothing here needs an authenticated session.
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            emailRedirectTo: `${window.location.origin}/dashboard`,
+            data: {
+              account_type: 'creative',
+              business_name: form.businessName,
+              first_name: form.firstName,
+              last_name: form.lastName,
+              display_name_preference: form.displayNamePreference || 'business_only',
+              country: form.country || 'Australia',
+              subscription_tier: effectiveTier,
+              ...(foundingCode ? { founding_code: foundingCode } : {}),
+            },
           },
-        },
-      })
-      if (authError) throw authError
-
-      const userId = authData?.user?.id
-      if (!userId) throw new Error('Could not create user account.')
-
-      try {
-        await supabase.functions.invoke('send-welcome-email', {
-          body: {
-            record: {
-              email,
-              user_metadata: { full_name: `${form.firstName} ${form.lastName}` }
-            }
-          }
         })
-      } catch (welcomeEmailError) {
-        console.log('send-welcome-email failed', welcomeEmailError)
+        if (authError) throw authError
+
+        userId = authData?.user?.id
+        if (!userId) throw new Error('Could not create user account.')
+        userEmail = email
+        setCreatedUser({ id: userId, email })
+
+        try {
+          await supabase.functions.invoke('send-welcome-email', {
+            body: {
+              record: {
+                email,
+                user_metadata: { full_name: `${form.firstName} ${form.lastName}` }
+              }
+            }
+          })
+        } catch (welcomeEmailError) {
+          console.log('send-welcome-email failed', welcomeEmailError)
+        }
       }
 
-      // Card on file for all paid tiers (Basic is free, no card). No charge until the
-      // free period ends: Expert regular 1 Jan 2027, founding 1 Oct 2027, set by the trigger.
-      // The Revolut order function only needs the new user id and email, not a session.
+      // A saved card is REQUIRED for every paid tier (Basic is free, so no card). No charge
+      // until the free period ends (founding: 1 Oct 2027, set by the trigger). If they close
+      // the popup without saving a card they cannot continue; pressing the button again
+      // re-opens the payment window without recreating the account.
       if (effectiveTier !== 'basic') {
+        let result
         try {
-          const result = await payWithRevolut({
-            user: { id: userId, email },
+          result = await payWithRevolut({
+            user: { id: userId, email: userEmail },
             tier: effectiveTier,
             billing: form.billingInterval,
             fullName: `${form.firstName} ${form.lastName}`.trim(),
           })
-          if (result !== 'success') {
-            // Card popup closed/cancelled. The account exists; they can add a card from
-            // the dashboard after verifying. Flag it on the verify screen.
-            setCardSkipped(true)
-          }
         } catch (e) {
           console.log('Revolut card setup failed', e?.message)
-          setCardSkipped(true)
+          setError('We could not open the payment window. Press the button to try adding your card again.')
+          setLoading(false)
+          return
+        }
+        if (result !== 'success') {
+          setError('A payment method is required to finish signing up. Please add a card to continue.')
+          setLoading(false)
+          return
         }
       }
 
       // Code is now on the account; clear it so it can't be reused in this browser.
       try { sessionStorage.removeItem('lt_founding_code') } catch { /* ignore */ }
 
-      setSubmittedEmail(email)
+      setSubmittedEmail(userEmail)
       setSubmitted(true)
       setLoading(false)
     } catch (err) {
@@ -598,12 +613,6 @@ export default function SignupPage() {
             </div>
           )}
 
-          {cardSkipped && (
-            <div style={{ ...LIQUID_GLASS_CARD, padding: '14px 16px', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body }}>
-              You did not finish saving a card. You can add your payment details from your dashboard after verifying. Your profile stays free until your billing date either way.
-            </div>
-          )}
-
           <div style={{ ...LIQUID_GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
             Did not get it? Check your spam folder, or{' '}
             <button
@@ -613,7 +622,7 @@ export default function SignupPage() {
                 const { error: resendErr } = await supabase.auth.resend({
                   type: 'signup',
                   email: submittedEmail,
-                  options: { emailRedirectTo: `${window.location.origin}/login?verified=1` },
+                  options: { emailRedirectTo: `${window.location.origin}/dashboard` },
                 })
                 setError(resendErr ? resendErr.message : 'Verification email resent.')
               }}
