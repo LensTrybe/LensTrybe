@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { moderateText, moderateImage, PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE } from '../../lib/moderateContent'
+import { moderateText } from '../../lib/moderateContent'
 import { payWithRevolut } from '../../lib/revolut.js'
 import Input from '../../components/ui/Input'
 import {
@@ -90,6 +90,13 @@ export default function SignupPage() {
   const [googleHover, setGoogleHover] = useState(false)
   const [isFoundingSignup, setIsFoundingSignup] = useState(false)
   const [foundingCount, setFoundingCount] = useState(0)
+  // Founding invite code (from the waitlist ?code= link or sessionStorage). When present,
+  // the account is granted free Expert until 1 Oct 2027 by the database trigger on signup.
+  const [foundingCode, setFoundingCode] = useState('')
+  // After a successful signup we show a "verify your email" screen instead of navigating.
+  const [submitted, setSubmitted] = useState(false)
+  const [submittedEmail, setSubmittedEmail] = useState('')
+  const [cardSkipped, setCardSkipped] = useState(false)
 
   const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
 
@@ -169,6 +176,21 @@ export default function SignupPage() {
       if (data !== null) setFoundingCount(data)
     })
   }, [])
+
+  // Pick up a founding invite code from the URL (?code=) or sessionStorage (set on the
+  // waitlist). If present, lock the plan to Expert and remember it for the signup call.
+  useEffect(() => {
+    let code = searchParams.get('code') || ''
+    if (!code) {
+      try { code = sessionStorage.getItem('lt_founding_code') || '' } catch { /* ignore */ }
+    }
+    code = code.trim().toUpperCase()
+    if (code) {
+      setFoundingCode(code)
+      try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
+      setForm(prev => (prev.tier === 'expert' ? prev : { ...prev, tier: 'expert' }))
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const plan = searchParams.get('plan')
@@ -252,8 +274,8 @@ export default function SignupPage() {
       setLoading(false)
       return
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.')
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.')
       setLoading(false)
       return
     }
@@ -265,61 +287,34 @@ export default function SignupPage() {
       return
     }
 
-    if (form.avatarFile instanceof File) {
-      try {
-        const avatarModeration = await moderateImage(form.avatarFile)
-        if (avatarModeration?.blocked) {
-          setError(PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE)
-          setLoading(false)
-          return
-        }
-        if (avatarModeration?.flagged) {
-          console.warn('[moderateContent] Signup avatar flagged (upload allowed)', avatarModeration?.reason ?? '')
-        }
-      } catch (modErr) {
-        setError(modErr?.message || 'Could not verify your profile photo. Try again or skip the photo for now.')
-        setLoading(false)
-        return
-      }
-    }
+    // A founding invite code always means Expert (free until 1 Oct 2027, applied by the trigger).
+    const effectiveTier = foundingCode ? 'expert' : (form.tier || 'basic')
 
     try {
+      // Email confirmation is on, so signUp does NOT return a session. The database
+      // trigger (handle_new_user) builds the profile from this metadata and applies the
+      // founding code, so nothing here needs an authenticated session.
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/login?verified=1`,
+          data: {
+            account_type: 'creative',
+            business_name: form.businessName,
+            first_name: form.firstName,
+            last_name: form.lastName,
+            display_name_preference: form.displayNamePreference || 'business_only',
+            country: form.country || 'Australia',
+            subscription_tier: effectiveTier,
+            ...(foundingCode ? { founding_code: foundingCode } : {}),
+          },
+        },
       })
       if (authError) throw authError
 
       const userId = authData?.user?.id
       if (!userId) throw new Error('Could not create user account.')
-
-      /** Same path and bucket as EditProfilePage `handleAvatarUpload`. */
-      let avatarUrl = null
-      if (form.avatarFile instanceof File) {
-        const ext = form.avatarFile.name.split('.').pop() || 'jpg'
-        const path = `${userId}/avatar.${ext}`
-        const { error: uploadError } = await supabase.storage
-          .from('portfolio')
-          .upload(path, form.avatarFile, { upsert: true })
-        if (uploadError) throw uploadError
-        const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path)
-        avatarUrl = urlData.publicUrl
-      }
-
-      const { error: profileError } = await supabase.from('profiles').insert({
-        id: userId,
-        business_name: form.businessName,
-        skill_types: form.skillTypes,
-        specialties: form.specialties,
-        city: form.city,
-        state: form.state,
-        country: form.country || 'Australia',
-        subscription_tier: form.tier || 'basic',
-        display_name_preference: form.displayNamePreference || 'business_name',
-        account_type: 'creative',
-        avatar_url: avatarUrl,
-      })
-      if (profileError) throw profileError
 
       try {
         await supabase.functions.invoke('send-welcome-email', {
@@ -334,31 +329,34 @@ export default function SignupPage() {
         console.log('send-welcome-email failed', welcomeEmailError)
       }
 
-      // Paid tiers: save the card via Revolut (zero-amount setup order → card-on-file).
-      // Expert defers the first charge to 1 Jan 2027; Pro/Elite get a 14-day trial.
-      // The recurring-charge job makes the first real charge on the due date.
-      if (form.tier !== 'basic') {
+      // Card on file for all paid tiers (Basic is free, no card). No charge until the
+      // free period ends: Expert regular 1 Jan 2027, founding 1 Oct 2027, set by the trigger.
+      // The Revolut order function only needs the new user id and email, not a session.
+      if (effectiveTier !== 'basic') {
         try {
           const result = await payWithRevolut({
             user: { id: userId, email },
-            tier: form.tier,
+            tier: effectiveTier,
             billing: form.billingInterval,
             fullName: `${form.firstName} ${form.lastName}`.trim(),
           })
           if (result !== 'success') {
-            // Card widget was closed/cancelled — the account exists, so let them
-            // finish adding billing from the dashboard rather than blocking signup.
-            navigate('/dashboard?billing=incomplete')
-            return
+            // Card popup closed/cancelled. The account exists; they can add a card from
+            // the dashboard after verifying. Flag it on the verify screen.
+            setCardSkipped(true)
           }
         } catch (e) {
-          setError(e.message || 'Card setup failed. You can add billing from your dashboard.')
-          setLoading(false)
-          return
+          console.log('Revolut card setup failed', e?.message)
+          setCardSkipped(true)
         }
       }
 
-      navigate('/dashboard')
+      // Code is now on the account; clear it so it can't be reused in this browser.
+      try { sessionStorage.removeItem('lt_founding_code') } catch { /* ignore */ }
+
+      setSubmittedEmail(email)
+      setSubmitted(true)
+      setLoading(false)
     } catch (err) {
       setError(err.message)
       setLoading(false)
@@ -580,6 +578,61 @@ export default function SignupPage() {
     { title: 'You\'re almost there', sub: 'Review your details before creating your account.' },
   ]
 
+  if (submitted) {
+    return (
+      <div style={styles.page} className="signup-page">
+        <LiquidLensFilter />
+        {!isMobile && <TileField animated={false} opacity={0.22} />}
+        <div style={{ ...styles.container, maxWidth: '480px' }}>
+          <div style={styles.header}>
+            <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
+            <h1 style={styles.title}>Check your email</h1>
+            <p style={styles.subtitle}>
+              We have sent a verification link to <strong>{submittedEmail}</strong>. Click it to confirm your account, then log in to finish setting up your profile.
+            </p>
+          </div>
+
+          {foundingCode && (
+            <div style={{ padding: '14px 16px', fontSize: '13px', ...GLASS_CARD_GREEN, color: 'var(--green)', ...TYPO.body }}>
+              Founding invite applied. Your Expert plan is free until 1 October 2027.
+            </div>
+          )}
+
+          {cardSkipped && (
+            <div style={{ ...LIQUID_GLASS_CARD, padding: '14px 16px', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body }}>
+              You did not finish saving a card. You can add your payment details from your dashboard after verifying. Your profile stays free until your billing date either way.
+            </div>
+          )}
+
+          <div style={{ ...LIQUID_GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
+            Did not get it? Check your spam folder, or{' '}
+            <button
+              type="button"
+              onClick={async () => {
+                setError('')
+                const { error: resendErr } = await supabase.auth.resend({
+                  type: 'signup',
+                  email: submittedEmail,
+                  options: { emailRedirectTo: `${window.location.origin}/login?verified=1` },
+                })
+                setError(resendErr ? resendErr.message : 'Verification email resent.')
+              }}
+              style={{ ...styles.passwordToggleBtn, color: 'var(--green)', fontWeight: 600 }}
+            >
+              resend the link
+            </button>.
+          </div>
+
+          {error && <div style={styles.errorBox}>{error}</div>}
+
+          <div style={styles.actions}>
+            <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px' }} onClick={() => navigate('/login')}>Go to login</LiquidPill>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={styles.page} className="signup-page">
       <style>{`
@@ -618,6 +671,11 @@ export default function SignupPage() {
           {/* Step 0 — Plan */}
           {step === 0 && (
             <>
+              {foundingCode && (
+                <div style={{ padding: '14px 16px', fontSize: '13px', ...GLASS_CARD_GREEN, color: 'var(--green)', ...TYPO.body, marginBottom: '4px' }}>
+                  <strong>Founding invite applied.</strong> You are getting Expert free until 1 October 2027, with your founding price locked in after that.
+                </div>
+              )}
               <div style={styles.billingToggle}>
                 <button type="button" style={styles.billingToggleBtn(form.billingInterval === 'monthly')} onClick={() => update('billingInterval', 'monthly')}>
                   Monthly
@@ -629,7 +687,7 @@ export default function SignupPage() {
               </div>
               <div style={styles.tierGrid}>
                 {TIERS.map((tier) => {
-                  const isExpertOffer = tier.id === 'expert' && offerActive
+                  const isExpertOffer = tier.id === 'expert' && (offerActive || !!foundingCode)
                   const selected = form.tier === tier.id
                   const cardStyle = isExpertOffer && selected
                     ? {
@@ -664,7 +722,7 @@ export default function SignupPage() {
                             {getPlanPrice(tier)}{getPlanPeriod(tier)}
                           </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>Free until 31 Dec 2026</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>{foundingCode ? 'Free until 1 Oct 2027' : 'Free until 1 Jan 2027'}</div>
                       </>
                     ) : (
                       <>

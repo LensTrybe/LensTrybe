@@ -179,12 +179,52 @@ export default function ComingSoon() {
     return () => { live = false }
   }, [])
 
+  // Founding invite link: if the page is opened with a valid ?code=, skip the waitlist
+  // and go straight into creative signup with the founding offer applied.
+  useEffect(() => {
+    const code = (new URLSearchParams(window.location.search).get('code') || '').trim().toUpperCase()
+    if (!code) return
+    let live = true
+    ;(async () => {
+      try {
+        const { data } = await supabase.functions.invoke('founding-code', { body: { action: 'validate', code } })
+        if (live && data?.valid) {
+          try {
+            sessionStorage.setItem('lt_preview', 'true')
+            sessionStorage.setItem('lt_founding_code', code)
+          } catch { /* ignore */ }
+          window.location.assign(`/join/creative?code=${encodeURIComponent(code)}`)
+        }
+      } catch { /* invalid or unreachable — stay on the waitlist */ }
+    })()
+    return () => { live = false }
+  }, [])
+
   const creativesJoined = stats?.creatives ?? null
   const spotsLeft = creativesJoined == null ? null : Math.max(0, FOUNDING_SPOTS - creativesJoined)
 
   async function submit(e) {
     if (e) e.preventDefault()
     if (status === 'loading') return
+
+    // A valid founding invite code takes them straight into signup, no waitlist needed.
+    const codeAttempt = refInput.trim().toUpperCase()
+    if (audience === 'creative' && codeAttempt) {
+      setError(''); setStatus('loading')
+      try {
+        const { data: fc } = await supabase.functions.invoke('founding-code', { body: { action: 'validate', code: codeAttempt } })
+        if (fc?.valid) {
+          try {
+            sessionStorage.setItem('lt_preview', 'true')
+            sessionStorage.setItem('lt_founding_code', codeAttempt)
+          } catch { /* ignore */ }
+          window.location.assign(`/join/creative?code=${encodeURIComponent(codeAttempt)}`)
+          return
+        }
+      } catch { /* not a founding code — treat it as a normal referral below */ }
+      setStatus('idle')
+    }
+
     const clean = email.trim()
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) { setError('Enter a valid email address.'); return }
     setError(''); setStatus('loading')
@@ -312,8 +352,8 @@ export default function ComingSoon() {
                     </div>
 
                     {audience === 'creative' && (
-                      <input className="lt-in" type="text" placeholder="Referral code (optional)" value={refInput}
-                        onChange={(e) => setRefInput(e.target.value.toUpperCase())} aria-label="Referral code"
+                      <input className="lt-in" type="text" placeholder="Referral or invite code (optional)" value={refInput}
+                        onChange={(e) => setRefInput(e.target.value.toUpperCase())} aria-label="Referral or invite code"
                         style={{ ...LIQUID_FIELD, width: '100%', flex: 'none', padding: '13px 15px', fontSize: 15, marginBottom: 10, letterSpacing: '0.06em' }} />
                     )}
 
