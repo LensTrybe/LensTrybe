@@ -1,16 +1,85 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import DashboardTasks from '../../components/dashboard/DashboardTasks'
 import WidgetGrid, { nextSize } from '../../components/dashboard/WidgetGrid'
+import TodoWidget from '../../components/dashboard/TodoWidget'
+import CalendarWidget from '../../components/dashboard/CalendarWidget'
+import UpcomingEvents from '../../components/dashboard/UpcomingEvents'
+import EnquiriesWidget from '../../components/dashboard/EnquiriesWidget'
+import RevenueWidget from '../../components/dashboard/RevenueWidget'
+import ProfileStrengthWidget from '../../components/dashboard/ProfileStrengthWidget'
+import QuotesWidget from '../../components/dashboard/QuotesWidget'
+import DeliverablesWidget from '../../components/dashboard/DeliverablesWidget'
+import SearchVisibilityWidget from '../../components/dashboard/SearchVisibilityWidget'
+import CashflowWidget from '../../components/dashboard/CashflowWidget'
+import { isDemoMode } from '../../lib/demoMode'
+import LeadsWidget from '../../components/dashboard/LeadsWidget'
+import BookingsAnalyticsWidget from '../../components/dashboard/BookingsAnalyticsWidget'
+import ReviewsWidget from '../../components/dashboard/ReviewsWidget'
+import DashboardBoard from '../../components/dashboard/DashboardBoard'
+import QuickLinksBar from '../../components/dashboard/QuickLinksBar'
+import QuickLinkDrawer from '../../components/dashboard/QuickLinkDrawer'
 import { LiquidLensFilter } from '../../components/ui/liquidGlass'
 import WorkspaceSearch from '../../components/dashboard/WorkspaceSearch'
-import ScatteredSquares from '../../components/dashboard/ScatteredSquares'
 import { themeTokens } from '../../lib/dashboardTheme'
 
 const FONT = "'Inter', sans-serif"
+
+// Every widget that can live on the draggable board, in default order.
+// Add a new widget here (and a matching entry in widgetNodes below) to have it
+// appear on the board with wobble + drag + remove/add for free.
+const ALL_WIDGETS = [
+  { id: 'profile_strength', label: 'Profile strength' },
+  { id: 'todos_daily', label: 'Daily to-do' },
+  { id: 'todos_weekly', label: 'Weekly to-do' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'upcoming', label: 'Upcoming events' },
+  { id: 'enquiries', label: 'Enquiries' },
+  { id: 'revenue', label: 'Revenue' },
+  { id: 'leads', label: 'Leads & conversion' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'reviews', label: 'Reviews' },
+  { id: 'quotes', label: 'Quotes pipeline' },
+  { id: 'deliverables', label: 'Deliverables' },
+  { id: 'search_visibility', label: 'Search visibility' },
+  { id: 'cashflow', label: 'Cash flow' },
+]
+const ALL_WIDGET_IDS = ALL_WIDGETS.map((w) => w.id)
+
+// Width of a full board row (6 square tiles = 2 analytics tiles) so the quick-link
+// row lines up exactly with the start and end of the tile grid.
+const BOARD_MAX = 156 * 6 + 16 * 5 // 1016
+
+// Minimum tier that can see each widget. Anything not listed is visible to all.
+// Widgets with graduated depth (revenue/leads full analytics, search visibility)
+// stay visible but lock their deeper view inside the widget itself.
+const WIDGET_ACCESS = {
+  reviews: 'pro',
+  bookings: 'pro',
+  revenue: 'pro',
+  leads: 'pro',
+  quotes: 'expert',
+  deliverables: 'expert',
+  cashflow: 'pro',
+}
+
+// Default widget order on the packing grid.
+const DEFAULT_ORDER = [...ALL_WIDGET_IDS]
+
+// Editable quick-link chips shown above the board. Clicking one opens a
+// slide-over drawer with that item's live detail.
+const ALL_QUICK_LINKS = [
+  { id: 'enquiries', label: 'Enquiries' },
+  { id: 'messages', label: 'Messages' },
+  { id: 'calendar', label: 'Calendar' },
+  { id: 'bookings', label: 'Bookings' },
+  { id: 'invoices', label: 'Invoices' },
+  { id: 'settings', label: 'Settings' },
+]
+const ALL_QUICK_LINK_IDS = ALL_QUICK_LINKS.map((l) => l.id)
 
 function currency(n) {
   return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD', maximumFractionDigits: 0 }).format(Number(n || 0))
@@ -41,20 +110,7 @@ function JumpRow({ t, left, sub, right, onClick, dot }) {
   )
 }
 
-const DEFAULT_LAYOUT = [
-  { id: 'needs_today', size: 'lg', hidden: false },
-  { id: 'this_week', size: 'md', hidden: false },
-  { id: 'money', size: 'md', hidden: false },
-  { id: 'board', size: 'lg', hidden: false },
-  { id: 'job_matches', size: 'md', hidden: false },
-  { id: 'visibility', size: 'md', hidden: false },
-  { id: 'deliverables', size: 'sm', hidden: false },
-  { id: 'reviews', size: 'sm', hidden: false },
-  { id: 'leads', size: 'sm', hidden: false },
-  { id: 'goal', size: 'sm', hidden: false },
-  { id: 'lumi', size: 'sm', hidden: false },
-  { id: 'quick_actions', size: 'md', hidden: false },
-]
+const DEFAULT_LAYOUT = []
 
 function mergeLayout(saved, ids) {
   const valid = Array.isArray(saved) ? saved.filter((l) => ids.includes(l.id)) : []
@@ -66,12 +122,27 @@ function mergeLayout(saved, ids) {
 
 export default function DashboardHome() {
   const { user, profile } = useAuth()
-  const { tier } = useSubscription()
+  const { tier, meetsMinTier } = useSubscription()
+  const isPro = meetsMinTier('pro')
+  const isExpert = meetsMinTier('expert')
   const navigate = useNavigate()
   const outlet = useOutletContext() || {}
   const dark = !!outlet.dark
   const toggleTheme = outlet.toggleTheme || (() => {})
   const t = themeTokens(dark)
+
+  // Admin-only demo toggle: fills the dashboard with placeholder analytics for
+  // marketing screenshots. Flips the ?demo flag and reloads so every widget
+  // re-reads its data source. Nothing is written to the database.
+  const isAdmin = Boolean(profile && (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1 || profile.is_admin === '1'))
+  const demoOn = isDemoMode()
+  function toggleDemo() {
+    try {
+      const url = new URL(window.location.href)
+      url.searchParams.set('demo', demoOn ? '0' : '1')
+      window.location.href = url.toString()
+    } catch { /* ignore */ }
+  }
 
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [m, setM] = useState(null)
@@ -79,6 +150,12 @@ export default function DashboardHome() {
   const [layout, setLayout] = useState(DEFAULT_LAYOUT)
   const [editing, setEditing] = useState(false)
   const [today] = useState(() => new Date().toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long' }))
+  const [widgetOrder, setWidgetOrder] = useState(DEFAULT_ORDER)
+  const [hiddenWidgets, setHiddenWidgets] = useState([])
+  const [addOpen, setAddOpen] = useState(false)
+  const [quickOrder, setQuickOrder] = useState(ALL_QUICK_LINK_IDS)
+  const [quickHidden, setQuickHidden] = useState([])
+  const [activeLink, setActiveLink] = useState(null)
 
   const muted = { fontSize: 12, color: t.textMuted, fontFamily: FONT }
   const bigNum = { fontSize: 24, fontWeight: 700, letterSpacing: '-0.02em', color: t.text, fontFamily: FONT }
@@ -90,6 +167,36 @@ export default function DashboardHome() {
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Load the saved widget arrangement (per user, remembered on this device).
+  useEffect(() => {
+    if (!user?.id) return
+    try {
+      const raw = localStorage.getItem(`lt_dashboard_grid_v2_${user.id}`)
+      const saved = raw ? JSON.parse(raw) : null
+      let order = Array.isArray(saved?.order) ? saved.order.filter((id) => ALL_WIDGET_IDS.includes(id)) : []
+      const hidden = Array.isArray(saved?.hidden) ? saved.hidden.filter((id) => ALL_WIDGET_IDS.includes(id)) : []
+      const known = new Set([...order, ...hidden])
+      order = [...order, ...ALL_WIDGET_IDS.filter((id) => !known.has(id))]
+      setWidgetOrder(order)
+      setHiddenWidgets(hidden)
+    } catch { /* ignore */ }
+  }, [user?.id])
+
+  // Load saved quick-link arrangement.
+  useEffect(() => {
+    if (!user?.id) return
+    try {
+      const raw = localStorage.getItem(`lt_dashboard_quicklinks_${user.id}`)
+      const saved = raw ? JSON.parse(raw) : null
+      let order = Array.isArray(saved?.order) ? saved.order.filter((id) => ALL_QUICK_LINK_IDS.includes(id)) : []
+      const hidden = Array.isArray(saved?.hidden) ? saved.hidden.filter((id) => ALL_QUICK_LINK_IDS.includes(id)) : []
+      const known = new Set([...order, ...hidden])
+      order = [...order, ...ALL_QUICK_LINK_IDS.filter((id) => !known.has(id))]
+      setQuickOrder(order)
+      setQuickHidden(hidden)
+    } catch { /* ignore */ }
+  }, [user?.id])
 
   useEffect(() => {
     if (profile && Array.isArray(profile.dashboard_layout)) {
@@ -162,6 +269,51 @@ export default function DashboardHome() {
   }
 
   function reorder(from, to) { setLayout((p) => { const a = [...p]; const [x] = a.splice(from, 1); a.splice(to, 0, x); return a }) }
+  function persistLayout(order, hidden) {
+    try { if (user?.id) localStorage.setItem(`lt_dashboard_grid_v2_${user.id}`, JSON.stringify({ order, hidden })) } catch { /* ignore */ }
+  }
+  function reorderWidgets(from, to) {
+    setWidgetOrder((prev) => {
+      const a = [...prev]; const [x] = a.splice(from, 1); a.splice(to, 0, x)
+      persistLayout(a, hiddenWidgets)
+      return a
+    })
+  }
+  function resetLayout() {
+    setWidgetOrder(DEFAULT_ORDER)
+    setHiddenWidgets([])
+    persistLayout(DEFAULT_ORDER, [])
+  }
+  function persistQuick(order, hidden) {
+    try { if (user?.id) localStorage.setItem(`lt_dashboard_quicklinks_${user.id}`, JSON.stringify({ order, hidden })) } catch { /* ignore */ }
+  }
+  function reorderQuick(from, to) {
+    setQuickOrder((prev) => {
+      const a = [...prev]; const [x] = a.splice(from, 1); a.splice(to, 0, x)
+      persistQuick(a, quickHidden)
+      return a
+    })
+  }
+  function removeQuick(id) {
+    const nextOrder = quickOrder.filter((x) => x !== id)
+    const nextHidden = quickHidden.includes(id) ? quickHidden : [...quickHidden, id]
+    setQuickOrder(nextOrder); setQuickHidden(nextHidden); persistQuick(nextOrder, nextHidden)
+  }
+  function addQuick(id) {
+    const nextHidden = quickHidden.filter((x) => x !== id)
+    const nextOrder = quickOrder.includes(id) ? quickOrder : [...quickOrder, id]
+    setQuickHidden(nextHidden); setQuickOrder(nextOrder); persistQuick(nextOrder, nextHidden)
+  }
+  function removeWidget(id) {
+    const nextHidden = hiddenWidgets.includes(id) ? hiddenWidgets : [...hiddenWidgets, id]
+    setHiddenWidgets(nextHidden); persistLayout(widgetOrder, nextHidden)
+  }
+  function addWidget(id) {
+    const nextHidden = hiddenWidgets.filter((x) => x !== id)
+    const nextOrder = widgetOrder.includes(id) ? widgetOrder : [...widgetOrder, id]
+    setHiddenWidgets(nextHidden); setWidgetOrder(nextOrder); persistLayout(nextOrder, nextHidden)
+    setAddOpen(false)
+  }
   function resize(id) { setLayout((p) => p.map((l) => (l.id === id ? { ...l, size: nextSize(l.size) } : l))) }
   function hide(id) { setLayout((p) => p.map((l) => (l.id === id ? { ...l, hidden: true } : l))) }
   function show(id) { setLayout((p) => p.map((l) => (l.id === id ? { ...l, hidden: false } : l))) }
@@ -297,10 +449,38 @@ export default function DashboardHome() {
 
   const roundBtn = { padding: '9px 14px', borderRadius: 999, border: t.pillBorder, background: t.pillBg, color: t.text, fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: FONT, display: 'flex', alignItems: 'center', gap: 8 }
 
+  // Each draggable board widget, keyed by id. Add a new widget here and in
+  // ALL_WIDGETS to have it join the board.
+  const widgetNodes = {
+    profile_strength: <ProfileStrengthWidget userId={user?.id} />,
+    todos_daily: <TodoWidget userId={user?.id} kind="daily" label="Daily to-do" />,
+    todos_weekly: <TodoWidget userId={user?.id} kind="weekly" label="Weekly to-do" />,
+    calendar: <CalendarWidget userId={user?.id} hostName={profile?.business_name || profile?.full_name || "Your host"} hostEmail={user?.email} />,
+    upcoming: <UpcomingEvents userId={user?.id} />,
+    enquiries: <EnquiriesWidget userId={user?.id} />,
+    revenue: <RevenueWidget userId={user?.id} goal={goal} insightsLocked={!isExpert} />,
+    leads: <LeadsWidget userId={user?.id} insightsLocked={!isExpert} />,
+    bookings: <BookingsAnalyticsWidget userId={user?.id} />,
+    reviews: <ReviewsWidget userId={user?.id} hostName={profile?.business_name || profile?.full_name} />,
+    quotes: <QuotesWidget userId={user?.id} />,
+    deliverables: <DeliverablesWidget userId={user?.id} />,
+    search_visibility: <SearchVisibilityWidget userId={user?.id} tier={tier} />,
+    cashflow: <CashflowWidget userId={user?.id} />,
+  }
+  const canSeeWidget = (id) => {
+    const req = WIDGET_ACCESS[id]
+    if (req === 'pro') return isPro
+    if (req === 'expert') return isExpert
+    return true
+  }
+  const boardItems = widgetOrder.filter((id) => widgetNodes[id] && canSeeWidget(id) && !hiddenWidgets.includes(id)).map((id) => ({ id, node: widgetNodes[id] }))
+  const hiddenList = ALL_WIDGETS.filter((w) => hiddenWidgets.includes(w.id) && canSeeWidget(w.id))
+  const quickItems = quickOrder.filter((id) => ALL_QUICK_LINK_IDS.includes(id) && !quickHidden.includes(id)).map((id) => ALL_QUICK_LINKS.find((l) => l.id === id))
+  const quickHiddenList = ALL_QUICK_LINKS.filter((l) => quickHidden.includes(l.id))
+
   return (
     <div style={{ position: 'relative', padding: isMobile ? '20px 16px' : '32px 40px', width: '100%', boxSizing: 'border-box', overflowX: 'hidden', fontFamily: FONT }}>
       <LiquidLensFilter />
-      <ScatteredSquares dark={dark} />
       <div style={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 22 }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
@@ -308,40 +488,38 @@ export default function DashboardHome() {
             <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? 26 : 30, fontWeight: 600, color: t.text, margin: 0, lineHeight: 1.15 }}>Welcome back, {firstName}</div>
             <div style={{ ...muted, fontSize: 14, marginTop: 4 }}>{today}</div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            {!editing ? (
-              <>
-                <WorkspaceSearch userId={user?.id} navigate={navigate} isMobile={isMobile} t={t} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: available ? t.green : t.textMuted, fontFamily: FONT, whiteSpace: 'nowrap' }}>{available ? 'Available' : 'Away'}</span>
-                  <button type="button" onClick={toggleAvailable} aria-label="Toggle availability" style={{ width: 46, height: 26, borderRadius: 999, border: 'none', cursor: 'pointer', background: available ? t.accent : (t.dark ? 'rgba(120,190,255,0.18)' : 'rgba(20,17,26,0.16)'), position: 'relative', transition: 'background 0.2s ease', flexShrink: 0, padding: 0, boxShadow: available && t.dark ? `0 0 12px -2px ${t.accent}` : 'none' }}>
-                    <span style={{ position: 'absolute', top: 3, left: available ? 23 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s ease' }} />
-                  </button>
-                </div>
-                <button type="button" onClick={toggleTheme} aria-label="Toggle theme" title={dark ? 'Light mode' : 'Dark mode'} style={{ ...roundBtn, padding: '9px 12px' }}>{dark ? '☀' : '☾'}</button>
-              </>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: available ? t.green : t.textMuted, fontFamily: FONT, whiteSpace: 'nowrap' }}>{available ? 'Available' : 'Away'}</span>
+              <button type="button" onClick={toggleAvailable} aria-label="Toggle availability" style={{ width: 46, height: 26, borderRadius: 999, border: 'none', cursor: 'pointer', background: available ? t.accent : (t.dark ? 'rgba(120,190,255,0.18)' : 'rgba(20,17,26,0.16)'), position: 'relative', transition: 'background 0.2s ease', flexShrink: 0, padding: 0, boxShadow: available && t.dark ? `0 0 12px -2px ${t.accent}` : 'none' }}>
+                <span style={{ position: 'absolute', top: 3, left: available ? 23 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s ease' }} />
+              </button>
+            </div>
+            <WorkspaceSearch userId={user?.id} navigate={navigate} isMobile={isMobile} t={t} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 13, fontWeight: 500, color: t.textMuted, fontFamily: FONT, whiteSpace: 'nowrap' }}>{dark ? 'Dark' : 'Light'}</span>
+              <button type="button" onClick={toggleTheme} role="switch" aria-checked={dark} aria-label="Toggle light or dark mode" title={dark ? 'Switch to light mode' : 'Switch to dark mode'} style={{ width: 52, height: 28, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', padding: 0, flexShrink: 0, transition: 'background 0.2s ease', background: dark ? 'rgba(120,190,255,0.28)' : 'rgba(20,17,26,0.14)' }}>
+                <span style={{ position: 'absolute', top: 3, left: dark ? 27 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, lineHeight: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s ease' }}>{dark ? '☾' : '☀'}</span>
+              </button>
+            </div>
+            {isAdmin ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} title="Fill the dashboard with placeholder analytics (admin only, not saved to the database)">
+                <span style={{ fontSize: 13, fontWeight: 500, color: demoOn ? '#FF2D78' : t.textMuted, fontFamily: FONT, whiteSpace: 'nowrap' }}>Demo</span>
+                <button type="button" onClick={toggleDemo} role="switch" aria-checked={demoOn} aria-label="Toggle demo data" style={{ width: 52, height: 28, borderRadius: 999, border: 'none', cursor: 'pointer', position: 'relative', padding: 0, flexShrink: 0, transition: 'background 0.2s ease', background: demoOn ? 'rgba(255,45,120,0.35)' : (t.dark ? 'rgba(120,190,255,0.18)' : 'rgba(20,17,26,0.14)') }}>
+                  <span style={{ position: 'absolute', top: 3, left: demoOn ? 27 : 3, width: 22, height: 22, borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.25)', transition: 'left 0.2s ease' }} />
+                </button>
+              </div>
             ) : null}
-            <button type="button" onClick={() => (editing ? saveLayout() : setEditing(true))} style={{ ...roundBtn, border: editing ? 'none' : t.pillBorder, background: editing ? (t.dark ? t.accent : '#14111a') : t.pillBg, color: editing ? (t.dark ? '#04121f' : '#fff') : t.text }}>
-              {editing ? 'Done' : 'Edit dashboard'}
-            </button>
           </div>
         </div>
 
-        {editing ? <div style={{ fontSize: 12, color: t.textMuted, fontFamily: FONT }}>Drag widgets to reorder · ⤢ resize · – hide. Tap Done to save.</div> : null}
-
-        <WidgetGrid items={items} editing={editing} onReorder={reorder} onResize={resize} onHide={hide} t={t} />
-
-        {editing && hiddenItems.length > 0 ? (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center', paddingTop: 6 }}>
-            <span style={{ fontSize: 12, color: t.textMuted, fontWeight: 600 }}>Hidden:</span>
-            {hiddenItems.map((l) => (
-              <button key={l.id} type="button" onClick={() => show(l.id)} style={{ padding: '7px 14px', borderRadius: 999, border: `1px dashed ${t.dark ? 'rgba(120,190,255,0.35)' : 'rgba(20,17,26,0.25)'}`, background: t.pillBg, color: t.textSecondary, fontSize: 12, fontFamily: FONT, cursor: 'pointer' }}>
-                + {REG[l.id]?.title || l.id}
-              </button>
-            ))}
-          </div>
-        ) : null}
+        <div style={{ maxWidth: BOARD_MAX, width: '100%', display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <QuickLinksBar items={quickItems} editing={false} onReorder={reorderQuick} onRemove={removeQuick} onOpen={(id) => { if (id === 'settings') navigate('/dashboard/settings'); else setActiveLink(id) }} hiddenList={quickHiddenList} onAdd={addQuick} />
+          <DashboardBoard items={boardItems} editing={false} onReorder={reorderWidgets} onRemove={removeWidget} />
+        </div>
       </div>
+
+      {activeLink ? <QuickLinkDrawer linkId={activeLink} userId={user?.id} onClose={() => setActiveLink(null)} /> : null}
     </div>
   )
 }

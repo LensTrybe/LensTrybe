@@ -19,6 +19,8 @@ import BrandKitPage from './pages/dashboard/BrandKitPage'
 import DeliverPage from './pages/dashboard/DeliverPage'
 import CRMPage from './pages/dashboard/CRMPage'
 import DashboardHome from './pages/dashboard/DashboardHome'
+import ProjectsPage from './pages/dashboard/ProjectsPage'
+import ProjectDetailPage from './pages/dashboard/ProjectDetailPage'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
 import TeamPage from './pages/dashboard/TeamPage'
@@ -34,6 +36,7 @@ import AdminPage from './pages/dashboard/AdminPage'
 import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
 import SignContract from './pages/SignContract'
+import MeetingRespondPage from './pages/MeetingRespondPage'
 import PublicPortfolioPage from './pages/PortfolioPage'
 import PublicPortalPage from './pages/public/PublicPortalPage'
 import DeliverDownloadPage from './pages/DeliverDownloadPage'
@@ -137,6 +140,8 @@ export default function App() {
         </ProtectedRoute>
       }>
         <Route index element={<DashboardHome />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />
@@ -170,8 +175,9 @@ export default function App() {
       } />
 
 
-      {/* Token-based public pages — no auth; must stay outside ProtectedRoute */}
+      {/* Token-based public pages (no auth); must stay outside ProtectedRoute */}
       <Route path="/sign/:token" element={<SignContract />} />
+      <Route path="/meeting/:token" element={<MeetingRespondPage />} />
       <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
       <Route path="/portal/:token" element={<PublicPortalPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />

@@ -12,6 +12,14 @@ const TILE_GRADS = [
   'linear-gradient(135deg,#f6ccb0,#efab82)',
 ]
 
+const TILE_GRADS_DARK = [
+  'linear-gradient(135deg,#2c3a5e,#1c2742)',
+  'linear-gradient(135deg,#3d2450,#26163a)',
+  'linear-gradient(135deg,#1c452f,#123020)',
+  'linear-gradient(135deg,#472657,#2c1838)',
+  'linear-gradient(135deg,#283047,#1a2033)',
+]
+
 const TILE_GAP = 10
 const TILE_SINGLE_H = 210
 const TILE_PAIR_H = 100
@@ -19,7 +27,7 @@ const TILE_PATTERN = ['s', 'p', 's', 'p', 'p', 's']
 const TILE_REPEATS = 10
 const TILE_LOOP = TILE_PATTERN.reduce((sum, c) => sum + (c === 's' ? TILE_SINGLE_H : TILE_PAIR_H) + TILE_GAP, 0)
 
-function MosaicColumn({ index, animated, twinkle }) {
+function MosaicColumn({ index, animated, twinkle, grads }) {
   const dir = index % 2 === 0 ? 'up' : 'down'
   const dur = 44 + (index % 5) * 7
   const rot = index % TILE_PATTERN.length
@@ -39,11 +47,11 @@ function MosaicColumn({ index, animated, twinkle }) {
       <div style={{ display: 'flex', flexDirection: 'column', willChange: animated && !twinkle ? 'transform' : 'auto', animation: animated && !twinkle ? `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` : 'none' }}>
         {cells.map((c, i) => {
           if (c === 's') {
-            const bg = TILE_GRADS[g++ % TILE_GRADS.length]
+            const bg = grads[g++ % grads.length]
             return <div key={i} style={{ height: `${TILE_SINGLE_H}px`, marginBottom: `${TILE_GAP}px`, borderRadius: '12px', background: bg, ...twk() }} />
           }
-          const a = TILE_GRADS[g++ % TILE_GRADS.length]
-          const b = TILE_GRADS[g++ % TILE_GRADS.length]
+          const a = grads[g++ % grads.length]
+          const b = grads[g++ % grads.length]
           return (
             <div key={i} style={{ display: 'flex', gap: `${TILE_GAP}px`, marginBottom: `${TILE_GAP}px` }}>
               <div style={{ flex: 1, height: `${TILE_PAIR_H}px`, borderRadius: '12px', background: a, ...twk() }} />
@@ -56,7 +64,8 @@ function MosaicColumn({ index, animated, twinkle }) {
   )
 }
 
-export default function TileField({ animated = true, opacity = 1, twinkle = false }) {
+export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false }) {
+  const grads = dark ? TILE_GRADS_DARK : TILE_GRADS
   const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
   useEffect(() => {
     function onResize() { setColCount(Math.max(6, Math.ceil(window.innerWidth / 240))) }
@@ -66,7 +75,7 @@ export default function TileField({ animated = true, opacity = 1, twinkle = fals
   return (
     <>
       <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity }}>
-        {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} twinkle={twinkle} />)}
+        {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} twinkle={twinkle} grads={grads} />)}
       </div>
       <style>{`
         @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-${TILE_LOOP}px); } }

@@ -6,11 +6,6 @@ import { supabase } from '../../lib/supabaseClient'
 import BrandLogo from '../ui/BrandLogo'
 import NavIcon from './navIcons'
 
-const TEXT = '#eef2fb'
-const ICON = '#c2cde3'
-const MUTED = '#8a97b4'
-const GREEN = '#34e39a'
-const PINK = '#ff5c93'
 const FONT = "'Inter', sans-serif"
 const SERIF = "'Instrument Serif', Georgia, serif"
 
@@ -21,26 +16,54 @@ const FLY_GAP = 10
 const FLY_W = 230
 const SPACER = MARGIN + RAIL + 14
 
-// Dark liquid glass (light content sits on it, aurora glows through).
-const GLASS = {
-  background: 'linear-gradient(160deg, rgba(26,32,54,0.62) 0%, rgba(14,18,36,0.44) 100%)',
-  backdropFilter: 'blur(38px) saturate(185%)',
-  WebkitBackdropFilter: 'blur(38px) saturate(185%)',
-  border: '1px solid rgba(255,255,255,0.12)',
-  boxShadow: '0 34px 80px -26px rgba(0,0,0,0.6), inset 0 1px 1px rgba(255,255,255,0.16), inset 0 -2px 10px rgba(0,0,0,0.25)',
-}
-
-function sheen(radius) {
-  return (
-    <div aria-hidden style={{
-      position: 'absolute', inset: 0, borderRadius: radius, pointerEvents: 'none',
-      background: 'linear-gradient(150deg, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.03) 26%, rgba(255,255,255,0) 52%)',
-    }} />
-  )
+// Theme tokens. Light = "liquid glass" (frosted white, dark content), the
+// default. Dark = the deep HUD glass. Matches lib/dashboardTheme.js.
+function tokens(dark) {
+  // Dark frosted liquid glass (HUD) — dark mode only.
+  if (dark) return {
+    text: 'rgba(255,255,255,0.92)', icon: 'rgba(255,255,255,0.6)', muted: 'rgba(255,255,255,0.42)', green: '#1DB954', pink: '#FF2D78', gold: '#f6c552',
+    glass: {
+      background: 'linear-gradient(160deg, rgba(34,34,42,0.5) 0%, rgba(18,18,24,0.38) 100%)',
+      backdropFilter: 'blur(34px) saturate(150%)',
+      WebkitBackdropFilter: 'blur(34px) saturate(150%)',
+      border: '1px solid rgba(255,255,255,0.1)',
+      boxShadow: '0 24px 60px -22px rgba(0,0,0,0.65), inset 0 1px 0 rgba(255,255,255,0.15)',
+    },
+    sheen: 'linear-gradient(150deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.02) 30%, rgba(255,255,255,0) 55%)',
+    divider: 'rgba(255,255,255,0.08)',
+    chipIdleBg: 'transparent', chipIdleBorder: 'none',
+    chipActiveBg: 'transparent', chipActiveBorder: 'none', chipActiveGlow: 'none',
+    hoverBg: 'rgba(255,255,255,0.06)', activeRowBg: 'rgba(29,185,84,0.16)',
+    avatarBg: 'rgba(255,45,120,0.18)', avatarBorder: '1px solid rgba(255,45,120,0.4)',
+    textGlow: 'none', iconGlow: 'none',
+  }
+  // Light frosted liquid glass — matches the tiles, chips and drawer.
+  return {
+    text: '#14111a', icon: '#4b4a57', muted: '#8a8995', green: '#1DB954', pink: '#FF2D78', gold: '#c98a12',
+    glass: {
+      background:
+        'linear-gradient(125deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.09) 32%, rgba(255,255,255,0.03) 62%), ' +
+        'linear-gradient(135deg, rgba(255,255,255,0.12) 0%, rgba(255,255,255,0.04) 50%, rgba(255,255,255,0.1) 100%)',
+      backdropFilter: 'blur(6px) saturate(185%) brightness(1.08)',
+      WebkitBackdropFilter: 'blur(6px) saturate(185%) brightness(1.08)',
+      border: '1px solid rgba(255,255,255,0.6)',
+      boxShadow: '0 18px 50px -14px rgba(31,38,90,0.28), inset 0 1px 1px rgba(255,255,255,0.9), inset 0 -1.5px 3px rgba(255,255,255,0.45), inset 1.5px 0 4px rgba(255,255,255,0.3), inset -1.5px 0 4px rgba(255,255,255,0.3)',
+    },
+    sheen: 'linear-gradient(150deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.14) 26%, rgba(255,255,255,0) 52%)',
+    divider: 'rgba(20,17,26,0.08)',
+    chipIdleBg: 'rgba(255,255,255,0.55)', chipIdleBorder: '1px solid rgba(20,17,26,0.08)',
+    chipActiveBg: 'linear-gradient(135deg, rgba(29,185,84,0.22), rgba(29,185,84,0.05))',
+    chipActiveBorder: '1px solid rgba(29,185,84,0.4)', chipActiveGlow: '0 0 14px -4px rgba(29,185,84,0.4)',
+    hoverBg: 'rgba(20,17,26,0.045)', activeRowBg: 'rgba(29,185,84,0.1)',
+    avatarBg: 'rgba(255,45,120,0.12)', avatarBorder: '1px solid rgba(255,45,120,0.35)',
+    textGlow: '0 0 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.7)',
+    iconGlow: 'drop-shadow(0 0 3px rgba(255,255,255,0.9))',
+  }
 }
 
 const TOP = [
   { label: 'Dashboard', path: '/dashboard', icon: 'grid' },
+  { label: 'Projects', path: '/dashboard/projects', icon: 'briefcase' },
   { label: 'Find a Creative', path: '/creatives', icon: 'search' },
 ]
 
@@ -79,7 +102,7 @@ const BASE_SECTIONS = [
   ] },
 ]
 
-export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseMobile }) {
+export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseMobile, theme = 'light' }) {
   const { profile, user } = useAuth()
   const { hasFeature, tier } = useSubscription()
   const navigate = useNavigate()
@@ -87,6 +110,9 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   const [hover, setHover] = useState(false)
   const [selected, setSelected] = useState(null)
   const expanded = isMobile || hover
+
+  const dark = theme === 'dark'
+  const t = tokens(dark)
 
   const isAdmin = Boolean(profile && (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1 || profile.is_admin === '1'))
 
@@ -107,22 +133,30 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     return sections.find((s) => s.items.some((i) => isAct(i.path)))?.label || null
   }, [sections, pathname])
 
-  const tierColors = { basic: MUTED, pro: PINK, expert: GREEN, elite: '#f6c552' }
-  const tierColor = tierColors[tier] ?? MUTED
+  const tierColors = { basic: t.muted, pro: t.pink, expert: t.green, elite: t.gold }
+  const tierColor = tierColors[tier] ?? t.muted
 
   function closeAll() { setHover(false); setSelected(null) }
   async function signOut() { await supabase.auth.signOut(); closeAll(); onCloseMobile?.(); navigate('/') }
 
-  // Rounded glass chip holding an icon.
+  // Sheen highlight overlay for a glass panel.
+  function sheen(radius) {
+    return (
+      <div aria-hidden style={{
+        position: 'absolute', inset: 0, borderRadius: radius, pointerEvents: 'none',
+        background: t.sheen,
+      }} />
+    )
+  }
+
+  // Bare icon, no box — sits directly on the glass.
   function chip(iconName, active, locked) {
     return (
       <span style={{
-        width: 38, height: 38, borderRadius: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
-        background: active ? 'linear-gradient(135deg, rgba(52,227,154,0.26), rgba(52,227,154,0.06))' : 'rgba(255,255,255,0.05)',
-        border: active ? '1px solid rgba(52,227,154,0.45)' : '1px solid rgba(255,255,255,0.09)',
-        color: locked ? MUTED : active ? GREEN : ICON,
-        boxShadow: active ? '0 0 16px -4px rgba(52,227,154,0.55)' : 'none',
-        transition: 'background .15s ease, border-color .15s ease, color .15s ease',
+        width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+        background: 'transparent', border: 'none', boxShadow: 'none',
+        color: locked ? t.muted : active ? t.green : t.icon,
+        transition: 'color .15s ease',
       }}>
         <NavIcon name={iconName} size={19} />
       </span>
@@ -134,13 +168,14 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       display: 'flex', alignItems: 'center', gap: expanded ? 11 : 0,
       padding: expanded ? '5px 12px' : '5px 0', justifyContent: expanded ? 'flex-start' : 'center',
       margin: '3px 12px', borderRadius: 13, width: 'auto', boxSizing: 'border-box',
-      color: active ? GREEN : TEXT, background: expanded && active ? 'rgba(52,227,154,0.09)' : 'transparent',
-      fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450, textDecoration: 'none',
+      color: active ? t.green : t.text, background: expanded && active ? t.activeRowBg : 'transparent',
+      border: 'none', outline: 'none', appearance: 'none', WebkitAppearance: 'none',
+      fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 500, textDecoration: 'none', textShadow: t.textGlow,
       cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', transition: 'background .15s ease, color .15s ease',
     }
   }
   const hoverBg = (active) => ({
-    onMouseEnter: (e) => { if (!active) e.currentTarget.style.background = 'rgba(255,255,255,0.05)' },
+    onMouseEnter: (e) => { if (!active) e.currentTarget.style.background = t.hoverBg },
     onMouseLeave: (e) => { if (!active) e.currentTarget.style.background = 'transparent' },
   })
 
@@ -149,7 +184,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       <>
         {chip(icon, active)}
         {expanded && <span style={{ flex: 1, textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</span>}
-        {expanded && chevron && <NavIcon name="chevron" size={14} style={{ color: MUTED, transform: chevronOpen ? 'rotate(90deg)' : 'none', transition: 'transform .18s ease' }} />}
+        {expanded && chevron && <NavIcon name="chevron" size={14} style={{ color: t.icon, filter: t.iconGlow, transform: chevronOpen ? 'rotate(90deg)' : 'none', transition: 'transform .18s ease' }} />}
       </>
     )
     if (to) return <Link key={id} to={to} title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
@@ -162,13 +197,13 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     const inner = (
       <>
         {chip(item.icon, active, locked)}
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: locked ? MUTED : active ? GREEN : TEXT }}>{item.label}</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, textShadow: t.textGlow, color: locked ? t.muted : active ? t.green : t.text }}>{item.label}</span>
         {locked && <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>🔒</span>}
       </>
     )
     const style = {
       display: 'flex', alignItems: 'center', gap: 11, padding: '5px 10px', margin: '3px 8px', borderRadius: 13,
-      background: active ? 'rgba(52,227,154,0.09)' : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
+      background: active ? t.activeRowBg : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
       textDecoration: 'none', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.6 : 1, transition: 'background .15s ease',
     }
     if (locked) return <div key={item.path} style={style} title={item.label}>{inner}</div>
@@ -176,7 +211,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   }
 
   const avatar = (
-    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'rgba(255,92,147,0.16)', border: '1px solid rgba(255,92,147,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: PINK, fontWeight: 600, overflow: 'hidden', fontFamily: FONT, flexShrink: 0 }}>
+    <div style={{ width: 38, height: 38, borderRadius: '50%', background: t.avatarBg, border: t.avatarBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: t.pink, fontWeight: 600, overflow: 'hidden', fontFamily: FONT, flexShrink: 0 }}>
       {profile?.avatar_url
         ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()}
@@ -184,8 +219,8 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   )
 
   const wordmark = (
-    <span style={{ fontSize: 19, fontWeight: 700, color: TEXT, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
-      Lens<span style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: '1.12em', color: GREEN }}>Trybe</span>
+    <span style={{ fontSize: 19, fontWeight: 700, color: t.text, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
+      Lens<span style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: '1.12em', color: t.green }}>Trybe</span>
     </span>
   )
 
@@ -198,7 +233,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       </div>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2px 0' }}>
         {TOP.map((it) => panelRow({ id: it.path, icon: it.icon, label: it.label, active: itemActive(it.path), to: it.path, title: it.label }))}
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: expanded ? '8px 18px' : '8px 14px' }} />
+        <div style={{ height: 1, background: t.divider, margin: expanded ? '8px 18px' : '8px 14px' }} />
         {sections.map((s) => panelRow({
           id: s.label, icon: s.icon, label: s.label,
           active: activeSection === s.label || selected === s.label,
@@ -207,19 +242,19 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         }))}
       </div>
       <div style={{ flexShrink: 0, padding: '6px 0 8px' }}>
-        <div style={{ height: 1, background: 'rgba(255,255,255,0.1)', margin: expanded ? '2px 18px 6px' : '2px 14px 6px' }} />
+        <div style={{ height: 1, background: t.divider, margin: expanded ? '2px 18px 6px' : '2px 14px 6px' }} />
         <div onClick={() => { navigate('/dashboard/profile/view-profile'); closeAll(); onCloseMobile?.() }} title="Profile"
           style={{ display: 'flex', alignItems: 'center', gap: 11, justifyContent: expanded ? 'flex-start' : 'center', padding: expanded ? '6px 18px' : '6px 0', cursor: 'pointer' }}>
           {avatar}
           {expanded && (
             <div style={{ overflow: 'hidden' }}>
-              <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, fontFamily: FONT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: t.text, fontFamily: FONT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
               <div style={{ fontSize: 11, color: tierColor, fontFamily: FONT, textTransform: 'capitalize' }}>{tier} plan</div>
             </div>
           )}
         </div>
-        <div onClick={signOut} title="Sign out" style={{ ...rowStyle(false), color: MUTED }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = PINK }} onMouseLeave={(e) => { e.currentTarget.style.color = MUTED }}>
+        <div onClick={signOut} title="Sign out" style={{ ...rowStyle(false), color: t.muted }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = t.pink }} onMouseLeave={(e) => { e.currentTarget.style.color = t.muted }}>
           {chip('logout', false)}
           {expanded && <span>Sign Out</span>}
         </div>
@@ -231,7 +266,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   if (isMobile) {
     return (
       <div className={`sidebar-drawer${mobileOpen ? ' open' : ''}`}
-        style={{ position: 'fixed', top: 0, left: 0, width: '86%', maxWidth: 320, height: '100dvh', zIndex: 1001, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', ...GLASS, borderRadius: '0 20px 20px 0', overflow: 'hidden', boxSizing: 'border-box' }}>
+        style={{ position: 'fixed', top: 0, left: 0, width: '86%', maxWidth: 320, height: '100dvh', zIndex: 1001, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', ...t.glass, borderRadius: '0 20px 20px 0', overflow: 'hidden', boxSizing: 'border-box' }}>
         {sheen('0 20px 20px 0')}
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
           <div onClick={() => { navigate('/dashboard'); onCloseMobile?.() }} style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}>
@@ -241,7 +276,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
             {TOP.map((it) => flyItem({ ...it }))}
             {sections.map((s) => (
               <div key={s.label}>
-                <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: MUTED, padding: '14px 20px 4px', fontFamily: FONT }}>{s.label}</div>
+                <div style={{ fontSize: 10.5, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: t.muted, padding: '14px 20px 4px', fontFamily: FONT }}>{s.label}</div>
                 {s.items.map((it) => flyItem(it))}
               </div>
             ))}
@@ -259,17 +294,17 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       <div aria-hidden style={{ width: SPACER, flexShrink: 0 }} />
       <div onMouseEnter={() => setHover(true)} onMouseLeave={closeAll}
         style={{ position: 'fixed', left: MARGIN, top: MARGIN, bottom: MARGIN, zIndex: 60, display: 'flex', alignItems: 'stretch', gap: FLY_GAP }}>
-        <aside style={{ position: 'relative', width: expanded ? OPEN_W : RAIL, ...GLASS, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', transition: 'width .2s cubic-bezier(.4,0,.2,1)' }}>
+        <aside style={{ position: 'relative', width: expanded ? OPEN_W : RAIL, ...t.glass, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', transition: 'width .2s cubic-bezier(.4,0,.2,1)' }}>
           {sheen(24)}
           {firstBody}
         </aside>
 
         {selSection && (
-          <div style={{ position: 'relative', width: FLY_W, alignSelf: 'stretch', ...GLASS, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', animation: 'ltflyin .18s ease' }}>
+          <div style={{ position: 'relative', width: FLY_W, alignSelf: 'stretch', ...t.glass, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', animation: 'ltflyin .18s ease' }}>
             {sheen(24)}
             <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
               <div style={{ padding: '20px 18px 12px', flexShrink: 0 }}>
-                <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 24, color: TEXT, lineHeight: 1 }}>{selSection.label}</div>
+                <div style={{ fontFamily: SERIF, fontStyle: 'italic', fontSize: 24, color: t.text, textShadow: t.textGlow, lineHeight: 1 }}>{selSection.label}</div>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', paddingBottom: 10 }}>
                 {selSection.items.map((it) => flyItem(it))}

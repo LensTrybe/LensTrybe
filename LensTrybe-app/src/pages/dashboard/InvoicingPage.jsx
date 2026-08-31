@@ -77,6 +77,8 @@ export default function InvoicingPage() {
     client_address: '',
     due_date: '',
     notes: '',
+    skill_type: '',
+    discipline: '',
     line_items: [{ description: '', quantity: 1, rate: 0 }],
   })
   const [bankDetails, setBankDetails] = useState({ bank_name: '', bank_bsb: '', bank_account: '', bank_account_name: '' })
@@ -253,6 +255,8 @@ export default function InvoicingPage() {
       items: newInvoice.line_items,
       amount: total,
       status: invoiceStatus,
+      skill_type: newInvoice.skill_type || null,
+      discipline: newInvoice.discipline || null,
     }).select().single()
     if (error) {
       setSaveError(error.message)
@@ -270,7 +274,7 @@ export default function InvoicingPage() {
       await loadInvoices()
       setShowCreate(false)
       setSaveError('')
-      setNewInvoice({ client_name: '', client_email: '', client_phone: '', client_address: '', due_date: '', notes: '', line_items: [{ description: '', quantity: 1, rate: 0 }] })
+      setNewInvoice({ client_name: '', client_email: '', client_phone: '', client_address: '', due_date: '', notes: '', skill_type: '', discipline: '', line_items: [{ description: '', quantity: 1, rate: 0 }] })
     }
     setSaving(false)
   }
@@ -550,7 +554,7 @@ export default function InvoicingPage() {
                 >
                   {saving ? 'Sending…' : 'Send Invoice'}
                 </button>
-                <button onClick={() => { setShowCreate(false); setNewInvoice({ client_name: '', client_email: '', client_phone: '', client_address: '', due_date: '', notes: '', line_items: [{ description: '', quantity: 1, rate: 0 }] }) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
+                <button onClick={() => { setShowCreate(false); setNewInvoice({ client_name: '', client_email: '', client_phone: '', client_address: '', due_date: '', notes: '', skill_type: '', discipline: '', line_items: [{ description: '', quantity: 1, rate: 0 }] }) }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '18px', cursor: 'pointer' }}>✕</button>
               </div>
             </div>
 
@@ -559,6 +563,32 @@ export default function InvoicingPage() {
                 {saveError}
               </div>
             )}
+
+            {/* Internal analytics tags — NOT shown on the invoice sent to the client */}
+            {(() => {
+              const skillTypes = Array.isArray(profile?.skill_types) ? profile.skill_types : []
+              const sbt = profile?.specialties_by_type && typeof profile.specialties_by_type === 'object' ? profile.specialties_by_type : {}
+              const disciplineOptions = newInvoice.skill_type && Array.isArray(sbt[newInvoice.skill_type]) && sbt[newInvoice.skill_type].length
+                ? sbt[newInvoice.skill_type]
+                : (Array.isArray(profile?.specialties) ? profile.specialties : [])
+              const selStyle = { padding: '8px 12px', background: 'var(--surface, rgba(255,255,255,0.06))', border: '1px solid rgba(255,255,255,0.16)', borderRadius: '8px', fontSize: '13px', color: 'var(--text, #fff)', fontFamily: 'var(--font-ui)', width: '100%', boxSizing: 'border-box', colorScheme: 'dark' }
+              if (!skillTypes.length && !(Array.isArray(profile?.specialties) && profile.specialties.length)) return null
+              return (
+                <div style={{ padding: isMobile ? '12px 16px' : '14px 24px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginBottom: '8px' }}>For your analytics only · not shown to the client</div>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <select value={newInvoice.skill_type} onChange={e => setNewInvoice(p => ({ ...p, skill_type: e.target.value, discipline: '' }))} style={{ ...selStyle, flex: '1 1 180px' }}>
+                      <option value="">Specialty (optional)</option>
+                      {skillTypes.map((s) => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <select value={newInvoice.discipline} onChange={e => setNewInvoice(p => ({ ...p, discipline: e.target.value }))} style={{ ...selStyle, flex: '1 1 180px' }}>
+                      <option value="">Discipline (optional)</option>
+                      {disciplineOptions.map((d) => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* Invoice document */}
             <div style={invoiceDocSurface}>

@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+
+const PROFILE_TABS = ['basics', 'skills', 'location', 'social', 'credentials', 'portfolio']
 import {
   moderateText,
   moderateImage,
@@ -86,7 +89,15 @@ export default function EditProfilePage() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [uploading, setUploading] = useState(false)
-  const [activeTab, setActiveTab] = useState('basics')
+  const [searchParams] = useSearchParams()
+  const [activeTab, setActiveTab] = useState(() => {
+    const t = searchParams.get('tab')
+    return PROFILE_TABS.includes(t) ? t : 'basics'
+  })
+  useEffect(() => {
+    const t = searchParams.get('tab')
+    if (PROFILE_TABS.includes(t)) setActiveTab(t)
+  }, [searchParams])
   const [portfolioItems, setPortfolioItems] = useState([])
   const [uploadingPortfolio, setUploadingPortfolio] = useState(false)
   /** 'checking' | 'uploading' | null — while uploadingPortfolio is true */

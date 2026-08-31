@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { logProfileView } from '../../lib/visibility'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import {
   MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
@@ -86,6 +87,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),
     ])
     setProfile(profileRes.data)
+    if (profileRes.data && !previewId) void logProfileView(id, 'profile')
     setPortfolioItems(portfolioRes.data ?? [])
     const reviewRows = reviewsRes.data ?? []
     setReviews(reviewRows.filter((r) => !r.hidden && r.flag_status !== 'resolved_removed'))

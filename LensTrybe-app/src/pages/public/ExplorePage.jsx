@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { logSearchImpressions } from '../../lib/visibility'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import {
@@ -283,6 +284,7 @@ export default function ExplorePage() {
     })
 
     setCreatives(sorted)
+    void logSearchImpressions(sorted.map((p) => p.id))
     setLoading(false)
   }
 
