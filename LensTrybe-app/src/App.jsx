@@ -25,6 +25,9 @@ import CRMPage from './pages/dashboard/CRMPage'
 import DashboardHome from './pages/dashboard/DashboardHome'
 import ProjectsPage from './pages/dashboard/ProjectsPage'
 import ProjectDetailPage from './pages/dashboard/ProjectDetailPage'
+import InventoryPage from './pages/dashboard/InventoryPage'
+import ContentCalendarPage from './pages/dashboard/ContentCalendarPage'
+import ContentIdeasPage from './pages/dashboard/ContentIdeasPage'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
 import MarketplacePage from './pages/dashboard/MarketplacePage'
 import TeamPage from './pages/dashboard/TeamPage'
@@ -146,6 +149,9 @@ export default function App() {
         <Route index element={<DashboardHome />} />
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectDetailPage />} />
+        <Route path="inventory" element={<InventoryPage />} />
+        <Route path="content/calendar" element={<ContentCalendarPage />} />
+        <Route path="content/ideas" element={<ContentIdeasPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/meetings" element={<MeetingsPage />} />
         <Route path="clients/crm" element={<CRMPage />} />

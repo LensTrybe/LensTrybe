@@ -211,6 +211,7 @@ const TABS = [
   { id: 'messages', label: 'Messages' },
   { id: 'tasks', label: 'Tasks' },
   { id: 'meetings', label: 'Meetings' },
+  { id: 'gear', label: 'Gear' },
 ]
 
 export default function ProjectDetailPage() {
@@ -232,6 +233,7 @@ export default function ProjectDetailPage() {
   const [showAddPart, setShowAddPart] = useState(false)
   const [partForm, setPartForm] = useState({ name: '', email: '', phone: '', role: '' })
   const [meetings, setMeetings] = useState([])
+  const [checkouts, setCheckouts] = useState([])
   const [hostName, setHostName] = useState('')
   const [showMeeting, setShowMeeting] = useState(false)
   const [meetingForm, setMeetingForm] = useState({ title: '', meeting_date: '', start_time: '', end_time: '', location: '', description: '', client_name: '', client_email: '' })
@@ -259,7 +261,7 @@ export default function ProjectDetailPage() {
     setStages(st || [])
     const { data: cts } = await supabase.from('crm_contacts').select('id, name').eq('creative_id', user.id).order('name', { ascending: true })
     setContacts(cts || [])
-    const [inv, qt, ct, dl, th, tk, pt, mt, prof] = await Promise.all([
+    const [inv, qt, ct, dl, th, tk, pt, mt, prof, co] = await Promise.all([
       supabase.from('invoices').select('*').eq('project_id', id).order('created_at', { ascending: false }),
       supabase.from('quotes').select('*').eq('project_id', id).order('created_at', { ascending: false }),
       supabase.from('contracts').select('*').eq('project_id', id).order('created_at', { ascending: false }),
@@ -269,6 +271,7 @@ export default function ProjectDetailPage() {
       supabase.from('project_participants').select('*').eq('project_id', id).order('created_at', { ascending: true }),
       supabase.from('meetings').select('*').eq('project_id', id).order('created_at', { ascending: false }),
       supabase.from('profiles').select('business_name').eq('id', user.id).maybeSingle(),
+      supabase.from('inventory_checkouts').select('*, item:inventory_items(name, photo_path)').eq('project_id', id).order('checked_out_at', { ascending: false }),
     ])
     setInvoices(inv.data || [])
     setQuotes(qt.data || [])
@@ -278,6 +281,7 @@ export default function ProjectDetailPage() {
     setTasks(tk.data || [])
     setParticipants(pt.data || [])
     setMeetings(mt.data || [])
+    setCheckouts(co.data || [])
     setHostName((prof.data && prof.data.business_name) || '')
     setLoading(false)
   }
@@ -363,6 +367,11 @@ export default function ProjectDetailPage() {
     setMeetings(prev => prev.map(x => x.id === m.id ? { ...x, ...patch } : x))
     flash('Meeting confirmed and added to your calendar')
     try { await supabase.functions.invoke('send-event-invite', { body: { event: { ...evPayload, id: calId, updated_at: new Date().toISOString() }, host: { name: hostName, email: user.email } } }) } catch { /* best effort */ }
+  }
+  async function checkInGear(co) {
+    setCheckouts(prev => prev.map(x => x.id === co.id ? { ...x, returned_at: new Date().toISOString() } : x))
+    await supabase.from('inventory_checkouts').update({ returned_at: new Date().toISOString() }).eq('id', co.id)
+    flash('Gear checked back in')
   }
   async function deleteMeeting(mid) {
     setMeetings(prev => prev.filter(x => x.id !== mid))
@@ -463,7 +472,7 @@ export default function ProjectDetailPage() {
 
         <div className="tabs">
           {TABS.map(t => {
-            const counts = { invoices: invoices.length, quotes: quotes.length, contracts: contracts.length, gallery: galleries.length, messages: threads.length, tasks: tasks.length, meetings: meetings.length }
+            const counts = { invoices: invoices.length, quotes: quotes.length, contracts: contracts.length, gallery: galleries.length, messages: threads.length, tasks: tasks.length, meetings: meetings.length, gear: checkouts.filter(c => !c.returned_at).length }
             const c = counts[t.id]
             return (
               <button key={t.id} className={'tab' + (tab === t.id ? ' on' : '')} onClick={() => setTab(t.id)}>
@@ -723,6 +732,47 @@ export default function ProjectDetailPage() {
                 </div>
               )
             })}
+          </div>
+        )}
+
+        {tab === 'gear' && (
+          <div className="panel">
+            <h3>Gear <a onClick={() => navigate('/dashboard/inventory')}>+ Check out gear</a></h3>
+            {(() => {
+              const open = checkouts.filter(c => !c.returned_at)
+              const returned = checkouts.filter(c => c.returned_at)
+              if (checkouts.length === 0) return <div className="empty">No gear checked out to this project yet. Head to Inventory to check items out, then check them back in here when the job wraps.</div>
+              return (
+                <>
+                  {open.map(c => (
+                    <div className="mrow" key={c.id}>
+                      <div className="drow" style={{ borderBottom: 'none', padding: '2px 0' }}>
+                        <div className="dicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" /></svg></div>
+                        <div className="dmain">
+                          <div className="dt">{c.item?.name || 'Item'} · {c.quantity}</div>
+                          <div className="ds">Checked out {new Date(c.checked_out_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}{c.note ? ' · ' + c.note : ''}</div>
+                        </div>
+                        <button className="btn primary sm" onClick={() => checkInGear(c)}>Check in</button>
+                      </div>
+                    </div>
+                  ))}
+                  {returned.length > 0 && (
+                    <div style={{ marginTop: open.length ? 14 : 0 }}>
+                      <div className="ds" style={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: 11, marginBottom: 8 }}>Returned</div>
+                      {returned.map(c => (
+                        <div className="drow" key={c.id} style={{ opacity: 0.6 }}>
+                          <div className="dicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 6 9 17l-5-5" /></svg></div>
+                          <div className="dmain">
+                            <div className="dt">{c.item?.name || 'Item'} · {c.quantity}</div>
+                            <div className="ds">Returned {new Date(c.returned_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )
+            })()}
           </div>
         )}
       </div>
