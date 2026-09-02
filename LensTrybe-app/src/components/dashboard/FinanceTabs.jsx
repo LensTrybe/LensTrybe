@@ -16,9 +16,6 @@ const I = {
 const TABS = [
   { key: 'overview', label: 'Overview', to: '/dashboard/finance/overview' },
   { key: 'expenses', label: 'Expenses', to: '/dashboard/finance/expenses' },
-  { key: 'invoices', label: 'Invoices', to: '/dashboard/finance/invoicing' },
-  { key: 'quotes', label: 'Quotes', to: '/dashboard/finance/quotes' },
-  { key: 'contracts', label: 'Contracts', to: '/dashboard/finance/contracts' },
   { key: 'tax', label: 'Tax Hub', to: '/dashboard/finance/tax' },
 ]
 

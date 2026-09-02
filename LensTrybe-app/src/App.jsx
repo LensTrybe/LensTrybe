@@ -12,6 +12,7 @@ import OnboardingPage from './pages/public/OnboardingPage'
 import JoinHubPage from './pages/public/JoinHubPage'
 import ClientSignupPage from './pages/public/ClientSignupPage'
 import MessagesPage from './pages/dashboard/MessagesPage'
+import MeetingsPage from './pages/dashboard/MeetingsPage'
 import InvoicingPage from './pages/dashboard/InvoicingPage'
 import QuotesPage from './pages/dashboard/QuotesPage'
 import ContractsPage from './pages/dashboard/ContractsPage'
@@ -146,6 +147,7 @@ export default function App() {
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
+        <Route path="clients/meetings" element={<MeetingsPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
         <Route path="finance/overview" element={<FinanceOverviewPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />

@@ -40,7 +40,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const params = useParams()
   const id = previewId ?? params.id
   const navigate = useNavigate()
-  const { user, clientAccount } = useAuth()
+  const { user, clientAccount, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState(null)
   const [portfolioItems, setPortfolioItems] = useState([])
   const [reviews, setReviews] = useState([])
@@ -51,6 +51,11 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [sent, setSent] = useState(false)
   const [enquiry, setEnquiry] = useState({ subject: '', message: '' })
   const [enquiryError, setEnquiryError] = useState('')
+  const [showCall, setShowCall] = useState(false)
+  const [callForm, setCallForm] = useState({ date: '', time: '', phone: '', message: '' })
+  const [callSending, setCallSending] = useState(false)
+  const [callSent, setCallSent] = useState(false)
+  const [callError, setCallError] = useState('')
   const [lightbox, setLightbox] = useState(null)
   const [blockedDates, setBlockedDates] = useState([])
   const [showReview, setShowReview] = useState(false)
@@ -68,6 +73,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
   useEffect(() => { loadProfile() }, [id])
+  // Viewing a creative profile requires an account. Anonymous visitors are sent
+  // to sign in / create an account, then returned here.
+  useEffect(() => {
+    if (!previewMode && !authLoading && !user) {
+      navigate('/login', { replace: true, state: { next: `/creatives/${id}` } })
+    }
+  }, [previewMode, authLoading, user, id])
   useEffect(() => {
     setProfileFlagSuccessId(null)
   }, [id])
@@ -216,6 +228,34 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     setSent(true)
     setTimeout(() => { setShowEnquire(false); setSent(false) }, 2000)
   }
+
+  async function requestCall() {
+    if (!user) { setShowCall(false); setShowAuthGate(true); return }
+    setCallError('')
+    setCallSending(true)
+    const clientLabel = formatClientAccountDisplayName(clientAccount) || user.email
+    const { data, error } = await supabase.functions.invoke('request-meeting', {
+      body: {
+        creativeId: id,
+        title: `Phone call with ${clientLabel}`,
+        proposed_date: callForm.date || null,
+        proposed_time: callForm.time || null,
+        client_name: clientLabel,
+        client_phone: callForm.phone || null,
+        message: callForm.message || null,
+      },
+    })
+    setCallSending(false)
+    if (error || (data && data.error)) { setCallError('Something went wrong. Please try again.'); return }
+    setCallSent(true)
+    setTimeout(() => { setShowCall(false); setCallSent(false) }, 2400)
+  }
+
+  if (!previewMode && (authLoading || !user)) return (
+    <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
+      {authLoading ? 'Loading…' : 'Redirecting to sign in…'}
+    </div>
+  )
 
   if (loading) return (
     <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
@@ -384,6 +424,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               {!previewMode && (
                 <Button variant="primary" size="lg" onClick={() => { if (user) { setEnquiryError(''); setShowEnquire(true) } else setShowAuthGate(true) }}>
                   Enquire Now
+                </Button>
+              )}
+              {!previewMode && user?.id !== id && (
+                <Button variant="secondary" size="lg" type="button" style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}
+                  onClick={() => { if (user) { setCallError(''); setCallSent(false); setCallForm({ date: '', time: '', phone: clientAccount?.phone || '', message: '' }); setShowCall(true) } else setShowAuthGate(true) }}>
+                  Request a Call
                 </Button>
               )}
               {user?.id !== id && (
@@ -714,6 +760,49 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 <Button variant="ghost" onClick={() => setShowEnquire(false)}>Cancel</Button>
                 <Button variant="primary" disabled={sending || !enquiry.subject || !enquiry.message} onClick={sendEnquiry}>
                   {sending ? 'Sending…' : 'Send Enquiry'}
+                </Button>
+              </div>
+            </>
+          )}
+        </div>
+      </Modal>
+
+      <Modal isOpen={showCall} onClose={() => { setShowCall(false); setCallError('') }} title={`Request a call with ${displayName}`} size="md">
+        <div style={styles.formSection}>
+          {callSent ? (
+            <div style={{ padding: '24px', textAlign: 'center', color: 'var(--green)', fontSize: '15px', ...TYPO.body }}>
+              ✓ Call requested! {displayName} will confirm, suggest another time, or get back to you.
+            </div>
+          ) : (
+            <>
+              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body }}>
+                Ask {displayName} for a quick phone call. Let them know when suits and they’ll confirm or propose another time.
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Preferred date</label>
+                  <input type="date" style={{ width: '100%', padding: '10px 14px', boxSizing: 'border-box', ...LIQUID_FIELD }} value={callForm.date} onChange={e => { setCallError(''); setCallForm(p => ({ ...p, date: e.target.value })) }} />
+                </div>
+                <div style={{ flex: 1, minWidth: '140px' }}>
+                  <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Preferred time</label>
+                  <input type="time" style={{ width: '100%', padding: '10px 14px', boxSizing: 'border-box', ...LIQUID_FIELD }} value={callForm.time} onChange={e => { setCallError(''); setCallForm(p => ({ ...p, time: e.target.value })) }} />
+                </div>
+              </div>
+              <Input label="Your phone number" placeholder="So they can call you" value={callForm.phone} onChange={e => { setCallError(''); setCallForm(p => ({ ...p, phone: e.target.value })) }} />
+              <div>
+                <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Message (optional)</label>
+                <textarea
+                  style={{ width: '100%', minHeight: '90px', padding: '10px 14px', resize: 'vertical', boxSizing: 'border-box', ...LIQUID_FIELD }}
+                  placeholder="What you’d like to chat about…"
+                  value={callForm.message}
+                  onChange={e => { setCallError(''); setCallForm(p => ({ ...p, message: e.target.value })) }}
+                />
+              </div>
+              {callError ? <div style={{ fontSize: '13px', color: '#f87171', ...TYPO.body }}>{callError}</div> : null}
+              <div style={styles.modalActions}>
+                <Button variant="ghost" onClick={() => setShowCall(false)}>Cancel</Button>
+                <Button variant="primary" disabled={callSending || !callForm.phone} onClick={requestCall}>
+                  {callSending ? 'Sending…' : 'Request call'}
                 </Button>
               </div>
             </>
