@@ -73,9 +73,12 @@ const BASE_SECTIONS = [
     { label: 'CRM', path: '/dashboard/clients/crm', icon: 'contact', feature: 'crm' },
   ] },
   { label: 'Finance', icon: 'receipt', items: [
+    { label: 'Overview', path: '/dashboard/finance/overview', icon: 'chart' },
     { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: 'dollar', feature: 'invoicing' },
     { label: 'Quotes', path: '/dashboard/finance/quotes', icon: 'file', feature: 'invoicing' },
     { label: 'Contracts', path: '/dashboard/finance/contracts', icon: 'fileCheck', feature: 'contracts' },
+    { label: 'Expenses', path: '/dashboard/finance/expenses', icon: 'wallet', feature: 'invoicing' },
+    { label: 'Tax Hub', path: '/dashboard/finance/tax', icon: 'percent', feature: 'invoicing' },
   ] },
   { label: 'Portfolio', icon: 'image', items: [
     { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: 'palette', feature: 'brandKit' },

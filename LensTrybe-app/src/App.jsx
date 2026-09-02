@@ -15,6 +15,9 @@ import MessagesPage from './pages/dashboard/MessagesPage'
 import InvoicingPage from './pages/dashboard/InvoicingPage'
 import QuotesPage from './pages/dashboard/QuotesPage'
 import ContractsPage from './pages/dashboard/ContractsPage'
+import FinanceOverviewPage from './pages/dashboard/FinanceOverviewPage'
+import ExpensesPage from './pages/dashboard/ExpensesPage'
+import TaxHubPage from './pages/dashboard/TaxHubPage'
 import BrandKitPage from './pages/dashboard/BrandKitPage'
 import DeliverPage from './pages/dashboard/DeliverPage'
 import CRMPage from './pages/dashboard/CRMPage'
@@ -144,9 +147,12 @@ export default function App() {
         <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
+        <Route path="finance/overview" element={<FinanceOverviewPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />
         <Route path="finance/quotes" element={<QuotesPage />} />
         <Route path="finance/contracts" element={<ContractsPage />} />
+        <Route path="finance/expenses" element={<ExpensesPage />} />
+        <Route path="finance/tax" element={<TaxHubPage />} />
         <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
         <Route path="portfolio-design/deliver" element={<DeliverPage />} />
         <Route path="portfolio-design/portfolio-website" element={<PortfolioWebsitePage />} />

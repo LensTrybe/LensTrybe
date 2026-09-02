@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="LensTrybe logo">
+  <defs>
+    <linearGradient id="ring" x1="242" y1="214" x2="782" y2="810" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9AC4C5"/>
+      <stop offset="0.48" stop-color="#D996BA"/>
+      <stop offset="1" stop-color="#C6A5E5"/>
+    </linearGradient>
+    <radialGradient id="glass" cx="37%" cy="31%" r="78%">
+      <stop offset="0" stop-color="#FFFDF4"/>
+      <stop offset="0.36" stop-color="#C8EBDE"/>
+      <stop offset="0.72" stop-color="#F5B0CD"/>
+      <stop offset="1" stop-color="#C9ACE8"/>
+    </radialGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#05060C" flood-opacity=".46"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="1024" rx="216" fill="#222330"/>
+  <g filter="url(#shadow)">
+    <circle cx="512" cy="512" r="206" fill="#2A2C3A"/>
+    <circle cx="512" cy="512" r="181" fill="none" stroke="url(#ring)" stroke-width="31"/>
+    <circle cx="512" cy="512" r="132" fill="url(#glass)"/>
+    <circle cx="512" cy="512" r="132" fill="none" stroke="#DBE6E1" stroke-opacity=".82" stroke-width="9"/>
+    <ellipse cx="466" cy="457" rx="54" ry="37" fill="#FFF" opacity=".31"/>
+  </g>
+</svg>
