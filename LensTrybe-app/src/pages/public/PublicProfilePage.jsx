@@ -549,19 +549,19 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <>
         {aboutT === 't2' ? (
-          <section style={{ ...wrap, padding: '60px 24px', textAlign: 'center', maxWidth: 760 }}>
+          <section style={{ ...wrap, padding: '64px 24px', textAlign: 'center', maxWidth: 760 }}>
+            {portrait && <img src={portrait} alt="" style={{ width: 176, height: 176, borderRadius: '50%', objectFit: 'cover', marginBottom: 24, border: `4px solid ${accent}22` }} />}
             <h2 style={{ ...H('clamp(28px,4vw,42px)'), marginBottom: 20 }}>{heading}</h2>
-            {portrait && <img src={portrait} alt="" style={{ width: 150, height: 150, borderRadius: '50%', objectFit: 'cover', marginBottom: 20 }} />}
-            {body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.8, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>)}
+            {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.85, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, margin: 0 }}>Add your story in the website builder.</p>}
           </section>
         ) : (
-          <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? (aboutT === 't3' ? 'minmax(0,1fr) 320px' : '320px minmax(0,1fr)') : '1fr', gap: 44, alignItems: 'start', padding: '60px 24px' }} className="lt-2col">
-            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 16 }} />}
-            <div>
+          <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? (aboutT === 't3' ? 'minmax(0,1fr) minmax(280px,380px)' : 'minmax(280px,380px) minmax(0,1fr)') : '1fr', gap: 56, alignItems: 'center', padding: '64px 24px' }} className="lt-2col">
+            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 16 }} />}
+            <div style={{ minWidth: 0 }}>
               <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 18 }}>{heading}</h2>
-              {body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.8, margin: '0 0 16px' }}>{p}</p>)}
+              {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.85, margin: '0 0 16px' }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.85, margin: 0 }}>Add your story in the website builder.</p>}
             </div>
-            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 16 }} />}
+            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 16 }} />}
           </section>
         )}
         {((profile.specialties?.length) || (profile.abn || profile.has_insurance)) ? (
@@ -699,7 +699,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   return (
     <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont, overflowX: 'hidden' }} className="public-profile-site">
-      <style>{`.lt-navlink:hover{opacity:1 !important}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
+      <style>{`.lt-navlink:hover{opacity:1 !important}.public-profile-site p,.public-profile-site h1,.public-profile-site h2,.public-profile-site h3{overflow-wrap:anywhere}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
 
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: bg + 'e6', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${line}` }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
