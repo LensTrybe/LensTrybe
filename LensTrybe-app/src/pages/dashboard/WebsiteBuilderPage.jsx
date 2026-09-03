@@ -7,15 +7,24 @@ import Button from '../../components/ui/Button'
 import { GLASS_CARD, GLASS_NATIVE_FIELD } from '../../lib/glassTokens'
 
 // Website builder — edits the creative's PROFILE-as-website. Content pages
-// (Home/About/Contact) live in site_pages; Gallery uses portfolio_items
-// (grouped by category into tabs; `featured` shows on Home); Services uses
-// portfolio_services. Rendered by pages/public/PublicProfilePage.jsx.
+// (Home/About/Contact) live in site_pages; Gallery uses portfolio_items grouped
+// into albums by `category` (with `featured` showing on Home); Services uses
+// portfolio_services; social links + website live on the profile.
 // Gating: Expert/Elite = full builder; Pro = Home + Contact; Basic = upsell.
 
 const PAGE_ORDER = ['home', 'about', 'gallery', 'services', 'contact']
-const PAGE_LABEL = { home: 'Home', about: 'About', gallery: 'Gallery', services: 'Services', contact: 'Contact' }
+const TABS = [...PAGE_ORDER, 'settings']
+const PAGE_LABEL = { home: 'Home', about: 'About', gallery: 'Gallery', services: 'Services', contact: 'Contact', settings: 'Settings' }
 const CONTENT_PAGES = ['home', 'about', 'contact']
-const PRO_HOME_PHOTO_CAP = 8
+
+const SOCIAL_FIELDS = [
+  { key: 'website', label: 'Website URL', placeholder: 'https://yourstudio.com' },
+  { key: 'instagram_url', label: 'Instagram', placeholder: '@yourhandle' },
+  { key: 'tiktok_url', label: 'TikTok', placeholder: '@yourhandle' },
+  { key: 'facebook_url', label: 'Facebook', placeholder: 'https://facebook.com/yourpage' },
+  { key: 'linkedin_url', label: 'LinkedIn', placeholder: 'https://linkedin.com/in/you' },
+  { key: 'twitter_url', label: 'X (Twitter)', placeholder: 'https://x.com/you' },
+]
 
 const TEMPLATES = {
   home: [
@@ -56,71 +65,26 @@ const FIELDS = {
 
 function flash(setter, ms = 2600) { setter(true); setTimeout(() => setter(false), ms) }
 
-// ---- Wireframe preview of a template layout (grey blocks) ----
 function TemplateSkeleton({ pageType, id }) {
   const box = { background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 4 }
   const bar = (w, h = 6) => ({ height: h, width: w, borderRadius: 3, background: 'var(--border-default)' })
   const accent = { background: '#1DB954' }
   const frame = { height: 92, borderRadius: 8, padding: 8, display: 'flex', gap: 6, overflow: 'hidden', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }
   const col = { display: 'flex', flexDirection: 'column', gap: 5, justifyContent: 'center' }
-
   if (pageType === 'home') {
-    if (id === 't2') return (
-      <div style={frame}>
-        <div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('80%', 10)} /><div style={bar('60%')} /><div style={{ ...bar('34%', 12), ...accent, marginTop: 4 }} /></div>
-        <div style={{ ...box, flex: 1 }} />
-      </div>
-    )
-    if (id === 't3') return (
-      <div style={{ ...frame, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-        <div style={{ width: 22, height: 12, borderRadius: 3, background: 'var(--border-default)', marginBottom: 4 }} />
-        <div style={bar('62%', 11)} /><div style={bar('40%')} /><div style={{ ...bar('30%', 12), ...accent, marginTop: 4 }} />
-      </div>
-    )
-    return (
-      <div style={{ ...frame, position: 'relative', padding: 0, alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ position: 'absolute', inset: 0, background: 'var(--border-default)', borderRadius: 8, opacity: 0.5 }} />
-        <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}><div style={{ ...bar(54, 12), background: '#fff' }} /><div style={{ ...bar(34), background: 'rgba(255,255,255,0.8)' }} /></div>
-      </div>
-    )
+    if (id === 't2') return (<div style={frame}><div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('80%', 10)} /><div style={bar('60%')} /><div style={{ ...bar('34%', 12), ...accent, marginTop: 4 }} /></div><div style={{ ...box, flex: 1 }} /></div>)
+    if (id === 't3') return (<div style={{ ...frame, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 10 }}><div style={{ width: 22, height: 12, borderRadius: 3, background: 'var(--border-default)', marginBottom: 4 }} /><div style={bar('62%', 11)} /><div style={bar('40%')} /><div style={{ ...bar('30%', 12), ...accent, marginTop: 4 }} /></div>)
+    return (<div style={{ ...frame, position: 'relative', padding: 0, alignItems: 'center', justifyContent: 'center' }}><div style={{ position: 'absolute', inset: 0, background: 'var(--border-default)', borderRadius: 8, opacity: 0.5 }} /><div style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}><div style={{ ...bar(54, 12), background: '#fff' }} /><div style={{ ...bar(34), background: 'rgba(255,255,255,0.8)' }} /></div></div>)
   }
   if (pageType === 'about') {
-    if (id === 't2') return (
-      <div style={{ ...frame, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-        <div style={{ width: 26, height: 26, borderRadius: '50%', ...box }} />
-        <div style={bar('60%', 8)} /><div style={bar('72%')} /><div style={bar('50%')} />
-      </div>
-    )
-    if (id === 't3') return (
-      <div style={frame}>
-        <div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('90%')} /><div style={bar('80%')} /><div style={bar('60%')} /></div>
-        <div style={{ ...box, width: 34 }} />
-      </div>
-    )
-    return (
-      <div style={frame}>
-        <div style={{ ...box, width: 34 }} />
-        <div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('90%')} /><div style={bar('80%')} /><div style={bar('60%')} /></div>
-      </div>
-    )
+    if (id === 't2') return (<div style={{ ...frame, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 10 }}><div style={{ width: 26, height: 26, borderRadius: '50%', ...box }} /><div style={bar('60%', 8)} /><div style={bar('72%')} /><div style={bar('50%')} /></div>)
+    if (id === 't3') return (<div style={frame}><div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('90%')} /><div style={bar('80%')} /><div style={bar('60%')} /></div><div style={{ ...box, width: 34 }} /></div>)
+    return (<div style={frame}><div style={{ ...box, width: 34 }} /><div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('90%')} /><div style={bar('80%')} /><div style={bar('60%')} /></div></div>)
   }
   if (pageType === 'contact') {
-    if (id === 't2') return (
-      <div style={frame}>
-        <div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('86%')} /></div>
-        <div style={{ ...box, flex: 1, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, justifyContent: 'center' }}><div style={bar('100%', 8)} /><div style={bar('100%', 18)} /><div style={{ ...bar('50%', 10), ...accent }} /></div>
-      </div>
-    )
-    if (id === 't3') return (
-      <div style={{ ...frame, flexDirection: 'column', justifyContent: 'center', padding: 10 }}>
-        <div style={bar('50%', 9)} /><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('34%', 10), ...accent }} />
-      </div>
-    )
-    return (
-      <div style={{ ...frame, alignItems: 'center', justifyContent: 'center', padding: 10 }}>
-        <div style={{ ...box, width: '70%', padding: 6, display: 'flex', flexDirection: 'column', gap: 5 }}><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('50%', 10), ...accent, alignSelf: 'center' }} /></div>
-      </div>
-    )
+    if (id === 't2') return (<div style={frame}><div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('86%')} /></div><div style={{ ...box, flex: 1, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, justifyContent: 'center' }}><div style={bar('100%', 8)} /><div style={bar('100%', 18)} /><div style={{ ...bar('50%', 10), ...accent }} /></div></div>)
+    if (id === 't3') return (<div style={{ ...frame, flexDirection: 'column', justifyContent: 'center', padding: 10 }}><div style={bar('50%', 9)} /><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('34%', 10), ...accent }} /></div>)
+    return (<div style={{ ...frame, alignItems: 'center', justifyContent: 'center', padding: 10 }}><div style={{ ...box, width: '70%', padding: 6, display: 'flex', flexDirection: 'column', gap: 5 }}><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('50%', 10), ...accent, alignSelf: 'center' }} /></div></div>)
   }
   return null
 }
@@ -163,12 +127,8 @@ function PageEditor({ pageType, content, template, visible, onField, onTemplate,
             </div>
           )
         }
-        if (f.type === 'textarea') return (
-          <div key={f.key}><div style={label}>{f.label}</div><textarea value={content[f.key] || ''} onChange={(e) => onField(f.key, e.target.value)} rows={f.rows || 4} placeholder={f.placeholder} style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 90 }} /></div>
-        )
-        return (
-          <div key={f.key}><div style={label}>{f.label}</div><input value={content[f.key] || ''} onChange={(e) => onField(f.key, e.target.value)} placeholder={f.placeholder} style={{ ...inputStyle, marginTop: 8 }} /></div>
-        )
+        if (f.type === 'textarea') return (<div key={f.key}><div style={label}>{f.label}</div><textarea value={content[f.key] || ''} onChange={(e) => onField(f.key, e.target.value)} rows={f.rows || 4} placeholder={f.placeholder} style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 90 }} /></div>)
+        return (<div key={f.key}><div style={label}>{f.label}</div><input value={content[f.key] || ''} onChange={(e) => onField(f.key, e.target.value)} placeholder={f.placeholder} style={{ ...inputStyle, marginTop: 8 }} /></div>)
       })}
       {pageType !== 'home' ? (
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 14, color: 'var(--text-primary)' }}>
@@ -184,32 +144,44 @@ function PageEditor({ pageType, content, template, visible, onField, onTemplate,
   )
 }
 
-function GalleryManager({ items, uploading, onUpload, onSetCategory, onToggleFeatured, onDelete, styles }) {
+function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload, onSetCategory, onToggleFeatured, onDelete, styles }) {
   const fileRef = useRef(null)
   const { inputStyle, label } = styles
+  const albums = useMemo(() => {
+    const groups = {}
+    items.forEach((it) => { const k = (it.category || '').trim() || 'Unsorted'; (groups[k] = groups[k] || []).push(it) })
+    return Object.entries(groups).sort((a, b) => (a[0] === 'Unsorted' ? 1 : b[0] === 'Unsorted' ? -1 : a[0].localeCompare(b[0])))
+  }, [items])
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>Upload your best work. Give photos a category (e.g. Weddings, Portraits) and they become tabs on your Gallery. Tick "Feature on Home" to show a photo on your home page.</p>
-      <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style={{ display: 'none' }} onChange={(e) => { const fl = e.target.files; if (fl?.length) onUpload(Array.from(fl)); if (fileRef.current) fileRef.current.value = '' }} />
-      <div><Button variant="primary" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : 'Upload photos'}</Button></div>
-      {items.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No photos yet.</p> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
-          {items.map((it) => (
-            <div key={it.id} style={{ border: '1px solid var(--border-subtle)', borderRadius: 12, overflow: 'hidden', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
-              <div style={{ aspectRatio: '4/3', background: '#111', overflow: 'hidden' }}>
-                {it.file_type === 'video' ? <video src={it.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={it.file_url || it.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>Create albums for different parts of your work (e.g. Weddings, Portraits, Commercial). Each album becomes a tab on your Gallery, and visitors also get an "All" tab showing every photo. Tick "Feature on Home" to show a photo on your landing page.</p>
+      <div style={{ border: '1px dashed var(--border-default)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={label}>Add to album</div>
+        <input value={albumInput} onChange={(e) => setAlbumInput(e.target.value)} placeholder="Album name (e.g. Weddings) — leave blank for Unsorted" style={inputStyle} />
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style={{ display: 'none' }} onChange={(e) => { const fl = e.target.files; if (fl?.length) onUpload(Array.from(fl)); if (fileRef.current) fileRef.current.value = '' }} />
+        <div><Button variant="primary" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : albumInput.trim() ? `Upload to "${albumInput.trim()}"` : 'Upload photos'}</Button></div>
+      </div>
+      {items.length === 0 ? <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No photos yet.</p> : albums.map(([album, photos]) => (
+        <div key={album} style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{album} <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>· {photos.length}</span></div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 12 }}>
+            {photos.map((it) => (
+              <div key={it.id} style={{ border: '1px solid var(--border-subtle)', borderRadius: 12, overflow: 'hidden', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ aspectRatio: '4/3', background: '#111', overflow: 'hidden' }}>
+                  {it.file_type === 'video' ? <video src={it.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={it.file_url || it.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                </div>
+                <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <input defaultValue={it.category || ''} placeholder="Album" onBlur={(e) => { if ((e.target.value || '') !== (it.category || '')) onSetCategory(it, e.target.value.trim()) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={!!it.featured} onChange={(e) => onToggleFeatured(it, e.target.checked)} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Feature on Home
+                  </label>
+                  <Button variant="ghost" size="sm" type="button" onClick={() => onDelete(it)}>Delete</Button>
+                </div>
               </div>
-              <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <input defaultValue={it.category || ''} placeholder="Category (tab)" onBlur={(e) => { if ((e.target.value || '') !== (it.category || '')) onSetCategory(it, e.target.value.trim()) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
-                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', cursor: 'pointer' }}>
-                  <input type="checkbox" checked={!!it.featured} onChange={(e) => onToggleFeatured(it, e.target.checked)} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Feature on Home
-                </label>
-                <Button variant="ghost" size="sm" type="button" onClick={() => onDelete(it)}>Delete</Button>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      )}
+      ))}
     </div>
   )
 }
@@ -261,13 +233,14 @@ export default function WebsiteBuilderPage() {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [pages, setPages] = useState({})
   const [loadingPages, setLoadingPages] = useState(true)
-  const [activePage, setActivePage] = useState('home')
+  const [activeTab, setActiveTab] = useState('home')
   const [savingPage, setSavingPage] = useState('')
   const [savedPage, setSavedPage] = useState('')
   const [uploadingField, setUploadingField] = useState('')
 
   const [gallery, setGallery] = useState([])
   const [galleryUploading, setGalleryUploading] = useState(false)
+  const [albumInput, setAlbumInput] = useState('')
 
   const [services, setServices] = useState([])
   const [servicesSaved, setServicesSaved] = useState(false)
@@ -276,6 +249,7 @@ export default function WebsiteBuilderPage() {
   const [areaInput, setAreaInput] = useState('')
   const [seoTitle, setSeoTitle] = useState('')
   const [seoDesc, setSeoDesc] = useState('')
+  const [links, setLinks] = useState({ website: '', instagram_url: '', tiktok_url: '', facebook_url: '', linkedin_url: '', twitter_url: '' })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -286,6 +260,10 @@ export default function WebsiteBuilderPage() {
     setAreas(Array.isArray(profile.site_service_areas) ? profile.site_service_areas : [])
     setSeoTitle(profile.site_seo_title ?? '')
     setSeoDesc(profile.site_seo_description ?? '')
+    setLinks({
+      website: profile.website ?? '', instagram_url: profile.instagram_url ?? '', tiktok_url: profile.tiktok_url ?? '',
+      facebook_url: profile.facebook_url ?? '', linkedin_url: profile.linkedin_url ?? '', twitter_url: profile.twitter_url ?? '',
+    })
   }, [profile])
 
   const loadAll = useCallback(async () => {
@@ -312,7 +290,6 @@ export default function WebsiteBuilderPage() {
 
   useEffect(() => { loadAll() }, [loadAll])
 
-  // ---- content page helpers ----
   function setField(pt, key, value) { setPages((p) => ({ ...p, [pt]: { ...p[pt], content: { ...(p[pt]?.content || {}), [key]: value } } })) }
   function setTemplate(pt, template) { setPages((p) => ({ ...p, [pt]: { ...p[pt], template } })) }
   function setVisible(pt, visible) { setPages((p) => ({ ...p, [pt]: { ...p[pt], visible } })) }
@@ -343,10 +320,10 @@ export default function WebsiteBuilderPage() {
     } catch (e) { window.alert(e.message || 'Could not save this page.') } finally { setSavingPage('') }
   }
 
-  // ---- gallery helpers (portfolio_items) ----
   async function galleryUpload(files) {
     if (!user?.id || !supabase) return
     setGalleryUploading(true)
+    const cat = albumInput.trim() || null
     try {
       for (const file of files) {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
@@ -355,27 +332,16 @@ export default function WebsiteBuilderPage() {
         if (upErr) throw new Error(upErr.message)
         const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
         const isVideo = (file.type || '').startsWith('video/')
-        const { data, error } = await supabase.from('portfolio_items').insert({ user_id: user.id, creative_id: user.id, file_url: pub.publicUrl, file_type: isVideo ? 'video' : 'image', category: null, featured: false, sort_order: gallery.length }).select().single()
+        const { data, error } = await supabase.from('portfolio_items').insert({ user_id: user.id, creative_id: user.id, file_url: pub.publicUrl, file_type: isVideo ? 'video' : 'image', category: cat, featured: false, sort_order: gallery.length }).select().single()
         if (error) throw error
         setGallery((prev) => [...prev, data])
       }
     } catch (e) { window.alert(e.message || 'Upload failed') } finally { setGalleryUploading(false) }
   }
-  async function gallerySetCategory(item, category) {
-    setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, category } : g)))
-    await supabase.from('portfolio_items').update({ category: category || null }).eq('id', item.id)
-  }
-  async function galleryToggleFeatured(item, featured) {
-    setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, featured } : g)))
-    await supabase.from('portfolio_items').update({ featured }).eq('id', item.id)
-  }
-  async function galleryDelete(item) {
-    if (!window.confirm('Delete this photo?')) return
-    await supabase.from('portfolio_items').delete().eq('id', item.id)
-    setGallery((prev) => prev.filter((g) => g.id !== item.id))
-  }
+  async function gallerySetCategory(item, category) { setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, category } : g))); await supabase.from('portfolio_items').update({ category: category || null }).eq('id', item.id) }
+  async function galleryToggleFeatured(item, featured) { setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, featured } : g))); await supabase.from('portfolio_items').update({ featured }).eq('id', item.id) }
+  async function galleryDelete(item) { if (!window.confirm('Delete this photo?')) return; await supabase.from('portfolio_items').delete().eq('id', item.id); setGallery((prev) => prev.filter((g) => g.id !== item.id)) }
 
-  // ---- services helpers (portfolio_services) ----
   function serviceChangeLocal(idx, patch) { setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, ...patch } : s))) }
   function serviceAddRow() { setServices((prev) => [...prev, { ...emptyService(), isSaving: false }]) }
   async function serviceSaveRow(service, idx) {
@@ -395,18 +361,18 @@ export default function WebsiteBuilderPage() {
       flash(setServicesSaved, 2000)
     } catch (e) { window.alert(e.message || 'Could not save service') } finally { serviceChangeLocal(idx, { isSaving: false }) }
   }
-  async function serviceDeleteRow(service, idx) {
-    if (service.id && !window.confirm('Delete this service?')) return
-    if (service.id) await supabase.from('portfolio_services').delete().eq('id', service.id)
-    setServices((prev) => prev.filter((_, i) => i !== idx))
-  }
+  async function serviceDeleteRow(service, idx) { if (service.id && !window.confirm('Delete this service?')) return; if (service.id) await supabase.from('portfolio_services').delete().eq('id', service.id); setServices((prev) => prev.filter((_, i) => i !== idx)) }
 
-  // ---- site settings ----
   function addArea() { const v = areaInput.trim(); if (!v) return; if (areas.some((a) => a.toLowerCase() === v.toLowerCase())) { setAreaInput(''); return } setAreas((p) => [...p, v]); setAreaInput('') }
   async function saveSettings() {
     if (!user?.id || !supabase) return
     setSavingSettings(true)
-    const { error } = await supabase.from('profiles').update({ site_service_areas: areas, site_seo_title: seoTitle.trim() || null, site_seo_description: seoDesc.trim() || null }).eq('id', user.id)
+    const patch = {
+      site_service_areas: areas, site_seo_title: seoTitle.trim() || null, site_seo_description: seoDesc.trim() || null,
+      website: links.website.trim() || null, instagram_url: links.instagram_url.trim() || null, tiktok_url: links.tiktok_url.trim() || null,
+      facebook_url: links.facebook_url.trim() || null, linkedin_url: links.linkedin_url.trim() || null, twitter_url: links.twitter_url.trim() || null,
+    }
+    const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
     setSavingSettings(false)
     if (error) { window.alert(error.message); return }
     await fetchUserData(user.id)
@@ -439,8 +405,9 @@ export default function WebsiteBuilderPage() {
     )
   }
 
-  const activeEditable = editablePages.includes(activePage)
-  const activeData = pages[activePage] || { template: 't1', content: {}, visible: true }
+  const isContentPage = CONTENT_PAGES.includes(activeTab)
+  const activeEditable = activeTab === 'settings' || editablePages.includes(activeTab)
+  const activeData = pages[activeTab] || { template: 't1', content: {}, visible: true }
   const profileHref = `/creatives/${user.id}`
 
   return (
@@ -458,54 +425,64 @@ export default function WebsiteBuilderPage() {
       </header>
 
       <section style={card}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Pages</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {PAGE_ORDER.map((pt) => {
-            const locked = !editablePages.includes(pt)
-            const active = activePage === pt
+          {TABS.map((pt) => {
+            const locked = pt !== 'settings' && !editablePages.includes(pt)
+            const active = activeTab === pt
             return (
-              <button key={pt} type="button" onClick={() => setActivePage(pt)} style={{ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13.5, fontWeight: 600, border: active ? '1px solid #1DB954' : '1px solid var(--border-default)', background: active ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)', color: active ? '#1DB954' : locked ? 'var(--text-muted)' : 'var(--text-primary)' }}>{PAGE_LABEL[pt]}{locked ? ' 🔒' : ''}</button>
+              <button key={pt} type="button" onClick={() => setActiveTab(pt)} style={{ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13.5, fontWeight: 600, border: active ? '1px solid #1DB954' : '1px solid var(--border-default)', background: active ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)', color: active ? '#1DB954' : locked ? 'var(--text-muted)' : 'var(--text-primary)' }}>{PAGE_LABEL[pt]}{locked ? ' 🔒' : ''}</button>
             )
           })}
         </div>
         <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />
-        {loadingPages ? <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: 13 }}>Loading…</p> : !activeEditable ? (
-          <LockedPanel pageLabel={PAGE_LABEL[activePage]} />
-        ) : activePage === 'gallery' ? (
-          <GalleryManager items={gallery} uploading={galleryUploading} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={galleryToggleFeatured} onDelete={galleryDelete} styles={editorStyles} />
-        ) : activePage === 'services' ? (
-          <ServicesManager services={services} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} savedFlash={servicesSaved} styles={editorStyles} />
-        ) : (
-          <PageEditor key={activePage} pageType={activePage} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activePage, k, v)} onTemplate={(t) => setTemplate(activePage, t)} onVisible={(v) => setVisible(activePage, v)} onUploadImage={(field, file) => uploadImage(activePage, field, file)} uploadingField={uploadingField} onSave={() => savePage(activePage)} saving={savingPage === activePage} saved={savedPage === activePage} styles={editorStyles} />
-        )}
-      </section>
 
-      <section style={card}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Site settings</div>
-        <div>
-          <div style={label}>Areas covered</div>
-          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Suburbs or regions you serve. Shown on your Home and Contact pages.</p>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
-            <input value={areaInput} onChange={(e) => setAreaInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addArea() } }} placeholder="e.g. Sydney" style={{ ...inputStyle, maxWidth: 240, flex: '1 1 160px' }} />
-            <Button variant="secondary" type="button" onClick={addArea}>Add</Button>
-          </div>
-          {areas.length ? (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
-              {areas.map((a, i) => (
-                <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 999, padding: '5px 6px 5px 12px' }}>{a}<button type="button" onClick={() => setAreas((p) => p.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1, padding: '0 4px' }} aria-label={`Remove ${a}`}>×</button></span>
-              ))}
+        {activeTab === 'settings' ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <div style={label}>Social links & website</div>
+              <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>These appear as icons in your footer and on your Contact page.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 10 }}>
+                {SOCIAL_FIELDS.map((f) => (
+                  <div key={f.key}>
+                    <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>{f.label}</div>
+                    <input value={links[f.key]} onChange={(e) => setLinks((l) => ({ ...l, [f.key]: e.target.value }))} placeholder={f.placeholder} style={{ ...inputStyle, marginTop: 6 }} />
+                  </div>
+                ))}
+              </div>
             </div>
-          ) : null}
-        </div>
-        <div><div style={label}>Search title (SEO)</div><input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="e.g. Jane Doe Photography | Sydney Weddings" style={{ ...inputStyle, marginTop: 8 }} /></div>
-        <div><div style={label}>Search description (SEO)</div><textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} placeholder="A short sentence that appears in Google results." style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 72 }} /></div>
-        <div style={{ padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.6 }}>
-          Your social links and external website link come from <Link to="/dashboard/profile/edit-profile" style={{ color: '#1DB954' }}>Edit Profile</Link>. {fullBuilder ? 'They appear on your Contact page and footer.' : proOnePage ? 'They appear on your Contact page.' : ''}
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-          <Button variant="primary" onClick={saveSettings} disabled={savingSettings}>{savingSettings ? 'Saving…' : 'Save settings'}</Button>
-          {settingsSaved ? <span style={{ fontSize: 13, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
-        </div>
+            <div>
+              <div style={label}>Areas covered</div>
+              <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Suburbs or regions you serve. Shown on your Home and Contact pages.</p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                <input value={areaInput} onChange={(e) => setAreaInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addArea() } }} placeholder="e.g. Sydney" style={{ ...inputStyle, maxWidth: 240, flex: '1 1 160px' }} />
+                <Button variant="secondary" type="button" onClick={addArea}>Add</Button>
+              </div>
+              {areas.length ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                  {areas.map((a, i) => (
+                    <span key={i} style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontFamily: 'var(--font-ui)', fontSize: 13, color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: 999, padding: '5px 6px 5px 12px' }}>{a}<button type="button" onClick={() => setAreas((p) => p.filter((_, idx) => idx !== i))} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: 'var(--text-muted)', fontSize: 14, lineHeight: 1, padding: '0 4px' }} aria-label={`Remove ${a}`}>×</button></span>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <div><div style={label}>Search title (SEO)</div><input value={seoTitle} onChange={(e) => setSeoTitle(e.target.value)} placeholder="e.g. Jane Doe Photography | Sydney Weddings" style={{ ...inputStyle, marginTop: 8 }} /></div>
+            <div><div style={label}>Search description (SEO)</div><textarea value={seoDesc} onChange={(e) => setSeoDesc(e.target.value)} rows={3} placeholder="A short sentence that appears in Google results." style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 72 }} /></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <Button variant="primary" onClick={saveSettings} disabled={savingSettings}>{savingSettings ? 'Saving…' : 'Save settings'}</Button>
+              {settingsSaved ? <span style={{ fontSize: 13, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
+            </div>
+          </div>
+        ) : loadingPages ? (
+          <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: 13 }}>Loading…</p>
+        ) : !activeEditable ? (
+          <LockedPanel pageLabel={PAGE_LABEL[activeTab]} />
+        ) : activeTab === 'gallery' ? (
+          <GalleryManager items={gallery} uploading={galleryUploading} albumInput={albumInput} setAlbumInput={setAlbumInput} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={galleryToggleFeatured} onDelete={galleryDelete} styles={editorStyles} />
+        ) : activeTab === 'services' ? (
+          <ServicesManager services={services} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} savedFlash={servicesSaved} styles={editorStyles} />
+        ) : isContentPage ? (
+          <PageEditor key={activeTab} pageType={activeTab} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activeTab, k, v)} onTemplate={(t) => setTemplate(activeTab, t)} onVisible={(v) => setVisible(activeTab, v)} onUploadImage={(field, file) => uploadImage(activeTab, field, file)} uploadingField={uploadingField} onSave={() => savePage(activeTab)} saving={savingPage === activeTab} saved={savedPage === activeTab} styles={editorStyles} />
+        ) : null}
       </section>
     </div>
   )

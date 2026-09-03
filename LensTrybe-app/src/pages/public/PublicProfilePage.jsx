@@ -66,6 +66,26 @@ function StarRating({ value }) {
   )
 }
 
+// Brand-matched social icons. `type` matches the labels from socialLinks().
+function SocialIcon({ type, size = 20, color = 'currentColor' }) {
+  const c = { width: size, height: size, display: 'block' }
+  switch (type) {
+    case 'Instagram':
+      return (<svg viewBox="0 0 24 24" style={c} fill="none" stroke={color} strokeWidth="1.8"><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.3" cy="6.7" r="1" fill={color} stroke="none" /></svg>)
+    case 'TikTok':
+      return (<svg viewBox="0 0 24 24" style={c} fill={color}><path d="M16.5 3c.3 2.1 1.5 3.6 3.5 3.9V9c-1.3 0-2.5-.4-3.5-1.1v6.5a5.4 5.4 0 1 1-5.4-5.4c.3 0 .6 0 .9.1v2.4a3 3 0 1 0 2.1 2.9V3h2.4z" /></svg>)
+    case 'Facebook':
+      return (<svg viewBox="0 0 24 24" style={c} fill={color}><path d="M14 8.5V7c0-.7.5-1 1-1h1.5V3.2C16 3.1 15 3 14 3c-2.3 0-3.8 1.4-3.8 4v1.5H7.5V11h2.7v9h3.1v-9H16l.4-2.5H13.3z" /></svg>)
+    case 'LinkedIn':
+      return (<svg viewBox="0 0 24 24" style={c} fill={color}><path d="M6.5 8.8v10.7H3.3V8.8h3.2zM5 3.5a1.9 1.9 0 1 1 0 3.8 1.9 1.9 0 0 1 0-3.8zM20.7 19.5h-3.2v-5.6c0-1.4-.5-2.3-1.7-2.3-.9 0-1.5.6-1.7 1.2-.1.2-.1.5-.1.8v5.9H10.7s.04-9.7 0-10.7h3.2v1.5c.4-.7 1.2-1.7 3-1.7 2.2 0 3.8 1.4 3.8 4.5v6.4z" /></svg>)
+    case 'X':
+      return (<svg viewBox="0 0 24 24" style={c} fill={color}><path d="M17.5 3h3l-6.6 7.5L21.8 21h-6l-4.3-5.6L6.5 21h-3l7-8L3 3h6.2l3.9 5.1L17.5 3zm-1 16h1.7L8 4.6H6.2L16.5 19z" /></svg>)
+    case 'Website':
+    default:
+      return (<svg viewBox="0 0 24 24" style={c} fill="none" stroke={color} strokeWidth="1.8"><circle cx="12" cy="12" r="9" /><path d="M3 12h18M12 3c2.5 2.5 2.5 15 0 18M12 3c-2.5 2.5-2.5 15 0 18" /></svg>)
+  }
+}
+
 export default function PublicProfilePage({ previewMode = false, previewId = null }) {
   const params = useParams()
   const id = previewId ?? params.id
@@ -627,7 +647,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {(profile.city || profile.state) && <div style={{ color: ink, fontSize: 15, marginBottom: 10 }}><strong>Based in:</strong> {[profile.city, profile.state].filter(Boolean).join(', ')}</div>}
         {socials.length > 0 && (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14 }}>
-            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none' }}>{label}</a>)}
+            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
           </div>
         )}
       </div>
@@ -651,7 +671,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           {formCard}
           {socials.length > 0 && (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18 }}>
-              {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none' }}>{label}</a>)}
+              {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
             </div>
           )}
         </section>
@@ -664,7 +684,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {formCard}
         {socials.length > 0 && (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18, justifyContent: 'center' }}>
-            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none' }}>{label}</a>)}
+            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
           </div>
         )}
       </section>
@@ -709,7 +729,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <div style={{ ...wrap, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 16, color: ink }}>{displayName}</div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
-            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" style={{ fontFamily: bodyFont, fontSize: 13.5, color: soft, textDecoration: 'none' }}>{label}</a>)}
+            {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} aria-label={label} style={{ color: soft, textDecoration: 'none', display: 'inline-flex' }}><SocialIcon type={label} size={19} color={soft} /></a>)}
             {user?.id !== id && <button onClick={openReview} style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: bodyFont, fontSize: 13.5, color: soft, textDecoration: 'underline' }}>Leave a review</button>}
           </div>
         </div>
