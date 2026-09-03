@@ -23,6 +23,7 @@ import {
   TYPO,
 } from '../../lib/glassTokensLight'
 import TileField from '../../components/ui/TileField'
+import { resolveTheme, FONTS_HREF } from '../../lib/siteTheme'
 
 // The creative's PROFILE is their website. Basic keeps the classic single-page
 // profile (no socials/website). Pro/Expert/Elite render a brand-styled,
@@ -31,30 +32,11 @@ import TileField from '../../components/ui/TileField'
 // portfolio_services (services) and the profile's own fields. All the existing
 // contact/review actions (Enquire, Request a Call, Leave a Review) are kept.
 
-const SERIF = new Set(['Playfair Display', 'Merriweather', 'Cormorant Garamond'])
-const FONTS_HREF = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;600;700&family=Inter:wght@400;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Nunito:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;600;700&family=Raleway:wght@400;600;700&display=swap'
 const PRO_HOME_PHOTO_CAP = 8
 const FULL_PAGES = ['home', 'about', 'gallery', 'services', 'contact']
 const PRO_PAGES = ['home', 'contact']
 const PAGE_LABEL = { home: 'Home', about: 'About', gallery: 'Gallery', services: 'Services', contact: 'Contact' }
 
-function fontStack(name) {
-  const n = name || 'Inter'
-  const q = n.includes(' ') ? `"${n}"` : n
-  return `${q}, ${SERIF.has(n) ? 'serif' : 'sans-serif'}`
-}
-
-// Decide readable text colours from the brand background's brightness so a dark
-// Brand Kit background gets light text and vice versa.
-function isDarkColor(hex) {
-  if (!hex || typeof hex !== 'string') return false
-  let h = hex.trim().replace('#', '')
-  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
-  if (h.length !== 6) return false
-  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
-  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
-  return lum < 0.5
-}
 
 function StarRating({ value }) {
   return (
@@ -417,24 +399,18 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // =====================================================================
   //  PRO / EXPERT / ELITE — brand-styled multi-page website
   // =====================================================================
-  // The website has its own brand controls (profile.site_*) that override the
-  // shared document Brand Kit; fall back to the Brand Kit, then to defaults.
-  const accent = profile.site_primary_color || (brand && (brand.primary_color || brand.accent_color)) || '#1DB954'
-  const headingFont = fontStack(profile.site_heading_font || (brand && (brand.heading_font || brand.font)) || 'Playfair Display')
-  const bodyFont = fontStack(profile.site_body_font || (brand && (brand.body_font || brand.font)) || 'Inter')
-  const bg = profile.site_background_color || (brand && brand.background_color) || '#ffffff'
-  const dark = isDarkColor(bg)
-  const ink = dark ? '#f5f4f7' : '#17151c'
-  const soft = dark ? 'rgba(245,244,247,0.66)' : '#6a6870'
-  const line = dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)'
-  const surface = dark ? 'rgba(255,255,255,0.05)' : '#ffffff'
-  const surfaceBorder = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'
-  const fieldBg = dark ? 'rgba(255,255,255,0.06)' : '#ffffff'
-  const logo = brand && brand.logo_url
+  // Resolve the website's "Site Styles" theme (colours, fonts, buttons, corners)
+  // set in the builder; falls back to the Brand Kit, then defaults.
+  const T = resolveTheme(profile, brand)
+  const { accent, bg, dark, ink, heading: headingCol, soft, line, surface, surfaceBorder, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, radius, logo } = T
   const wrap = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
-  const H = (size) => ({ fontFamily: headingFont, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.12, color: ink, fontSize: size })
-  const btn = { display: 'inline-block', background: accent, color: '#fff', fontWeight: 700, textDecoration: 'none', padding: '13px 26px', borderRadius: 10, fontSize: 15, border: 'none', cursor: 'pointer', fontFamily: bodyFont }
-  const btnGhost = { ...btn, background: 'transparent', color: ink, border: `1px solid ${ink}22` }
+  const H = (size) => ({ fontFamily: headingFont, fontWeight: headingWeight, letterSpacing: '-0.02em', lineHeight: 1.12, color: headingCol, fontSize: size })
+  const btnBase = { display: 'inline-block', fontWeight: 700, textDecoration: 'none', padding: '13px 26px', borderRadius: btnRadius, fontSize: 15, cursor: 'pointer', fontFamily: bodyFont }
+  const btn = btnStyle === 'outline'
+    ? { ...btnBase, background: 'transparent', color: accent, border: `2px solid ${accent}` }
+    : { ...btnBase, background: accent, color: '#fff', border: 'none' }
+  const btnGhost = { ...btnBase, background: 'transparent', color: ink, border: `1px solid ${ink}22` }
+  const photoRadius = Math.min(radius, 14)
   const home = pageMap.home?.content || {}
   const about = pageMap.about?.content || {}
   const contact = pageMap.contact?.content || {}
@@ -469,7 +445,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 18, lineHeight: 1.6, margin: '16px 0 24px' }}>{sub}</p>}
             {actionRow()}
           </div>
-          {heroImg ? <img src={heroImg} alt="" style={{ width: '100%', height: 440, objectFit: 'cover', borderRadius: 16 }} /> : <div style={{ width: '100%', height: 440, borderRadius: 16, background: accent + '18' }} />}
+          {heroImg ? <img src={heroImg} alt="" style={{ width: '100%', height: 440, objectFit: 'cover', borderRadius: radius }} /> : <div style={{ width: '100%', height: 440, borderRadius: radius, background: accent + '18' }} />}
         </section>
       )
     } else if (homeT === 't3') {
@@ -481,7 +457,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 19, lineHeight: 1.6, margin: '18px auto 26px', maxWidth: 620, overflowWrap: 'anywhere' }}>{sub}</p>}
             <div style={{ display: 'flex', justifyContent: 'center' }}>{actionRow('center')}</div>
           </div>
-          {heroImg && <img src={heroImg} alt="" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: 18, marginTop: 40 }} />}
+          {heroImg && <img src={heroImg} alt="" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: radius, marginTop: 40 }} />}
         </section>
       )
     } else {
@@ -502,7 +478,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {hero}
         {home.intro && (
           <section style={{ ...wrap, padding: '44px 24px', textAlign: 'center' }}>
-            <p style={{ fontFamily: bodyFont, color: ink, fontSize: 19, lineHeight: 1.75, maxWidth: 680, margin: '0 auto', overflowWrap: 'anywhere' }}>{home.intro}</p>
+            <p style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize + 2, lineHeight: 1.75, maxWidth: 680, margin: '0 auto', overflowWrap: 'anywhere' }}>{home.intro}</p>
           </section>
         )}
         {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
@@ -515,7 +491,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <section style={{ ...wrap, padding: '20px 24px 48px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12 }}>
               {homePhotosCapped.map((item) => (
-                <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '1', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+                <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '1', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
                   {item.file_type === 'video' ? <video src={item.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={item.file_url || item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 </div>
               ))}
@@ -528,7 +504,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <h2 style={{ ...H('28px'), textAlign: 'center', marginBottom: 26 }}>Kind words</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
                 {reviews.slice(0, 3).map((r) => (
-                  <div key={r.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 14, padding: '18px 20px' }}>
+                  <div key={r.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: '18px 20px' }}>
                     <div style={{ color: accent, fontSize: 15, marginBottom: 8 }}>{'★'.repeat(r.rating || 5)}</div>
                     <p style={{ fontFamily: bodyFont, color: ink, fontSize: 14.5, lineHeight: 1.6, fontStyle: 'italic', margin: '0 0 10px' }}>"{r.body || r.comment}"</p>
                     <div style={{ fontFamily: bodyFont, fontSize: 13, fontWeight: 700, color: ink }}>{r.reviewer_name || r.client_name || 'Client'}</div>
@@ -552,16 +528,16 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <section style={{ ...wrap, padding: '64px 24px', textAlign: 'center', maxWidth: 760 }}>
             {portrait && <img src={portrait} alt="" style={{ width: 176, height: 176, borderRadius: '50%', objectFit: 'cover', marginBottom: 24, border: `4px solid ${accent}22` }} />}
             <h2 style={{ ...H('clamp(28px,4vw,42px)'), marginBottom: 20 }}>{heading}</h2>
-            {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.85, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, margin: 0 }}>Add your story in the website builder.</p>}
+            {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.85, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, margin: 0 }}>Add your story in the website builder.</p>}
           </section>
         ) : (
           <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? (aboutT === 't3' ? 'minmax(0,1fr) minmax(280px,380px)' : 'minmax(280px,380px) minmax(0,1fr)') : '1fr', gap: 56, alignItems: 'center', padding: '64px 24px' }} className="lt-2col">
-            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 16 }} />}
+            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
             <div style={{ minWidth: 0 }}>
               <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 18 }}>{heading}</h2>
-              {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.85, margin: '0 0 16px' }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.85, margin: 0 }}>Add your story in the website builder.</p>}
+              {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.85, margin: '0 0 16px' }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.85, margin: 0 }}>Add your story in the website builder.</p>}
             </div>
-            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: 16 }} />}
+            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
           </section>
         )}
         {((profile.specialties?.length) || (profile.abn || profile.has_insurance)) ? (
@@ -595,7 +571,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {galleryShown.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>No photos yet.</p> : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 12 }}>
             {galleryShown.map((item) => (
-              <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '4/3', borderRadius: 12, overflow: 'hidden', cursor: 'pointer' }}>
+              <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '4/3', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
                 {item.file_type === 'video' ? <video src={item.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={item.file_url || item.image_url} alt={item.alt_text || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
               </div>
             ))}
@@ -612,7 +588,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {services.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>Services coming soon.</p> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
             {services.map((s) => (
-              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 14, padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('20px') }}>{s.name}</div>
                 {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
                 {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
@@ -629,7 +605,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     const field = { width: '100%', border: `1px solid ${line}`, borderRadius: 10, padding: '12px 14px', fontSize: 15, fontFamily: bodyFont, boxSizing: 'border-box', outline: 'none', marginBottom: 12, color: ink, background: fieldBg }
     const heading = contact.heading || 'Get in touch'
     const formCard = (
-      <div style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 16, padding: 24, boxShadow: dark ? 'none' : '0 20px 60px -30px rgba(0,0,0,0.25)' }}>
+      <div style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: 24, boxShadow: dark ? 'none' : '0 20px 60px -30px rgba(0,0,0,0.25)' }}>
         {sent ? (
           <div style={{ textAlign: 'center', padding: '20px 0', fontFamily: bodyFont }}>
             <div style={{ color: accent, fontSize: 30, marginBottom: 8 }}>✓</div>
@@ -673,7 +649,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       return (
         <section style={{ ...wrap, padding: '60px 24px', maxWidth: 640 }}>
           <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 14 }}>{heading}</h2>
-          {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.7, marginBottom: 22 }}>{contact.blurb}</p>}
+          {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: baseSize, lineHeight: 1.7, marginBottom: 22 }}>{contact.blurb}</p>}
           {formCard}
           {socials.length > 0 && (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18 }}>
@@ -686,7 +662,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <section style={{ ...wrap, padding: '60px 24px', maxWidth: 640 }}>
         <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 14, textAlign: 'center' }}>{heading}</h2>
-        {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.7, marginBottom: 22, textAlign: 'center' }}>{contact.blurb}</p>}
+        {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: baseSize, lineHeight: 1.7, marginBottom: 22, textAlign: 'center' }}>{contact.blurb}</p>}
         {formCard}
         {socials.length > 0 && (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18, justifyContent: 'center' }}>

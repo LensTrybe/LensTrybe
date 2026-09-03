@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
 import { GLASS_CARD, GLASS_NATIVE_FIELD } from '../../lib/glassTokens'
+import { FONT_OPTIONS, THEME_PRESETS, DEFAULT_THEME, normalizeTheme, resolveTheme } from '../../lib/siteTheme'
 
 // Website builder — edits the creative's PROFILE-as-website. Content pages
 // (Home/About/Contact) live in site_pages; Gallery uses portfolio_items grouped
@@ -13,8 +14,8 @@ import { GLASS_CARD, GLASS_NATIVE_FIELD } from '../../lib/glassTokens'
 // Gating: Expert/Elite = full builder; Pro = Home + Contact; Basic = upsell.
 
 const PAGE_ORDER = ['home', 'about', 'gallery', 'services', 'contact']
-const TABS = [...PAGE_ORDER, 'settings']
-const PAGE_LABEL = { home: 'Home', about: 'About', gallery: 'Gallery', services: 'Services', contact: 'Contact', settings: 'Settings' }
+const TABS = [...PAGE_ORDER, 'design', 'settings']
+const PAGE_LABEL = { home: 'Home', about: 'About', gallery: 'Gallery', services: 'Services', contact: 'Contact', design: 'Design', settings: 'Settings' }
 const CONTENT_PAGES = ['home', 'about', 'contact']
 
 const SOCIAL_FIELDS = [
@@ -26,7 +27,10 @@ const SOCIAL_FIELDS = [
   { key: 'twitter_url', label: 'X (Twitter)', placeholder: 'https://x.com/you' },
 ]
 
-const FONT_OPTIONS = ['Inter', 'Playfair Display', 'Montserrat', 'Poppins', 'Raleway', 'Lato', 'Nunito', 'DM Sans', 'Merriweather', 'Cormorant Garamond']
+const SIZE_OPTIONS = [{ label: 'S', v: 15 }, { label: 'M', v: 17 }, { label: 'L', v: 19 }]
+const WEIGHT_OPTIONS = [{ label: 'Light', v: 400 }, { label: 'Regular', v: 600 }, { label: 'Bold', v: 700 }, { label: 'Extra', v: 800 }]
+const BTN_SHAPES = [{ label: 'Square', v: 0 }, { label: 'Rounded', v: 10 }, { label: 'Pill', v: 999 }]
+const CORNERS = [{ label: 'Sharp', v: 0 }, { label: 'Soft', v: 10 }, { label: 'Rounded', v: 20 }]
 
 const TEMPLATES = {
   home: [
@@ -224,6 +228,131 @@ function LockedPanel({ pageLabel }) {
   )
 }
 
+function Seg({ value, options, onChange }) {
+  return (
+    <div style={{ display: 'inline-flex', gap: 6, flexWrap: 'wrap' }}>
+      {options.map((o) => {
+        const active = value === o.v
+        return <button key={o.label} type="button" onClick={() => onChange(o.v)} style={{ padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 600, border: active ? '1px solid #1DB954' : '1px solid var(--border-default)', background: active ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)', color: active ? '#1DB954' : 'var(--text-primary)' }}>{o.label}</button>
+      })}
+    </div>
+  )
+}
+
+function DesignEditor({ theme, onChange, onApplyPreset, logo, onUploadLogo, uploadingLogo, onSave, saving, saved, styles, isMobile }) {
+  const logoRef = useRef(null)
+  const { inputStyle, label } = styles
+  const small = { ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }
+  const autoText = !theme.colors.text
+  const P = resolveTheme({ site_theme: theme, site_logo_url: logo }, null)
+  const colorRow = (val, on) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+      <input type="color" value={/^#/.test(val) ? val : '#000000'} onChange={(e) => on(e.target.value)} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
+      <input value={val} onChange={(e) => on(e.target.value)} style={{ ...inputStyle, maxWidth: 120 }} />
+    </div>
+  )
+  return (
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 300px', gap: 24, alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        <div>
+          <div style={label}>Theme presets</div>
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Start from a look, then fine-tune everything below.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10, marginTop: 10 }}>
+            {THEME_PRESETS.map((pre) => {
+              const active = theme.preset === pre.id
+              return (
+                <button key={pre.id} type="button" onClick={() => onApplyPreset(pre)} style={{ padding: 0, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: active ? '2px solid #1DB954' : '1px solid var(--border-default)', background: 'var(--bg-base)', textAlign: 'left' }}>
+                  <div style={{ height: 46, background: pre.theme.colors.background, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderBottom: '1px solid var(--border-subtle)' }}>
+                    <span style={{ fontFamily: `"${pre.theme.fonts.heading}", serif`, color: pre.theme.colors.background && pre.id === 'bold' || pre.id === 'noir' ? '#fff' : '#111', fontWeight: 700, fontSize: 15 }}>Aa</span>
+                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: pre.theme.colors.primary }} />
+                  </div>
+                  <div style={{ padding: '6px 8px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{pre.name}</div>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        <div>
+          <div style={label}>Colours</div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
+            <div><div style={small}>Accent</div>{colorRow(theme.colors.primary, (v) => onChange('colors', 'primary', v))}</div>
+            <div><div style={small}>Background</div>{colorRow(theme.colors.background, (v) => onChange('colors', 'background', v))}</div>
+            <div>
+              <div style={small}>Text</div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', margin: '6px 0', cursor: 'pointer' }}>
+                <input type="checkbox" checked={autoText} onChange={(e) => onChange('colors', 'text', e.target.checked ? '' : '#17151c')} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Auto (from background)
+              </label>
+              {!autoText && colorRow(theme.colors.text, (v) => onChange('colors', 'text', v))}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={label}>Typography</div>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
+            <div><div style={small}>Heading font</div><select value={theme.fonts.heading} onChange={(e) => onChange('fonts', 'heading', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+            <div><div style={small}>Body font</div><select value={theme.fonts.body} onChange={(e) => onChange('fonts', 'body', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+            <div><div style={small}>Text size</div><div style={{ marginTop: 6 }}><Seg value={theme.fonts.baseSize} options={SIZE_OPTIONS} onChange={(v) => onChange('fonts', 'baseSize', v)} /></div></div>
+            <div><div style={small}>Heading weight</div><div style={{ marginTop: 6 }}><Seg value={theme.fonts.headingWeight} options={WEIGHT_OPTIONS} onChange={(v) => onChange('fonts', 'headingWeight', v)} /></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div style={label}>Buttons</div>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 10 }}>
+            <div><div style={small}>Shape</div><div style={{ marginTop: 6 }}><Seg value={theme.buttons.radius} options={BTN_SHAPES} onChange={(v) => onChange('buttons', 'radius', v)} /></div></div>
+            <div><div style={small}>Style</div><div style={{ marginTop: 6 }}><Seg value={theme.buttons.style} options={[{ label: 'Solid', v: 'solid' }, { label: 'Outline', v: 'outline' }]} onChange={(v) => onChange('buttons', 'style', v)} /></div></div>
+          </div>
+        </div>
+
+        <div>
+          <div style={label}>Corners</div>
+          <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Roundness of cards and images.</p>
+          <Seg value={theme.corners.radius} options={CORNERS} onChange={(v) => onChange('corners', 'radius', v)} />
+        </div>
+
+        <div>
+          <div style={label}>Logo</div>
+          <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Shown in your website header. Leave blank to show your business name.</p>
+          <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadLogo(f); if (logoRef.current) logoRef.current.value = '' }} />
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+            {logo ? <img src={logo} alt="" style={{ height: 40, objectFit: 'contain', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 4 }} /> : null}
+            <Button variant="secondary" type="button" disabled={uploadingLogo} onClick={() => logoRef.current?.click()}>{uploadingLogo ? 'Uploading…' : logo ? 'Replace logo' : 'Upload logo'}</Button>
+            {logo ? <Button variant="ghost" type="button" onClick={() => onUploadLogo(null)}>Remove</Button> : null}
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <Button variant="primary" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save design'}</Button>
+          {saved ? <span style={{ fontSize: 13, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
+        </div>
+      </div>
+
+      {/* Live preview */}
+      <div style={{ position: isMobile ? 'static' : 'sticky', top: 12 }}>
+        <div style={label}>Live preview</div>
+        <div style={{ marginTop: 8, border: '1px solid var(--border-default)', borderRadius: 14, overflow: 'hidden' }}>
+          <div style={{ background: P.bg, padding: 18, fontFamily: P.bodyFont }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              {logo ? <img src={logo} alt="" style={{ height: 20, objectFit: 'contain' }} /> : <span style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 15 }}>Studio</span>}
+              <span style={{ fontSize: 11, color: P.soft }}>Home · About · Contact</span>
+            </div>
+            <div style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 26, lineHeight: 1.1, letterSpacing: '-0.02em' }}>Your headline</div>
+            <div style={{ color: P.soft, fontSize: P.baseSize - 3, lineHeight: 1.6, margin: '8px 0 14px' }}>A short line about the work you do and who you help.</div>
+            <span style={{ display: 'inline-block', padding: '9px 18px', borderRadius: P.btnRadius, fontSize: 13, fontWeight: 700, background: P.btnStyle === 'outline' ? 'transparent' : P.accent, color: P.btnStyle === 'outline' ? P.accent : '#fff', border: P.btnStyle === 'outline' ? `2px solid ${P.accent}` : 'none' }}>Enquire Now</span>
+            <div style={{ marginTop: 16, background: P.surface, border: `1px solid ${P.surfaceBorder}`, borderRadius: P.radius, padding: 12 }}>
+              <div style={{ color: P.accent, fontSize: 12, marginBottom: 6 }}>★★★★★</div>
+              <div style={{ color: P.ink, fontSize: 12.5, fontStyle: 'italic', lineHeight: 1.5 }}>"Absolutely brilliant to work with."</div>
+            </div>
+          </div>
+        </div>
+        <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>This is a preview. Save to apply it to your live website.</p>
+      </div>
+    </div>
+  )
+}
+
 export default function WebsiteBuilderPage() {
   const { user, profile, fetchUserData } = useAuth()
   const { tier } = useSubscription()
@@ -252,7 +381,11 @@ export default function WebsiteBuilderPage() {
   const [seoTitle, setSeoTitle] = useState('')
   const [seoDesc, setSeoDesc] = useState('')
   const [links, setLinks] = useState({ website: '', instagram_url: '', tiktok_url: '', facebook_url: '', linkedin_url: '', twitter_url: '' })
-  const [siteBrand, setSiteBrand] = useState({ primary: '#1DB954', background: '#ffffff', heading: 'Playfair Display', body: 'Inter' })
+  const [theme, setTheme] = useState(() => normalizeTheme(null))
+  const [siteLogo, setSiteLogo] = useState(null)
+  const [uploadingLogo, setUploadingLogo] = useState(false)
+  const [savingDesign, setSavingDesign] = useState(false)
+  const [designSaved, setDesignSaved] = useState(false)
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -267,12 +400,12 @@ export default function WebsiteBuilderPage() {
       website: profile.website ?? '', instagram_url: profile.instagram_url ?? '', tiktok_url: profile.tiktok_url ?? '',
       facebook_url: profile.facebook_url ?? '', linkedin_url: profile.linkedin_url ?? '', twitter_url: profile.twitter_url ?? '',
     })
-    setSiteBrand({
-      primary: profile.site_primary_color || '#1DB954',
-      background: profile.site_background_color || '#ffffff',
-      heading: profile.site_heading_font || 'Playfair Display',
-      body: profile.site_body_font || 'Inter',
-    })
+    // Load theme: prefer site_theme; else migrate any legacy site_* columns.
+    const lc = {}; if (profile.site_primary_color) lc.primary = profile.site_primary_color; if (profile.site_background_color) lc.background = profile.site_background_color
+    const lf = {}; if (profile.site_heading_font) lf.heading = profile.site_heading_font; if (profile.site_body_font) lf.body = profile.site_body_font
+    const legacy = (Object.keys(lc).length || Object.keys(lf).length) ? { colors: lc, fonts: lf } : null
+    setTheme(normalizeTheme(profile.site_theme || legacy))
+    setSiteLogo(profile.site_logo_url || null)
   }, [profile])
 
   const loadAll = useCallback(async () => {
@@ -380,14 +513,43 @@ export default function WebsiteBuilderPage() {
       site_service_areas: areas, site_seo_title: seoTitle.trim() || null, site_seo_description: seoDesc.trim() || null,
       website: links.website.trim() || null, instagram_url: links.instagram_url.trim() || null, tiktok_url: links.tiktok_url.trim() || null,
       facebook_url: links.facebook_url.trim() || null, linkedin_url: links.linkedin_url.trim() || null, twitter_url: links.twitter_url.trim() || null,
-      site_primary_color: siteBrand.primary || null, site_background_color: siteBrand.background || null,
-      site_heading_font: siteBrand.heading || null, site_body_font: siteBrand.body || null,
     }
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
     setSavingSettings(false)
     if (error) { window.alert(error.message); return }
     await fetchUserData(user.id)
     flash(setSettingsSaved)
+  }
+
+  // ---- design / site theme ----
+  function onThemeChange(section, key, value) { setTheme((t) => ({ ...t, preset: 'custom', [section]: { ...t[section], [key]: value } })) }
+  function applyPreset(pre) { setTheme({ ...normalizeTheme(pre.theme), preset: pre.id }) }
+  async function uploadLogo(file) {
+    if (file === null) { setSiteLogo(null); return }
+    if (!user?.id || !supabase) return
+    setUploadingLogo(true)
+    try {
+      const ext = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'png'
+      const path = `${user.id}/site/logo-${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file, { upsert: true })
+      if (upErr) throw new Error(upErr.message)
+      const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
+      setSiteLogo(pub.publicUrl)
+    } catch (e) { window.alert(e.message || 'Upload failed') } finally { setUploadingLogo(false) }
+  }
+  async function saveDesign() {
+    if (!user?.id || !supabase) return
+    setSavingDesign(true)
+    const patch = {
+      site_theme: theme, site_logo_url: siteLogo || null,
+      site_primary_color: theme.colors.primary || null, site_background_color: theme.colors.background || null,
+      site_heading_font: theme.fonts.heading || null, site_body_font: theme.fonts.body || null,
+    }
+    const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
+    setSavingDesign(false)
+    if (error) { window.alert(error.message); return }
+    await fetchUserData(user.id)
+    flash(setDesignSaved)
   }
 
   const card = { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }
@@ -417,7 +579,7 @@ export default function WebsiteBuilderPage() {
   }
 
   const isContentPage = CONTENT_PAGES.includes(activeTab)
-  const activeEditable = activeTab === 'settings' || editablePages.includes(activeTab)
+  const activeEditable = activeTab === 'settings' || activeTab === 'design' || editablePages.includes(activeTab)
   const activeData = pages[activeTab] || { template: 't1', content: {}, visible: true }
   const profileHref = `/creatives/${user.id}`
 
@@ -438,7 +600,7 @@ export default function WebsiteBuilderPage() {
       <section style={card}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {TABS.map((pt) => {
-            const locked = pt !== 'settings' && !editablePages.includes(pt)
+            const locked = pt !== 'settings' && pt !== 'design' && !editablePages.includes(pt)
             const active = activeTab === pt
             return (
               <button key={pt} type="button" onClick={() => setActiveTab(pt)} style={{ padding: '8px 16px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13.5, fontWeight: 600, border: active ? '1px solid #1DB954' : '1px solid var(--border-default)', background: active ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)', color: active ? '#1DB954' : locked ? 'var(--text-muted)' : 'var(--text-primary)' }}>{PAGE_LABEL[pt]}{locked ? ' 🔒' : ''}</button>
@@ -447,36 +609,10 @@ export default function WebsiteBuilderPage() {
         </div>
         <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />
 
-        {activeTab === 'settings' ? (
+        {activeTab === 'design' ? (
+          <DesignEditor theme={theme} onChange={onThemeChange} onApplyPreset={applyPreset} logo={siteLogo} onUploadLogo={uploadLogo} uploadingLogo={uploadingLogo} onSave={saveDesign} saving={savingDesign} saved={designSaved} styles={editorStyles} isMobile={isMobile} />
+        ) : activeTab === 'settings' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div>
-              <div style={label}>Website brand</div>
-              <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Colours and fonts for your website only — separate from the Brand Kit used on your quotes, invoices and contracts.</p>
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 10 }}>
-                <div>
-                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Accent colour</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                    <input type="color" value={siteBrand.primary} onChange={(e) => setSiteBrand((b) => ({ ...b, primary: e.target.value }))} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
-                    <input value={siteBrand.primary} onChange={(e) => setSiteBrand((b) => ({ ...b, primary: e.target.value }))} style={{ ...inputStyle, maxWidth: 120 }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Background colour</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-                    <input type="color" value={siteBrand.background} onChange={(e) => setSiteBrand((b) => ({ ...b, background: e.target.value }))} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
-                    <input value={siteBrand.background} onChange={(e) => setSiteBrand((b) => ({ ...b, background: e.target.value }))} style={{ ...inputStyle, maxWidth: 120 }} />
-                  </div>
-                </div>
-                <div>
-                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Heading font</div>
-                  <select value={siteBrand.heading} onChange={(e) => setSiteBrand((b) => ({ ...b, heading: e.target.value }))} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select>
-                </div>
-                <div>
-                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Body font</div>
-                  <select value={siteBrand.body} onChange={(e) => setSiteBrand((b) => ({ ...b, body: e.target.value }))} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select>
-                </div>
-              </div>
-            </div>
             <div>
               <div style={label}>Social links & website</div>
               <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>These appear as icons in your footer and on your Contact page.</p>
