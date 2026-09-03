@@ -96,7 +96,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [profileFlagSuccessId, setProfileFlagSuccessId] = useState(null)
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
-  useEffect(() => { loadProfile() }, [id])
+  useEffect(() => { loadProfile() }, [id, user?.id])
   useEffect(() => {
     if (document.getElementById('lt-site-fonts')) return
     const l = document.createElement('link'); l.id = 'lt-site-fonts'; l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l)
@@ -117,7 +117,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   async function loadProfile() {
     const [profileRes, portfolioRes, reviewsRes, availabilityRes, brandRes, pagesRes, servicesRes] = await Promise.all([
-      supabase.from('profiles').select('*').eq('id', id).eq('is_admin', false).maybeSingle(),
+      supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
       supabase.from('reviews').select('*').eq('creative_id', id).or('hidden.is.null,hidden.eq.false').order('created_at', { ascending: false }),
       supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),
@@ -125,7 +125,15 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       supabase.from('site_pages').select('*').eq('creative_id', id).eq('visible', true),
       supabase.from('portfolio_services').select('*').eq('creative_id', id).order('sort_order', { ascending: true }),
     ])
-    setProfile(profileRes.data)
+    // Admin profiles are hidden from the marketplace, but a creative can always
+    // preview their own profile (and preview mode is always allowed).
+    const prof = profileRes.data
+    if (prof && prof.is_admin && !previewMode && prof.id !== user?.id) {
+      setProfile(null)
+      setLoading(false)
+      return
+    }
+    setProfile(prof)
     if (profileRes.data && !previewId) void logProfileView(id, 'profile')
     setPortfolioItems(portfolioRes.data ?? [])
     const reviewRows = reviewsRes.data ?? []
