@@ -48,6 +48,11 @@ const TEMPLATES = {
     { id: 't2', name: 'Split', desc: 'Your blurb on the left, the form on the right.' },
     { id: 't3', name: 'Minimal', desc: 'Left-aligned heading with the form below.' },
   ],
+  services: [
+    { id: 't1', name: 'Cards', desc: 'A grid of cards, each with a photo, name and price.' },
+    { id: 't2', name: 'List', desc: 'Rows with the photo on the left and details on the right.' },
+    { id: 't3', name: 'Price list', desc: 'A clean text price list, no photos.' },
+  ],
 }
 
 const FIELDS = {
@@ -91,6 +96,11 @@ function TemplateSkeleton({ pageType, id }) {
     if (id === 't2') return (<div style={frame}><div style={{ ...col, flex: 1, padding: 4 }}><div style={bar('70%', 9)} /><div style={bar('86%')} /></div><div style={{ ...box, flex: 1, padding: 6, display: 'flex', flexDirection: 'column', gap: 5, justifyContent: 'center' }}><div style={bar('100%', 8)} /><div style={bar('100%', 18)} /><div style={{ ...bar('50%', 10), ...accent }} /></div></div>)
     if (id === 't3') return (<div style={{ ...frame, flexDirection: 'column', justifyContent: 'center', padding: 10 }}><div style={bar('50%', 9)} /><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('34%', 10), ...accent }} /></div>)
     return (<div style={{ ...frame, alignItems: 'center', justifyContent: 'center', padding: 10 }}><div style={{ ...box, width: '70%', padding: 6, display: 'flex', flexDirection: 'column', gap: 5 }}><div style={bar('100%', 8)} /><div style={bar('100%', 16)} /><div style={{ ...bar('50%', 10), ...accent, alignSelf: 'center' }} /></div></div>)
+  }
+  if (pageType === 'services') {
+    if (id === 't2') return (<div style={{ ...frame, flexDirection: 'column', gap: 6, padding: 8 }}>{[0, 1].map((i) => <div key={i} style={{ display: 'flex', gap: 6, flex: 1 }}><div style={{ ...box, width: 30 }} /><div style={{ ...col, flex: 1, padding: 3 }}><div style={bar('60%', 6)} /><div style={{ ...bar('30%', 6), ...accent }} /></div></div>)}</div>)
+    if (id === 't3') return (<div style={{ ...frame, flexDirection: 'column', justifyContent: 'center', gap: 8, padding: 12 }}>{[0, 1, 2].map((i) => <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: i ? '1px solid var(--border-subtle)' : 'none', paddingTop: i ? 5 : 0 }}><div style={bar(46, 6)} /><div style={{ ...bar(20, 6), ...accent }} /></div>)}</div>)
+    return (<div style={{ ...frame, gap: 6 }}>{[0, 1, 2].map((i) => <div key={i} style={{ ...box, flex: 1, display: 'flex', flexDirection: 'column' }}><div style={{ height: 34, background: 'var(--border-default)' }} /><div style={{ padding: 4, display: 'flex', flexDirection: 'column', gap: 4 }}><div style={bar('80%', 5)} /><div style={{ ...bar('40%', 5), ...accent }} /></div></div>)}</div>)
   }
   return null
 }
@@ -219,11 +229,26 @@ function ServiceRow({ s, idx, onChangeLocal, onSaveRow, onDeleteRow, onUploadIma
   )
 }
 
-function ServicesManager({ services, onChangeLocal, onAddRow, onSaveRow, onDeleteRow, onUploadImage, uploadingIdx, savedFlash, styles, isMobile }) {
-  const { inputStyle } = styles
+function ServicesManager({ services, template, onTemplate, onChangeLocal, onAddRow, onSaveRow, onDeleteRow, onUploadImage, uploadingIdx, savedFlash, styles, isMobile }) {
+  const { inputStyle, label } = styles
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>List what you offer. Add a photo, name, description and price — these show as cards on your Services page.</p>
+      <div>
+        <div style={label}>Layout</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 12, marginTop: 8 }}>
+          {TEMPLATES.services.map((t) => {
+            const active = (template || 't1') === t.id
+            return (
+              <button key={t.id} type="button" onClick={() => onTemplate(t.id)} style={{ textAlign: 'left', padding: 12, borderRadius: 12, cursor: 'pointer', border: active ? '2px solid #1DB954' : '1px solid var(--border-default)', background: active ? 'rgba(29,185,84,0.06)' : 'var(--bg-base)', fontFamily: 'var(--font-ui)', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <TemplateSkeleton pageType="services" id={t.id} />
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--text-primary)' }}>{t.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text-muted)', lineHeight: 1.45 }}>{t.desc}</div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>List what you offer. Add a photo, name, description and price.</p>
       {services.map((s, idx) => <ServiceRow key={s.id ?? `new-${idx}`} s={s} idx={idx} onChangeLocal={onChangeLocal} onSaveRow={onSaveRow} onDeleteRow={onDeleteRow} onUploadImage={onUploadImage} uploading={uploadingIdx === idx} inputStyle={inputStyle} isMobile={isMobile} />)}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Button variant="secondary" type="button" onClick={onAddRow}>Add service</Button>
@@ -256,7 +281,13 @@ function Seg({ value, options, onChange }) {
 
 const DESIGN_PAGES = [{ id: 'all', label: 'All pages' }, { id: 'home', label: 'Home' }, { id: 'about', label: 'About' }, { id: 'gallery', label: 'Gallery' }, { id: 'services', label: 'Services' }, { id: 'contact', label: 'Contact' }]
 
-function jump(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+function jump(id) {
+  const el = document.getElementById(id)
+  if (!el) return
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  el.classList.remove('wb-flash'); void el.offsetWidth; el.classList.add('wb-flash')
+  setTimeout(() => el.classList.remove('wb-flash'), 1300)
+}
 
 function DesignEditor({ scope, setScope, active, customised, onCustomised, onApplyPalette, onApplyStyle, onChange, logo, onUploadLogo, uploadingLogo, onSave, saving, saved, styles, isMobile }) {
   const logoRef = useRef(null)
@@ -405,7 +436,7 @@ function DesignEditor({ scope, setScope, active, customised, onCustomised, onApp
               <div style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 26, lineHeight: 1.1, letterSpacing: '-0.02em' }}>Your headline</div>
               <div style={{ color: P.soft, fontSize: P.baseSize - 3, lineHeight: 1.6, margin: '8px 0 14px' }}>A short line about the work you do and who you help.</div>
             </div>
-            <span onClick={() => jump('wb-buttons')} title="Buttons" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: P.btnRadius, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: P.btnStyle === 'outline' ? 'transparent' : P.accent, color: P.btnStyle === 'outline' ? P.accent : '#fff', border: P.btnStyle === 'outline' ? `2px solid ${P.accent}` : 'none' }}>Enquire Now</span>
+            <span onClick={() => jump('wb-buttons')} title="Buttons" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: P.btnRadius, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: P.btnStyle === 'outline' ? 'transparent' : P.accent, color: P.btnStyle === 'outline' ? P.accent : P.btnText, border: P.btnStyle === 'outline' ? `2px solid ${P.accent}` : 'none' }}>Enquire Now</span>
             <div onClick={() => jump('wb-corners')} title="Corners" style={{ cursor: 'pointer', marginTop: 16, background: P.surface, border: `1px solid ${P.surfaceBorder}`, borderRadius: P.radius, padding: 12 }}>
               <div style={{ color: P.accent, fontSize: 12, marginBottom: 6 }}>★★★★★</div>
               <div style={{ color: P.ink, fontSize: 12.5, fontStyle: 'italic', lineHeight: 1.5 }}>"Absolutely brilliant to work with."</div>
@@ -574,6 +605,12 @@ export default function WebsiteBuilderPage() {
     } catch (e) { window.alert(e.message || 'Could not save service') } finally { serviceChangeLocal(idx, { isSaving: false }) }
   }
   async function serviceDeleteRow(service, idx) { if (service.id && !window.confirm('Delete this service?')) return; if (service.id) await supabase.from('portfolio_services').delete().eq('id', service.id); setServices((prev) => prev.filter((_, i) => i !== idx)) }
+  async function saveServicesTemplate(t) {
+    setPages((prev) => ({ ...prev, services: { ...(prev.services || { content: {}, visible: true }), template: t } }))
+    if (!user?.id || !supabase) return
+    const row = { creative_id: user.id, page_type: 'services', template: t, content: pages.services?.content || {}, visible: pages.services?.visible !== false, position: PAGE_ORDER.indexOf('services'), updated_at: new Date().toISOString() }
+    await supabase.from('site_pages').upsert(row, { onConflict: 'creative_id,page_type' })
+  }
   async function serviceUploadImage(idx, file) {
     if (!user?.id || !supabase) return
     setUploadingServiceIdx(idx)
@@ -702,7 +739,7 @@ export default function WebsiteBuilderPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: isMobile ? 16 : '28px 24px 48px', maxWidth: 860, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }} className="website-builder-page">
-      <style>{`@media (max-width: 767px){ .website-builder-page h1{font-size:24px !important} .website-builder-page input,.website-builder-page textarea{font-size:14px !important} }`}</style>
+      <style>{`@media (max-width: 767px){ .website-builder-page h1{font-size:24px !important} .website-builder-page input,.website-builder-page textarea{font-size:14px !important} } @keyframes wbflash{0%{box-shadow:0 0 0 0 rgba(29,185,84,0)}15%{box-shadow:0 0 0 3px rgba(29,185,84,0.55)}100%{box-shadow:0 0 0 0 rgba(29,185,84,0)}} .wb-flash{border-radius:12px;animation:wbflash 1.3s ease}`}</style>
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
@@ -771,7 +808,7 @@ export default function WebsiteBuilderPage() {
         ) : activeTab === 'gallery' ? (
           <GalleryManager items={gallery} uploading={galleryUploading} albumInput={albumInput} setAlbumInput={setAlbumInput} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={galleryToggleFeatured} onDelete={galleryDelete} styles={editorStyles} />
         ) : activeTab === 'services' ? (
-          <ServicesManager services={services} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} onUploadImage={serviceUploadImage} uploadingIdx={uploadingServiceIdx} savedFlash={servicesSaved} styles={editorStyles} isMobile={isMobile} />
+          <ServicesManager services={services} template={pages.services?.template || 't1'} onTemplate={saveServicesTemplate} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} onUploadImage={serviceUploadImage} uploadingIdx={uploadingServiceIdx} savedFlash={servicesSaved} styles={editorStyles} isMobile={isMobile} />
         ) : isContentPage ? (
           <PageEditor key={activeTab} pageType={activeTab} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activeTab, k, v)} onTemplate={(t) => setTemplate(activeTab, t)} onVisible={(v) => setVisible(activeTab, v)} onUploadImage={(field, file) => uploadImage(activeTab, field, file)} uploadingField={uploadingField} onSave={() => savePage(activeTab)} saving={savingPage === activeTab} saved={savedPage === activeTab} styles={editorStyles} />
         ) : null}

@@ -112,8 +112,9 @@ function tokensFrom(t, profile, brand) {
   const btnRadius = Number.isFinite(Number(t.buttons.radius)) ? Number(t.buttons.radius) : 10
   const btnStyle = t.buttons.style || 'solid'
   const radius = Number.isFinite(Number(t.corners.radius)) ? Number(t.corners.radius) : 16
+  const btnText = isDarkColor(primary) ? '#ffffff' : '#141414' // readable label on a solid button
   const logo = profile.site_logo_url || (brand && brand.logo_url) || null
-  return { accent: primary, primary, background, bg: background, dark, ink, heading, soft, surface, surfaceBorder, line, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, radius, logo }
+  return { accent: primary, primary, background, bg: background, dark, ink, heading, soft, surface, surfaceBorder, line, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, btnText, radius, logo }
 }
 
 // Resolve a profile (+ Brand Kit) into render tokens. Pass `page` to apply that

@@ -402,13 +402,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // Resolve the website's "Site Styles" theme (colours, fonts, buttons, corners)
   // set in the builder; falls back to the Brand Kit, then defaults.
   const T = resolveTheme(profile, brand, activePage)
-  const { accent, bg, dark, ink, heading: headingCol, soft, line, surface, surfaceBorder, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, radius, logo } = T
+  const { accent, bg, dark, ink, heading: headingCol, soft, line, surface, surfaceBorder, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, btnText, radius, logo } = T
   const wrap = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
   const H = (size) => ({ fontFamily: headingFont, fontWeight: headingWeight, letterSpacing: '-0.02em', lineHeight: 1.12, color: headingCol, fontSize: size })
   const btnBase = { display: 'inline-block', fontWeight: 700, textDecoration: 'none', padding: '13px 26px', borderRadius: btnRadius, fontSize: 15, cursor: 'pointer', fontFamily: bodyFont }
   const btn = btnStyle === 'outline'
     ? { ...btnBase, background: 'transparent', color: accent, border: `2px solid ${accent}` }
-    : { ...btnBase, background: accent, color: '#fff', border: 'none' }
+    : { ...btnBase, background: accent, color: btnText, border: 'none' }
   const btnGhost = { ...btnBase, background: 'transparent', color: ink, border: `1px solid ${ink}22` }
   const photoRadius = Math.min(radius, 14)
   const home = pageMap.home?.content || {}
@@ -417,6 +417,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const homeT = pageMap.home?.template || 't1'
   const aboutT = pageMap.about?.template || 't1'
   const contactT = pageMap.contact?.template || 't1'
+  const servicesT = pageMap.services?.template || 't1'
   const socials = socialLinks() || []
   const galleryCats = ['All', ...Array.from(new Set((portfolioItems || []).map((p) => p.category).filter(Boolean)))]
   const galleryShown = galleryTab === 'All' ? portfolioItems : portfolioItems.filter((p) => p.category === galleryTab)
@@ -582,23 +583,62 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   function renderServices() {
+    const empty = <p style={{ fontFamily: bodyFont, color: soft }}>Services coming soon.</p>
+    let body
+    if (services.length === 0) {
+      body = empty
+    } else if (servicesT === 't2') {
+      // List: image left, details right, stacked rows
+      body = (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {services.map((s) => (
+            <div key={s.id} style={{ display: 'grid', gridTemplateColumns: s.image_url ? '220px minmax(0,1fr)' : '1fr', gap: 22, alignItems: 'center', background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden' }} className="lt-2col">
+              {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', height: '100%', minHeight: 150, objectFit: 'cover' }} />}
+              <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ ...H('21px') }}>{s.name}</div>
+                {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
+                {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    } else if (servicesT === 't3') {
+      // Minimal price list, no images
+      body = (
+        <div style={{ display: 'flex', flexDirection: 'column' }}>
+          {services.map((s, i) => (
+            <div key={s.id} style={{ padding: '18px 0', borderTop: i === 0 ? 'none' : `1px solid ${line}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 16, flexWrap: 'wrap' }}>
+                <div style={{ ...H('20px') }}>{s.name}</div>
+                {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
+              </div>
+              {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: '8px 0 0', maxWidth: 640 }}>{s.description}</p>}
+            </div>
+          ))}
+        </div>
+      )
+    } else {
+      // Cards (default) — fixed, tidy card size so a single service doesn't blow up
+      body = (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))', gap: 18, justifyContent: 'center' }}>
+          {services.map((s) => (
+            <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+              {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
+              <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ ...H('20px') }}>{s.name}</div>
+                {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
+                {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )
+    }
     return (
       <section style={{ ...wrap, padding: '52px 24px' }}>
         <h2 style={{ ...H('clamp(26px,4vw,40px)'), marginBottom: 24 }}>Services</h2>
-        {services.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>Services coming soon.</p> : (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
-            {services.map((s) => (
-              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
-                <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  <div style={{ ...H('20px') }}>{s.name}</div>
-                  {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
-                  {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
+        {body}
         <div style={{ marginTop: 28 }}>{actionRow()}</div>
       </section>
     )
