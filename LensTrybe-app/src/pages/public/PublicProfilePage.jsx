@@ -44,6 +44,18 @@ function fontStack(name) {
   return `${q}, ${SERIF.has(n) ? 'serif' : 'sans-serif'}`
 }
 
+// Decide readable text colours from the brand background's brightness so a dark
+// Brand Kit background gets light text and vice versa.
+function isDarkColor(hex) {
+  if (!hex || typeof hex !== 'string') return false
+  let h = hex.trim().replace('#', '')
+  if (h.length === 3) h = h.split('').map((c) => c + c).join('')
+  if (h.length !== 6) return false
+  const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16)
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255
+  return lum < 0.5
+}
+
 function StarRating({ value }) {
   return (
     <div style={{ display: 'flex', gap: '2px' }}>
@@ -247,16 +259,18 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const showSocials = isPaid // Basic cannot show social links or external website
 
   const pageMap = useMemo(() => { const m = {}; (pages || []).forEach((p) => { m[p.page_type] = p }); return m }, [pages])
+  const isOwnerView = previewMode || (user?.id && user.id === id)
   const navPages = useMemo(() => {
     const allowed = isFull ? FULL_PAGES : isPaid ? PRO_PAGES : []
     return allowed.filter((pt) => {
-      if (pt === 'home' || pt === 'contact') return true
-      if (pt === 'about') return true
-      if (pt === 'gallery') return (portfolioItems || []).length > 0
-      if (pt === 'services') return (services || []).length > 0
+      if (pt === 'home' || pt === 'about' || pt === 'contact') return true
+      // Gallery/Services show once they have content; the owner always sees them
+      // so they can preview and populate.
+      if (pt === 'gallery') return (portfolioItems || []).length > 0 || isOwnerView
+      if (pt === 'services') return (services || []).length > 0 || isOwnerView
       return false
     })
-  }, [isFull, isPaid, portfolioItems, services])
+  }, [isFull, isPaid, portfolioItems, services, isOwnerView])
 
   useEffect(() => { if (navPages.length && !navPages.includes(activePage)) setActivePage(navPages[0]) }, [navPages]) // eslint-disable-line
 
@@ -386,8 +400,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const headingFont = fontStack((brand && (brand.heading_font || brand.font)) || 'Playfair Display')
   const bodyFont = fontStack((brand && (brand.body_font || brand.font)) || 'Inter')
   const bg = (brand && brand.background_color) || '#ffffff'
-  const ink = '#17151c'
-  const soft = '#6a6870'
+  const dark = isDarkColor(bg)
+  const ink = dark ? '#f5f4f7' : '#17151c'
+  const soft = dark ? 'rgba(245,244,247,0.66)' : '#6a6870'
+  const line = dark ? 'rgba(255,255,255,0.14)' : 'rgba(0,0,0,0.10)'
+  const surface = dark ? 'rgba(255,255,255,0.05)' : '#ffffff'
+  const surfaceBorder = dark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'
+  const fieldBg = dark ? 'rgba(255,255,255,0.06)' : '#ffffff'
   const logo = brand && brand.logo_url
   const wrap = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
   const H = (size) => ({ fontFamily: headingFont, fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.12, color: ink, fontSize: size })
@@ -483,7 +502,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <h2 style={{ ...H('28px'), textAlign: 'center', marginBottom: 26 }}>Kind words</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
                 {reviews.slice(0, 3).map((r) => (
-                  <div key={r.id} style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.07)', borderRadius: 14, padding: '18px 20px' }}>
+                  <div key={r.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 14, padding: '18px 20px' }}>
                     <div style={{ color: accent, fontSize: 15, marginBottom: 8 }}>{'★'.repeat(r.rating || 5)}</div>
                     <p style={{ fontFamily: bodyFont, color: ink, fontSize: 14.5, lineHeight: 1.6, fontStyle: 'italic', margin: '0 0 10px' }}>"{r.body || r.comment}"</p>
                     <div style={{ fontFamily: bodyFont, fontSize: 13, fontWeight: 700, color: ink }}>{r.reviewer_name || r.client_name || 'Client'}</div>
@@ -542,7 +561,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {galleryCats.length > 1 && (
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 22 }}>
             {galleryCats.map((c) => (
-              <button key={c} onClick={() => setGalleryTab(c)} style={{ padding: '6px 15px', borderRadius: 999, cursor: 'pointer', fontFamily: bodyFont, fontSize: 13.5, fontWeight: 600, border: galleryTab === c ? `1px solid ${accent}` : '1px solid rgba(0,0,0,0.14)', background: galleryTab === c ? accent + '14' : 'transparent', color: galleryTab === c ? accent : ink }}>{c}</button>
+              <button key={c} onClick={() => setGalleryTab(c)} style={{ padding: '6px 15px', borderRadius: 999, cursor: 'pointer', fontFamily: bodyFont, fontSize: 13.5, fontWeight: 600, border: galleryTab === c ? `1px solid ${accent}` : `1px solid ${line}`, background: galleryTab === c ? accent + '14' : 'transparent', color: galleryTab === c ? accent : ink }}>{c}</button>
             ))}
           </div>
         )}
@@ -566,7 +585,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {services.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>Services coming soon.</p> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
             {services.map((s) => (
-              <div key={s.id} style={{ border: '1px solid rgba(0,0,0,0.09)', borderRadius: 14, padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 14, padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('20px') }}>{s.name}</div>
                 {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
                 {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
@@ -580,10 +599,10 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   function renderContact() {
-    const field = { width: '100%', border: '1px solid rgba(0,0,0,0.16)', borderRadius: 10, padding: '12px 14px', fontSize: 15, fontFamily: bodyFont, boxSizing: 'border-box', outline: 'none', marginBottom: 12, color: ink, background: '#fff' }
+    const field = { width: '100%', border: `1px solid ${line}`, borderRadius: 10, padding: '12px 14px', fontSize: 15, fontFamily: bodyFont, boxSizing: 'border-box', outline: 'none', marginBottom: 12, color: ink, background: fieldBg }
     const heading = contact.heading || 'Get in touch'
     const formCard = (
-      <div style={{ background: '#fff', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 16, padding: 24, boxShadow: '0 20px 60px -30px rgba(0,0,0,0.25)' }}>
+      <div style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: 16, padding: 24, boxShadow: dark ? 'none' : '0 20px 60px -30px rgba(0,0,0,0.25)' }}>
         {sent ? (
           <div style={{ textAlign: 'center', padding: '20px 0', fontFamily: bodyFont }}>
             <div style={{ color: accent, fontSize: 30, marginBottom: 8 }}>✓</div>
@@ -641,7 +660,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont }} className="public-profile-site">
       <style>{`.lt-navlink:hover{opacity:1 !important}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
 
-      <header style={{ position: 'sticky', top: 0, zIndex: 40, background: bg + 'e6', backdropFilter: 'blur(10px)', borderBottom: '1px solid rgba(0,0,0,0.08)' }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, background: bg + 'e6', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${line}` }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           <div onClick={() => setActivePage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
             {logo ? <img src={logo} alt={displayName} style={{ height: 32, objectFit: 'contain' }} /> : <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 21, color: ink, letterSpacing: '-0.02em' }}>{displayName}</span>}
@@ -671,7 +690,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {activePage === 'contact' && renderContact()}
       </main>
 
-      <footer style={{ borderTop: '1px solid rgba(0,0,0,0.08)', marginTop: 20 }}>
+      <footer style={{ borderTop: `1px solid ${line}`, marginTop: 20 }}>
         <div style={{ ...wrap, padding: '28px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 16, color: ink }}>{displayName}</div>
           <div style={{ display: 'flex', gap: 14, alignItems: 'center', flexWrap: 'wrap' }}>
