@@ -286,7 +286,7 @@ function jump(id) {
   if (!el) return
   el.scrollIntoView({ behavior: 'smooth', block: 'center' })
   el.classList.remove('wb-flash'); void el.offsetWidth; el.classList.add('wb-flash')
-  setTimeout(() => el.classList.remove('wb-flash'), 1300)
+  setTimeout(() => el.classList.remove('wb-flash'), 2600)
 }
 
 function DesignEditor({ scope, setScope, active, customised, onCustomised, onApplyPalette, onApplyStyle, onChange, logo, onUploadLogo, uploadingLogo, onSave, saving, saved, styles, isMobile }) {
@@ -739,7 +739,7 @@ export default function WebsiteBuilderPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: isMobile ? 16 : '28px 24px 48px', maxWidth: 860, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowX: 'hidden' }} className="website-builder-page">
-      <style>{`@media (max-width: 767px){ .website-builder-page h1{font-size:24px !important} .website-builder-page input,.website-builder-page textarea{font-size:14px !important} } @keyframes wbflash{0%{box-shadow:0 0 0 0 rgba(29,185,84,0)}15%{box-shadow:0 0 0 3px rgba(29,185,84,0.55)}100%{box-shadow:0 0 0 0 rgba(29,185,84,0)}} .wb-flash{border-radius:12px;animation:wbflash 1.3s ease}`}</style>
+      <style>{`@media (max-width: 767px){ .website-builder-page h1{font-size:24px !important} .website-builder-page input,.website-builder-page textarea{font-size:14px !important} } @keyframes wbflash{0%{box-shadow:0 0 0 0 rgba(29,185,84,0)}8%{box-shadow:0 0 0 3px rgba(29,185,84,0.6)}75%{box-shadow:0 0 0 3px rgba(29,185,84,0.6)}100%{box-shadow:0 0 0 0 rgba(29,185,84,0)}} .wb-flash{border-radius:12px;animation:wbflash 2.6s ease}`}</style>
 
       <header style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16, flexWrap: 'wrap' }}>
         <div>
