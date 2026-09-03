@@ -26,6 +26,7 @@ import DashboardHome from './pages/dashboard/DashboardHome'
 import ProjectsPage from './pages/dashboard/ProjectsPage'
 import ProjectDetailPage from './pages/dashboard/ProjectDetailPage'
 import InventoryPage from './pages/dashboard/InventoryPage'
+import NotesPage from './pages/dashboard/NotesPage'
 import ContentCalendarPage from './pages/dashboard/ContentCalendarPage'
 import ContentIdeasPage from './pages/dashboard/ContentIdeasPage'
 import ReviewsPage from './pages/dashboard/ReviewsPage'
@@ -50,8 +51,8 @@ import DeliverDownloadPage from './pages/DeliverDownloadPage'
 import TeamAcceptPage from './pages/TeamAcceptPage'
 import AvailabilityPage from './pages/dashboard/AvailabilityPage'
 import JobBoardPage from './pages/dashboard/JobBoardPage'
-import PortfolioWebsitePage from './pages/dashboard/PortfolioWebsitePage'
-import PublicPortfolioWebsitePage from './pages/public/PortfolioWebsitePage'
+import WebsiteBuilderPage from './pages/dashboard/WebsiteBuilderPage'
+import PublicSitePage from './pages/public/PublicSitePage'
 import ClientDashboardPage from './pages/ClientDashboardPage'
 import ExplorePage from './pages/public/ExplorePage'
 import PublicProfilePage from './pages/public/PublicProfilePage'
@@ -150,6 +151,7 @@ export default function App() {
         <Route path="projects" element={<ProjectsPage />} />
         <Route path="projects/:id" element={<ProjectDetailPage />} />
         <Route path="inventory" element={<InventoryPage />} />
+        <Route path="notes" element={<NotesPage />} />
         <Route path="content/calendar" element={<ContentCalendarPage />} />
         <Route path="content/ideas" element={<ContentIdeasPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
@@ -163,7 +165,7 @@ export default function App() {
         <Route path="finance/tax" element={<TaxHubPage />} />
         <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
         <Route path="portfolio-design/deliver" element={<DeliverPage />} />
-        <Route path="portfolio-design/portfolio-website" element={<PortfolioWebsitePage />} />
+        <Route path="portfolio-design/portfolio-website" element={<WebsiteBuilderPage />} />
         <Route path="business/insights" element={<Navigate to="/dashboard" replace />} />
         <Route path="business/reviews" element={<ReviewsPage />} />
         <Route path="business/marketplace" element={<MarketplacePage />} />
@@ -198,7 +200,7 @@ export default function App() {
       <Route path="/team/accept/:token" element={<TeamAcceptPage />} />
 
       {/* Public creative portfolio website (subdomain equivalent: /site/{custom_domain slug}) */}
-      <Route path="/site/:slug" element={<PublicPortfolioWebsitePage />} />
+      <Route path="/site/:slug" element={<PublicSitePage />} />
 
       {/* Fallback */}
       <Route path="*" element={<PlaceholderPage page="404: Page Not Found" />} />

@@ -210,8 +210,9 @@ const TABS = [
   { id: 'gallery', label: 'Gallery' },
   { id: 'messages', label: 'Messages' },
   { id: 'tasks', label: 'Tasks' },
+  { id: 'checklists', label: 'Checklists' },
   { id: 'meetings', label: 'Meetings' },
-  { id: 'gear', label: 'Gear' },
+  { id: 'gear', label: 'Equipment' },
 ]
 
 export default function ProjectDetailPage() {
@@ -234,6 +235,10 @@ export default function ProjectDetailPage() {
   const [partForm, setPartForm] = useState({ name: '', email: '', phone: '', role: '' })
   const [meetings, setMeetings] = useState([])
   const [checkouts, setCheckouts] = useState([])
+  const [checklists, setChecklists] = useState([])
+  const [chkTemplates, setChkTemplates] = useState([])
+  const [newItem, setNewItem] = useState({})
+  const [showTpl, setShowTpl] = useState(false)
   const [hostName, setHostName] = useState('')
   const [showMeeting, setShowMeeting] = useState(false)
   const [meetingForm, setMeetingForm] = useState({ title: '', meeting_date: '', start_time: '', end_time: '', location: '', description: '', client_name: '', client_email: '' })
@@ -283,6 +288,9 @@ export default function ProjectDetailPage() {
     setMeetings(mt.data || [])
     setCheckouts(co.data || [])
     setHostName((prof.data && prof.data.business_name) || '')
+    await loadChecklists()
+    const { data: tpl } = await supabase.from('checklist_templates').select('*').eq('creative_id', user.id).order('created_at', { ascending: false })
+    setChkTemplates(tpl || [])
     setLoading(false)
   }
 
@@ -371,7 +379,73 @@ export default function ProjectDetailPage() {
   async function checkInGear(co) {
     setCheckouts(prev => prev.map(x => x.id === co.id ? { ...x, returned_at: new Date().toISOString() } : x))
     await supabase.from('inventory_checkouts').update({ returned_at: new Date().toISOString() }).eq('id', co.id)
-    flash('Gear checked back in')
+    flash('Equipment checked back in')
+  }
+
+  async function loadChecklists() {
+    const { data: cl } = await supabase.from('project_checklists').select('*').eq('project_id', id).order('position', { ascending: true })
+    const ids = (cl || []).map(c => c.id)
+    const byList = {}
+    if (ids.length) {
+      const { data: its } = await supabase.from('checklist_items').select('*').in('checklist_id', ids).order('position', { ascending: true })
+      ;(its || []).forEach(it => { (byList[it.checklist_id] = byList[it.checklist_id] || []).push(it) })
+    }
+    setChecklists((cl || []).map(c => ({ ...c, items: byList[c.id] || [] })))
+  }
+  async function createChecklist(name) {
+    const { data, error } = await supabase.from('project_checklists').insert({ creative_id: user.id, project_id: id, name: name || 'New checklist', position: checklists.length }).select().single()
+    if (error) { flash('Could not create checklist'); return null }
+    setChecklists(prev => [...prev, { ...data, items: [] }])
+    return data
+  }
+  async function renameChecklist(cid, name) {
+    const clean = (name || '').trim() || 'Checklist'
+    setChecklists(prev => prev.map(c => c.id === cid ? { ...c, name: clean } : c))
+    await supabase.from('project_checklists').update({ name: clean }).eq('id', cid)
+  }
+  async function deleteChecklist(cid) {
+    setChecklists(prev => prev.filter(c => c.id !== cid))
+    await supabase.from('project_checklists').delete().eq('id', cid)
+    flash('Checklist deleted')
+  }
+  async function addChkItem(cid) {
+    const text = (newItem[cid] || '').trim()
+    if (!text) return
+    const list = checklists.find(c => c.id === cid)
+    const { data, error } = await supabase.from('checklist_items').insert({ creative_id: user.id, checklist_id: cid, text, position: (list && list.items.length) || 0 }).select().single()
+    if (error) { flash('Could not add item'); return }
+    setChecklists(prev => prev.map(c => c.id === cid ? { ...c, items: [...c.items, data] } : c))
+    setNewItem(m => ({ ...m, [cid]: '' }))
+  }
+  async function toggleChkItem(cid, it) {
+    setChecklists(prev => prev.map(c => c.id === cid ? { ...c, items: c.items.map(x => x.id === it.id ? { ...x, done: !x.done } : x) } : c))
+    await supabase.from('checklist_items').update({ done: !it.done }).eq('id', it.id)
+  }
+  async function deleteChkItem(cid, it) {
+    setChecklists(prev => prev.map(c => c.id === cid ? { ...c, items: c.items.filter(x => x.id !== it.id) } : c))
+    await supabase.from('checklist_items').delete().eq('id', it.id)
+  }
+  async function saveAsTemplate(list) {
+    const items = (list.items || []).map(i => i.text)
+    const { data, error } = await supabase.from('checklist_templates').insert({ creative_id: user.id, name: list.name || 'Template', items }).select().single()
+    if (error) { flash('Could not save template'); return }
+    setChkTemplates(prev => [data, ...prev])
+    flash('Saved as a template')
+  }
+  async function applyTemplate(tpl) {
+    const list = await createChecklist(tpl.name)
+    if (!list) return
+    const rows = (tpl.items || []).map((t, i) => ({ creative_id: user.id, checklist_id: list.id, text: String(t), position: i }))
+    if (rows.length) {
+      const { data } = await supabase.from('checklist_items').insert(rows).select()
+      setChecklists(prev => prev.map(c => c.id === list.id ? { ...c, items: data || [] } : c))
+    }
+    setShowTpl(false)
+    flash('Checklist added from template')
+  }
+  async function deleteTemplate(tid) {
+    setChkTemplates(prev => prev.filter(t => t.id !== tid))
+    await supabase.from('checklist_templates').delete().eq('id', tid)
   }
   async function deleteMeeting(mid) {
     setMeetings(prev => prev.filter(x => x.id !== mid))
@@ -472,7 +546,7 @@ export default function ProjectDetailPage() {
 
         <div className="tabs">
           {TABS.map(t => {
-            const counts = { invoices: invoices.length, quotes: quotes.length, contracts: contracts.length, gallery: galleries.length, messages: threads.length, tasks: tasks.length, meetings: meetings.length, gear: checkouts.filter(c => !c.returned_at).length }
+            const counts = { invoices: invoices.length, quotes: quotes.length, contracts: contracts.length, gallery: galleries.length, messages: threads.length, tasks: tasks.length, meetings: meetings.length, gear: checkouts.filter(c => !c.returned_at).length, checklists: checklists.length }
             const c = counts[t.id]
             return (
               <button key={t.id} className={'tab' + (tab === t.id ? ' on' : '')} onClick={() => setTab(t.id)}>
@@ -673,6 +747,64 @@ export default function ProjectDetailPage() {
           </div>
         )}
 
+        {tab === 'checklists' && (
+          <div>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 14, flexWrap: 'wrap', alignItems: 'center', position: 'relative' }}>
+              <button className="btn primary sm" onClick={async () => { const l = await createChecklist('New checklist'); if (l) setTimeout(() => { const el = document.querySelector(`[data-clname="${l.id}"]`); if (el) { el.focus(); document.getSelection().selectAllChildren(el) } }, 60) }}>+ New checklist</button>
+              <button className="btn sm" onClick={() => setShowTpl(v => !v)}>From template</button>
+              {showTpl && (
+                <div className="panel" style={{ position: 'absolute', top: '112%', left: 0, zIndex: 20, minWidth: 280, maxWidth: 360, marginBottom: 0 }}>
+                  <h3 style={{ marginBottom: 10 }}>Templates</h3>
+                  {chkTemplates.length === 0 ? <div className="empty" style={{ padding: '8px 0' }}>No templates yet. Build a checklist, then use Save as template.</div> : chkTemplates.map(t => (
+                    <div className="drow" key={t.id}>
+                      <div className="dmain" style={{ flex: 1 }}>
+                        <div className="dt">{t.name}</div>
+                        <div className="ds">{(t.items || []).length} item{(t.items || []).length === 1 ? '' : 's'}</div>
+                      </div>
+                      <button className="btn primary sm" onClick={() => applyTemplate(t)}>Use</button>
+                      <button className="btn sm" style={{ color: '#f0516d' }} onClick={() => deleteTemplate(t.id)}>Delete</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {checklists.length === 0 ? (
+              <div className="panel"><div className="empty">No checklists yet. Create one, a shot list, prep list, gear list, whatever this job needs.</div></div>
+            ) : checklists.map(cl => {
+              const done = cl.items.filter(i => i.done).length
+              const pct = cl.items.length ? Math.round((done / cl.items.length) * 100) : 0
+              return (
+                <div className="panel" key={cl.id}>
+                  <h3 style={{ alignItems: 'flex-start', gap: 10 }}>
+                    <span className="clname" data-clname={cl.id} contentEditable suppressContentEditableWarning spellCheck={false}
+                      style={{ outline: 'none', borderRadius: 5, padding: '1px 4px', margin: '-1px -4px', maxWidth: '60%', flex: 1 }}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); e.currentTarget.blur() } }}
+                      onBlur={e => renameChecklist(cl.id, e.currentTarget.textContent)}>{cl.name}</span>
+                    <span style={{ display: 'inline-flex', gap: 12, alignItems: 'center', flexShrink: 0 }}>
+                      <span className="ds" style={{ margin: 0 }}>{done}/{cl.items.length}</span>
+                      <a onClick={() => saveAsTemplate(cl)} style={{ color: '#38d16f', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Save as template</a>
+                      <a onClick={() => deleteChecklist(cl.id)} style={{ color: '#f0516d', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Delete</a>
+                    </span>
+                  </h3>
+                  {cl.items.length > 0 && <div style={{ height: 6, borderRadius: 99, background: 'var(--lt-surface-2)', overflow: 'hidden', marginBottom: 12 }}><i style={{ display: 'block', height: '100%', width: pct + '%', background: '#1DB954', transition: 'width .3s ease' }} /></div>}
+                  {cl.items.map(it => (
+                    <div className={'task' + (it.done ? ' done' : '')} key={it.id}>
+                      <div className={'check' + (it.done ? ' on' : '')} onClick={() => toggleChkItem(cl.id, it)}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3"><path d="M20 6 9 17l-5-5" /></svg></div>
+                      <div className="tasktext">{it.text}</div>
+                      <span onClick={() => deleteChkItem(cl.id, it)} style={{ cursor: 'pointer', color: 'var(--lt-faint)', fontSize: 17, lineHeight: 1, padding: '0 4px' }} title="Remove">×</span>
+                    </div>
+                  ))}
+                  <div className="addtask">
+                    <input placeholder="Add an item and press Enter…" value={newItem[cl.id] || ''} onChange={e => setNewItem(m => ({ ...m, [cl.id]: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') addChkItem(cl.id) }} />
+                    <button className="btn primary" onClick={() => addChkItem(cl.id)}>Add</button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
+
         {tab === 'meetings' && (
           <div className="panel">
             <h3>Meetings <a onClick={openNewMeeting}>+ New meeting</a></h3>
@@ -737,11 +869,11 @@ export default function ProjectDetailPage() {
 
         {tab === 'gear' && (
           <div className="panel">
-            <h3>Gear <a onClick={() => navigate('/dashboard/inventory')}>+ Check out gear</a></h3>
+            <h3>Equipment <a onClick={() => navigate('/dashboard/inventory')}>+ Check out equipment</a></h3>
             {(() => {
               const open = checkouts.filter(c => !c.returned_at)
               const returned = checkouts.filter(c => c.returned_at)
-              if (checkouts.length === 0) return <div className="empty">No gear checked out to this project yet. Head to Inventory to check items out, then check them back in here when the job wraps.</div>
+              if (checkouts.length === 0) return <div className="empty">No equipment checked out to this project yet. Head to Inventory to check items out, then check them back in here when the job wraps.</div>
               return (
                 <>
                   {open.map(c => (

@@ -65,6 +65,7 @@ const TOP = [
   { label: 'Dashboard', path: '/dashboard', icon: 'grid' },
   { label: 'Projects', path: '/dashboard/projects', icon: 'briefcase' },
   { label: 'Inventory', path: '/dashboard/inventory', icon: 'box' },
+  { label: 'Notes', path: '/dashboard/notes', icon: 'note' },
   { label: 'Find a Creative', path: '/creatives', icon: 'search' },
 ]
 
@@ -82,7 +83,7 @@ const BASE_SECTIONS = [
   ] },
   { label: 'Portfolio', icon: 'image', items: [
     { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: 'palette', feature: 'brandKit' },
-    { label: 'Portfolio Website', path: '/dashboard/portfolio-design/portfolio-website', icon: 'globe' },
+    { label: 'Website', path: '/dashboard/portfolio-design/portfolio-website', icon: 'globe' },
     { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: 'upload', feature: 'deliver' },
   ] },
   { label: 'Content', icon: 'pen', items: [

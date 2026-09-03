@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
 import TileField from '../ui/TileField'
+import NoteTaker from './NoteTaker'
 
 // Dark base + drifting pastel "northern lights" wash behind the whole dashboard.
 const AURORA_WRAP = {
@@ -194,6 +195,7 @@ export default function DashboardLayout() {
             <Outlet context={{ theme, toggleTheme, dark }} />
           </div>
         </main>
+        <NoteTaker />
       </div>
       {isMobile && (
         <Sidebar isMobile mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} theme={theme} />
