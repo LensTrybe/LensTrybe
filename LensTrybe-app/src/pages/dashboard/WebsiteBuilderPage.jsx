@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import Button from '../../components/ui/Button'
 import { GLASS_CARD, GLASS_NATIVE_FIELD } from '../../lib/glassTokens'
-import { FONT_OPTIONS, THEME_PRESETS, DEFAULT_THEME, normalizeTheme, resolveTheme } from '../../lib/siteTheme'
+import { FONT_OPTIONS, PALETTES, STYLES, DEFAULT_THEME, normalizeTheme, mergeTheme, resolveTheme } from '../../lib/siteTheme'
 
 // Website builder — edits the creative's PROFILE-as-website. Content pages
 // (Home/About/Contact) live in site_pages; Gallery uses portfolio_items grouped
@@ -192,24 +192,39 @@ function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload,
   )
 }
 
-const emptyService = () => ({ id: null, name: '', description: '', price: '' })
+const emptyService = () => ({ id: null, name: '', description: '', price: '', image_url: '' })
 
-function ServicesManager({ services, onChangeLocal, onAddRow, onSaveRow, onDeleteRow, savedFlash, styles }) {
+function ServiceRow({ s, idx, onChangeLocal, onSaveRow, onDeleteRow, onUploadImage, uploading, inputStyle, isMobile }) {
+  const fileRef = useRef(null)
+  return (
+    <div style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 12, background: 'var(--bg-base)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '130px 1fr', gap: 12, alignItems: 'start' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <div style={{ width: '100%', aspectRatio: '3/2', borderRadius: 8, overflow: 'hidden', background: 'var(--bg-subtle)', border: '1px dashed var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          {s.image_url ? <img src={s.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No photo</span>}
+        </div>
+        <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadImage(idx, f); if (fileRef.current) fileRef.current.value = '' }} />
+        <Button variant="secondary" size="sm" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : s.image_url ? 'Replace photo' : 'Add photo'}</Button>
+        {s.image_url ? <Button variant="ghost" size="sm" type="button" onClick={() => onChangeLocal(idx, { image_url: '' })}>Remove</Button> : null}
+      </div>
+      <div style={{ display: 'grid', gap: 10 }}>
+        <input value={s.name || ''} onChange={(e) => onChangeLocal(idx, { name: e.target.value })} style={inputStyle} placeholder="Service name (e.g. Wedding collection)" />
+        <textarea value={s.description || ''} onChange={(e) => onChangeLocal(idx, { description: e.target.value })} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Short description" />
+        <input value={s.price || ''} onChange={(e) => onChangeLocal(idx, { price: e.target.value })} style={inputStyle} placeholder="Price (e.g. From $2,500, POA)" />
+        <div style={{ display: 'flex', gap: 10 }}>
+          <Button variant="primary" size="sm" type="button" onClick={() => onSaveRow(s, idx)} disabled={s.isSaving}>{s.isSaving ? 'Saving…' : 'Save'}</Button>
+          <Button variant="ghost" size="sm" type="button" onClick={() => onDeleteRow(s, idx)}>Delete</Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ServicesManager({ services, onChangeLocal, onAddRow, onSaveRow, onDeleteRow, onUploadImage, uploadingIdx, savedFlash, styles, isMobile }) {
   const { inputStyle } = styles
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>List what you offer. These appear on your Services page as cards.</p>
-      {services.map((s, idx) => (
-        <div key={s.id ?? `new-${idx}`} style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 12, background: 'var(--bg-base)', display: 'grid', gap: 10 }}>
-          <input value={s.name || ''} onChange={(e) => onChangeLocal(idx, { name: e.target.value })} style={inputStyle} placeholder="Service name (e.g. Wedding collection)" />
-          <textarea value={s.description || ''} onChange={(e) => onChangeLocal(idx, { description: e.target.value })} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Short description" />
-          <input value={s.price || ''} onChange={(e) => onChangeLocal(idx, { price: e.target.value })} style={inputStyle} placeholder="Price (e.g. From $2,500, POA)" />
-          <div style={{ display: 'flex', gap: 10 }}>
-            <Button variant="primary" size="sm" type="button" onClick={() => onSaveRow(s, idx)} disabled={s.isSaving}>{s.isSaving ? 'Saving…' : 'Save'}</Button>
-            <Button variant="ghost" size="sm" type="button" onClick={() => onDeleteRow(s, idx)}>Delete</Button>
-          </div>
-        </div>
-      ))}
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>List what you offer. Add a photo, name, description and price — these show as cards on your Services page.</p>
+      {services.map((s, idx) => <ServiceRow key={s.id ?? `new-${idx}`} s={s} idx={idx} onChangeLocal={onChangeLocal} onSaveRow={onSaveRow} onDeleteRow={onDeleteRow} onUploadImage={onUploadImage} uploading={uploadingIdx === idx} inputStyle={inputStyle} isMobile={isMobile} />)}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <Button variant="secondary" type="button" onClick={onAddRow}>Add service</Button>
         {savedFlash ? <span style={{ fontSize: 13, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
@@ -239,89 +254,137 @@ function Seg({ value, options, onChange }) {
   )
 }
 
-function DesignEditor({ theme, onChange, onApplyPreset, logo, onUploadLogo, uploadingLogo, onSave, saving, saved, styles, isMobile }) {
+const DESIGN_PAGES = [{ id: 'all', label: 'All pages' }, { id: 'home', label: 'Home' }, { id: 'about', label: 'About' }, { id: 'gallery', label: 'Gallery' }, { id: 'services', label: 'Services' }, { id: 'contact', label: 'Contact' }]
+
+function jump(id) { const el = document.getElementById(id); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }) }
+
+function DesignEditor({ scope, setScope, active, customised, onCustomised, onApplyPalette, onApplyStyle, onChange, logo, onUploadLogo, uploadingLogo, onSave, saving, saved, styles, isMobile }) {
   const logoRef = useRef(null)
   const { inputStyle, label } = styles
   const small = { ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }
-  const autoText = !theme.colors.text
-  const P = resolveTheme({ site_theme: theme, site_logo_url: logo }, null)
+  const autoText = !active.colors.text
+  const editingPage = scope !== 'all'
+  const disabled = editingPage && !customised
+  const P = resolveTheme({ site_theme: active, site_logo_url: logo }, null)
+  const paletteActiveId = (PALETTES.find((p) => p.primary === active.colors.primary && p.background === active.colors.background) || {}).id
+  const styleActiveId = (STYLES.find((s) => s.fonts.heading === active.fonts.heading && Number(s.buttons.radius) === Number(active.buttons.radius) && Number(s.corners.radius) === Number(active.corners.radius)) || {}).id
   const colorRow = (val, on) => (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
-      <input type="color" value={/^#/.test(val) ? val : '#000000'} onChange={(e) => on(e.target.value)} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
-      <input value={val} onChange={(e) => on(e.target.value)} style={{ ...inputStyle, maxWidth: 120 }} />
+      <input type="color" value={/^#/.test(val || '') ? val : '#000000'} onChange={(e) => on(e.target.value)} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
+      <input value={val || ''} onChange={(e) => on(e.target.value)} style={{ ...inputStyle, maxWidth: 120 }} />
     </div>
   )
+  const clickable = (id) => ({ cursor: 'pointer' })
   return (
     <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0,1fr) 300px', gap: 24, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+        {/* Scope selector */}
         <div>
-          <div style={label}>Theme presets</div>
-          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Start from a look, then fine-tune everything below.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 10, marginTop: 10 }}>
-            {THEME_PRESETS.map((pre) => {
-              const active = theme.preset === pre.id
-              return (
-                <button key={pre.id} type="button" onClick={() => onApplyPreset(pre)} style={{ padding: 0, borderRadius: 10, overflow: 'hidden', cursor: 'pointer', border: active ? '2px solid #1DB954' : '1px solid var(--border-default)', background: 'var(--bg-base)', textAlign: 'left' }}>
-                  <div style={{ height: 46, background: pre.theme.colors.background, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, borderBottom: '1px solid var(--border-subtle)' }}>
-                    <span style={{ fontFamily: `"${pre.theme.fonts.heading}", serif`, color: pre.theme.colors.background && pre.id === 'bold' || pre.id === 'noir' ? '#fff' : '#111', fontWeight: 700, fontSize: 15 }}>Aa</span>
-                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: pre.theme.colors.primary }} />
-                  </div>
-                  <div style={{ padding: '6px 8px', fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{pre.name}</div>
-                </button>
-              )
+          <div style={label}>Applies to</div>
+          <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Style your whole site at once, or pick a page to give it its own look.</p>
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 10 }}>
+            {DESIGN_PAGES.map((pg) => {
+              const on = scope === pg.id
+              const isOverridden = pg.id !== 'all' && customisedMap(active, pg.id)
+              return <button key={pg.id} type="button" onClick={() => setScope(pg.id)} style={{ padding: '7px 14px', borderRadius: 999, cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13, fontWeight: 600, border: on ? '1px solid #1DB954' : '1px solid var(--border-default)', background: on ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)', color: on ? '#1DB954' : 'var(--text-primary)' }}>{pg.label}</button>
             })}
           </div>
+          {editingPage && (
+            <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12, padding: '10px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: 13.5, color: 'var(--text-primary)' }}>
+              <input type="checkbox" checked={customised} onChange={(e) => onCustomised(e.target.checked)} style={{ width: 18, height: 18, accentColor: '#1DB954' }} />
+              Customise this page (otherwise it uses your site styles)
+            </label>
+          )}
         </div>
 
-        <div>
-          <div style={label}>Colours</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
-            <div><div style={small}>Accent</div>{colorRow(theme.colors.primary, (v) => onChange('colors', 'primary', v))}</div>
-            <div><div style={small}>Background</div>{colorRow(theme.colors.background, (v) => onChange('colors', 'background', v))}</div>
-            <div>
-              <div style={small}>Text</div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', margin: '6px 0', cursor: 'pointer' }}>
-                <input type="checkbox" checked={autoText} onChange={(e) => onChange('colors', 'text', e.target.checked ? '' : '#17151c')} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Auto (from background)
-              </label>
-              {!autoText && colorRow(theme.colors.text, (v) => onChange('colors', 'text', v))}
+        <div style={{ opacity: disabled ? 0.5 : 1, pointerEvents: disabled ? 'none' : 'auto', display: 'flex', flexDirection: 'column', gap: 22 }}>
+          {/* Palette + Style */}
+          <div>
+            <div style={label}>Colour palette</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(96px, 1fr))', gap: 8, marginTop: 10 }}>
+              {PALETTES.map((p) => {
+                const on = paletteActiveId === p.id
+                return (
+                  <button key={p.id} type="button" onClick={() => onApplyPalette(p)} style={{ padding: 8, borderRadius: 10, cursor: 'pointer', border: on ? '2px solid #1DB954' : '1px solid var(--border-default)', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'center' }}>
+                    <div style={{ display: 'flex', width: '100%', height: 24, borderRadius: 6, overflow: 'hidden', border: '1px solid var(--border-subtle)' }}><span style={{ flex: 1, background: p.background }} /><span style={{ flex: 1, background: p.primary }} /></div>
+                    <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{p.name}</span>
+                  </button>
+                )
+              })}
             </div>
           </div>
-        </div>
+          <div>
+            <div style={label}>Style</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(110px, 1fr))', gap: 8, marginTop: 10 }}>
+              {STYLES.map((s) => {
+                const on = styleActiveId === s.id
+                return (
+                  <button key={s.id} type="button" onClick={() => onApplyStyle(s)} style={{ padding: '10px 12px', borderRadius: 10, cursor: 'pointer', border: on ? '2px solid #1DB954' : '1px solid var(--border-default)', background: 'var(--bg-base)', textAlign: 'left' }}>
+                    <div style={{ fontFamily: `"${s.fonts.heading}", serif`, fontWeight: s.fonts.headingWeight, fontSize: 17, color: 'var(--text-primary)', lineHeight: 1 }}>Aa</div>
+                    <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginTop: 6 }}>{s.name}</div>
+                  </button>
+                )
+              })}
+            </div>
+          </div>
 
-        <div>
-          <div style={label}>Typography</div>
-          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
-            <div><div style={small}>Heading font</div><select value={theme.fonts.heading} onChange={(e) => onChange('fonts', 'heading', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
-            <div><div style={small}>Body font</div><select value={theme.fonts.body} onChange={(e) => onChange('fonts', 'body', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
-            <div><div style={small}>Text size</div><div style={{ marginTop: 6 }}><Seg value={theme.fonts.baseSize} options={SIZE_OPTIONS} onChange={(v) => onChange('fonts', 'baseSize', v)} /></div></div>
-            <div><div style={small}>Heading weight</div><div style={{ marginTop: 6 }}><Seg value={theme.fonts.headingWeight} options={WEIGHT_OPTIONS} onChange={(v) => onChange('fonts', 'headingWeight', v)} /></div></div>
+          {/* Colours */}
+          <div id="wb-colours">
+            <div style={label}>Colours</div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
+              <div><div style={small}>Accent</div>{colorRow(active.colors.primary, (v) => onChange('colors', 'primary', v))}</div>
+              <div><div style={small}>Background</div>{colorRow(active.colors.background, (v) => onChange('colors', 'background', v))}</div>
+              <div>
+                <div style={small}>Text</div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', margin: '6px 0', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={autoText} onChange={(e) => onChange('colors', 'text', e.target.checked ? '' : '#17151c')} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Auto (from background)
+                </label>
+                {!autoText && colorRow(active.colors.text, (v) => onChange('colors', 'text', v))}
+              </div>
+            </div>
+          </div>
+
+          {/* Typography */}
+          <div id="wb-typography">
+            <div style={label}>Typography</div>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14, marginTop: 10 }}>
+              <div><div style={small}>Heading font</div><select value={active.fonts.heading} onChange={(e) => onChange('fonts', 'heading', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+              <div><div style={small}>Body font</div><select value={active.fonts.body} onChange={(e) => onChange('fonts', 'body', e.target.value)} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select></div>
+              <div><div style={small}>Text size</div><div style={{ marginTop: 6 }}><Seg value={active.fonts.baseSize} options={SIZE_OPTIONS} onChange={(v) => onChange('fonts', 'baseSize', v)} /></div></div>
+              <div><div style={small}>Heading weight</div><div style={{ marginTop: 6 }}><Seg value={active.fonts.headingWeight} options={WEIGHT_OPTIONS} onChange={(v) => onChange('fonts', 'headingWeight', v)} /></div></div>
+            </div>
+          </div>
+
+          {/* Buttons */}
+          <div id="wb-buttons">
+            <div style={label}>Buttons</div>
+            <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 10 }}>
+              <div><div style={small}>Shape</div><div style={{ marginTop: 6 }}><Seg value={active.buttons.radius} options={BTN_SHAPES} onChange={(v) => onChange('buttons', 'radius', v)} /></div></div>
+              <div><div style={small}>Style</div><div style={{ marginTop: 6 }}><Seg value={active.buttons.style} options={[{ label: 'Solid', v: 'solid' }, { label: 'Outline', v: 'outline' }]} onChange={(v) => onChange('buttons', 'style', v)} /></div></div>
+            </div>
+          </div>
+
+          {/* Corners */}
+          <div id="wb-corners">
+            <div style={label}>Corners</div>
+            <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Roundness of cards and images.</p>
+            <Seg value={active.corners.radius} options={CORNERS} onChange={(v) => onChange('corners', 'radius', v)} />
           </div>
         </div>
 
-        <div>
-          <div style={label}>Buttons</div>
-          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginTop: 10 }}>
-            <div><div style={small}>Shape</div><div style={{ marginTop: 6 }}><Seg value={theme.buttons.radius} options={BTN_SHAPES} onChange={(v) => onChange('buttons', 'radius', v)} /></div></div>
-            <div><div style={small}>Style</div><div style={{ marginTop: 6 }}><Seg value={theme.buttons.style} options={[{ label: 'Solid', v: 'solid' }, { label: 'Outline', v: 'outline' }]} onChange={(v) => onChange('buttons', 'style', v)} /></div></div>
+        {/* Logo (global only) */}
+        {!editingPage && (
+          <div id="wb-logo">
+            <div style={label}>Logo</div>
+            <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Shown in your website header. Leave blank to show your business name.</p>
+            <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadLogo(f); if (logoRef.current) logoRef.current.value = '' }} />
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+              {logo ? <img src={logo} alt="" style={{ height: 40, objectFit: 'contain', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 4 }} /> : null}
+              <Button variant="secondary" type="button" disabled={uploadingLogo} onClick={() => logoRef.current?.click()}>{uploadingLogo ? 'Uploading…' : logo ? 'Replace logo' : 'Upload logo'}</Button>
+              {logo ? <Button variant="ghost" type="button" onClick={() => onUploadLogo(null)}>Remove</Button> : null}
+            </div>
           </div>
-        </div>
-
-        <div>
-          <div style={label}>Corners</div>
-          <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Roundness of cards and images.</p>
-          <Seg value={theme.corners.radius} options={CORNERS} onChange={(v) => onChange('corners', 'radius', v)} />
-        </div>
-
-        <div>
-          <div style={label}>Logo</div>
-          <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Shown in your website header. Leave blank to show your business name.</p>
-          <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadLogo(f); if (logoRef.current) logoRef.current.value = '' }} />
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-            {logo ? <img src={logo} alt="" style={{ height: 40, objectFit: 'contain', background: 'var(--bg-base)', border: '1px solid var(--border-subtle)', borderRadius: 8, padding: 4 }} /> : null}
-            <Button variant="secondary" type="button" disabled={uploadingLogo} onClick={() => logoRef.current?.click()}>{uploadingLogo ? 'Uploading…' : logo ? 'Replace logo' : 'Upload logo'}</Button>
-            {logo ? <Button variant="ghost" type="button" onClick={() => onUploadLogo(null)}>Remove</Button> : null}
-          </div>
-        </div>
+        )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
           <Button variant="primary" onClick={onSave} disabled={saving}>{saving ? 'Saving…' : 'Save design'}</Button>
@@ -329,29 +392,34 @@ function DesignEditor({ theme, onChange, onApplyPreset, logo, onUploadLogo, uplo
         </div>
       </div>
 
-      {/* Live preview */}
+      {/* Live preview (click a region to jump to its control) */}
       <div style={{ position: isMobile ? 'static' : 'sticky', top: 12 }}>
-        <div style={label}>Live preview</div>
+        <div style={label}>Live preview{editingPage ? ` · ${scope}` : ''}</div>
         <div style={{ marginTop: 8, border: '1px solid var(--border-default)', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ background: P.bg, padding: 18, fontFamily: P.bodyFont }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }} onClick={() => jump('wb-logo')} title="Logo & name">
               {logo ? <img src={logo} alt="" style={{ height: 20, objectFit: 'contain' }} /> : <span style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 15 }}>Studio</span>}
               <span style={{ fontSize: 11, color: P.soft }}>Home · About · Contact</span>
             </div>
-            <div style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 26, lineHeight: 1.1, letterSpacing: '-0.02em' }}>Your headline</div>
-            <div style={{ color: P.soft, fontSize: P.baseSize - 3, lineHeight: 1.6, margin: '8px 0 14px' }}>A short line about the work you do and who you help.</div>
-            <span style={{ display: 'inline-block', padding: '9px 18px', borderRadius: P.btnRadius, fontSize: 13, fontWeight: 700, background: P.btnStyle === 'outline' ? 'transparent' : P.accent, color: P.btnStyle === 'outline' ? P.accent : '#fff', border: P.btnStyle === 'outline' ? `2px solid ${P.accent}` : 'none' }}>Enquire Now</span>
-            <div style={{ marginTop: 16, background: P.surface, border: `1px solid ${P.surfaceBorder}`, borderRadius: P.radius, padding: 12 }}>
+            <div onClick={() => jump('wb-typography')} title="Typography" style={{ cursor: 'pointer' }}>
+              <div style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 26, lineHeight: 1.1, letterSpacing: '-0.02em' }}>Your headline</div>
+              <div style={{ color: P.soft, fontSize: P.baseSize - 3, lineHeight: 1.6, margin: '8px 0 14px' }}>A short line about the work you do and who you help.</div>
+            </div>
+            <span onClick={() => jump('wb-buttons')} title="Buttons" style={{ display: 'inline-block', padding: '9px 18px', borderRadius: P.btnRadius, fontSize: 13, fontWeight: 700, cursor: 'pointer', background: P.btnStyle === 'outline' ? 'transparent' : P.accent, color: P.btnStyle === 'outline' ? P.accent : '#fff', border: P.btnStyle === 'outline' ? `2px solid ${P.accent}` : 'none' }}>Enquire Now</span>
+            <div onClick={() => jump('wb-corners')} title="Corners" style={{ cursor: 'pointer', marginTop: 16, background: P.surface, border: `1px solid ${P.surfaceBorder}`, borderRadius: P.radius, padding: 12 }}>
               <div style={{ color: P.accent, fontSize: 12, marginBottom: 6 }}>★★★★★</div>
               <div style={{ color: P.ink, fontSize: 12.5, fontStyle: 'italic', lineHeight: 1.5 }}>"Absolutely brilliant to work with."</div>
             </div>
           </div>
         </div>
-        <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>This is a preview. Save to apply it to your live website.</p>
+        <p style={{ margin: '10px 0 0', fontSize: 11.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.5 }}>Tip: click a part of the preview to jump to its setting. Save to apply.</p>
       </div>
     </div>
   )
 }
+
+function customisedMap(active, pageId) { return false }
+
 
 export default function WebsiteBuilderPage() {
   const { user, profile, fetchUserData } = useAuth()
@@ -375,6 +443,7 @@ export default function WebsiteBuilderPage() {
 
   const [services, setServices] = useState([])
   const [servicesSaved, setServicesSaved] = useState(false)
+  const [uploadingServiceIdx, setUploadingServiceIdx] = useState(-1)
 
   const [areas, setAreas] = useState([])
   const [areaInput, setAreaInput] = useState('')
@@ -386,6 +455,7 @@ export default function WebsiteBuilderPage() {
   const [uploadingLogo, setUploadingLogo] = useState(false)
   const [savingDesign, setSavingDesign] = useState(false)
   const [designSaved, setDesignSaved] = useState(false)
+  const [designScope, setDesignScope] = useState('all')
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -493,10 +563,10 @@ export default function WebsiteBuilderPage() {
     serviceChangeLocal(idx, { isSaving: true })
     try {
       if (service.id) {
-        const { error } = await supabase.from('portfolio_services').update({ name, description: (service.description || '').trim() || null, price: (service.price || '').trim() || null }).eq('id', service.id)
+        const { error } = await supabase.from('portfolio_services').update({ name, description: (service.description || '').trim() || null, price: (service.price || '').trim() || null, image_url: service.image_url || null }).eq('id', service.id)
         if (error) throw error
       } else {
-        const { data, error } = await supabase.from('portfolio_services').insert({ creative_id: user.id, name, description: (service.description || '').trim() || null, price: (service.price || '').trim() || null, sort_order: idx }).select().single()
+        const { data, error } = await supabase.from('portfolio_services').insert({ creative_id: user.id, name, description: (service.description || '').trim() || null, price: (service.price || '').trim() || null, image_url: service.image_url || null, sort_order: idx }).select().single()
         if (error) throw error
         setServices((prev) => prev.map((s, i) => (i === idx ? { ...data, isSaving: false } : s)))
       }
@@ -504,6 +574,20 @@ export default function WebsiteBuilderPage() {
     } catch (e) { window.alert(e.message || 'Could not save service') } finally { serviceChangeLocal(idx, { isSaving: false }) }
   }
   async function serviceDeleteRow(service, idx) { if (service.id && !window.confirm('Delete this service?')) return; if (service.id) await supabase.from('portfolio_services').delete().eq('id', service.id); setServices((prev) => prev.filter((_, i) => i !== idx)) }
+  async function serviceUploadImage(idx, file) {
+    if (!user?.id || !supabase) return
+    setUploadingServiceIdx(idx)
+    try {
+      const ext = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'jpg'
+      const path = `${user.id}/services/${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file, { upsert: true })
+      if (upErr) throw new Error(upErr.message)
+      const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
+      serviceChangeLocal(idx, { image_url: pub.publicUrl })
+      const svc = services[idx]
+      if (svc && svc.id) await supabase.from('portfolio_services').update({ image_url: pub.publicUrl }).eq('id', svc.id)
+    } catch (e) { window.alert(e.message || 'Upload failed') } finally { setUploadingServiceIdx(-1) }
+  }
 
   function addArea() { const v = areaInput.trim(); if (!v) return; if (areas.some((a) => a.toLowerCase() === v.toLowerCase())) { setAreaInput(''); return } setAreas((p) => [...p, v]); setAreaInput('') }
   async function saveSettings() {
@@ -522,8 +606,41 @@ export default function WebsiteBuilderPage() {
   }
 
   // ---- design / site theme ----
-  function onThemeChange(section, key, value) { setTheme((t) => ({ ...t, preset: 'custom', [section]: { ...t[section], [key]: value } })) }
-  function applyPreset(pre) { setTheme({ ...normalizeTheme(pre.theme), preset: pre.id }) }
+  // Scope-aware theme editing: 'all' edits the global theme; a page id edits
+  // that page's override (a partial theme merged over the global at render).
+  const designPage = designScope === 'all' ? null : designScope
+  const pageCustomised = designPage ? !!(theme.pageOverrides && theme.pageOverrides[designPage]) : false
+  const activeDesign = designPage ? mergeTheme(normalizeTheme(theme), theme.pageOverrides?.[designPage] || {}) : normalizeTheme(theme)
+
+  function setGlobalPart(section, key, value) { setTheme((t) => ({ ...t, [section]: { ...t[section], [key]: value } })) }
+  function setOverridePart(page, section, key, value) {
+    setTheme((t) => {
+      const po = { ...(t.pageOverrides || {}) }
+      const cur = { ...(po[page] || {}) }
+      cur[section] = { ...(cur[section] || {}), [key]: value }
+      po[page] = cur
+      return { ...t, pageOverrides: po }
+    })
+  }
+  function onDesignChange(section, key, value) {
+    if (designPage) setOverridePart(designPage, section, key, value)
+    else setGlobalPart(section, key, value)
+  }
+  function applyPalette(p) { onDesignChange('colors', 'primary', p.primary); onDesignChange('colors', 'background', p.background) }
+  function applyStyle(s) {
+    ;['heading', 'body', 'baseSize', 'headingWeight'].forEach((k) => onDesignChange('fonts', k, s.fonts[k]))
+    onDesignChange('buttons', 'radius', s.buttons.radius); onDesignChange('buttons', 'style', s.buttons.style)
+    onDesignChange('corners', 'radius', s.corners.radius)
+  }
+  function setPageCustomised(on) {
+    if (!designPage) return
+    setTheme((t) => {
+      const po = { ...(t.pageOverrides || {}) }
+      if (on) { if (!po[designPage]) po[designPage] = {} }
+      else { delete po[designPage] }
+      return { ...t, pageOverrides: po }
+    })
+  }
   async function uploadLogo(file) {
     if (file === null) { setSiteLogo(null); return }
     if (!user?.id || !supabase) return
@@ -610,7 +727,7 @@ export default function WebsiteBuilderPage() {
         <div style={{ height: 1, background: 'var(--border-subtle)', margin: '4px 0' }} />
 
         {activeTab === 'design' ? (
-          <DesignEditor theme={theme} onChange={onThemeChange} onApplyPreset={applyPreset} logo={siteLogo} onUploadLogo={uploadLogo} uploadingLogo={uploadingLogo} onSave={saveDesign} saving={savingDesign} saved={designSaved} styles={editorStyles} isMobile={isMobile} />
+          <DesignEditor scope={designScope} setScope={setDesignScope} active={activeDesign} customised={pageCustomised} onCustomised={setPageCustomised} onApplyPalette={applyPalette} onApplyStyle={applyStyle} onChange={onDesignChange} logo={siteLogo} onUploadLogo={uploadLogo} uploadingLogo={uploadingLogo} onSave={saveDesign} saving={savingDesign} saved={designSaved} styles={editorStyles} isMobile={isMobile} />
         ) : activeTab === 'settings' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             <div>
@@ -654,7 +771,7 @@ export default function WebsiteBuilderPage() {
         ) : activeTab === 'gallery' ? (
           <GalleryManager items={gallery} uploading={galleryUploading} albumInput={albumInput} setAlbumInput={setAlbumInput} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={galleryToggleFeatured} onDelete={galleryDelete} styles={editorStyles} />
         ) : activeTab === 'services' ? (
-          <ServicesManager services={services} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} savedFlash={servicesSaved} styles={editorStyles} />
+          <ServicesManager services={services} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} onUploadImage={serviceUploadImage} uploadingIdx={uploadingServiceIdx} savedFlash={servicesSaved} styles={editorStyles} isMobile={isMobile} />
         ) : isContentPage ? (
           <PageEditor key={activeTab} pageType={activeTab} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activeTab, k, v)} onTemplate={(t) => setTemplate(activeTab, t)} onVisible={(v) => setVisible(activeTab, v)} onUploadImage={(field, file) => uploadImage(activeTab, field, file)} uploadingField={uploadingField} onSave={() => savePage(activeTab)} saving={savingPage === activeTab} saved={savedPage === activeTab} styles={editorStyles} />
         ) : null}

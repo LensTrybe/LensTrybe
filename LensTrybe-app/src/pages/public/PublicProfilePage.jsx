@@ -401,7 +401,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // =====================================================================
   // Resolve the website's "Site Styles" theme (colours, fonts, buttons, corners)
   // set in the builder; falls back to the Brand Kit, then defaults.
-  const T = resolveTheme(profile, brand)
+  const T = resolveTheme(profile, brand, activePage)
   const { accent, bg, dark, ink, heading: headingCol, soft, line, surface, surfaceBorder, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, radius, logo } = T
   const wrap = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
   const H = (size) => ({ fontFamily: headingFont, fontWeight: headingWeight, letterSpacing: '-0.02em', lineHeight: 1.12, color: headingCol, fontSize: size })
@@ -588,10 +588,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {services.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>Services coming soon.</p> : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: 16 }}>
             {services.map((s) => (
-              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: '22px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ ...H('20px') }}>{s.name}</div>
-                {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
-                {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
+              <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
+                <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ ...H('20px') }}>{s.name}</div>
+                  {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
+                  {s.description && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14.5, lineHeight: 1.6, margin: 0 }}>{s.description}</p>}
+                </div>
               </div>
             ))}
           </div>
