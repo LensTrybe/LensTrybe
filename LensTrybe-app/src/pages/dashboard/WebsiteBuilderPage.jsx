@@ -26,11 +26,13 @@ const SOCIAL_FIELDS = [
   { key: 'twitter_url', label: 'X (Twitter)', placeholder: 'https://x.com/you' },
 ]
 
+const FONT_OPTIONS = ['Inter', 'Playfair Display', 'Montserrat', 'Poppins', 'Raleway', 'Lato', 'Nunito', 'DM Sans', 'Merriweather', 'Cormorant Garamond']
+
 const TEMPLATES = {
   home: [
     { id: 't1', name: 'Full-bleed hero', desc: 'Big background image with your headline over it.' },
     { id: 't2', name: 'Split hero', desc: 'Text on the left, image on the right.' },
-    { id: 't3', name: 'Centred', desc: 'Logo and headline centred, no big image.' },
+    { id: 't3', name: 'Centred', desc: 'Logo and headline centred, with your hero photo below.' },
   ],
   about: [
     { id: 't1', name: 'Photo beside text', desc: 'Portrait on the left, your story on the right.' },
@@ -250,6 +252,7 @@ export default function WebsiteBuilderPage() {
   const [seoTitle, setSeoTitle] = useState('')
   const [seoDesc, setSeoDesc] = useState('')
   const [links, setLinks] = useState({ website: '', instagram_url: '', tiktok_url: '', facebook_url: '', linkedin_url: '', twitter_url: '' })
+  const [siteBrand, setSiteBrand] = useState({ primary: '#1DB954', background: '#ffffff', heading: 'Playfair Display', body: 'Inter' })
   const [savingSettings, setSavingSettings] = useState(false)
   const [settingsSaved, setSettingsSaved] = useState(false)
 
@@ -263,6 +266,12 @@ export default function WebsiteBuilderPage() {
     setLinks({
       website: profile.website ?? '', instagram_url: profile.instagram_url ?? '', tiktok_url: profile.tiktok_url ?? '',
       facebook_url: profile.facebook_url ?? '', linkedin_url: profile.linkedin_url ?? '', twitter_url: profile.twitter_url ?? '',
+    })
+    setSiteBrand({
+      primary: profile.site_primary_color || '#1DB954',
+      background: profile.site_background_color || '#ffffff',
+      heading: profile.site_heading_font || 'Playfair Display',
+      body: profile.site_body_font || 'Inter',
     })
   }, [profile])
 
@@ -371,6 +380,8 @@ export default function WebsiteBuilderPage() {
       site_service_areas: areas, site_seo_title: seoTitle.trim() || null, site_seo_description: seoDesc.trim() || null,
       website: links.website.trim() || null, instagram_url: links.instagram_url.trim() || null, tiktok_url: links.tiktok_url.trim() || null,
       facebook_url: links.facebook_url.trim() || null, linkedin_url: links.linkedin_url.trim() || null, twitter_url: links.twitter_url.trim() || null,
+      site_primary_color: siteBrand.primary || null, site_background_color: siteBrand.background || null,
+      site_heading_font: siteBrand.heading || null, site_body_font: siteBrand.body || null,
     }
     const { error } = await supabase.from('profiles').update(patch).eq('id', user.id)
     setSavingSettings(false)
@@ -438,6 +449,34 @@ export default function WebsiteBuilderPage() {
 
         {activeTab === 'settings' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div>
+              <div style={label}>Website brand</div>
+              <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Colours and fonts for your website only — separate from the Brand Kit used on your quotes, invoices and contracts.</p>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12, marginTop: 10 }}>
+                <div>
+                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Accent colour</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                    <input type="color" value={siteBrand.primary} onChange={(e) => setSiteBrand((b) => ({ ...b, primary: e.target.value }))} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
+                    <input value={siteBrand.primary} onChange={(e) => setSiteBrand((b) => ({ ...b, primary: e.target.value }))} style={{ ...inputStyle, maxWidth: 120 }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Background colour</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                    <input type="color" value={siteBrand.background} onChange={(e) => setSiteBrand((b) => ({ ...b, background: e.target.value }))} style={{ width: 44, height: 38, border: '1px solid var(--border-default)', borderRadius: 8, background: 'none', cursor: 'pointer', padding: 2 }} />
+                    <input value={siteBrand.background} onChange={(e) => setSiteBrand((b) => ({ ...b, background: e.target.value }))} style={{ ...inputStyle, maxWidth: 120 }} />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Heading font</div>
+                  <select value={siteBrand.heading} onChange={(e) => setSiteBrand((b) => ({ ...b, heading: e.target.value }))} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select>
+                </div>
+                <div>
+                  <div style={{ ...label, textTransform: 'none', letterSpacing: 0, fontSize: 12, color: 'var(--text-secondary)' }}>Body font</div>
+                  <select value={siteBrand.body} onChange={(e) => setSiteBrand((b) => ({ ...b, body: e.target.value }))} style={{ ...inputStyle, marginTop: 6 }}>{FONT_OPTIONS.map((f) => <option key={f} value={f}>{f}</option>)}</select>
+                </div>
+              </div>
+            </div>
             <div>
               <div style={label}>Social links & website</div>
               <p style={{ margin: '6px 0 0', fontSize: 12.5, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>These appear as icons in your footer and on your Contact page.</p>

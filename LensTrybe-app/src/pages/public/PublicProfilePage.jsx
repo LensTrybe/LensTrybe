@@ -105,7 +105,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [showAuthGate, setShowAuthGate] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [enquiry, setEnquiry] = useState({ subject: '', message: '' })
+  const [enquiry, setEnquiry] = useState({ subject: '', message: '', name: '', phone: '' })
   const [enquiryError, setEnquiryError] = useState('')
   const [showCall, setShowCall] = useState(false)
   const [callForm, setCallForm] = useState({ date: '', time: '', phone: '', message: '' })
@@ -226,29 +226,30 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     const mod = await moderateText(combinedEnquiryText)
     if (mod?.blocked) { setEnquiryError(MODERATION_BLOCKED_USER_MESSAGE); return }
     if (mod?.flagged) console.warn('[moderation] Flagged enquiry', mod.reason)
-    if (threadOwnerTierContactSharingRestricted(profile?.subscription_tier) && messageBodyContainsContactDetails(combinedEnquiryText)) {
-      setEnquiryError(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
-      return
-    }
+    // Clients may share their own contact details in an enquiry (all tiers).
     setSending(true)
-    const clientLabel = formatClientAccountDisplayName(clientAccount) || user.email
+    const clientLabel = enquiry.name.trim() || formatClientAccountDisplayName(clientAccount) || user.email
+    // If the client chose to share contact details, add them to the message so
+    // they land in the creative's inbox and CRM.
+    const contactLine = [enquiry.name.trim() && `Name: ${enquiry.name.trim()}`, enquiry.phone.trim() && `Phone: ${enquiry.phone.trim()}`].filter(Boolean).join('\n')
+    const fullMessage = contactLine ? `${enquiry.message}\n\n— My contact details —\n${contactLine}` : enquiry.message
     const { data: thread } = await supabase.from('message_threads').insert({
       creative_id: id, client_user_id: user.id, client_name: clientLabel, client_email: user.email, subject: enquiry.subject,
     }).select().single()
     if (thread) {
-      await supabase.from('messages').insert({ thread_id: thread.id, sender_type: 'client', sender_name: clientLabel, body: enquiry.message })
+      await supabase.from('messages').insert({ thread_id: thread.id, sender_type: 'client', sender_name: clientLabel, body: fullMessage })
       await supabase.functions.invoke('send-message-notification', {
         body: {
           to: profile.business_email, toName: profile.business_name, fromName: clientLabel,
-          subject: `New enquiry from ${clientLabel}`, messageBody: enquiry.message, threadSubject: enquiry.subject,
+          subject: `New enquiry from ${clientLabel}`, messageBody: fullMessage, threadSubject: enquiry.subject,
           profileUrl: 'https://lens-trybe.vercel.app/dashboard/clients/messages',
         },
       })
     }
-    await supabase.functions.invoke('send-enquiry', { body: { creativeId: id, clientId: user.id, subject: enquiry.subject, message: enquiry.message } })
+    await supabase.functions.invoke('send-enquiry', { body: { creativeId: id, clientId: user.id, subject: enquiry.subject, message: fullMessage } })
     setSending(false)
     setSent(true)
-    setEnquiry({ subject: '', message: '' })
+    setEnquiry({ subject: '', message: '', name: '', phone: '' })
     setTimeout(() => { setShowEnquire(false); setSent(false) }, 2400)
   }
 
@@ -416,10 +417,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // =====================================================================
   //  PRO / EXPERT / ELITE — brand-styled multi-page website
   // =====================================================================
-  const accent = (brand && (brand.primary_color || brand.accent_color)) || '#1DB954'
-  const headingFont = fontStack((brand && (brand.heading_font || brand.font)) || 'Playfair Display')
-  const bodyFont = fontStack((brand && (brand.body_font || brand.font)) || 'Inter')
-  const bg = (brand && brand.background_color) || '#ffffff'
+  // The website has its own brand controls (profile.site_*) that override the
+  // shared document Brand Kit; fall back to the Brand Kit, then to defaults.
+  const accent = profile.site_primary_color || (brand && (brand.primary_color || brand.accent_color)) || '#1DB954'
+  const headingFont = fontStack(profile.site_heading_font || (brand && (brand.heading_font || brand.font)) || 'Playfair Display')
+  const bodyFont = fontStack(profile.site_body_font || (brand && (brand.body_font || brand.font)) || 'Inter')
+  const bg = profile.site_background_color || (brand && brand.background_color) || '#ffffff'
   const dark = isDarkColor(bg)
   const ink = dark ? '#f5f4f7' : '#17151c'
   const soft = dark ? 'rgba(245,244,247,0.66)' : '#6a6870'
@@ -471,11 +474,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       )
     } else if (homeT === 't3') {
       hero = (
-        <section style={{ ...wrap, textAlign: 'center', padding: '72px 24px 40px', maxWidth: 820 }}>
-          {logo ? <img src={logo} alt="" style={{ height: 54, objectFit: 'contain', marginBottom: 22 }} /> : null}
-          <h1 style={H('clamp(34px,5vw,58px)')}>{headline}</h1>
-          {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 19, lineHeight: 1.6, margin: '18px auto 26px', maxWidth: 620 }}>{sub}</p>}
-          <div style={{ display: 'flex', justifyContent: 'center' }}>{actionRow('center')}</div>
+        <section style={{ ...wrap, textAlign: 'center', padding: '64px 24px 24px' }}>
+          <div style={{ maxWidth: 820, margin: '0 auto' }}>
+            {logo ? <img src={logo} alt="" style={{ height: 54, objectFit: 'contain', marginBottom: 22 }} /> : null}
+            <h1 style={H('clamp(34px,5vw,58px)')}>{headline}</h1>
+            {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 19, lineHeight: 1.6, margin: '18px auto 26px', maxWidth: 620, overflowWrap: 'anywhere' }}>{sub}</p>}
+            <div style={{ display: 'flex', justifyContent: 'center' }}>{actionRow('center')}</div>
+          </div>
+          {heroImg && <img src={heroImg} alt="" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: 18, marginTop: 40 }} />}
         </section>
       )
     } else {
@@ -495,8 +501,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       <>
         {hero}
         {home.intro && (
-          <section style={{ ...wrap, padding: '48px 24px', textAlign: 'center' }}>
-            <p style={{ fontFamily: bodyFont, color: ink, fontSize: 20, lineHeight: 1.7, maxWidth: 720, margin: '0 auto' }}>{home.intro}</p>
+          <section style={{ ...wrap, padding: '44px 24px', textAlign: 'center' }}>
+            <p style={{ fontFamily: bodyFont, color: ink, fontSize: 19, lineHeight: 1.75, maxWidth: 680, margin: '0 auto', overflowWrap: 'anywhere' }}>{home.intro}</p>
           </section>
         )}
         {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
@@ -692,7 +698,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont }} className="public-profile-site">
+    <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont, overflowX: 'hidden' }} className="public-profile-site">
       <style>{`.lt-navlink:hover{opacity:1 !important}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
 
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: bg + 'e6', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${line}` }}>
@@ -852,6 +858,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 <div>
                   <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Message</label>
                   <textarea style={{ width: '100%', minHeight: '120px', padding: '10px 14px', resize: 'vertical', boxSizing: 'border-box', ...LIQUID_FIELD }} placeholder="Tell them about your project, date, location and what you need…" value={enquiry.message} onChange={(e) => { setEnquiryError(''); setEnquiry((p) => ({ ...p, message: e.target.value })) }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: '13px', display: 'block', marginBottom: '6px', ...TYPO.label }}>Your contact details (optional)</label>
+                  <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <input style={{ flex: '1 1 140px', padding: '10px 14px', boxSizing: 'border-box', ...LIQUID_FIELD }} placeholder="Your name" value={enquiry.name} onChange={(e) => setEnquiry((p) => ({ ...p, name: e.target.value }))} />
+                    <input style={{ flex: '1 1 140px', padding: '10px 14px', boxSizing: 'border-box', ...LIQUID_FIELD }} placeholder="Phone number" value={enquiry.phone} onChange={(e) => setEnquiry((p) => ({ ...p, phone: e.target.value }))} />
+                  </div>
+                  <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '6px', ...TYPO.body }}>Share these if you'd like {displayName} to call or text you back directly.</div>
                 </div>
                 {enquiryError ? <div style={{ fontSize: '13px', color: '#f87171', marginTop: '8px', ...TYPO.body }}>{enquiryError}</div> : null}
                 <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
