@@ -529,12 +529,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.8, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>)}
           </section>
         ) : (
-          <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? '320px minmax(0,1fr)' : '1fr', gap: 44, alignItems: 'start', padding: '60px 24px' }} className="lt-2col">
-            {portrait && <img src={portrait} alt="" style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 16 }} />}
+          <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? (aboutT === 't3' ? 'minmax(0,1fr) 320px' : '320px minmax(0,1fr)') : '1fr', gap: 44, alignItems: 'start', padding: '60px 24px' }} className="lt-2col">
+            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 16 }} />}
             <div>
               <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 18 }}>{heading}</h2>
               {body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: 17, lineHeight: 1.8, margin: '0 0 16px' }}>{p}</p>)}
             </div>
+            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', height: 400, objectFit: 'cover', borderRadius: 16 }} />}
           </section>
         )}
         {((profile.specialties?.length) || (profile.abn || profile.has_insurance)) ? (
@@ -631,7 +632,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         )}
       </div>
     )
-    if (contactT === 't2' || (!contact.heading && socials.length)) {
+    if (contactT === 't2') {
       return (
         <section style={{ ...wrap, display: 'grid', gridTemplateColumns: 'minmax(0,1fr) minmax(0,420px)', gap: 44, alignItems: 'start', padding: '60px 24px' }} className="lt-2col">
           <div>
@@ -639,6 +640,20 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {aside}
           </div>
           {formCard}
+        </section>
+      )
+    }
+    if (contactT === 't3') {
+      return (
+        <section style={{ ...wrap, padding: '60px 24px', maxWidth: 640 }}>
+          <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 14 }}>{heading}</h2>
+          {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.7, marginBottom: 22 }}>{contact.blurb}</p>}
+          {formCard}
+          {socials.length > 0 && (
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18 }}>
+              {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none' }}>{label}</a>)}
+            </div>
+          )}
         </section>
       )
     }
