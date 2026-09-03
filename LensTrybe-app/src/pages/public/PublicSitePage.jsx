@@ -47,7 +47,7 @@ export default function PublicSitePage() {
   const load = useCallback(async () => {
     setLoading(true)
     const norm = (slug || '').trim().toLowerCase()
-    const { data: prof } = await supabase.from('profiles').select('*').eq('custom_domain', norm).eq('is_admin', false).maybeSingle()
+    const { data: prof } = await supabase.from('profiles').select('*').eq('custom_domain', norm).maybeSingle()
     if (!prof || !prof.portfolio_website_active) { setProfile(null); setLoading(false); return }
     setProfile(prof)
     const [bk, pg, rv] = await Promise.all([
