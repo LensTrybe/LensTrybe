@@ -16,16 +16,81 @@ import {
 } from '../../lib/messageMonthlyLimit'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import {
-  DIVIDER_GRADIENT_STYLE,
-  GLASS_CARD,
-  GLASS_MODAL_OVERLAY_BASE,
-  GLASS_MODAL_PANEL,
-  GLASS_NATIVE_FIELD,
-  TYPO,
-} from '../../lib/glassTokens'
+
+const CSS = `
+.ltmsg{position:relative;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--lt-text)}
+.ltmsg .head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.ltmsg .title{font-family:var(--font-display),'Playfair Display',serif;font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--lt-text)}
+.ltmsg .sub{color:var(--lt-muted);font-size:13px;margin-top:3px}
+.ltmsg .btn{font-family:inherit;font-size:13px;font-weight:600;border-radius:10px;padding:9px 15px;cursor:pointer;border:1px solid var(--lt-border);background:var(--lt-surface);color:var(--lt-text);display:inline-flex;align-items:center;gap:7px;transition:.15s;white-space:nowrap;min-height:40px}
+.ltmsg .btn:hover{background:var(--lt-surface-2)}
+.ltmsg .btn:disabled{opacity:.5;cursor:not-allowed}
+.ltmsg .btn.primary{background:#1DB954;border-color:transparent;color:#04120a;font-weight:700;box-shadow:0 6px 18px -8px rgba(29,185,84,0.7)}
+.ltmsg .btn.primary:hover{background:#22c95f}
+.ltmsg .btn.ghost{background:transparent;border-color:transparent;color:var(--lt-muted)}
+.ltmsg .btn.ghost:hover{color:var(--lt-text);background:var(--lt-surface)}
+.ltmsg .usage{margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:13px;background:var(--lt-surface);border:1px solid var(--lt-border);color:var(--lt-muted)}
+.ltmsg .usage.blocked{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#f2777a}
+.ltmsg .shell{display:flex;border-radius:18px;overflow:hidden;background:var(--lt-glass-bg);border:var(--lt-glass-border);box-shadow:var(--lt-glass-shadow);backdrop-filter:var(--lt-glass-blur);-webkit-backdrop-filter:var(--lt-glass-blur);height:calc(100vh - 172px);min-height:520px}
+.ltmsg .side{width:312px;flex-shrink:0;border-right:1px solid var(--lt-hairline);display:flex;flex-direction:column;min-height:0}
+.ltmsg .sidehead{padding:15px 18px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--lt-muted);border-bottom:1px solid var(--lt-hairline)}
+.ltmsg .threads{flex:1;overflow-y:auto;min-height:0}
+.ltmsg .thread{position:relative;display:flex;gap:11px;align-items:center;padding:13px 16px;cursor:pointer;border-left:2px solid transparent;border-bottom:1px solid var(--lt-hairline);transition:.14s}
+.ltmsg .thread:hover{background:var(--lt-surface)}
+.ltmsg .thread.on{background:var(--lt-surface-2);border-left-color:#1DB954}
+.ltmsg .avatar{width:38px;height:38px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;background:var(--lt-surface-2);color:var(--lt-muted);overflow:hidden}
+.ltmsg .thread.on .avatar{background:rgba(29,185,84,0.16);color:#1DB954}
+.ltmsg .tmeta{min-width:0;flex:1}
+.ltmsg .tname{font-size:14px;font-weight:600;color:var(--lt-text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ltmsg .tname.unread{font-weight:800}
+.ltmsg .tprev{font-size:12px;color:var(--lt-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ltmsg .dot{width:8px;height:8px;border-radius:50%;background:#1DB954;flex-shrink:0}
+.ltmsg .del{position:absolute;top:9px;right:9px;opacity:0;background:none;border:none;color:var(--lt-faint);cursor:pointer;font-size:13px;transition:.15s;padding:2px 6px;border-radius:6px}
+.ltmsg .thread:hover .del{opacity:1}
+.ltmsg .del:hover{color:#ef4444;background:var(--lt-surface)}
+.ltmsg .main{flex:1;display:flex;flex-direction:column;min-width:0;min-height:0}
+.ltmsg .mainhead{padding:14px 20px;display:flex;align-items:center;gap:11px;border-bottom:1px solid var(--lt-hairline)}
+.ltmsg .mname{font-size:15px;font-weight:700;color:var(--lt-text)}
+.ltmsg .iconbtn{background:none;border:none;color:var(--lt-faint);cursor:pointer;font-size:13px;padding:2px 4px;border-radius:6px}
+.ltmsg .iconbtn:hover{color:var(--lt-text)}
+.ltmsg .msgs{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:11px;min-height:0}
+.ltmsg .row{display:flex;width:100%}
+.ltmsg .row.me{justify-content:flex-end}
+.ltmsg .col{display:inline-flex;flex-direction:column;max-width:72%}
+.ltmsg .row.me .col{align-items:flex-end}
+.ltmsg .bubble{padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.5;word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap}
+.ltmsg .bubble.them{background:var(--lt-surface-2);color:var(--lt-text);border-bottom-left-radius:5px}
+.ltmsg .bubble.me{background:#1DB954;color:#04120a;font-weight:500;border-bottom-right-radius:5px}
+.ltmsg .time{font-size:10.5px;color:var(--lt-faint);margin-top:4px}
+.ltmsg .replybar{display:flex;gap:10px;align-items:center;padding:14px 18px;border-top:1px solid var(--lt-hairline)}
+.ltmsg .inp{width:100%;background:var(--lt-input-bg);border:1px solid var(--lt-input-border);border-radius:10px;padding:11px 13px;color:var(--lt-text);font-family:inherit;font-size:14px;outline:none;transition:.15s}
+.ltmsg .inp:focus{border-color:#1DB954}
+.ltmsg textarea.inp{resize:vertical;min-height:96px}
+.ltmsg .emptymain{flex:1;display:flex;align-items:center;justify-content:center;color:var(--lt-muted);font-size:14px;padding:40px;text-align:center}
+.ltmsg .emptylist{padding:34px 20px;color:var(--lt-muted);font-size:13px;text-align:center;line-height:1.6}
+.ltmsg .modal{position:fixed;inset:0;background:rgba(6,5,12,0.68);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:1100;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto}
+.ltmsg .modalbox{width:100%;max-width:460px;border-radius:20px;padding:26px;background:var(--lt-modal-bg);border:var(--lt-modal-border);box-shadow:var(--lt-modal-shadow);backdrop-filter:var(--lt-modal-blur);-webkit-backdrop-filter:var(--lt-modal-blur)}
+.ltmsg .mtitle{font-family:var(--font-display),'Playfair Display',serif;font-size:19px;font-weight:700;color:var(--lt-text)}
+.ltmsg .msub{font-size:12.5px;color:var(--lt-muted);margin:6px 0 18px;line-height:1.6}
+.ltmsg .lab{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--lt-muted);display:block;margin-bottom:6px}
+.ltmsg .err{font-size:12px;color:#f2777a;margin-top:6px}
+.ltmsg .toast{position:fixed;bottom:26px;right:26px;padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:700;box-shadow:0 12px 30px -10px rgba(0,0,0,0.5);z-index:1300;display:flex;align-items:center;gap:9px}
+.ltmsg .toast.success{background:#1DB954;color:#04120a}
+.ltmsg .toast.error{background:#ef4444;color:#fff}
+@media(max-width:767px){
+  .ltmsg .shell{flex-direction:column;height:auto;min-height:0}
+  .ltmsg .side{width:100%;border-right:none;border-bottom:1px solid var(--lt-hairline);max-height:290px}
+  .ltmsg .main{min-height:60vh}
+  .ltmsg .col{max-width:86%}
+}
+`
+
+function initials(name) {
+  const s = (name || '').trim()
+  if (!s) return '·'
+  const parts = s.split(/\s+/)
+  return ((parts[0]?.[0] || '') + (parts[1]?.[0] || '')).toUpperCase() || s[0].toUpperCase()
+}
 
 export default function MessagesPage() {
   const { user, profile, clientAccount } = useAuth()
@@ -95,19 +160,17 @@ export default function MessagesPage() {
 
       const email = newMessageEmail.trim()
 
-      // Look up if client already has an account
-      const { data: clientAccount } = await supabase
+      const { data: clientAccountRow } = await supabase
         .from('client_accounts')
         .select('id, email')
         .eq('email', email)
         .maybeSingle()
 
-      // Create message thread
       const { data: thread, error: threadError } = await supabase
         .from('message_threads')
         .insert({
           creative_id: user.id,
-          client_user_id: clientAccount?.id ?? null,
+          client_user_id: clientAccountRow?.id ?? null,
           client_name: newMessageName || email,
           client_email: email,
           subject: 'New Message',
@@ -116,7 +179,6 @@ export default function MessagesPage() {
         .single()
       if (threadError) throw threadError
 
-      // Insert message
       const creativeLabel = creativeSenderDisplayName(profile, user)
       const { error: msgError } = await supabase.from('messages').insert({
         thread_id: thread.id,
@@ -134,7 +196,6 @@ export default function MessagesPage() {
         throw msgError
       }
 
-      // Send email notification
       const { error: fnError } = await supabase.functions.invoke('send-message-notification', {
         body: {
           to: email,
@@ -170,9 +231,7 @@ export default function MessagesPage() {
   useEffect(() => { if (selected) loadMessages(selected.id) }, [selected])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
   useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -233,7 +292,6 @@ export default function MessagesPage() {
       }
     }
 
-    // For each thread, check if latest message is from client and after last_read_at
     const threadsWithUnread = merged.map(t => {
       const lastRead = t.last_read_at ? new Date(t.last_read_at) : new Date(0)
       const lastMsg = t.last_message_at ? new Date(t.last_message_at) : null
@@ -294,72 +352,71 @@ export default function MessagesPage() {
 
     setSending(true)
     try {
-    if (imListingCreative) {
-      const creativeLabel = creativeSenderDisplayName(profile, user)
-      const { error: insertErr } = await supabase.from('messages').insert({
-        thread_id: selected.id,
-        sender_type: 'creative',
-        sender_name: creativeLabel,
-        body: bodyText,
-        creative_id: user.id,
-      })
-      if (insertErr) {
-        if (isMonthlyMessageLimitError(insertErr)) {
-          showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
-          return
+      if (imListingCreative) {
+        const creativeLabel = creativeSenderDisplayName(profile, user)
+        const { error: insertErr } = await supabase.from('messages').insert({
+          thread_id: selected.id,
+          sender_type: 'creative',
+          sender_name: creativeLabel,
+          body: bodyText,
+          creative_id: user.id,
+        })
+        if (insertErr) {
+          if (isMonthlyMessageLimitError(insertErr)) {
+            showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
+            return
+          }
+          throw insertErr
         }
-        throw insertErr
+        if (selected?.client_email) {
+          await supabase.functions.invoke('send-message-notification', {
+            body: {
+              to: selected.client_email,
+              toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
+              fromName: creativeLabel,
+              subject: `Reply from ${creativeLabel} on LensTrybe`,
+              messageBody: bodyText,
+              threadSubject: selected.subject ?? 'your enquiry',
+              profileUrl: 'https://lens-trybe.vercel.app',
+            },
+          })
+        }
+      } else {
+        const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
+        const msgPayload = {
+          thread_id: selected.id,
+          sender_type: 'client',
+          sender_name: clientSenderName,
+          body: bodyText,
+          creative_id: user.id,
+        }
+        const { error: clientInsertErr } = await supabase.from('messages').insert(msgPayload)
+        if (clientInsertErr) throw clientInsertErr
+        const { data: sellerProfile } = await supabase
+          .from('profiles')
+          .select('business_email, business_name')
+          .eq('id', selected.creative_id)
+          .eq('is_admin', false)
+          .maybeSingle()
+        if (sellerProfile?.business_email) {
+          await supabase.functions.invoke('send-message-notification', {
+            body: {
+              to: sellerProfile.business_email,
+              toName: sellerProfile.business_name ?? 'there',
+              fromName: clientSenderName,
+              subject: `Reply from ${clientSenderName} on LensTrybe`,
+              messageBody: bodyText,
+              threadSubject: selected.subject ?? 'your enquiry',
+            },
+          })
+        }
       }
-      if (selected?.client_email) {
-        const { data, error } = await supabase.functions.invoke('send-message-notification', {
-          body: {
-            to: selected.client_email,
-            toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
-            fromName: creativeLabel,
-            subject: `Reply from ${creativeLabel} on LensTrybe`,
-            messageBody: bodyText,
-            threadSubject: selected.subject ?? 'your enquiry',
-            profileUrl: 'https://lens-trybe.vercel.app',
-          },
-        })
-        console.log('Email result:', data, error)
-      }
-    } else {
-      const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
-      const msgPayload = {
-        thread_id: selected.id,
-        sender_type: 'client',
-        sender_name: clientSenderName,
-        body: bodyText,
-        creative_id: user.id,
-      }
-      const { error: clientInsertErr } = await supabase.from('messages').insert(msgPayload)
-      if (clientInsertErr) throw clientInsertErr
-      const { data: sellerProfile } = await supabase
-        .from('profiles')
-        .select('business_email, business_name')
-        .eq('id', selected.creative_id)
-        .eq('is_admin', false)
-        .maybeSingle()
-      if (sellerProfile?.business_email) {
-        await supabase.functions.invoke('send-message-notification', {
-          body: {
-            to: sellerProfile.business_email,
-            toName: sellerProfile.business_name ?? 'there',
-            fromName: clientSenderName,
-            subject: `Reply from ${clientSenderName} on LensTrybe`,
-            messageBody: bodyText,
-            threadSubject: selected.subject ?? 'your enquiry',
-          },
-        })
-      }
-    }
 
-    await supabase.from('message_threads').update({ updated_at: new Date().toISOString() }).eq('id', selected.id)
-    setReply('')
-    await loadMessages(selected.id)
-    await loadThreads()
-    if (imListingCreative) await loadReplyUsage()
+      await supabase.from('message_threads').update({ updated_at: new Date().toISOString() }).eq('id', selected.id)
+      setReply('')
+      await loadMessages(selected.id)
+      await loadThreads()
+      if (imListingCreative) await loadReplyUsage()
     } catch (err) {
       if (isMonthlyMessageLimitError(err)) {
         showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
@@ -371,132 +428,65 @@ export default function MessagesPage() {
     }
   }
 
-  const styles = {
-    page: { display: 'flex', flexDirection: isMobile ? 'column' : 'row', height: isMobile ? 'auto' : 'calc(100vh - 64px)', minHeight: isMobile ? 'calc(100vh - 140px)' : 'auto', gap: '0', ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    sidebar: { width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid rgba(20,17,26,0.12)', borderBottom: isMobile ? '1px solid rgba(20,17,26,0.08)' : 'none', display: 'flex', flexDirection: 'column', flexShrink: 0, maxHeight: isMobile ? '280px' : 'none' },
-    sidebarHeader: { padding: '20px', fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
-    threadList: { flex: 1, overflowY: 'auto' },
-    thread: (active) => ({
-      padding: '16px 20px',
-      cursor: 'pointer',
-      background: active ? 'rgba(20,17,26,0.06)' : 'transparent',
-      borderLeft: active ? '2px solid var(--green)' : '2px solid transparent',
-      transition: 'all var(--transition-fast)',
-    }),
-    threadName: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginBottom: '4px', ...TYPO.body, fontWeight: 500 },
-    threadPreview: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', ...TYPO.body },
-    main: { flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 },
-    mainHeader: { padding: isMobile ? '14px 16px' : '20px 24px', display: 'flex', alignItems: 'center', gap: '12px' },
-    mainName: { fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', ...TYPO.heading },
-    messageList: { flex: 1, overflowY: 'auto', padding: isMobile ? '16px 10px' : '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
-    message: (isCreative) => ({
-      display: 'flex',
-      justifyContent: isCreative ? 'flex-end' : 'flex-start',
-      alignItems: isCreative ? 'flex-end' : 'flex-start',
-      width: '100%',
-      padding: isMobile ? '2px 4px' : '2px 16px',
-      boxSizing: 'border-box',
-    }),
-    bubble: {
-      padding: '10px 14px',
-      borderRadius: '18px',
-      minWidth: '0',
-      display: 'block',
-      width: '100%',
-      wordBreak: 'break-word',
-      whiteSpace: 'normal',
-      overflowWrap: 'anywhere',
-      fontSize: '14px',
-      fontFamily: 'var(--font-ui)',
-      ...TYPO.body,
-    },
-    bubbleTime: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px', textAlign: 'right', ...TYPO.body },
-    replyBar: { padding: isMobile ? '12px 12px 14px' : '16px 24px', display: 'flex', gap: '12px', alignItems: 'flex-end' },
-    emptyState: { flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '14px', ...TYPO.body },
-  }
-
-  if (loading) return <div style={{ padding: '40px', color: 'var(--text-muted)', background: 'transparent', ...TYPO.body }}>Loading messages…</div>
+  if (loading) return <div className="ltmsg" style={{ padding: 40, color: 'var(--lt-muted)' }}><style>{CSS}</style>Loading messages…</div>
 
   const monthlyReplyCap = creativeMonthlyReplyLimit(profile?.subscription_tier)
   const showMonthlyReplyUsage =
-    Boolean(profile?.id) &&
-    monthlyReplyCap != null &&
-    replyUsage &&
-    !replyUsage.unlimited &&
-    !replyUsage.rpcMissing
+    Boolean(profile?.id) && monthlyReplyCap != null && replyUsage && !replyUsage.unlimited && !replyUsage.rpcMissing
   const creativeMonthlyRepliesBlocked =
-    Boolean(profile?.id) &&
-    replyUsage &&
-    !replyUsage.unlimited &&
+    Boolean(profile?.id) && replyUsage && !replyUsage.unlimited &&
     isAtOrOverCreativeReplyLimit(replyUsage, profile?.subscription_tier)
 
+  const peerName = selected?.nickname ?? selected?.peerDisplayName ?? 'Client'
+
   return (
-    <div style={{ background: 'transparent' }}>
-      {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-          {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
+    <div className="ltmsg">
+      <style>{CSS}</style>
+
+      {toast && <div className={`toast ${toast.type}`}>{toast.type === 'success' ? '✓' : '✕'} {toast.msg}</div>}
+
+      <div className="head">
+        <div>
+          <div className="title">Messages</div>
+          <div className="sub">Enquiries and conversations with your clients.</div>
         </div>
-      )}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '16px 12px 0' : '24px 24px 0', marginBottom: '16px', gap: '10px', flexWrap: 'wrap' }}>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '22px', color: 'var(--text-primary)', ...TYPO.heading }}>Messages</div>
         {profile && (
-          <Button
-            type="button"
-            variant="primary"
-            style={{ minHeight: '44px' }}
-            disabled={creativeMonthlyRepliesBlocked}
-            onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}
-          >
-            + New Message
-          </Button>
+          <button type="button" className="btn primary" disabled={creativeMonthlyRepliesBlocked}
+            onClick={() => { setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setShowNewMessage(true) }}>
+            + New message
+          </button>
         )}
       </div>
+
       {showMonthlyReplyUsage && (
-        <div
-          style={{
-            margin: '0 24px 12px',
-            padding: '10px 14px',
-            borderRadius: '10px',
-            fontSize: '13px',
-            fontFamily: 'var(--font-ui)',
-            ...TYPO.body,
-            ...(creativeMonthlyRepliesBlocked
-              ? { background: 'rgba(239,68,68,0.12)', color: '#fecaca', border: '1px solid rgba(239,68,68,0.35)' }
-              : { background: 'rgba(20,17,26,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(20,17,26,0.1)' }),
-          }}
-        >
+        <div className={`usage${creativeMonthlyRepliesBlocked ? ' blocked' : ''}`}>
           {replyUsage.used} / {monthlyReplyCap} message replies this calendar month (UTC). Resets on the 1st.
           {creativeMonthlyRepliesBlocked ? ` ${MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE}` : ''}
         </div>
       )}
 
-      <div style={styles.page}>
-        <div style={styles.sidebar}>
-          <div style={styles.sidebarHeader}>Conversations ({threads.length})</div>
-          <div style={DIVIDER_GRADIENT_STYLE} aria-hidden />
-          <div style={styles.threadList}>
+      <div className="shell">
+        <div className="side">
+          <div className="sidehead">Conversations ({threads.length})</div>
+          <div className="threads">
             {threads.length === 0 ? (
-              <div style={{ padding: '32px 20px', color: 'var(--text-muted)', fontSize: '13px', textAlign: 'center', ...TYPO.body }}>
-                No messages yet. When clients enquire, they'll appear here.
-              </div>
-            ) : threads.map((t, ti) => (
-              <div key={t.id}>
-              <div style={{ ...styles.thread(selected?.id === t.id), position: 'relative' }}
+              <div className="emptylist">No messages yet. When clients enquire, they'll appear here.</div>
+            ) : threads.map((t) => (
+              <div key={t.id} className={`thread${selected?.id === t.id ? ' on' : ''}`}
                 onClick={async () => {
                   setSelected(t)
                   await supabase.from('message_threads').update({ last_read_at: new Date().toISOString() }).eq('id', t.id)
                   setThreads(prev => prev.map(x => x.id === t.id ? { ...x, isUnread: false } : x))
-                }}
-                onMouseEnter={e => e.currentTarget.querySelector('.del-btn').style.opacity = '1'}
-                onMouseLeave={e => e.currentTarget.querySelector('.del-btn').style.opacity = '0'}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {t.isUnread && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#1DB954', flexShrink: 0 }} />}
-                  <div style={{ ...styles.threadName, color: t.isUnread ? 'var(--text-primary)' : undefined, fontWeight: t.isUnread ? 700 : undefined }}>{t.nickname ?? t.peerDisplayName}</div>
+                }}>
+                <div className="avatar">{initials(t.nickname ?? t.peerDisplayName)}</div>
+                <div className="tmeta">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    {t.isUnread && <span className="dot" />}
+                    <span className={`tname${t.isUnread ? ' unread' : ''}`}>{t.nickname ?? t.peerDisplayName}</span>
+                  </div>
+                  <div className="tprev">{t.subject ?? 'New enquiry'}</div>
                 </div>
-                <div style={styles.threadPreview}>{t.subject ?? 'New enquiry'}</div>
-                <button
-                  className="del-btn"
+                <button className="del" title="Delete conversation"
                   onClick={async e => {
                     e.stopPropagation()
                     if (!window.confirm('Delete this conversation?')) return
@@ -504,71 +494,49 @@ export default function MessagesPage() {
                     await supabase.from('message_threads').delete().eq('id', t.id)
                     setThreads(prev => prev.filter(x => x.id !== t.id))
                     if (selected?.id === t.id) setSelected(null)
-                  }}
-                  style={{
-                    position: 'absolute', top: '8px', right: '8px',
-                    opacity: '0', background: 'none', border: 'none',
-                    color: 'var(--error)', cursor: 'pointer', fontSize: '14px',
-                    transition: 'opacity 0.2s', padding: '2px 6px',
-                  }}
-                >✕</button>
-              </div>
-              {ti < threads.length - 1 ? <div style={DIVIDER_GRADIENT_STYLE} aria-hidden /> : null}
+                  }}>✕</button>
               </div>
             ))}
           </div>
         </div>
 
-        <div style={styles.main}>
+        <div className="main">
           {!selected ? (
-            <div style={styles.emptyState}>Select a conversation to view messages</div>
+            <div className="emptymain">Select a conversation to view messages</div>
           ) : (
             <>
-              <div style={styles.mainHeader}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
-                  {editingNickname ? (
-                    <input
-                      autoFocus
-                      defaultValue={selected?.nickname ?? selected?.peerDisplayName ?? ''}
-                      style={{ ...GLASS_NATIVE_FIELD, padding: '4px 8px', fontSize: '14px' }}
-                      onBlur={async e => {
-                        const nickname = e.target.value.trim()
-                        await supabase.from('message_threads').update({ nickname }).eq('id', selected.id)
-                        setThreads(prev => prev.map(t => t.id === selected.id ? { ...t, nickname } : t))
-                        setSelected(prev => ({ ...prev, nickname }))
-                        setEditingNickname(false)
-                      }}
-                      onKeyDown={e => e.key === 'Enter' && e.target.blur()}
-                    />
-                  ) : (
-                    <>
-                      <span style={styles.mainName}>{selected?.nickname ?? selected?.peerDisplayName ?? 'Client'}</span>
-                      <button type="button" onClick={() => setEditingNickname(true)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '12px' }}></button>
-                    </>
-                  )}
-                </div>
+              <div className="mainhead">
+                <div className="avatar">{initials(peerName)}</div>
+                {editingNickname ? (
+                  <input autoFocus className="inp" style={{ maxWidth: 260, padding: '6px 10px' }}
+                    defaultValue={selected?.nickname ?? selected?.peerDisplayName ?? ''}
+                    onBlur={async e => {
+                      const nickname = e.target.value.trim()
+                      await supabase.from('message_threads').update({ nickname }).eq('id', selected.id)
+                      setThreads(prev => prev.map(t => t.id === selected.id ? { ...t, nickname } : t))
+                      setSelected(prev => ({ ...prev, nickname }))
+                      setEditingNickname(false)
+                    }}
+                    onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                ) : (
+                  <>
+                    <span className="mname">{peerName}</span>
+                    <button type="button" className="iconbtn" title="Rename" onClick={() => setEditingNickname(true)}>✎</button>
+                  </>
+                )}
               </div>
-              <div style={DIVIDER_GRADIENT_STYLE} aria-hidden />
 
-              <div style={styles.messageList}>
+              <div className="msgs">
                 {messages.length === 0 ? (
-                  <div style={{ color: 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', textAlign: 'center', marginTop: '40px' }}>
-                    No messages in this thread yet.
-                  </div>
+                  <div style={{ color: 'var(--lt-muted)', fontSize: 13, textAlign: 'center', marginTop: 40 }}>No messages in this thread yet.</div>
                 ) : messages.map((msg, i) => {
                   const isCreative = msg.sender_type === 'creative'
+                  const me = (isCreative && selected.creative_id === user.id) || (!isCreative && selected.creative_id !== user.id)
                   return (
-                    <div key={i} style={styles.message(isCreative)}>
-                      <div style={{ display: 'inline-flex', flexDirection: 'column', alignItems: isCreative ? 'flex-end' : 'flex-start', maxWidth: isMobile ? '88%' : '55%' }}>
-                        <div style={{
-                          ...styles.bubble,
-                          ...(isCreative
-                            ? { background: 'var(--green)', border: 'none', color: '#000' }
-                            : { ...GLASS_CARD, borderRadius: '18px', color: 'var(--text-primary)' }),
-                        }}>{msg.body}</div>
-                        <div style={styles.bubbleTime}>
-                          {new Date(msg.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}
-                        </div>
+                    <div key={i} className={`row${me ? ' me' : ''}`}>
+                      <div className="col">
+                        <div className={`bubble ${me ? 'me' : 'them'}`}>{msg.body}</div>
+                        <div className="time">{new Date(msg.created_at).toLocaleTimeString('en-AU', { hour: '2-digit', minute: '2-digit' })}</div>
                       </div>
                     </div>
                   )
@@ -576,30 +544,18 @@ export default function MessagesPage() {
                 <div ref={bottomRef} />
               </div>
 
-              <div style={DIVIDER_GRADIENT_STYLE} aria-hidden />
-              <div style={styles.replyBar}>
+              <div className="replybar">
                 <div style={{ flex: 1 }}>
-                  <Input
-                    placeholder="Type your reply…"
-                    value={reply}
+                  <input className="inp" placeholder="Type your reply…" value={reply}
                     onChange={e => { setReplyModerationError(''); setReply(e.target.value) }}
-                    error={replyModerationError}
-                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendReply() } }}
-                  />
+                    onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); void sendReply() } }} />
+                  {replyModerationError ? <div className="err">{replyModerationError}</div> : null}
                 </div>
-                <Button
-                  variant="primary"
-                  size="md"
-                  style={{ minHeight: '44px' }}
-                  disabled={
-                    sending ||
-                    !reply.trim() ||
-                    (selected?.creative_id === user.id && creativeMonthlyRepliesBlocked)
-                  }
-                  onClick={() => void sendReply()}
-                >
+                <button className="btn primary" style={{ minHeight: 44 }}
+                  disabled={sending || !reply.trim() || (selected?.creative_id === user.id && creativeMonthlyRepliesBlocked)}
+                  onClick={() => void sendReply()}>
                   {sending ? 'Sending…' : 'Send'}
-                </Button>
+                </button>
               </div>
             </>
           )}
@@ -607,60 +563,32 @@ export default function MessagesPage() {
       </div>
 
       {showNewMessage && (
-        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '440px', padding: '28px' }}>
-            <div style={{ fontSize: '16px', color: 'var(--text-primary)', marginBottom: '8px', ...TYPO.heading }}>New Message</div>
-            <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginBottom: '24px', ...TYPO.body }}>
-              {"Send a portal link to a client. Enter their email address and they'll receive a link to view their invoices, quotes, contracts and messages with you. No account needed."}
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+        <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) { setShowNewMessage(false); setPortalModerationError('') } }}>
+          <div className="modalbox">
+            <div className="mtitle">New message</div>
+            <p className="msub">Send a portal link to a client. They'll get a link to view their invoices, quotes, contracts and messages with you. No account needed.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 22 }}>
               <div>
-                <label style={{ fontSize: '12px', display: 'block', marginBottom: '4px', ...TYPO.label }}>Client Name</label>
-                <input
-                  value={newMessageName}
-                  onChange={e => setNewMessageName(e.target.value)}
-                  placeholder="Jane Smith"
-                  style={{ width: '100%', padding: '9px 12px', ...GLASS_NATIVE_FIELD }}
-                />
+                <label className="lab">Client name</label>
+                <input className="inp" value={newMessageName} onChange={e => setNewMessageName(e.target.value)} placeholder="Jane Smith" />
               </div>
               <div>
-                <label style={{ fontSize: '12px', display: 'block', marginBottom: '4px', ...TYPO.label }}>Client Email</label>
-                <input
-                  type="email"
-                  value={newMessageEmail}
-                  onChange={e => setNewMessageEmail(e.target.value)}
-                  placeholder="jane@example.com"
-                  style={{ width: '100%', padding: '9px 12px', ...GLASS_NATIVE_FIELD }}
-                />
+                <label className="lab">Client email</label>
+                <input className="inp" type="email" value={newMessageEmail} onChange={e => setNewMessageEmail(e.target.value)} placeholder="jane@example.com" />
               </div>
               <div>
-                <label style={{ fontSize: '12px', display: 'block', marginBottom: '4px', ...TYPO.label }}>Message</label>
-                <textarea
-                  value={newMessageText}
-                  onChange={e => { setPortalModerationError(''); setNewMessageText(e.target.value) }}
-                  placeholder="Write your message..."
-                  style={{ width: '100%', padding: '9px 12px', minHeight: '100px', resize: 'vertical', ...GLASS_NATIVE_FIELD }}
-                />
-                {portalModerationError ? (
-                  <div style={{ fontSize: '12px', color: '#f87171', marginTop: '6px', fontFamily: 'var(--font-ui)' }}>{portalModerationError}</div>
-                ) : null}
+                <label className="lab">Message</label>
+                <textarea className="inp" value={newMessageText} onChange={e => { setPortalModerationError(''); setNewMessageText(e.target.value) }} placeholder="Write your message..." />
+                {portalModerationError ? <div className="err">{portalModerationError}</div> : null}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <Button type="button" variant="ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setPortalModerationError('') }}>Cancel</Button>
-              <Button
-                type="button"
-                variant="primary"
-                disabled={
-                  sendingPortal ||
-                  !newMessageEmail.trim() ||
-                  !newMessageText.trim() ||
-                  creativeMonthlyRepliesBlocked
-                }
-                onClick={() => void sendPortal()}
-              >
-                {sendingPortal ? 'Sending…' : 'Send Portal Link'}
-              </Button>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="btn ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setPortalModerationError('') }}>Cancel</button>
+              <button type="button" className="btn primary"
+                disabled={sendingPortal || !newMessageEmail.trim() || !newMessageText.trim() || creativeMonthlyRepliesBlocked}
+                onClick={() => void sendPortal()}>
+                {sendingPortal ? 'Sending…' : 'Send portal link'}
+              </button>
             </div>
           </div>
         </div>
