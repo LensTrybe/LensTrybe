@@ -1,1489 +1,368 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
-import Button from '../../components/ui/Button'
+import { renderDocumentHtml, DOC_FONTS, DOC_TEMPLATES } from '../../lib/documentTemplate'
 
-/** Accent is fixed for UI; persisted saves still write this value so DB shape stays valid. */
-const DISPLAY_ACCENT = '#ffffff'
+const TABS = [{ id: 'invoice', name: 'Invoice' }, { id: 'quote', name: 'Quote' }]
 
-const BASE_FONTS = [
-  'Inter',
-  'Playfair Display',
-  'Montserrat',
-  'Raleway',
-  'Lato',
-  'Poppins',
-  'Merriweather',
-  'Nunito',
-  'DM Sans',
-  'Cormorant Garamond',
-]
-
-const DOC_KEYS = ['invoice', 'quote', 'deliver_gallery']
-const DOC_LABELS = {
-  invoice: 'Invoice',
-  quote: 'Quote',
-  deliver_gallery: 'Deliver Gallery',
+function daysFromNow(n) {
+  const d = new Date(); d.setDate(d.getDate() + n)
+  return d.toISOString().slice(0, 10)
 }
 
-const SERIF_FONTS = new Set(['Playfair Display', 'Merriweather', 'Cormorant Garamond'])
+const CSS = `
+.ltbk{padding:28px 32px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--lt-text);max-width:1400px;margin:0 auto}
+.ltbk *{box-sizing:border-box}
+.ltbk .title{font-size:26px;font-weight:800;letter-spacing:-0.02em;margin:0}
+.ltbk .sub{font-size:13.5px;color:var(--lt-muted);margin-top:4px;max-width:640px;line-height:1.5}
+.ltbk .h2{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.07em;color:var(--lt-faint);margin:26px 0 12px}
+.ltbk .grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:22px;align-items:start}
+.ltbk .card{background:var(--lt-glass-bg);border:var(--lt-glass-border);box-shadow:var(--lt-glass-shadow);backdrop-filter:var(--lt-glass-blur);-webkit-backdrop-filter:var(--lt-glass-blur);border-radius:16px;padding:20px 22px}
+.ltbk .field{margin-bottom:15px}
+.ltbk .lab{font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--lt-faint);display:block;margin-bottom:7px}
+.ltbk .hint{font-size:11.5px;color:var(--lt-faint);margin-top:5px;line-height:1.5}
+.ltbk .inp{width:100%;background:var(--lt-surface);border:1px solid var(--lt-input-border);border-radius:10px;padding:10px 12px;color:var(--lt-text);font-family:inherit;font-size:14px;outline:none}
+.ltbk .inp:focus{border-color:#1DB954}
+.ltbk textarea.inp{min-height:70px;resize:vertical;line-height:1.5}
+.ltbk select.inp{appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b99a8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+.ltbk .colorrow{display:flex;gap:10px;align-items:center}
+.ltbk .swatch{width:44px;height:44px;border-radius:10px;border:1px solid var(--lt-input-border);padding:0;cursor:pointer;flex:0 0 auto;overflow:hidden}
+.ltbk .swatch::-webkit-color-swatch-wrapper{padding:0}
+.ltbk .swatch::-webkit-color-swatch{border:none;border-radius:8px}
+.ltbk .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ltbk .tpls{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ltbk .tpl{border:1px solid var(--lt-border);border-radius:12px;padding:12px 12px 11px;cursor:pointer;background:var(--lt-surface);transition:.14s}
+.ltbk .tpl:hover{background:var(--lt-surface-2)}
+.ltbk .tpl.on{border-color:#1DB954;box-shadow:0 0 0 1px #1DB954 inset}
+.ltbk .tpl .tn{font-size:13px;font-weight:700;margin-bottom:6px}
+.ltbk .tpl .th{font-size:11px;color:var(--lt-faint);line-height:1.45}
+.ltbk .wire{height:46px;border-radius:7px;border:1px solid var(--lt-hairline);margin-bottom:9px;padding:7px 8px;background:var(--lt-surface-2);overflow:hidden}
+.ltbk .toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-top:1px solid var(--lt-hairline)}
+.ltbk .toggle:first-of-type{border-top:none}
+.ltbk .toggle .tl{font-size:13.5px;font-weight:600;color:var(--lt-text)}
+.ltbk .toggle .td{font-size:11.5px;color:var(--lt-faint);margin-top:2px}
+.ltbk .sw{width:44px;height:26px;border-radius:99px;background:var(--lt-track);border:none;cursor:pointer;position:relative;transition:.16s;flex:0 0 auto}
+.ltbk .sw.on{background:#1DB954}
+.ltbk .sw::after{content:'';position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:.16s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.ltbk .sw.on::after{left:21px}
+.ltbk .btn{font-family:inherit;font-size:13px;font-weight:700;border-radius:10px;padding:10px 18px;cursor:pointer;border:1px solid transparent;transition:.15s}
+.ltbk .btn.primary{background:#1DB954;color:#04120a;border-color:#1DB954}
+.ltbk .btn.primary:disabled{opacity:.55;cursor:default}
+.ltbk .btn.ghost{background:var(--lt-surface);color:var(--lt-text);border-color:var(--lt-border)}
+.ltbk .btn.ghost:hover{background:var(--lt-surface-2)}
+.ltbk .tabs{display:inline-flex;background:var(--lt-surface);border:1px solid var(--lt-border);border-radius:11px;padding:3px;margin-bottom:16px}
+.ltbk .tabs button{font-family:inherit;font-size:13.5px;font-weight:700;padding:8px 20px;border-radius:8px;border:none;background:none;color:var(--lt-muted);cursor:pointer}
+.ltbk .tabs button.on{background:#1DB954;color:#04120a}
+.ltbk .logo{border:1px dashed var(--lt-input-border);border-radius:12px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:var(--lt-surface);color:var(--lt-faint);font-size:12.5px;text-align:center;padding:12px;position:relative}
+.ltbk .logo img{max-height:60px;max-width:180px;object-fit:contain}
+.ltbk .logo .rm{position:absolute;top:6px;right:8px;font-size:11px;color:#f0516d;cursor:pointer;font-weight:600}
+.ltbk .link{background:none;border:none;color:var(--lt-muted);font-size:12px;cursor:pointer;text-decoration:underline;padding:0;font-family:inherit}
+.ltbk .previewwrap{position:sticky;top:20px}
+.ltbk .frame{width:100%;height:640px;border:1px solid var(--lt-border);border-radius:14px;background:#fff;overflow:hidden}
+.ltbk .prevhead{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.ltbk .actions{display:flex;gap:10px;align-items:center;margin-top:18px}
+.ltbk .saved{font-size:12.5px;color:#1DB954;font-weight:600}
+.ltbk .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--lt-modal-bg);border:1px solid var(--lt-border);color:var(--lt-text);padding:12px 20px;border-radius:12px;font-size:13.5px;font-weight:600;box-shadow:var(--lt-modal-shadow);opacity:0;pointer-events:none;transition:.28s;z-index:1300}
+.ltbk .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ltbk .toast.err{border-color:rgba(240,81,109,0.5)}
+.ltbk .modal{position:fixed;inset:0;background:rgba(6,5,12,0.78);backdrop-filter:blur(6px);z-index:1200;display:flex;flex-direction:column;padding:24px}
+.ltbk .modal .bar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px}
+.ltbk .modal .fs{flex:1;border:none;border-radius:12px;background:#fff}
+@media (max-width:960px){ .ltbk .grid{grid-template-columns:1fr} .ltbk .previewwrap{position:static} .ltbk .frame{height:520px} }
+`
 
-function fontStackCss(name) {
-  const q = name.includes(' ') ? `"${name}"` : name
-  const fall = SERIF_FONTS.has(name) ? 'serif' : 'sans-serif'
-  return `${q}, ${fall}`
-}
-
-const GOOGLE_FONTS_HREF =
-  'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600;700&family=DM+Sans:wght@400;600;700&family=Inter:wght@400;600;700&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Montserrat:wght@400;600;700&family=Nunito:wght@400;600;700&family=Playfair+Display:wght@400;600;700&family=Poppins:wght@400;600;700&family=Raleway:wght@400;600;700&display=swap'
-
-function emptyDocState() {
-  return {
-    logo_url: null,
-    primary_color: null,
-    accent_color: null,
-    font: null,
-  }
-}
-
-function normaliseDocSettings(raw) {
-  const src = raw && typeof raw === 'object' ? { ...raw } : {}
-  if (src.deliver && !src.deliver_gallery) {
-    src.deliver_gallery = src.deliver
-  }
-  const out = {}
-  for (const k of DOC_KEYS) {
-    const r = src[k] && typeof src[k] === 'object' ? src[k] : {}
-    out[k] = {
-      ...emptyDocState(),
-      logo_url: r.logo ?? r.logo_url ?? null,
-      primary_color: r.primary_colour ?? r.primary_color ?? null,
-      accent_color: r.accent_colour ?? r.accent_color ?? null,
-      font: r.font ?? null,
-    }
-  }
-  return out
-}
-
-/**
- * Persist document_brand_settings: nulls mean inherit from brand base (omit empty override fields).
- * Uses Australian spelling primary_colour and logo_url per stored JSON shape.
- */
-function serialiseDocSettingsForDb(internalByKey) {
-  const out = {}
-  for (const k of DOC_KEYS) {
-    const d = internalByKey[k] || emptyDocState()
-    const entry = {}
-    if (d.logo_url) entry.logo_url = d.logo_url
-    if (d.primary_color) entry.primary_colour = d.primary_color
-    if (d.font) entry.font = d.font
-    const noOverrides = !d.logo_url && !d.primary_color && !d.font
-    if (!noOverrides) out[k] = entry
-  }
-  return out
-}
-
-/** Merge serialised doc settings into existing JSON so keys Brand Kit does not edit (e.g. contract) stay in the DB. */
-function mergeStoredDocumentSettings(existingRaw, serialized) {
-  const base = existingRaw && typeof existingRaw === 'object' && !Array.isArray(existingRaw) ? { ...existingRaw } : {}
-  const next = serialized && typeof serialized === 'object' && !Array.isArray(serialized) ? serialized : {}
-  return { ...base, ...next }
-}
-
-function formatMoneyAud(amount) {
-  return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(Number(amount) || 0)
-}
-
-const PREVIEW_LINE_ITEMS = [
-  { description: 'Creative fee', quantity: 1, rate: 880 },
-  { description: 'Licence and usage', quantity: 1, rate: 220 },
-]
-
-function previewTotal(lines) {
-  return lines.reduce((s, i) => s + Number(i.quantity) * Number(i.rate), 0)
-}
-
-function localIsoDate(d = new Date()) {
-  const y = d.getFullYear()
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${y}-${m}-${day}`
-}
-
-function useNarrow(breakpoint = 960) {
-  const [narrow, setNarrow] = useState(
-    typeof window !== 'undefined' ? window.innerWidth < breakpoint : false,
+function Toggle({ label, desc, on, onChange }) {
+  return (
+    <div className="toggle">
+      <div><div className="tl">{label}</div>{desc && <div className="td">{desc}</div>}</div>
+      <button type="button" className={`sw ${on ? 'on' : ''}`} onClick={() => onChange(!on)} aria-pressed={on} />
+    </div>
   )
-  useEffect(() => {
-    const on = () => setNarrow(window.innerWidth < breakpoint)
-    on()
-    window.addEventListener('resize', on)
-    return () => window.removeEventListener('resize', on)
-  }, [breakpoint])
-  return narrow
+}
+
+function ColorField({ label, value, placeholder, onChange, onClear }) {
+  return (
+    <div className="field">
+      <label className="lab">{label}</label>
+      <div className="colorrow">
+        <input type="color" className="swatch" value={value || '#1DB954'} onChange={(e) => onChange(e.target.value)} />
+        <input className="inp" value={value || ''} placeholder={placeholder || '#1DB954'} onChange={(e) => onChange(e.target.value)} />
+      </div>
+      {onClear && <button type="button" className="link" style={{ marginTop: 6 }} onClick={onClear}>Use brand base</button>}
+    </div>
+  )
+}
+
+function FontSelect({ label, value, baseLabel, onChange }) {
+  return (
+    <div className="field">
+      <label className="lab">{label}</label>
+      <select className="inp" value={value || ''} onChange={(e) => onChange(e.target.value || null)}>
+        {baseLabel && <option value="">{baseLabel}</option>}
+        {DOC_FONTS.map((f) => <option key={f} value={f}>{f}</option>)}
+      </select>
+    </div>
+  )
 }
 
 export default function BrandKitPage() {
-  const { user, profile } = useAuth()
-  const narrow = useNarrow(960)
+  const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [profile, setProfile] = useState({})
+  const [brandRow, setBrandRow] = useState(null)
+  const [rawDs, setRawDs] = useState({})
+  const [base, setBase] = useState({ logoUrl: null, accent: '#1DB954', headingFont: 'Playfair Display', bodyFont: 'Inter', footer: 'Thank you for your business', showPhone: true, showWebsite: true })
+  const [docs, setDocs] = useState({ invoice: {}, quote: {} })
+  const [tab, setTab] = useState('invoice')
   const [savingBase, setSavingBase] = useState(false)
   const [savingDoc, setSavingDoc] = useState(false)
-  const [uploadingBaseLogo, setUploadingBaseLogo] = useState(false)
-  const [uploadingDocLogo, setUploadingDocLogo] = useState(false)
-  const [baseSaved, setBaseSaved] = useState(false)
-  const [docSaved, setDocSaved] = useState(false)
-  const [error, setError] = useState('')
-  const [showPreviewModal, setShowPreviewModal] = useState(false)
+  const [uploading, setUploading] = useState(false)
+  const [toast, setToast] = useState(null)
+  const [previewOpen, setPreviewOpen] = useState(false)
+  const toastTimer = useRef(null)
+  const baseLogoInput = useRef(null)
+  const docLogoInput = useRef(null)
 
-  const [secondaryColor, setSecondaryColor] = useState('#ffffff')
-  const [brandBase, setBrandBase] = useState({
-    logo_url: null,
-    primary_color: '#1DB954',
-    accent_color: DISPLAY_ACCENT,
-    font: 'Inter',
-  })
-  const [docSettings, setDocSettings] = useState(() => {
-    const o = {}
-    for (const k of DOC_KEYS) o[k] = emptyDocState()
-    return o
-  })
-  const [activeTab, setActiveTab] = useState('invoice')
+  function showToast(msg, type = 'success') {
+    setToast({ msg, type }); clearTimeout(toastTimer.current)
+    toastTimer.current = setTimeout(() => setToast(null), 2600)
+  }
 
-  useEffect(() => {
-    const id = 'brand-kit-google-fonts'
-    if (document.getElementById(id)) return
-    const link = document.createElement('link')
-    link.id = id
-    link.rel = 'stylesheet'
-    link.href = GOOGLE_FONTS_HREF
-    document.head.appendChild(link)
-  }, [])
-
-  const loadBrandKit = useCallback(async () => {
-    if (!user?.id || !supabase) {
-      setLoading(false)
-      return
-    }
+  useEffect(() => { if (user) load() }, [user])
+  async function load() {
     setLoading(true)
-    setError('')
-    const { data, error: err } = await supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle()
-    if (err) {
-      setError(err.message)
-      setLoading(false)
-      return
-    }
-    if (data) {
-      setBrandBase({
-        logo_url: data.logo_url ?? null,
-        primary_color: data.primary_color ?? '#1DB954',
-        accent_color: DISPLAY_ACCENT,
-        font: BASE_FONTS.includes(data.font) ? data.font : 'Inter',
-      })
-      setSecondaryColor(data.secondary_color ?? '#ffffff')
-      const rawDocs = data.document_brand_settings
-      setDocSettings(normaliseDocSettings(rawDocs && typeof rawDocs === 'object' ? rawDocs : {}))
-    }
+    const [{ data: bk }, { data: prof }] = await Promise.all([
+      supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle(),
+      supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn, bank_name, bank_account_name, bank_bsb, bank_account').eq('id', user.id).maybeSingle(),
+    ])
+    setProfile(prof || {})
+    setBrandRow(bk || null)
+    const ds = (bk?.document_brand_settings && typeof bk.document_brand_settings === 'object') ? bk.document_brand_settings : {}
+    setRawDs(ds)
+    const b = ds.base || {}
+    setBase({
+      logoUrl: b.logoUrl ?? bk?.logo_url ?? null,
+      accent: b.accent ?? bk?.primary_color ?? '#1DB954',
+      headingFont: b.headingFont ?? bk?.heading_font ?? bk?.font ?? 'Playfair Display',
+      bodyFont: b.bodyFont ?? bk?.body_font ?? bk?.font ?? 'Inter',
+      footer: b.footer ?? 'Thank you for your business',
+      showPhone: b.showPhone !== false,
+      showWebsite: b.showWebsite !== false,
+    })
+    setDocs({ invoice: ds.invoice || {}, quote: ds.quote || {} })
     setLoading(false)
-  }, [user?.id])
+  }
 
-  useEffect(() => {
-    loadBrandKit()
-  }, [loadBrandKit])
+  function setDoc(key, val) { setDocs((p) => ({ ...p, [tab]: { ...p[tab], [key]: val } })) }
 
-  useEffect(() => {
-    if (!showPreviewModal) return
-    const onKey = (e) => {
-      if (e.key === 'Escape') setShowPreviewModal(false)
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [showPreviewModal])
+  async function uploadLogo(file, scope) {
+    if (!file) return
+    setUploading(true)
+    try {
+      const ext = (file.name.split('.').pop() || 'png').toLowerCase()
+      const path = `${user.id}/brand-kit/${scope}-${Date.now()}.${ext}`
+      const { error } = await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
+      if (error) throw error
+      const { data } = supabase.storage.from('portfolio').getPublicUrl(path)
+      if (scope === 'base') setBase((b) => ({ ...b, logoUrl: data.publicUrl }))
+      else setDoc('logoUrl', data.publicUrl)
+      showToast('Logo uploaded')
+    } catch (e) { showToast(e.message || 'Upload failed', 'error') }
+    setUploading(false)
+  }
 
-  const effective = useMemo(() => {
-    const tab = activeTab
-    const d = docSettings[tab] || emptyDocState()
+  function buildDs() {
     return {
-      logo_url: d.logo_url || brandBase.logo_url,
-      primary_color: d.primary_color || brandBase.primary_color,
-      accent_color: DISPLAY_ACCENT,
-      font: d.font || brandBase.font,
-    }
-  }, [activeTab, docSettings, brandBase])
-
-  async function uploadToPortfolio(path, file) {
-    const { error: upErr } = await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
-    if (upErr) throw new Error(upErr.message)
-    const { data } = supabase.storage.from('portfolio').getPublicUrl(path)
-    return data.publicUrl
-  }
-
-  async function handleBaseLogoChange(e) {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
-    setUploadingBaseLogo(true)
-    setError('')
-    try {
-      const ext = file.name.split('.').pop() || 'png'
-      const path = `${user.id}/brand-kit/logo.${ext}`
-      const url = await uploadToPortfolio(path, file)
-      setBrandBase((b) => ({ ...b, logo_url: url }))
-    } catch (er) {
-      setError(er.message || 'Logo upload failed')
-    } finally {
-      setUploadingBaseLogo(false)
-      e.target.value = ''
+      ...rawDs,
+      base: { logoUrl: base.logoUrl, accent: base.accent, headingFont: base.headingFont, bodyFont: base.bodyFont, footer: base.footer, showPhone: base.showPhone, showWebsite: base.showWebsite },
+      invoice: docs.invoice,
+      quote: docs.quote,
     }
   }
 
-  function removeBaseLogo() {
-    setBrandBase((b) => ({ ...b, logo_url: null }))
-  }
-
-  async function handleDocLogoChange(e) {
-    const file = e.target.files?.[0]
-    if (!file || !user?.id) return
-    setUploadingDocLogo(true)
-    setError('')
-    try {
-      const ext = file.name.split('.').pop() || 'png'
-      const path = `${user.id}/brand-kit/${activeTab}-logo.${ext}`
-      const url = await uploadToPortfolio(path, file)
-      setDocSettings((prev) => ({
-        ...prev,
-        [activeTab]: { ...prev[activeTab], logo_url: url },
-      }))
-    } catch (er) {
-      setError(er.message || 'Logo upload failed')
-    } finally {
-      setUploadingDocLogo(false)
-      e.target.value = ''
-    }
-  }
-
-  async function resetDocumentTabToBrandBase() {
-    const msg =
-      `Reset ${DOC_LABELS[activeTab]} to your brand base? This clears all overrides for this document type only.`
-    if (typeof window !== 'undefined' && !window.confirm(msg)) return
-    setError('')
-    if (!user?.id || !supabase) return
-    setSavingDoc(true)
-    try {
-      const { data: row, error: selErr } = await supabase
-        .from('brand_kit')
-        .select('id, document_brand_settings')
-        .eq('creative_id', user.id)
-        .maybeSingle()
-      if (selErr) throw selErr
-      const prevDocs = normaliseDocSettings(row?.document_brand_settings)
-      const nextDocs = { ...prevDocs, [activeTab]: emptyDocState() }
-      const nextDocsPayload = mergeStoredDocumentSettings(row?.document_brand_settings, serialiseDocSettingsForDb(nextDocs))
-      if (row?.id) {
-        const { error: u } = await supabase
-          .from('brand_kit')
-          .update({ document_brand_settings: nextDocsPayload })
-          .eq('creative_id', user.id)
-        if (u) throw u
-      } else {
-        const { error: ins } = await supabase.from('brand_kit').insert({
-          creative_id: user.id,
-          user_id: user.id,
-          logo_url: brandBase.logo_url,
-          primary_color: brandBase.primary_color,
-          accent_color: DISPLAY_ACCENT,
-          secondary_color: secondaryColor,
-          font: brandBase.font,
-          document_brand_settings: nextDocsPayload,
-        })
-        if (ins) throw ins
-      }
-      setDocSettings(nextDocs)
-      setDocSaved(true)
-      setTimeout(() => setDocSaved(false), 3200)
-    } catch (er) {
-      setError(er.message || 'Could not reset document settings')
-    } finally {
-      setSavingDoc(false)
-    }
-  }
-
-  function resetDocField(field) {
-    setDocSettings((prev) => ({
-      ...prev,
-      [activeTab]: { ...prev[activeTab], [field]: null },
-    }))
-  }
-
-  async function saveBrandBase() {
-    if (!user?.id || !supabase) return
-    setSavingBase(true)
-    setError('')
-    setBaseSaved(false)
+  async function persist(nextDs) {
     const payload = {
-      logo_url: brandBase.logo_url,
-      primary_color: brandBase.primary_color,
-      accent_color: DISPLAY_ACCENT,
-      secondary_color: secondaryColor,
-      font: brandBase.font,
+      creative_id: user.id,
+      logo_url: base.logoUrl,
+      primary_color: base.accent,
+      heading_font: base.headingFont,
+      body_font: base.bodyFont,
+      font: base.bodyFont,
+      document_brand_settings: nextDs,
     }
     const { data: existing } = await supabase.from('brand_kit').select('id').eq('creative_id', user.id).maybeSingle()
-    try {
-      if (existing?.id) {
-        const { error: u } = await supabase.from('brand_kit').update(payload).eq('creative_id', user.id)
-        if (u) throw u
-      } else {
-        const { error: ins } = await supabase.from('brand_kit').insert({
-          creative_id: user.id,
-          user_id: user.id,
-          ...payload,
-          document_brand_settings: serialiseDocSettingsForDb(docSettings),
-        })
-        if (ins) throw ins
-      }
-      setBaseSaved(true)
-      setTimeout(() => setBaseSaved(false), 3200)
-    } catch (er) {
-      setError(er.message || 'Could not save brand base')
-    } finally {
-      setSavingBase(false)
-    }
+    if (existing) return supabase.from('brand_kit').update(payload).eq('creative_id', user.id)
+    return supabase.from('brand_kit').insert({ ...payload, user_id: user.id })
   }
 
-  async function saveDocumentTab() {
-    if (!user?.id || !supabase) return
+  async function saveBase() {
+    setSavingBase(true)
+    const ds = buildDs()
+    const { error } = await persist(ds)
+    setSavingBase(false)
+    if (error) { showToast(error.message, 'error'); return }
+    setRawDs(ds); showToast('Brand base saved')
+  }
+  async function saveDoc() {
     setSavingDoc(true)
-    setError('')
-    setDocSaved(false)
-    const merged = { ...docSettings }
-    const { data: row, error: selErr } = await supabase
-      .from('brand_kit')
-      .select('id, document_brand_settings')
-      .eq('creative_id', user.id)
-      .maybeSingle()
-    if (selErr) {
-      setError(selErr.message)
-      setSavingDoc(false)
-      return
+    const ds = buildDs()
+    const { error } = await persist(ds)
+    setSavingDoc(false)
+    if (error) { showToast(error.message, 'error'); return }
+    setRawDs(ds); showToast(`${TABS.find((t) => t.id === tab).name} settings saved`)
+  }
+  function resetDoc() {
+    setDocs((p) => ({ ...p, [tab]: {} }))
+    showToast('Reset to brand base. Remember to save.')
+  }
+
+  // Live preview reflects unsaved edits.
+  const previewHtml = useMemo(() => {
+    const brand = { primary_color: base.accent, heading_font: base.headingFont, body_font: base.bodyFont, logo_url: base.logoUrl, document_brand_settings: { base: { logoUrl: base.logoUrl, accent: base.accent, headingFont: base.headingFont, bodyFont: base.bodyFont, footer: base.footer, showPhone: base.showPhone, showWebsite: base.showWebsite }, invoice: docs.invoice, quote: docs.quote } }
+    const sampleDoc = {
+      id: 'preview01', client_name: 'Jane Smith', client_email: 'jane@example.com', client_phone: '0400 000 000',
+      amount: 1100, created_at: new Date().toISOString(),
+      due_date: tab === 'invoice' ? daysFromNow(14) : daysFromNow(30),
+      line_items: [{ description: 'Creative fee', quantity: 1, rate: 880 }, { description: 'Licence and usage', quantity: 1, rate: 220 }],
+      notes: '',
     }
-    const prevDocs = normaliseDocSettings(row?.document_brand_settings)
-    const nextDocs = { ...prevDocs, [activeTab]: merged[activeTab] }
-    const nextDocsPayload = mergeStoredDocumentSettings(row?.document_brand_settings, serialiseDocSettingsForDb(nextDocs))
-    try {
-      if (row?.id) {
-        const { error: u } = await supabase
-          .from('brand_kit')
-          .update({ document_brand_settings: nextDocsPayload })
-          .eq('creative_id', user.id)
-        if (u) throw u
-      } else {
-        const { error: ins } = await supabase.from('brand_kit').insert({
-          creative_id: user.id,
-          user_id: user.id,
-          logo_url: brandBase.logo_url,
-          primary_color: brandBase.primary_color,
-          accent_color: DISPLAY_ACCENT,
-          secondary_color: secondaryColor,
-          font: brandBase.font,
-          document_brand_settings: nextDocsPayload,
-        })
-        if (ins) throw ins
-      }
-      setDocSettings(nextDocs)
-      setDocSaved(true)
-      setTimeout(() => setDocSaved(false), 3200)
-    } catch (er) {
-      setError(er.message || 'Could not save document settings')
-    } finally {
-      setSavingDoc(false)
-    }
-  }
+    try { return renderDocumentHtml({ type: tab, doc: sampleDoc, profile, brand }) } catch { return '<p>Preview unavailable</p>' }
+  }, [base, docs, tab, profile])
 
-  const card = {
-    ...GLASS_CARD,
-    borderRadius: 'var(--radius-xl)',
-    padding: '24px',
-  }
+  const d = docs[tab] || {}
 
-  const d = docSettings[activeTab]
-
-  if (!user) {
-    return (
-      <div style={{ background: 'transparent', padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
-        Sign in to manage your brand kit.
-      </div>
-    )
-  }
-
-  if (loading) {
-    return (
-      <div style={{ background: 'transparent', padding: '28px 24px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 800, margin: '0 auto', boxSizing: 'border-box' }}>
-        Loading brand kit…
-      </div>
-    )
-  }
-
-  const effectiveDocLogo = d.logo_url || brandBase.logo_url
+  if (loading) return <div className="ltbk"><div style={{ padding: 40, color: 'var(--lt-faint)' }}>Loading brand kit...</div></div>
 
   return (
-    <>
-    <style>{`
-      @media (max-width: 767px) {
-        .brand-kit-page button { min-height: 44px; }
-        .brand-kit-page input, .brand-kit-page textarea, .brand-kit-page select { width: 100% !important; font-size: 14px !important; }
-        .brand-kit-page [data-font-selector] { flex-wrap: wrap !important; }
-      }
-    `}</style>
-    <div
-      className="brand-kit-page"
-      style={{
-        background: 'transparent',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px',
-        padding: '28px 24px 48px',
-        maxWidth: 800,
-        margin: '0 auto',
-        width: '100%',
-        boxSizing: 'border-box',
-        color: 'var(--text-primary)',
-      }}
-    >
-      <header style={{ marginBottom: 0 }}>
-        <h1 style={{ ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Brand Kit</h1>
-        <p style={{ margin: '8px 0 0', fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', maxWidth: 640, lineHeight: 1.6 }}>
-          Set your brand base once, then customise how each client document looks. Word documents are converted to PDF
-          before sending to clients.
-        </p>
-      </header>
+    <div className="ltbk">
+      <style>{CSS}</style>
 
-      {error ? (
-        <div
-          role="alert"
-          style={{
-            marginBottom: 16,
-            padding: 12,
-            borderRadius: 8,
-            border: '1px solid #f87171',
-            color: '#f87171',
-            fontSize: 13,
-          }}
-        >
-          {error}
-        </div>
-      ) : null}
+      <h1 className="title">Brand kit</h1>
+      <p className="sub">Set your brand once, then fine-tune how each client document looks. Invoices and quotes are sent as branded PDFs using these settings.</p>
 
-      {/* Section 1: Brand Base */}
-      <h2 style={{ ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', margin: '0 0 12px' }}>
-        Brand Base
-      </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '0 0 16px', lineHeight: 1.5 }}>
-        These values are the defaults for each document tab. Saving here does not change any per-document overrides you have already saved.
-      </p>
-
-      <div style={{ ...card, marginBottom: 28 }}>
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Logo</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-            <label
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 100,
-                minWidth: 160,
-                border: '2px dashed var(--border-default)',
-                borderRadius: 12,
-                background: 'var(--bg-base)',
-                cursor: uploadingBaseLogo ? 'wait' : 'pointer',
-                padding: 12,
-              }}
-            >
-              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleBaseLogoChange} />
-              {brandBase.logo_url ? (
-                <img src={brandBase.logo_url} alt="" style={{ maxWidth: 160, maxHeight: 64, objectFit: 'contain' }} />
-              ) : (
-                <span style={{ fontSize: 13, color: 'var(--text-muted)' }}>Click to upload</span>
-              )}
-              <span style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>PNG or SVG recommended</span>
-            </label>
-            {brandBase.logo_url ? (
-              <button
-                type="button"
-                onClick={removeBaseLogo}
-                style={{
-                  padding: '8px 14px',
-                  borderRadius: 8,
-                  border: '1px solid var(--border-default)',
-                  background: 'transparent',
-                  color: 'var(--text-muted)',
-                  fontSize: 13,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  fontFamily: 'var(--font-ui)',
-                }}
-              >
-                Remove
-              </button>
-            ) : null}
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Primary colour</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-            <input
-              type="color"
-              value={brandBase.primary_color}
-              onChange={(e) => setBrandBase((b) => ({ ...b, primary_color: e.target.value }))}
-              style={{ width: 44, height: 44, padding: 0, border: 'none', borderRadius: 8, cursor: 'pointer' }}
-            />
-            <input
-              type="text"
-              value={brandBase.primary_color}
-              onChange={(e) => setBrandBase((b) => ({ ...b, primary_color: e.target.value }))}
-              style={{
-                flex: 1,
-                minWidth: 120,
-                maxWidth: 280,
-                padding: '10px 12px',
-                borderRadius: 8,
-                ...GLASS_CARD, color: 'var(--text-primary)',
-                fontSize: 14,
-                fontFamily: 'var(--font-ui)',
-              }}
-            />
-          </div>
-        </div>
-
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 10 }}>Font</div>
-          <select
-            value={brandBase.font}
-            onChange={(e) => setBrandBase((b) => ({ ...b, font: e.target.value }))}
-            style={{
-              width: '100%',
-              padding: '10px 14px',
-              borderRadius: 8,
-              background: '#ffffff',
-              color: 'var(--text-primary)',
-              border: '1px solid rgba(20,17,26,0.1)',
-              fontSize: 14,
-              fontFamily: fontStackCss(brandBase.font),
-              cursor: 'pointer',
-              outline: 'none',
-              colorScheme: 'dark',
-            }}
-          >
-            {BASE_FONTS.map((f) => (
-              <option key={f} value={f} style={{ fontFamily: fontStackCss(f) }}>{f}</option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-          <button
-            type="button"
-            onClick={saveBrandBase}
-            disabled={savingBase}
-            style={{
-              background: '#1DB954',
-              color: '#000',
-              fontWeight: 700,
-              border: 'none',
-              borderRadius: 8,
-              padding: '12px 22px',
-              cursor: savingBase ? 'wait' : 'pointer',
-              fontSize: 14,
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            {savingBase ? 'Saving…' : 'Save Brand Base'}
-          </button>
-          {baseSaved ? (
-            <span style={{ fontSize: 13, color: '#1DB954', fontWeight: 600 }}>Brand base saved.</span>
-          ) : null}
-        </div>
-      </div>
-
-      {/* Section 2: Per-document tabs */}
-      <h2 style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', margin: '0 0 12px' }}>
-        Per-document tabs
-      </h2>
-      <p style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: '0 0 16px', lineHeight: 1.5 }}>
-        Each tab saves separately. Changing one document type never changes the others.
-      </p>
-
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: 8,
-          marginBottom: 20,
-        }}
-      >
-        {DOC_KEYS.map((key) => (
-          <button
-            key={key}
-            type="button"
-            onClick={() => setActiveTab(key)}
-            style={{
-              padding: '10px 16px',
-              borderRadius: 8,
-              border: `1px solid ${activeTab === key ? '#1DB954' : 'var(--border-default)'}`,
-              background: activeTab === key ? 'rgba(29,185,84,0.12)' : 'var(--bg-base)',
-              color: activeTab === key ? '#1DB954' : 'var(--text-primary)',
-              fontWeight: 600,
-              fontSize: 13,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            {DOC_LABELS[key]}
-          </button>
-        ))}
-      </div>
-
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: narrow ? '1fr' : 'minmax(0, 55fr) minmax(0, 45fr)',
-          gap: 24,
-          alignItems: 'start',
-        }}
-      >
-        <div style={{ ...card, marginBottom: narrow ? 0 : 0 }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginBottom: 16 }}>{DOC_LABELS[activeTab]} settings</div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Primary colour override</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <input
-                type="color"
-                value={d.primary_color || brandBase.primary_color}
-                onChange={(e) =>
-                  setDocSettings((p) => ({
-                    ...p,
-                    [activeTab]: { ...p[activeTab], primary_color: e.target.value },
-                  }))
-                }
-                style={{ width: 40, height: 40, border: 'none', borderRadius: 8, cursor: 'pointer' }}
-              />
-              <input
-                type="text"
-                value={d.primary_color ?? ''}
-                placeholder={brandBase.primary_color}
-                onChange={(e) =>
-                  setDocSettings((p) => ({
-                    ...p,
-                    [activeTab]: { ...p[activeTab], primary_color: e.target.value || null },
-                  }))
-                }
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  maxWidth: 260,
-                  padding: '8px 10px',
-                  borderRadius: 8,
-                  ...GLASS_CARD, color: 'var(--text-primary)',
-                  fontSize: 13,
-                  fontFamily: 'var(--font-ui)',
-                }}
-              />
+      <div className="grid">
+        {/* LEFT: controls */}
+        <div>
+          <div className="h2">Brand base</div>
+          <div className="card">
+            <div className="field">
+              <label className="lab">Logo</label>
+              <div className="logo" onClick={() => baseLogoInput.current?.click()}>
+                {base.logoUrl ? (<>
+                  <span className="rm" onClick={(e) => { e.stopPropagation(); setBase((b) => ({ ...b, logoUrl: null })) }}>Remove</span>
+                  <img src={base.logoUrl} alt="logo" />
+                </>) : (<><div style={{ fontWeight: 700, color: 'var(--lt-muted)' }}>Click to upload</div><div>PNG or SVG recommended</div></>)}
+              </div>
+              <input ref={baseLogoInput} type="file" accept="image/*" hidden onChange={(e) => uploadLogo(e.target.files?.[0], 'base')} />
             </div>
-            <button
-              type="button"
-              onClick={() => resetDocField('primary_color')}
-              style={{ marginTop: 6, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-            >
-              Use brand base
-            </button>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Font override</div>
-            <select
-              value={d.font || ''}
-              onChange={(e) =>
-                setDocSettings((p) => ({
-                  ...p,
-                  [activeTab]: { ...p[activeTab], font: e.target.value || null },
-                }))
-              }
-              style={{
-                width: '100%',
-                padding: '10px 14px',
-                borderRadius: 8,
-                background: '#ffffff',
-                color: 'var(--text-primary)',
-                border: '1px solid rgba(20,17,26,0.1)',
-                fontSize: 14,
-                fontFamily: d.font ? fontStackCss(d.font) : 'var(--font-ui)',
-                cursor: 'pointer',
-                outline: 'none',
-                colorScheme: 'dark',
-              }}
-            >
-              <option value="">Use brand base ({brandBase.font})</option>
-              {BASE_FONTS.map((f) => (
-                <option key={f} value={f} style={{ fontFamily: fontStackCss(f) }}>{f}</option>
-              ))}
-            </select>
-            <button
-              type="button"
-              onClick={() => resetDocField('font')}
-              style={{ marginTop: 6, background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
-            >
-              Use brand base
-            </button>
-          </div>
-
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Logo override</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-              <div
-                style={{
-                  width: 72,
-                  height: 72,
-                  borderRadius: 8,
-                  ...GLASS_CARD, display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  overflow: 'hidden',
-                }}
-              >
-                {effectiveDocLogo ? (
-                  <img src={effectiveDocLogo} alt="" style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
-                ) : (
-                  <span style={{ fontSize: 10, color: 'var(--text-muted)', padding: 4, textAlign: 'center' }}>No logo</span>
-                )}
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <label
-                  style={{
-                    padding: '8px 14px',
-                    borderRadius: 8,
-                    ...GLASS_CARD, cursor: uploadingDocLogo ? 'wait' : 'pointer',
-                    fontSize: 13,
-                    width: 'fit-content',
-                  }}
-                >
-                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleDocLogoChange} />
-                  {uploadingDocLogo ? 'Uploading…' : d.logo_url ? 'Replace file' : 'Upload file'}
-                </label>
-                {d.logo_url ? (
-                  <button
-                    type="button"
-                    onClick={() => resetDocField('logo_url')}
-                    style={{
-                      padding: '6px 12px',
-                      borderRadius: 6,
-                      border: '1px solid var(--border-default)',
-                      background: 'transparent',
-                      color: 'var(--text-muted)',
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      fontFamily: 'var(--font-ui)',
-                    }}
-                  >
-                    Remove
-                  </button>
-                ) : null}
-                {d.logo_url ? (
-                  <button
-                    type="button"
-                    onClick={() => resetDocField('logo_url')}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: 12, cursor: 'pointer', textDecoration: 'underline', padding: 0, textAlign: 'left' }}
-                  >
-                    Use brand base
-                  </button>
-                ) : null}
-              </div>
+            <ColorField label="Accent colour" value={base.accent} onChange={(v) => setBase((b) => ({ ...b, accent: v }))} />
+            <div className="row2">
+              <FontSelect label="Heading font" value={base.headingFont} onChange={(v) => setBase((b) => ({ ...b, headingFont: v || 'Playfair Display' }))} />
+              <FontSelect label="Body font" value={base.bodyFont} onChange={(v) => setBase((b) => ({ ...b, bodyFont: v || 'Inter' }))} />
+            </div>
+            <div className="field">
+              <label className="lab">Footer line</label>
+              <input className="inp" value={base.footer} onChange={(e) => setBase((b) => ({ ...b, footer: e.target.value }))} placeholder="Thank you for your business" />
+            </div>
+            <div style={{ marginTop: 6 }}>
+              <Toggle label="Show phone on documents" on={base.showPhone} onChange={(v) => setBase((b) => ({ ...b, showPhone: v }))} />
+              <Toggle label="Show website on documents" on={base.showWebsite} onChange={(v) => setBase((b) => ({ ...b, showWebsite: v }))} />
+            </div>
+            <div className="hint" style={{ marginTop: 10 }}>Business name, email{profile.abn ? ', ABN' : ''} and payment details come from your profile. Update them in Settings.</div>
+            <div className="actions">
+              <button className="btn primary" disabled={savingBase} onClick={saveBase}>{savingBase ? 'Saving...' : 'Save brand base'}</button>
             </div>
           </div>
 
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={saveDocumentTab}
-              disabled={savingDoc}
-              style={{
-                background: '#1DB954',
-                color: '#000',
-                fontWeight: 700,
-                border: 'none',
-                borderRadius: 8,
-                padding: '12px 22px',
-                cursor: savingDoc ? 'wait' : 'pointer',
-                fontSize: 14,
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              {savingDoc ? 'Saving…' : `Save ${DOC_LABELS[activeTab]}`}
-            </button>
-            <button
-              type="button"
-              onClick={resetDocumentTabToBrandBase}
-              disabled={savingDoc}
-              style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--text-muted)',
-                fontSize: 13,
-                cursor: savingDoc ? 'wait' : 'pointer',
-                textDecoration: 'underline',
-                fontFamily: 'var(--font-ui)',
-              }}
-            >
-              Reset to brand base
-            </button>
-            {docSaved ? (
-              <span style={{ fontSize: 13, color: '#1DB954', fontWeight: 600 }}>{DOC_LABELS[activeTab]} settings saved.</span>
-            ) : null}
+          <div className="h2">Per-document design</div>
+          <div className="tabs">
+            {TABS.map((t) => <button key={t.id} className={tab === t.id ? 'on' : ''} onClick={() => setTab(t.id)}>{t.name}</button>)}
           </div>
-        </div>
 
-        <div style={{ ...card, position: narrow ? 'relative' : 'sticky', top: narrow ? 0 : 16 }}>
-          <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', marginBottom: 8 }}>Preview</div>
-          <p style={{ fontSize: 12, color: 'var(--text-muted)', margin: '0 0 14px', lineHeight: 1.45 }}>
-            Open a full-screen sample using this tab&apos;s colours, font and logo.
-          </p>
-          <button
-            type="button"
-            onClick={() => setShowPreviewModal(true)}
-            style={{
-              width: '100%',
-              padding: '12px 16px',
-              borderRadius: 8,
-              border: '1px solid #1DB954',
-              background: 'rgba(29,185,84,0.12)',
-              color: '#1DB954',
-              fontWeight: 700,
-              fontSize: 14,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            Preview Document
-          </button>
-        </div>
-      </div>
-    </div>
-
-    {showPreviewModal ? (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label="Document preview"
-        style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 2000,
-          background: 'rgba(0,0,0,0.92)',
-          display: 'flex',
-          flexDirection: 'column',
-          padding: narrow ? 16 : 24,
-          boxSizing: 'border-box',
-        }}
-        onClick={() => setShowPreviewModal(false)}
-      >
-        <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }} onClick={(e) => e.stopPropagation()}>
-          <button
-            type="button"
-            onClick={() => setShowPreviewModal(false)}
-            style={{
-              padding: '10px 18px',
-              borderRadius: 8,
-              ...GLASS_CARD, color: 'var(--text-primary)',
-              fontWeight: 600,
-              fontSize: 14,
-              cursor: 'pointer',
-              fontFamily: 'var(--font-ui)',
-            }}
-          >
-            Close
-          </button>
-        </div>
-        <div
-          style={{
-            flex: 1,
-            overflow: 'auto',
-            maxWidth: 720,
-            width: '100%',
-            margin: '0 auto',
-            paddingBottom: 32,
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {activeTab === 'invoice' ? (
-            <BrandKitInvoicePreview effective={effective} headerTextColor={secondaryColor} profile={profile} user={user} />
-          ) : activeTab === 'quote' ? (
-            <BrandKitQuotePreview effective={effective} headerTextColor={secondaryColor} profile={profile} user={user} />
-          ) : (
-            <DeliverGalleryPreview effective={effective} secondaryColor="#ffffff" />
-          )}
-        </div>
-      </div>
-    ) : null}
-    </>
-  )
-}
-
-function readOnlyFieldStyle(brandAccent, muted) {
-  return {
-    padding: '8px 12px',
-    border: `1px solid ${brandAccent}40`,
-    borderRadius: '6px',
-    fontSize: '14px',
-    color: muted ? '#9ca3af' : '#111',
-    width: '100%',
-    boxSizing: 'border-box',
-  }
-}
-
-function BrandKitInvoicePreview({ effective, headerTextColor, profile, user }) {
-  const brandColor = effective.primary_color
-  const brandAccent = DISPLAY_ACCENT
-  const brandLogo = effective.logo_url
-  const brandFontStack = fontStackCss(effective.font)
-  const brandHeaderBg = { background: brandColor }
-  const invoiceDocSurface = {
-    padding: '40px 48px',
-    overflowY: 'auto',
-    flex: 1,
-    background: '#fff',
-    color: '#111',
-    fontFamily: brandFontStack,
-  }
-  const bankDetails = {
-    bank_name: profile?.bank_name ?? '',
-    bank_bsb: profile?.bank_bsb ?? '',
-    bank_account: profile?.bank_account ?? '',
-    bank_account_name: profile?.bank_account_name ?? '',
-  }
-  const todayLong = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
-  const dueIso = localIsoDate()
-  const total = previewTotal(PREVIEW_LINE_ITEMS)
-
-  return (
-    <div style={{ ...invoiceDocSurface, borderRadius: 8, border: '1px solid #e5e7eb' }}>
-      <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...brandHeaderBg, color: headerTextColor }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-            {brandLogo ? (
-              <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />
-            ) : null}
-            <div>
-              <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: brandFontStack }}>
-                {profile?.business_name ?? 'Your Business'}
+          <div className="card">
+            <div className="field">
+              <label className="lab">Template style</label>
+              <div className="tpls">
+                {DOC_TEMPLATES.map((tp) => {
+                  const active = (d.template || 'classic') === tp.id
+                  return (
+                    <div key={tp.id} className={`tpl ${active ? 'on' : ''}`} onClick={() => setDoc('template', tp.id)}>
+                      <div className="wire">
+                        {tp.id === 'band' && <div style={{ height: 16, borderRadius: 4, background: base.accent, marginBottom: 5 }} />}
+                        {tp.id === 'classic' && <div style={{ display: 'flex', justifyContent: 'space-between' }}><div style={{ width: 30, height: 8, borderRadius: 3, background: 'var(--lt-border)' }} /><div style={{ width: 22, height: 8, borderRadius: 3, background: base.accent }} /></div>}
+                        {tp.id === 'minimal' && <div style={{ borderBottom: `2px solid ${base.accent}`, paddingBottom: 4, display: 'flex', justifyContent: 'space-between' }}><div style={{ width: 26, height: 7, borderRadius: 3, background: 'var(--lt-border)' }} /><div style={{ width: 20, height: 7, borderRadius: 3, background: 'var(--lt-border)' }} /></div>}
+                        <div style={{ height: 4, background: 'var(--lt-hairline)', borderRadius: 2, marginTop: 6 }} />
+                        <div style={{ height: 4, background: 'var(--lt-hairline)', borderRadius: 2, marginTop: 4, width: '70%' }} />
+                      </div>
+                      <div className="tn">{tp.name}</div>
+                      <div className="th">{tp.hint}</div>
+                    </div>
+                  )
+                })}
               </div>
-              <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
+            </div>
+
+            <ColorField label="Accent override" value={d.accent} placeholder={base.accent} onChange={(v) => setDoc('accent', v)} onClear={d.accent ? () => setDoc('accent', null) : null} />
+            <div className="row2">
+              <FontSelect label="Heading font" value={d.headingFont} baseLabel={`Use base (${base.headingFont})`} onChange={(v) => setDoc('headingFont', v)} />
+              <FontSelect label="Body font" value={d.bodyFont} baseLabel={`Use base (${base.bodyFont})`} onChange={(v) => setDoc('bodyFont', v)} />
+            </div>
+
+            <div className="field">
+              <label className="lab">Logo override</label>
+              <div className="logo" style={{ minHeight: 72 }} onClick={() => docLogoInput.current?.click()}>
+                {d.logoUrl ? (<><span className="rm" onClick={(e) => { e.stopPropagation(); setDoc('logoUrl', null) }}>Remove</span><img src={d.logoUrl} alt="logo" /></>) : (<div>Uses your brand base logo. Click to set a different one.</div>)}
+              </div>
+              <input ref={docLogoInput} type="file" accept="image/*" hidden onChange={(e) => uploadLogo(e.target.files?.[0], tab)} />
+            </div>
+
+            <div className="row2">
+              <div className="field"><label className="lab">Number prefix</label><input className="inp" value={d.numberPrefix || ''} placeholder={tab === 'invoice' ? 'INV' : 'QUO'} onChange={(e) => setDoc('numberPrefix', e.target.value)} /></div>
+            </div>
+
+            <div className="field">
+              <label className="lab">{tab === 'invoice' ? 'Payment terms' : 'Terms / acceptance note'}</label>
+              <textarea className="inp" value={d.terms || ''} onChange={(e) => setDoc('terms', e.target.value)} placeholder={tab === 'invoice' ? 'e.g. Payment due within 14 days. A 50% deposit secures your booking.' : 'e.g. This quote is valid for 30 days. Accepting confirms your booking.'} />
+            </div>
+
+            <div style={{ marginTop: 6 }}>
+              {tab === 'invoice' && <>
+                <Toggle label="Show ABN" desc="Adds your ABN so it reads as a tax invoice. Optional." on={d.showAbn === true} onChange={(v) => setDoc('showAbn', v)} />
+                <Toggle label="Show GST (10%)" desc="Shows a GST line, treating the total as GST inclusive." on={d.showGst === true} onChange={(v) => setDoc('showGst', v)} />
+                <Toggle label="Show payment details" desc="Your bank details from Settings." on={d.showBank !== false} onChange={(v) => setDoc('showBank', v)} />
+              </>}
+              {tab === 'quote' && <Toggle label="Show payment details" desc="Include your bank details on quotes." on={d.showBank === true} onChange={(v) => setDoc('showBank', v)} />}
+            </div>
+
+            <div className="actions" style={{ justifyContent: 'space-between' }}>
+              <button className="btn primary" disabled={savingDoc} onClick={saveDoc}>{savingDoc ? 'Saving...' : `Save ${TABS.find((t) => t.id === tab).name}`}</button>
+              <button className="link" onClick={resetDoc}>Reset to brand base</button>
             </div>
           </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: brandFontStack }}>INVOICE</div>
-            <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{todayLong}</div>
+        </div>
+
+        {/* RIGHT: live preview */}
+        <div className="previewwrap">
+          <div className="prevhead">
+            <div className="h2" style={{ margin: 0 }}>Live preview &middot; {TABS.find((t) => t.id === tab).name}</div>
+            <button className="btn ghost" onClick={() => setPreviewOpen(true)}>Full screen</button>
           </div>
+          <iframe title="Document preview" className="frame" srcDoc={previewHtml} />
+          {uploading && <div className="hint" style={{ marginTop: 8 }}>Uploading logo...</div>}
         </div>
       </div>
 
-      <div style={{ marginBottom: '24px', paddingBottom: '16px', borderBottom: `1px solid ${brandAccent}` }}>
-        <div
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            color: brandAccent,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: '8px',
-          }}
-        >
-          Bill To
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={readOnlyFieldStyle(brandAccent)}>Sample Client Co.</div>
-          <div style={readOnlyFieldStyle(brandAccent, true)}>Client email</div>
-          <div style={readOnlyFieldStyle(brandAccent, true)}>Phone (optional)</div>
-          <div style={readOnlyFieldStyle(brandAccent, true)}>Address (optional)</div>
-          <div style={{ ...readOnlyFieldStyle(brandAccent), width: '50%' }}>{dueIso}</div>
-        </div>
-      </div>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
-        <thead>
-          <tr style={{ borderBottom: `2px solid ${brandColor}`, background: `${brandAccent}33` }}>
-            <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Description
-            </th>
-            <th
-              style={{
-                textAlign: 'center',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '80px',
-              }}
-            >
-              Qty
-            </th>
-            <th
-              style={{
-                textAlign: 'right',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '100px',
-              }}
-            >
-              Rate
-            </th>
-            <th
-              style={{
-                textAlign: 'right',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '100px',
-              }}
-            >
-              Amount
-            </th>
-            <th style={{ width: '32px' }} />
-          </tr>
-        </thead>
-        <tbody>
-          {PREVIEW_LINE_ITEMS.map((item, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-              <td style={{ padding: '8px 0' }}>
-                <div style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', color: '#111' }}>
-                  {item.description}
-                </div>
-              </td>
-              <td style={{ padding: '8px 4px' }}>
-                <div style={{ width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', textAlign: 'center', color: '#111' }}>
-                  {item.quantity}
-                </div>
-              </td>
-              <td style={{ padding: '8px 4px' }}>
-                <div style={{ width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', textAlign: 'right', color: '#111' }}>
-                  {item.rate}
-                </div>
-              </td>
-              <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '13px', fontWeight: 600, color: '#111' }}>
-                AUD {(Number(item.quantity) * Number(item.rate)).toFixed(2)}
-              </td>
-              <td style={{ padding: '8px 0' }} />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px', paddingTop: '16px', borderTop: `1px solid ${brandAccent}` }}>
-        <div style={{ width: '240px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 0', borderBottom: `2px solid ${brandAccent}` }}>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: brandColor }}>{formatMoneyAud(total)}</span>
+      {previewOpen && (
+        <div className="modal">
+          <div className="bar">
+            <div style={{ fontSize: 15, fontWeight: 700, color: '#fff' }}>{TABS.find((t) => t.id === tab).name} preview</div>
+            <button className="btn ghost" onClick={() => setPreviewOpen(false)}>Close</button>
           </div>
-        </div>
-      </div>
-
-      {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-        <div
-          style={{
-            background: '#f9fafb',
-            borderRadius: '8px',
-            padding: '16px 20px',
-            marginBottom: '24px',
-            borderLeft: `4px solid ${brandAccent}`,
-            borderTop: `1px solid ${brandAccent}`,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: brandAccent,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginBottom: '10px',
-            }}
-          >
-            Payment Details
-          </div>
-          {bankDetails.bank_name ? <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div> : null}
-          {bankDetails.bank_account_name ? (
-            <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>
-          ) : null}
-          {bankDetails.bank_bsb ? <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div> : null}
-          {bankDetails.bank_account ? <div style={{ fontSize: '13px', color: '#374151' }}>Account: {bankDetails.bank_account}</div> : null}
+          <iframe title="Full preview" className="fs" srcDoc={previewHtml} />
         </div>
       )}
 
-      <div style={{ paddingTop: '20px', borderTop: `1px solid ${brandAccent}` }}>
-        <div
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            color: brandAccent,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: '8px',
-          }}
-        >
-          Notes
-        </div>
-        <div
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '13px',
-            minHeight: '80px',
-            color: '#111',
-            boxSizing: 'border-box',
-          }}
-        >
-          Preview notes: your real invoices use the text you enter when creating them.
-        </div>
-      </div>
-
-      <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: `1px solid ${brandAccent}`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
-        Thank you for your business
-      </div>
-    </div>
-  )
-}
-
-function BrandKitQuotePreview({ effective, headerTextColor, profile, user }) {
-  const brandLogo = effective.logo_url
-  const quoteBrandColor = effective.primary_color
-  const quoteBrandAccent = DISPLAY_ACCENT
-  const quoteBrandFontStack = fontStackCss(effective.font)
-  const quoteHeaderBg = { background: quoteBrandColor }
-  const quoteDocSurface = {
-    padding: '40px 48px',
-    overflowY: 'auto',
-    flex: 1,
-    background: '#fff',
-    color: '#111',
-    fontFamily: quoteBrandFontStack,
-  }
-  const bankDetails = {
-    bank_name: profile?.bank_name ?? '',
-    bank_bsb: profile?.bank_bsb ?? '',
-    bank_account: profile?.bank_account ?? '',
-    bank_account_name: profile?.bank_account_name ?? '',
-  }
-  const todayLong = new Date().toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
-  const dueIso = localIsoDate()
-  const total = previewTotal(PREVIEW_LINE_ITEMS)
-
-  return (
-    <div style={{ ...quoteDocSurface, borderRadius: 8, border: '1px solid #e5e7eb' }}>
-      <div style={{ margin: '-40px -48px 24px -48px', padding: '20px 48px', ...quoteHeaderBg, color: headerTextColor }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
-            {brandLogo ? (
-              <img src={brandLogo} alt="Logo" style={{ height: '48px', width: 'auto', maxWidth: '140px', objectFit: 'contain' }} />
-            ) : null}
-            <div>
-              <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.5px', marginBottom: '4px', fontFamily: quoteBrandFontStack }}>
-                {profile?.business_name ?? 'Your Business'}
-              </div>
-              <div style={{ fontSize: '13px', opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
-            </div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div style={{ fontSize: '32px', fontWeight: 800, letterSpacing: '-1px', fontFamily: quoteBrandFontStack }}>QUOTE</div>
-            <div style={{ fontSize: '13px', opacity: 0.85, marginTop: '4px' }}>{todayLong}</div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '24px' }}>
-        <div
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            color: quoteBrandAccent,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: '8px',
-          }}
-        >
-          Bill To
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          <div style={readOnlyFieldStyle(quoteBrandAccent)}>Sample Client Co.</div>
-          <div style={readOnlyFieldStyle(quoteBrandAccent, true)}>Client email</div>
-          <div style={readOnlyFieldStyle(quoteBrandAccent, true)}>Phone (optional)</div>
-          <div style={readOnlyFieldStyle(quoteBrandAccent, true)}>Address (optional)</div>
-          <div style={{ ...readOnlyFieldStyle(quoteBrandAccent), width: '50%' }}>{dueIso}</div>
-        </div>
-      </div>
-
-      <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '16px' }}>
-        <thead>
-          <tr
-            style={{
-              borderBottom: `2px solid ${quoteBrandColor}`,
-              background: `${quoteBrandColor}22`,
-              boxShadow: `inset 0 -2px 0 0 ${quoteBrandAccent}66`,
-            }}
-          >
-            <th style={{ textAlign: 'left', padding: '10px 0', fontSize: '12px', fontWeight: 700, color: '#999', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              Description
-            </th>
-            <th
-              style={{
-                textAlign: 'center',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '80px',
-              }}
-            >
-              Qty
-            </th>
-            <th
-              style={{
-                textAlign: 'right',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '100px',
-              }}
-            >
-              Rate
-            </th>
-            <th
-              style={{
-                textAlign: 'right',
-                padding: '10px 0',
-                fontSize: '12px',
-                fontWeight: 700,
-                color: '#999',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
-                width: '100px',
-              }}
-            >
-              Amount
-            </th>
-            <th style={{ width: '32px' }} />
-          </tr>
-        </thead>
-        <tbody>
-          {PREVIEW_LINE_ITEMS.map((item, i) => (
-            <tr key={i} style={{ borderBottom: '1px solid #f3f4f6' }}>
-              <td style={{ padding: '8px 0' }}>
-                <div style={{ width: '100%', padding: '6px 10px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', color: '#111' }}>
-                  {item.description}
-                </div>
-              </td>
-              <td style={{ padding: '8px 4px' }}>
-                <div style={{ width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', textAlign: 'center', color: '#111' }}>
-                  {item.quantity}
-                </div>
-              </td>
-              <td style={{ padding: '8px 4px' }}>
-                <div style={{ width: '100%', padding: '6px 8px', border: '1px solid #e5e7eb', borderRadius: '6px', fontSize: '13px', textAlign: 'right', color: '#111' }}>
-                  {item.rate}
-                </div>
-              </td>
-              <td style={{ padding: '8px 0', textAlign: 'right', fontSize: '13px', fontWeight: 600, color: '#111' }}>
-                AUD {(Number(item.quantity) * Number(item.rate)).toFixed(2)}
-              </td>
-              <td style={{ padding: '8px 0' }} />
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '32px' }}>
-        <div style={{ width: '240px' }}>
-          <div
-            style={{
-              display: 'flex',
-              justifyContent: 'space-between',
-              padding: '8px 0',
-              borderTop: `2px solid ${quoteBrandColor}`,
-              borderBottom: `1px solid ${quoteBrandAccent}55`,
-            }}
-          >
-            <span style={{ fontSize: '16px', fontWeight: 800, color: '#111' }}>Total</span>
-            <span style={{ fontSize: '16px', fontWeight: 800, color: quoteBrandColor }}>{formatMoneyAud(total)}</span>
-          </div>
-        </div>
-      </div>
-
-      {(bankDetails.bank_account || bankDetails.bank_bsb) && (
-        <div
-          style={{
-            background: '#f9fafb',
-            borderRadius: '8px',
-            padding: '16px 20px',
-            marginBottom: '24px',
-            borderLeft: `4px solid ${quoteBrandAccent}`,
-          }}
-        >
-          <div
-            style={{
-              fontSize: '11px',
-              fontWeight: 700,
-              color: quoteBrandAccent,
-              letterSpacing: '0.08em',
-              textTransform: 'uppercase',
-              marginBottom: '10px',
-            }}
-          >
-            Payment Details
-          </div>
-          {bankDetails.bank_name ? <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Bank: {bankDetails.bank_name}</div> : null}
-          {bankDetails.bank_account_name ? (
-            <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>Account Name: {bankDetails.bank_account_name}</div>
-          ) : null}
-          {bankDetails.bank_bsb ? <div style={{ fontSize: '13px', color: '#374151', marginBottom: '4px' }}>BSB: {bankDetails.bank_bsb}</div> : null}
-          {bankDetails.bank_account ? <div style={{ fontSize: '13px', color: '#374151' }}>Account: {bankDetails.bank_account}</div> : null}
-        </div>
-      )}
-
-      <div>
-        <div
-          style={{
-            fontSize: '11px',
-            fontWeight: 700,
-            color: quoteBrandAccent,
-            letterSpacing: '0.08em',
-            textTransform: 'uppercase',
-            marginBottom: '8px',
-          }}
-        >
-          Notes
-        </div>
-        <div
-          style={{
-            width: '100%',
-            padding: '8px 12px',
-            border: '1px solid #d1d5db',
-            borderRadius: '6px',
-            fontSize: '13px',
-            minHeight: '80px',
-            color: '#111',
-            boxSizing: 'border-box',
-          }}
-        >
-          Preview notes: your real quotes use the text you enter when creating them.
-        </div>
-      </div>
-
-      <div style={{ marginTop: '32px', paddingTop: '20px', borderTop: `1px solid ${quoteBrandAccent}33`, fontSize: '12px', color: '#999', textAlign: 'center' }}>
-        Thank you for your business
-      </div>
-    </div>
-  )
-}
-
-function DeliverGalleryPreview({ effective, secondaryColor }) {
-  const { primary_color: p, font: ff, logo_url: logo } = effective
-  const fontStack = fontStackCss(ff)
-
-  return (
-    <div
-      style={{
-        borderRadius: 8,
-        overflow: 'hidden',
-        border: '1px solid #ffffff',
-        background: '#ffffff14',
-        fontFamily: fontStack,
-      }}
-    >
-      <div
-        style={{
-          padding: '14px 16px',
-          background: p,
-          borderBottom: '4px solid #ffffff',
-          boxShadow: 'inset 0 -1px 0 0 #ffffff88',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 12,
-          fontWeight: 700,
-          color: secondaryColor,
-        }}
-      >
-        {logo ? <img src={logo} alt="" style={{ height: 28, objectFit: 'contain' }} /> : <span style={{ fontSize: 14 }}>Your studio</span>}
-        <span style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.9 }}>Deliver gallery</span>
-      </div>
-      <div style={{ padding: 16 }}>
-        <div
-          style={{
-            fontSize: 16,
-            fontWeight: 700,
-            color: secondaryColor,
-            marginBottom: 12,
-            paddingBottom: 8,
-            borderBottom: '2px solid #ffffff',
-            display: 'inline-block',
-            width: '100%',
-            boxSizing: 'border-box',
-          }}
-        >
-          Client delivery
-        </div>
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(3, 1fr)',
-            gap: 8,
-          }}
-        >
-          {[1, 2, 3, 4, 5, 6].map((i) => (
-            <div
-              key={i}
-              style={{
-                aspectRatio: '1',
-                borderRadius: 6,
-                background: `${p}28`,
-                border: '2px solid #ffffff66',
-                boxShadow: '0 0 0 1px #ffffff22 inset',
-              }}
-            />
-          ))}
-        </div>
-        <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-          <span
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-              padding: '8px 16px',
-              borderRadius: 8,
-              background: p,
-              color: secondaryColor,
-              border: `1px solid ${secondaryColor}`,
-            }}
-          >
-            Download
-          </span>
-        </div>
-      </div>
+      {toast && <div className={`toast show ${toast.type === 'error' ? 'err' : ''}`}>{toast.type === 'error' ? '✕ ' : '✓ '}{toast.msg}</div>}
     </div>
   )
 }
