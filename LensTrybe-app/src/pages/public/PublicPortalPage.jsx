@@ -24,6 +24,7 @@ export default function PublicPortalPage() {
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState('messages')
   const [notFound, setNotFound] = useState(false)
+  const [quoteActioning, setQuoteActioning] = useState(null)
   const bottomRef = useRef(null)
   const activeThreadRef = useRef(null)
 
@@ -102,6 +103,18 @@ export default function PublicPortalPage() {
     setSending(false)
   }
 
+  async function respondToQuote(quoteId, action) {
+    setQuoteActioning(quoteId)
+    try {
+      const { data, error } = await supabase.functions.invoke('respond-quote', { body: { quote_id: quoteId, portal_token: token, action } })
+      if (!error && data?.status) {
+        setQuotes((prev) => prev.map((q) => (q.id === quoteId ? { ...q, status: data.status } : q)))
+      }
+    } finally {
+      setQuoteActioning(null)
+    }
+  }
+
   const statusColor = (s) => ({ draft: '#666', sent: '#facc15', paid: '#39ff14', accepted: '#39ff14', signed: '#39ff14', declined: '#f87171', overdue: '#f87171' }[s] || '#666')
 
   if (loading) return <div style={{ background: '#0f0f0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'system-ui' }}>Loading your portal...</div>
@@ -138,6 +151,9 @@ export default function PublicPortalPage() {
         .doc-meta { font-size: 12px; color: #666; margin-top: 3px; }
         .doc-status { font-size: 11px; font-weight: 700; border-radius: 4px; padding: 3px 8px; border: 1px solid; text-transform: uppercase; flex-shrink: 0; }
         .doc-action { background: #39ff14; color: #000; border: none; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; text-decoration: none; }
+        .quote-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .doc-decline { background: transparent; color: #f87171; border: 1px solid #f8717155; border-radius: 8px; padding: 7px 14px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .doc-action:disabled, .doc-decline:disabled { opacity: 0.5; cursor: default; }
         .empty-tab { text-align: center; padding: 48px 20px; color: #444; font-size: 13px; }
         .empty-tab span { font-size: 36px; display: block; margin-bottom: 10px; }
         .portal-footer { text-align: center; padding: 32px; color: #333; font-size: 12px; border-top: 1px solid #1a1a1a; margin-top: 40px; }
@@ -158,7 +174,7 @@ export default function PublicPortalPage() {
             ))}
           </div>
           {activeTab === 'invoices' && <div className="doc-list">{invoices.length === 0 ? <div className="empty-tab"><span></span>No invoices yet</div> : invoices.map((inv) => <div key={inv.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Invoice #{inv.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${inv.amount} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(inv.status), borderColor: statusColor(inv.status) + '44' }}>{inv.status}</span></div>)}</div>}
-          {activeTab === 'quotes' && <div className="doc-list">{quotes.length === 0 ? <div className="empty-tab"><span></span>No quotes yet</div> : quotes.map((q) => <div key={q.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Quote #{q.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${q.amount} · Valid until {q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(q.status), borderColor: statusColor(q.status) + '44' }}>{q.status}</span></div>)}</div>}
+          {activeTab === 'quotes' && <div className="doc-list">{quotes.length === 0 ? <div className="empty-tab"><span></span>No quotes yet</div> : quotes.map((q) => <div key={q.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Quote #{q.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${q.amount} · Valid until {q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(q.status), borderColor: statusColor(q.status) + '44' }}>{q.status}</span>{!['accepted', 'declined', 'paid'].includes(String(q.status || '').toLowerCase()) && <span className="quote-actions"><button type="button" className="doc-action" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'accept')}>Accept</button><button type="button" className="doc-decline" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'decline')}>Decline</button></span>}</div>)}</div>}
           {activeTab === 'contracts' && <div className="doc-list">{contracts.length === 0 ? <div className="empty-tab"><span></span>No contracts yet</div> : contracts.map((c) => <div key={c.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">{c.title || 'Contract'}</div><div className="doc-meta">{c.signed_at ? `Signed ${new Date(c.signed_at).toLocaleDateString()}` : 'Awaiting signature'}</div></div><span className="doc-status" style={{ color: statusColor(c.status), borderColor: statusColor(c.status) + '44' }}>{c.status}</span>{c.status !== 'signed' && c.signing_token && <a href={`/sign/${c.signing_token}`} className="doc-action">Sign Now</a>}</div>)}</div>}
           {activeTab === 'messages' && (
             <div>
