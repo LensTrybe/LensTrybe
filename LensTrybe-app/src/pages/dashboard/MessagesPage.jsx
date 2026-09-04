@@ -204,6 +204,7 @@ export default function MessagesPage() {
           subject: `New message from ${creativeLabel} on LensTrybe`,
           messageBody: bodyText,
           threadSubject: 'New Message',
+          replyToEmail: user.email,
         },
       })
       if (fnError) throw fnError
@@ -377,7 +378,8 @@ export default function MessagesPage() {
               subject: `Reply from ${creativeLabel} on LensTrybe`,
               messageBody: bodyText,
               threadSubject: selected.subject ?? 'your enquiry',
-              profileUrl: 'https://lens-trybe.vercel.app',
+              replyToEmail: user.email,
+              recipientRole: 'client',
             },
           })
         }
@@ -403,6 +405,8 @@ export default function MessagesPage() {
             body: {
               to: sellerProfile.business_email,
               toName: sellerProfile.business_name ?? 'there',
+              replyToEmail: user.email,
+              recipientRole: 'creative',
               fromName: clientSenderName,
               subject: `Reply from ${clientSenderName} on LensTrybe`,
               messageBody: bodyText,

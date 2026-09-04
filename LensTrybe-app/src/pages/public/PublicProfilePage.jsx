@@ -178,6 +178,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       source: 'platform',
     }).select()
     if (!error) {
+      supabase.functions.invoke('notify-review', { body: { creative_id: id, rating: reviewForm.rating, reviewer_name: reviewForm.reviewer_name, comment: reviewForm.body } }).catch(() => {})
       setReviewSent(true)
       await loadProfile()
       setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewRatingHover(null); setReviewEmail(''); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)
@@ -220,15 +221,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     }).select().single()
     if (thread) {
       await supabase.from('messages').insert({ thread_id: thread.id, sender_type: 'client', sender_name: clientLabel, body: fullMessage })
-      await supabase.functions.invoke('send-message-notification', {
-        body: {
-          to: profile.business_email, toName: profile.business_name, fromName: clientLabel,
-          subject: `New enquiry from ${clientLabel}`, messageBody: fullMessage, threadSubject: enquiry.subject,
-          profileUrl: 'https://lens-trybe.vercel.app/dashboard/clients/messages',
-        },
-      })
+      await supabase.functions.invoke('send-enquiry', { body: { thread_id: thread.id } })
     }
-    await supabase.functions.invoke('send-enquiry', { body: { creativeId: id, clientId: user.id, subject: enquiry.subject, message: fullMessage } })
     setSending(false)
     setSent(true)
     setEnquiry({ subject: '', message: '', name: '', phone: '' })

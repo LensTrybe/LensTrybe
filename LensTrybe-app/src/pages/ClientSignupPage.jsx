@@ -130,7 +130,8 @@ export default function ClientSignupPage() {
         }
       }
 
-      navigate('/find-a-creative?welcome=1')
+      try { await supabase.functions.invoke('send-welcome-email', { body: { email: email.trim(), name: [firstName.trim(), lastName.trim()].filter(Boolean).join(' '), role: 'client' } }) } catch { /* best effort */ }
+      navigate('/creatives?welcome=1')
     } catch (err) {
       setError(err?.message ? String(err.message) : 'Something went wrong.')
     } finally {

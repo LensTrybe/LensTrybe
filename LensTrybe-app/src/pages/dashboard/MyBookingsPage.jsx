@@ -48,6 +48,7 @@ export default function MyBookingsPage() {
 
   async function updateStatus(id, status) {
     await supabase.from('bookings').update({ status }).eq('id', id)
+    try { await supabase.functions.invoke('send-booking-update', { body: { booking_id: id, status } }) } catch { /* best effort */ }
     await loadBookings()
     setSelected(prev => prev ? { ...prev, status } : null)
   }

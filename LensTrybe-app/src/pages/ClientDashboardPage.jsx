@@ -183,6 +183,8 @@ export default function ClientDashboardPage() {
           body: {
             to: profile.business_email,
             toName: profile.business_name,
+            replyToEmail: user.email,
+            recipientRole: 'creative',
             fromName: clientSenderName,
             subject: `Reply from ${clientSenderName} on LensTrybe`,
             messageBody: bodyText,

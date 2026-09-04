@@ -187,23 +187,7 @@ export default function PortfolioWebsitePage() {
       })
       if (mErr) throw new Error(mErr.message)
 
-      if (profile.business_email) {
-        await supabase.functions.invoke('send-message-notification', {
-          body: {
-            to: profile.business_email,
-            toName: profile.business_name,
-            fromName: name,
-            subject: `New enquiry from ${name}`,
-            messageBody: message,
-            threadSubject: 'Enquiry from portfolio website',
-            profileUrl: typeof window !== 'undefined' ? `${window.location.origin}/dashboard/clients/messages` : '',
-          },
-        })
-      }
-
-      await supabase.functions.invoke('send-enquiry', {
-        body: { creativeId: profile.id, clientId: null, subject: 'Portfolio website enquiry', message },
-      }).catch(() => {})
+      await supabase.functions.invoke('send-enquiry', { body: { thread_id: thread.id } }).catch(() => {})
 
       setContactSent(true)
       setContact({ name: '', email: '', message: '' })

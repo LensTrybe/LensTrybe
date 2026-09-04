@@ -123,6 +123,7 @@ function SignContract() {
           }
         : current,
     )
+    try { await supabase.functions.invoke('notify-contract-signed', { body: { contract_id: contract.id } }) } catch { /* best effort */ }
     setSuccessMessage('Contract signed successfully. Thank you.')
     setSigning(false)
   }
