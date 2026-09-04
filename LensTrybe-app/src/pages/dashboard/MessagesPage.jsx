@@ -111,7 +111,32 @@ export default function MessagesPage() {
   const [replyUsage, setReplyUsage] = useState(null)
   const [replyModerationError, setReplyModerationError] = useState('')
   const [portalModerationError, setPortalModerationError] = useState('')
+  const [clientOptions, setClientOptions] = useState([])
+  const [clientPickerQuery, setClientPickerQuery] = useState('')
+  const [clientPickerOpen, setClientPickerOpen] = useState(false)
   const bottomRef = useRef(null)
+
+  // Load the creative's known clients (CRM + past conversations) for the picker.
+  useEffect(() => { if (showNewMessage) loadClientOptions() }, [showNewMessage])
+  async function loadClientOptions() {
+    if (!user?.id) return
+    const map = new Map()
+    const add = (name, email, source) => {
+      const key = (email || '').trim().toLowerCase()
+      if (!key) return
+      if (!map.has(key)) map.set(key, { name: name || email, email: email.trim(), source })
+      else if (name && map.get(key).name === map.get(key).email) map.get(key).name = name
+    }
+    try {
+      const [crm, thr] = await Promise.all([
+        supabase.from('crm_contacts').select('name, email').eq('creative_id', user.id).not('email', 'is', null),
+        supabase.from('message_threads').select('client_name, client_email').eq('creative_id', user.id),
+      ])
+      ;(crm.data || []).forEach((x) => add(x.name, x.email, 'CRM'))
+      ;(thr.data || []).forEach((x) => add(x.client_name, x.client_email, 'Past'))
+    } catch { /* best effort */ }
+    setClientOptions(Array.from(map.values()).sort((a, b) => (a.name || '').localeCompare(b.name || '')))
+  }
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -567,11 +592,40 @@ export default function MessagesPage() {
       </div>
 
       {showNewMessage && (
-        <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) { setShowNewMessage(false); setPortalModerationError('') } }}>
+        <div className="modal" onClick={(e) => { if (e.target === e.currentTarget) { setShowNewMessage(false); setPortalModerationError(''); setClientPickerQuery(''); setClientPickerOpen(false) } }}>
           <div className="modalbox">
             <div className="mtitle">New message</div>
             <p className="msub">Send a portal link to a client. They'll get a link to view their invoices, quotes, contracts and messages with you. No account needed.</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 22 }}>
+              <div style={{ position: 'relative' }}>
+                <label className="lab">Choose an existing client</label>
+                <input className="inp" value={clientPickerQuery}
+                  onChange={e => { setClientPickerQuery(e.target.value); setClientPickerOpen(true) }}
+                  onFocus={() => setClientPickerOpen(true)}
+                  onBlur={() => setTimeout(() => setClientPickerOpen(false), 140)}
+                  placeholder="Search your clients..." />
+                {clientPickerOpen && (() => {
+                  const qq = clientPickerQuery.trim().toLowerCase()
+                  const matches = clientOptions.filter(o => !qq || (o.name || '').toLowerCase().includes(qq) || (o.email || '').toLowerCase().includes(qq)).slice(0, 40)
+                  return (
+                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, maxHeight: 230, overflowY: 'auto', background: 'var(--lt-modal-bg)', border: '1px solid var(--lt-input-border)', borderRadius: 10, boxShadow: 'var(--lt-modal-shadow)', backdropFilter: 'var(--lt-modal-blur)', WebkitBackdropFilter: 'var(--lt-modal-blur)', zIndex: 30 }}>
+                      {matches.map((o) => (
+                        <div key={o.email} onMouseDown={e => e.preventDefault()}
+                          onClick={() => { setNewMessageName(o.name || ''); setNewMessageEmail(o.email); setClientPickerQuery(o.name || o.email); setClientPickerOpen(false) }}
+                          style={{ padding: '10px 12px', cursor: 'pointer', borderBottom: '1px solid var(--lt-hairline)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--lt-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.name || o.email}</div>
+                            <div style={{ fontSize: 12, color: 'var(--lt-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{o.email}</div>
+                          </div>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', flex: '0 0 auto' }}>{o.source}</span>
+                        </div>
+                      ))}
+                      {matches.length === 0 && <div style={{ padding: '11px 12px', fontSize: 12.5, color: 'var(--lt-muted)' }}>{clientOptions.length === 0 ? 'No saved clients yet. Enter their details below.' : 'No match. Enter their details below.'}</div>}
+                    </div>
+                  )
+                })()}
+              </div>
+              <div style={{ fontSize: 11.5, color: 'var(--lt-faint)', marginTop: -6 }}>Or enter their details manually below.</div>
               <div>
                 <label className="lab">Client name</label>
                 <input className="inp" value={newMessageName} onChange={e => setNewMessageName(e.target.value)} placeholder="Jane Smith" />
@@ -587,7 +641,7 @@ export default function MessagesPage() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button type="button" className="btn ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setPortalModerationError('') }}>Cancel</button>
+              <button type="button" className="btn ghost" onClick={() => { setShowNewMessage(false); setNewMessageEmail(''); setNewMessageName(''); setNewMessageText(''); setPortalModerationError(''); setClientPickerQuery(''); setClientPickerOpen(false) }}>Cancel</button>
               <button type="button" className="btn primary"
                 disabled={sendingPortal || !newMessageEmail.trim() || !newMessageText.trim() || creativeMonthlyRepliesBlocked}
                 onClick={() => void sendPortal()}>
