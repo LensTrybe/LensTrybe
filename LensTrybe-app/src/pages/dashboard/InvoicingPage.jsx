@@ -9,6 +9,7 @@ import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
 import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+import { resolveDocTheme } from '../../lib/documentTemplate'
 
 function invoiceFreeTextForModeration(notes, lineItems) {
   const descs = (lineItems || []).map((i) => String(i.description ?? '').trim()).filter(Boolean)
@@ -40,18 +41,10 @@ function getInvoiceItems(invoice) {
 
 /** Merge `brand_kit` row with per-document `invoice` settings from `document_brand_settings` (on `brand_kit`). */
 function mergeInvoiceBrand(brandKit) {
-  const base = brandKit || {}
-  const raw = base.document_brand_settings
-  const docs = raw && typeof raw === 'object' ? raw : {}
-  const inv = docs.invoice && typeof docs.invoice === 'object' ? docs.invoice : {}
-  const primary = inv.primary_colour ?? inv.primary_color ?? base.primary_color ?? '#1DB954'
-  const accent = '#ffffff'
-  const font = inv.font ?? base.font ?? 'Inter'
-  const logo = inv.logo_url || base.logo_url || ''
-  const secondary = base.secondary_color ?? '#ffffff'
-  const hasCustomTemplate = Boolean(inv.custom_template_url)
-  const fontStack = font.includes(' ') ? `"${font}", sans-serif` : `${font}, sans-serif`
-  return { primary, accent, font, logo, secondary, hasCustomTemplate, fontStack }
+  // Use the shared document theme resolver so the builder matches the Brand Kit
+  // preview and the sent PDF exactly (same keys: base + per-document overrides).
+  const t = resolveDocTheme(brandKit, 'invoice')
+  return { primary: t.accent, accent: '#ffffff', font: 'Inter', logo: t.logoUrl || '', secondary: t.accentText, hasCustomTemplate: false, fontStack: t.bodyFont }
 }
 
 export default function InvoicingPage() {
