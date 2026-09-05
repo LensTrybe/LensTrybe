@@ -5,7 +5,6 @@ import { supabase } from './lib/supabaseClient'
 import HomePage from './pages/public/HomePage'
 import LoginPage from './pages/public/LoginPage'
 import PricingPage from './pages/public/PricingPage'
-import CreatorPartnersPage from './pages/public/CreatorPartnersPage'
 import UpcomingFeaturesPage from './pages/public/UpcomingFeaturesPage'
 import SignupPage from './pages/public/SignupPage'
 import OnboardingPage from './pages/public/OnboardingPage'
@@ -126,7 +125,7 @@ export default function App() {
         <Route path="/creatives/:id" element={<PublicProfilePage />} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/upcoming-features" element={<UpcomingFeaturesPage />} />
-        <Route path="/creator-partners" element={<CreatorPartnersPage />} />
+        <Route path="/creator-partners" element={<Navigate to="/" replace />} />
         <Route path="/join" element={<JoinHubPage />} />
         <Route path="/join/creative" element={<SignupPage />} />
         <Route path="/signup" element={<SignupPage />} />

@@ -330,7 +330,6 @@ export default function PublicLayout() {
                 { label: 'Find Creatives', path: '/creatives' },
                 { label: 'The Trybe Edit', path: '/the-trybe-edit' },
                 { label: 'Upcoming Features', path: '/upcoming-features' },
-                { label: 'Creator Partner Program', path: '/creator-partners' },
                 { label: 'Pricing For Creatives', path: '/pricing' },
                 ...(user ? [
                   { label: 'Dashboard', path: isCreative ? '/dashboard' : '/client-dashboard' },
@@ -388,7 +387,6 @@ export default function PublicLayout() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
           <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
-          <button style={navLinkStyle} onClick={() => navigate('/creator-partners')}>Creator Partner Program</button>
           <button style={navLinkStyle} onClick={() => navigate('/pricing')}>Pricing For Creatives</button>
         </div>
 

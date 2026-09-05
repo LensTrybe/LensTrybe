@@ -172,7 +172,6 @@ export default function PublicNavbar() {
           }}
         >
           <Link to="/newsletter" style={navLink}>The Trybe Edit</Link>
-          <Link to="/creator-partners" style={navLink}>Creator Partner Program</Link>
           <Link to="/pricing" style={navLink}>Pricing For Creatives</Link>
         </div>
       ) : null}
@@ -388,7 +387,6 @@ export default function PublicNavbar() {
           ) : (
             <>
               <Link to="/newsletter" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>The Trybe Edit</Link>
-              <Link to="/creator-partners" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Creator Partner Program</Link>
               <Link to="/pricing" onClick={closeMobile} style={{ ...navLink, padding: '8px 0' }}>Pricing For Creatives</Link>
               <Link to="/login" onClick={closeMobile} style={{ ...loginBtn, justifyContent: 'center' }}>Log In</Link>
               <Link to="/join" onClick={closeMobile} style={{ ...joinCreativeBtn, justifyContent: 'center' }}>Join as a Creative</Link>
