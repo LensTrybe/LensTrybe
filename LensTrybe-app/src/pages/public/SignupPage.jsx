@@ -236,25 +236,8 @@ export default function SignupPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Pick up a founding invite code from the URL (?code=) or sessionStorage. Validate it via
-  // the founding-code function: only a genuine unused code gets the founding deal, the
-  // agreement checkbox, and a bypass of the launch-zone gate (invited creatives are trusted).
-  useEffect(() => {
-    let code = searchParams.get('code') || ''
-    if (!code) {
-      try { code = sessionStorage.getItem('lt_founding_code') || '' } catch { /* ignore */ }
-    }
-    code = code.trim().toUpperCase()
-    if (!code) return
-    setFoundingCode(code)
-    try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
-    setForm(prev => (prev.tier === 'expert' ? prev : { ...prev, tier: 'expert' }))
-    supabase.functions.invoke('founding-code', { body: { action: 'validate', code } })
-      .then(({ data }) => {
-        if (data?.valid) { setFoundingValid(true); setZoneChosen(true) }
-      })
-      .catch(() => { /* if we can't validate, stay a normal (non-founding) signup */ })
-  }, [searchParams])
+  // Founding codes are single-use and entered by hand on the gate (see applyFoundingCode).
+  // There is deliberately no ?code= link auto-apply, so a code can't be forwarded around.
 
   useEffect(() => {
     const plan = searchParams.get('plan')
