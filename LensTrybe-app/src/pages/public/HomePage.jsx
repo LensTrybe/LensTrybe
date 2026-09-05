@@ -15,7 +15,10 @@ const CATEGORIES = [
   { key: 'ugc_creator', value: 'UGC Creator', label: 'UGC Creators' },
 ];
 
-const AU_STATES = ['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'];
+// Launch zone: South East Queensland only. These regions drive the homepage search.
+const SEQ_REGIONS = ['Sunshine Coast', 'Moreton Bay', 'Brisbane', 'Ipswich', 'Logan', 'Redland Bay', 'Gold Coast'];
+// Categories live at launch; the rest come as we grow.
+const LAUNCH_CATEGORIES = ['Photographer', 'Videographer'];
 
 const IconCamera = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>);
 const IconVideo = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>);
@@ -442,16 +445,17 @@ export default function HomePage() {
 
   // Hero "Find a Creative" search
   const [hType, setHType] = useState('');
-  const [hState, setHState] = useState('');
-  const [hCity, setHCity] = useState('');
+  const [hRegion, setHRegion] = useState('');
   const [hName, setHName] = useState('');
 
   const handleHeroSearch = (e) => {
     if (e) e.preventDefault();
     const p = new URLSearchParams();
     if (hType) p.set('type', hType);
-    if (hState) p.set('state', hState);
-    if (hCity.trim()) p.set('city', hCity.trim());
+    // Launch is South East Queensland only, so scope every search to QLD and treat the
+    // chosen region as a city filter (matches how the Explore page filters).
+    p.set('state', 'QLD');
+    if (hRegion) p.set('city', hRegion);
     if (hName.trim()) p.set('name', hName.trim());
     const qs = p.toString();
     navigate(`/creatives${qs ? `?${qs}` : ''}`);
@@ -554,7 +558,7 @@ export default function HomePage() {
           <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : '620px', textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : '0' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: isMobile ? '11px' : 'clamp(11px, 0.85vw, 14px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: '22px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: GREEN, display: 'inline-block', boxShadow: '0 0 6px rgba(29,185,84,0.6)' }} />
-              Australia's creative platform · Live
+              Now live in Brisbane · South East Queensland
             </div>
 
             <h1 style={{
@@ -567,7 +571,7 @@ export default function HomePage() {
             </h1>
 
             <p style={{ fontSize: isMobile ? '16px' : 'clamp(16px, 1.15vw, 21px)', color: TEXT_SECONDARY, maxWidth: isMobile ? '440px' : 'clamp(440px, 34vw, 560px)', lineHeight: 1.6, fontWeight: 400, margin: isMobile ? '0 auto 30px' : '0 0 30px', fontFamily: FONT }}>
-              Australia's home for visual creatives. No commissions, ever. Your marketplace profile, invoicing, contracts, portfolio, and client delivery. One subscription. Everything you need to run your creative business.
+              The home for South East Queensland's photographers and videographers, from the Sunshine Coast to the Gold Coast. Profile, invoicing, contracts, portfolio and client delivery in one subscription, and you keep 100% of what you earn. We are rolling out across Australia city by city.
             </p>
 
           </div>
@@ -578,10 +582,9 @@ export default function HomePage() {
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_SECONDARY, marginBottom: '14px', textAlign: 'left' }}>Find a Creative</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
                 <LiquidSelect value={hType} onChange={setHType} ariaLabel="Creative type" placeholder="All creative types"
-                  options={[{ value: '', label: 'All creative types' }, ...CATEGORIES.map(c => ({ value: c.value, label: c.label }))]} />
-                <LiquidSelect value={hState} onChange={setHState} ariaLabel="State" placeholder="All states"
-                  options={[{ value: '', label: 'All states' }, ...AU_STATES.map(s => ({ value: s, label: s }))]} />
-                <input value={hCity} onChange={(e) => setHCity(e.target.value)} placeholder="City (e.g. Brisbane)" aria-label="City" style={HERO_FIELD} />
+                  options={[{ value: '', label: 'All creative types' }, ...CATEGORIES.filter(c => LAUNCH_CATEGORIES.includes(c.value)).map(c => ({ value: c.value, label: c.label }))]} />
+                <LiquidSelect value={hRegion} onChange={setHRegion} ariaLabel="Area" placeholder="All South East QLD"
+                  options={[{ value: '', label: 'All South East QLD' }, ...SEQ_REGIONS.map(r => ({ value: r, label: r }))]} />
                 <input value={hName} onChange={(e) => setHName(e.target.value)} placeholder="Search by name…" aria-label="Name" style={HERO_FIELD} />
                 <LiquidPill type="submit" primary style={{ flex: '1 1 100%', marginTop: '2px' }}>Find a Creative <IconArrow /></LiquidPill>
               </div>
