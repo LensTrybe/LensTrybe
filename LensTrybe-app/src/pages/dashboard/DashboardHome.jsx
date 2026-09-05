@@ -25,6 +25,7 @@ import QuickLinkDrawer from '../../components/dashboard/QuickLinkDrawer'
 import { LiquidLensFilter } from '../../components/ui/liquidGlass'
 import WorkspaceSearch from '../../components/dashboard/WorkspaceSearch'
 import { themeTokens } from '../../lib/dashboardTheme'
+import { computeCompleteness } from '../../lib/profileCompleteness'
 
 const FONT = "'Inter', sans-serif"
 
@@ -217,7 +218,7 @@ export default function DashboardHome() {
       supabase.from('reviews').select('rating, created_at').eq('creative_id', user.id),
       supabase.from('deliveries').select('id, is_final, created_at, client_name, title').eq('creative_id', user.id),
       supabase.from('job_listings').select('id, title, location, created_at, posted_by').eq('status', 'active').order('created_at', { ascending: false }).limit(25),
-      supabase.from('portfolio_items').select('id', { count: 'exact', head: true }).eq('user_id', user.id),
+      supabase.from('portfolio_items').select('id', { count: 'exact', head: true }).or(`creative_id.eq.${user.id},user_id.eq.${user.id}`),
     ])
     const invoices = invRes.data ?? []
     const bookings = bookRes.data ?? []
@@ -326,11 +327,10 @@ export default function DashboardHome() {
   const avatarLabel = String(profile?.business_name ?? user?.email ?? 'U').charAt(0).toUpperCase()
   const tierLabel = { basic: 'Standard listing', pro: 'Enhanced listing', expert: 'Priority listing', elite: 'Featured listing' }[tier] || 'Standard listing'
 
-  const profileCompletion = useMemo(() => {
-    if (!profile) return 0
-    const checks = [!!profile.avatar_url, !!String(profile.bio || '').trim(), !!String(profile.tagline || '').trim(), Array.isArray(profile.specialties) && profile.specialties.length > 0, Array.isArray(profile.skill_types) && profile.skill_types.length > 0, !!(profile.city || profile.state || profile.country || profile.location), (m?.portfolioCount || 0) > 0]
-    return Math.round((checks.filter(Boolean).length / checks.length) * 100)
-  }, [profile, m])
+  const profileCompletion = useMemo(
+    () => computeCompleteness(profile, m?.portfolioCount ?? 0).pct,
+    [profile, m],
+  )
 
   const goal = Number(profile?.income_goal || 5000)
 

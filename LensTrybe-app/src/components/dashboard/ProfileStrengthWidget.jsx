@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { FONT, TEXT, MUTED, FAINT, GREEN, Tile, CenterModal } from './widgetKit'
 import { isDemoMode, demoProfile, demoPortfolioCount } from '../../lib/demoMode'
+import { completenessItems, completenessFromItems, fetchPortfolioCount } from '../../lib/profileCompleteness'
 
 const AMBER = '#f59e0b'
 const PINK = '#FF2D78'
@@ -57,8 +58,7 @@ export default function ProfileStrengthWidget({ userId }) {
       .eq('id', userId)
       .single()
     setProfile(data ?? {})
-    const { count } = await supabase.from('portfolio_items').select('id', { count: 'exact', head: true }).eq('creative_id', userId)
-    setPortfolioCount(count ?? 0)
+    setPortfolioCount(await fetchPortfolioCount(userId))
   }
   useEffect(() => { void load() }, [userId])
 
@@ -69,27 +69,9 @@ export default function ProfileStrengthWidget({ userId }) {
     return () => window.removeEventListener('focus', onFocus)
   }, [userId])
 
-  const items = useMemo(() => {
-    const p = profile || {}
-    const has = (v) => v != null && String(v).trim() !== ''
-    const anySocial = [p.instagram_url, p.tiktok_url, p.linkedin_url, p.facebook_url, p.twitter_url].some(has)
-    return [
-      { key: 'photo', label: 'Add a profile photo', hint: 'Appear in Featured Creatives', tab: 'basics', done: has(p.avatar_url) },
-      { key: 'name', label: 'Add your business name', hint: 'How clients find you', tab: 'basics', done: has(p.business_name) },
-      { key: 'tagline', label: 'Write a tagline', hint: 'One line that sells you', tab: 'basics', done: has(p.tagline) },
-      { key: 'bio', label: 'Write your bio', hint: 'At least a short paragraph', tab: 'basics', done: has(p.bio) && String(p.bio).trim().length >= 40 },
-      { key: 'contact', label: 'Add contact details', hint: 'Phone or website', tab: 'basics', done: has(p.phone) || has(p.website) },
-      { key: 'skills', label: 'Choose your skills', hint: 'What you offer', tab: 'skills', done: Array.isArray(p.skill_types) && p.skill_types.length > 0 },
-      { key: 'specialties', label: 'Add your specialties', hint: 'Your niche within each skill', tab: 'skills', done: Array.isArray(p.specialties) && p.specialties.length > 0 },
-      { key: 'location', label: 'Set your location', hint: 'City and state', tab: 'location', done: has(p.city) && has(p.state) },
-      { key: 'social', label: 'Link a social account', hint: 'Instagram, TikTok and more', tab: 'social', done: anySocial },
-      { key: 'portfolio', label: 'Upload 3+ portfolio pieces', hint: `${portfolioCount} added so far`, tab: 'portfolio', done: portfolioCount >= 3 },
-    ]
-  }, [profile, portfolioCount])
-
-  const doneCount = items.filter((i) => i.done).length
-  const pct = items.length ? Math.round((doneCount / items.length) * 100) : 0
-  const remaining = items.length - doneCount
+  // Canonical checklist: the single source of truth in lib/profileCompleteness.
+  const items = useMemo(() => completenessItems(profile || {}, portfolioCount), [profile, portfolioCount])
+  const { doneCount, pct, remaining } = completenessFromItems(items)
 
   function go(tab) { setOpen(false); navigate(`/dashboard/profile/edit-profile?tab=${tab}`) }
 
