@@ -372,6 +372,7 @@ export default function SignupPage() {
         try {
           await supabase.functions.invoke('send-welcome-email', {
             body: {
+              founding: foundingValid,
               record: {
                 email,
                 user_metadata: { full_name: `${form.firstName} ${form.lastName}` }
