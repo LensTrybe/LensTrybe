@@ -318,20 +318,6 @@ export default function PricingPage() {
         </p>
 
         <div style={{
-          background: 'rgba(29,185,84,0.1)',
-          border: '1px solid rgba(29,185,84,0.35)',
-          borderRadius: '12px',
-          padding: '10px 20px',
-          color: '#1DB954',
-          fontWeight: 600,
-          fontSize: '14px',
-          fontFamily: font,
-          maxWidth: '560px',
-        }}>
-          Every paid plan starts with a 3-month free trial.
-        </div>
-
-        <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '12px',
@@ -543,6 +529,17 @@ export default function PricingPage() {
                           marginTop: '6px',
                         }}>
                           {getAnnualMonthlyEquivalent(tier)}/mo and {getAnnualSaving(tier)}
+                        </div>
+                      )}
+                      {tier.monthly > 0 && (
+                        <div style={{
+                          fontSize: '12px',
+                          color: '#1DB954',
+                          fontFamily: font,
+                          fontWeight: 600,
+                          marginTop: '8px',
+                        }}>
+                          First 3 months free
                         </div>
                       )}
                     </>
