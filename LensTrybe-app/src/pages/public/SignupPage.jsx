@@ -101,6 +101,10 @@ export default function SignupPage() {
   const [wlDone, setWlDone] = useState(false)
   const [wlError, setWlError] = useState('')
   const [agreedFounding, setAgreedFounding] = useState(false)
+  // Manual founding-code entry on the gate (for creatives who did not arrive via their link).
+  const [codeInput, setCodeInput] = useState('')
+  const [codeChecking, setCodeChecking] = useState(false)
+  const [codeError, setCodeError] = useState('')
   // Founding invite code (from the waitlist ?code= link or sessionStorage). When present,
   // the account is granted free Expert until 1 Oct 2027 by the database trigger on signup.
   const [foundingCode, setFoundingCode] = useState('')
@@ -179,6 +183,31 @@ export default function SignupPage() {
       setWlError('Something went wrong. Please try again.')
     } finally {
       setWlSaving(false)
+    }
+  }
+
+  // Manually entered founding code on the gate. Validates via the founding-code function;
+  // on success it applies the founding deal and skips the launch-zone gate.
+  async function applyFoundingCode() {
+    const code = codeInput.trim().toUpperCase()
+    if (!code) return
+    setCodeChecking(true)
+    setCodeError('')
+    try {
+      const { data } = await supabase.functions.invoke('founding-code', { body: { action: 'validate', code } })
+      if (data?.valid) {
+        setFoundingCode(code)
+        setFoundingValid(true)
+        try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
+        setForm(prev => ({ ...prev, tier: 'expert' }))
+        setZoneChosen(true)
+      } else {
+        setCodeError('That code is not valid or has already been used.')
+      }
+    } catch {
+      setCodeError('Could not check that code. Please try again.')
+    } finally {
+      setCodeChecking(false)
     }
   }
 
@@ -677,6 +706,31 @@ export default function SignupPage() {
                   {wlError && <div style={styles.errorBox}>{wlError}</div>}
                   <LiquidPill primary style={{ padding: '12px 24px', fontSize: '14px', opacity: wlSaving ? 0.6 : 1 }} disabled={wlSaving} onClick={submitWaitlist}>{wlSaving ? 'Joining…' : 'Join the waitlist'}</LiquidPill>
                 </div>
+              )}
+
+              {region !== '__other__' && (
+                <>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0' }}>
+                    <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or</span>
+                    <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <label style={{ fontSize: '13px', ...TYPO.label }}>Have a founding invite code?</label>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        style={{ ...LIQUID_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
+                        placeholder="Enter your code"
+                        value={codeInput}
+                        onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError('') }}
+                      />
+                      <LiquidPill primary type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px', opacity: codeChecking ? 0.6 : 1 }} disabled={codeChecking} onClick={applyFoundingCode}>
+                        {codeChecking ? 'Checking…' : 'Apply'}
+                      </LiquidPill>
+                    </div>
+                    {codeError && <div style={{ fontSize: '12px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>{codeError}</div>}
+                  </div>
+                </>
               )}
             </div>
           ) : (
