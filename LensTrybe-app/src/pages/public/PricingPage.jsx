@@ -100,7 +100,8 @@ export default function PricingPage() {
   const [revLoading, setRevLoading] = useState('')
 
   const currentInterval = annual ? 'annual' : 'monthly'
-  const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
+  // Open founding offer retired: founding is invite-code only, not shown on public pricing.
+  const offerActive = false
 
   useEffect(() => {
     function handleResize() {
@@ -316,21 +317,19 @@ export default function PricingPage() {
           No commissions. No lead fees. Just a flat subscription that pays for itself with one booking.
         </p>
 
-        {offerActive && (
-          <div style={{
-            background: 'rgba(245,158,11,0.1)',
-            border: '1px solid rgba(245,158,11,0.35)',
-            borderRadius: '12px',
-            padding: '10px 20px',
-            color: '#f59e0b',
-            fontWeight: 600,
-            fontSize: '14px',
-            fontFamily: font,
-            maxWidth: '560px',
-          }}>
-            ⭐ Founding member offer: Expert plan free until 31 December 2026
-          </div>
-        )}
+        <div style={{
+          background: 'rgba(29,185,84,0.1)',
+          border: '1px solid rgba(29,185,84,0.35)',
+          borderRadius: '12px',
+          padding: '10px 20px',
+          color: '#1DB954',
+          fontWeight: 600,
+          fontSize: '14px',
+          fontFamily: font,
+          maxWidth: '560px',
+        }}>
+          Every paid plan starts with a 3-month free trial.
+        </div>
 
         <div style={{
           display: 'flex',
