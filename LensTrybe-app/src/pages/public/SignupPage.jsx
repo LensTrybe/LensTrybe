@@ -15,8 +15,10 @@ import {
 import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
 
-const FOUNDING_CAP = 500
-const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
+// Founding is invite-only via a personal code, so there is no public open offer or spot
+// counter. Non-invited creatives get a 3-month free trial on any paid plan.
+// SEQ coastal launch zone: in-zone continues to signup; anyone else joins the waitlist.
+const LAUNCH_REGIONS = ['Sunshine Coast', 'Moreton Bay', 'Brisbane', 'Ipswich', 'Logan', 'Redland Bay', 'Gold Coast']
 
 const STEPS = ['Plan', 'Account']
 
@@ -88,8 +90,17 @@ export default function SignupPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [googleHover, setGoogleHover] = useState(false)
-  const [isFoundingSignup, setIsFoundingSignup] = useState(false)
-  const [foundingCount, setFoundingCount] = useState(0)
+  // A founding code counts only if the founding-code function confirms it is unused.
+  const [foundingValid, setFoundingValid] = useState(false)
+  // Launch-zone gate: in-zone creatives continue to signup; out-of-zone join the waitlist.
+  const [zoneChosen, setZoneChosen] = useState(false)
+  const [region, setRegion] = useState('')
+  const [wlEmail, setWlEmail] = useState('')
+  const [wlName, setWlName] = useState('')
+  const [wlSaving, setWlSaving] = useState(false)
+  const [wlDone, setWlDone] = useState(false)
+  const [wlError, setWlError] = useState('')
+  const [agreedFounding, setAgreedFounding] = useState(false)
   // Founding invite code (from the waitlist ?code= link or sessionStorage). When present,
   // the account is granted free Expert until 1 Oct 2027 by the database trigger on signup.
   const [foundingCode, setFoundingCode] = useState('')
@@ -99,8 +110,6 @@ export default function SignupPage() {
   // Once the account is created we remember it, so a card retry re-opens the payment
   // window without trying to sign up again (which would error as "already registered").
   const [createdUser, setCreatedUser] = useState(null)
-
-  const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
 
   const [form, setForm] = useState({
     tier: 'pro',
@@ -148,6 +157,31 @@ export default function SignupPage() {
     }
   }
 
+  // Out-of-zone creatives join the waitlist (reuses the same waitlist-signup function
+  // as the Coming Soon page). isValidEmail is a hoisted function declaration below.
+  async function submitWaitlist() {
+    setWlError('')
+    if (!isValidEmail(wlEmail)) { setWlError('Please enter a valid email address.'); return }
+    setWlSaving(true)
+    try {
+      const { data, error: wlErr } = await supabase.functions.invoke('waitlist-signup', {
+        body: {
+          email: wlEmail.trim(),
+          name: wlName.trim() || null,
+          audience: 'creative',
+          state: form.state || null,
+          city: form.city || null,
+        },
+      })
+      if (wlErr || data?.error) throw new Error(data?.error || 'failed')
+      setWlDone(true)
+    } catch {
+      setWlError('Something went wrong. Please try again.')
+    } finally {
+      setWlSaving(false)
+    }
+  }
+
   async function continueWithGoogle() {
     setError('')
     const plan = searchParams.get('plan')
@@ -173,38 +207,33 @@ export default function SignupPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  useEffect(() => {
-    supabase.rpc('get_founding_member_count').then(({ data }) => {
-      if (data !== null) setFoundingCount(data)
-    })
-  }, [])
-
-  // Pick up a founding invite code from the URL (?code=) or sessionStorage (set on the
-  // waitlist). If present, lock the plan to Expert and remember it for the signup call.
+  // Pick up a founding invite code from the URL (?code=) or sessionStorage. Validate it via
+  // the founding-code function: only a genuine unused code gets the founding deal, the
+  // agreement checkbox, and a bypass of the launch-zone gate (invited creatives are trusted).
   useEffect(() => {
     let code = searchParams.get('code') || ''
     if (!code) {
       try { code = sessionStorage.getItem('lt_founding_code') || '' } catch { /* ignore */ }
     }
     code = code.trim().toUpperCase()
-    if (code) {
-      setFoundingCode(code)
-      try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
-      setForm(prev => (prev.tier === 'expert' ? prev : { ...prev, tier: 'expert' }))
-    }
+    if (!code) return
+    setFoundingCode(code)
+    try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
+    setForm(prev => (prev.tier === 'expert' ? prev : { ...prev, tier: 'expert' }))
+    supabase.functions.invoke('founding-code', { body: { action: 'validate', code } })
+      .then(({ data }) => {
+        if (data?.valid) { setFoundingValid(true); setZoneChosen(true) }
+      })
+      .catch(() => { /* if we can't validate, stay a normal (non-founding) signup */ })
   }, [searchParams])
 
   useEffect(() => {
     const plan = searchParams.get('plan')
-    const founding = searchParams.get('founding')
     if (plan) {
       const id = plan.toLowerCase()
       const allowed = ['basic', 'pro', 'expert', 'elite']
       if (allowed.includes(id)) {
         setForm(prev => (prev.tier === id ? prev : { ...prev, tier: id }))
-        if (founding === '1' && id === 'expert') {
-          setIsFoundingSignup(true)
-        }
       }
     }
   }, [searchParams])
@@ -314,6 +343,8 @@ export default function SignupPage() {
               last_name: form.lastName,
               display_name_preference: form.displayNamePreference || 'business_only',
               country: form.country || 'Australia',
+              city: form.city || '',
+              state: form.state || '',
               subscription_tier: effectiveTier,
               ...(foundingCode ? { founding_code: foundingCode } : {}),
             },
@@ -593,6 +624,76 @@ export default function SignupPage() {
     { title: 'You\'re almost there', sub: 'Review your details before creating your account.' },
   ]
 
+  // Launch-zone gate. Shown first for everyone except invited creatives (a valid founding
+  // code bypasses it). In-zone regions continue to signup; out-of-zone joins the waitlist.
+  if (!zoneChosen) {
+    return (
+      <div style={styles.page} className="signup-page">
+        <LiquidLensFilter />
+        {!isMobile && <TileField animated={false} opacity={0.22} />}
+        <div style={{ ...styles.container, maxWidth: '480px' }}>
+          <div style={styles.header}>
+            <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
+            <h1 style={styles.title}>Where are you based?</h1>
+            <p style={styles.subtitle}>LensTrybe is launching across South East Queensland first, from the Sunshine Coast to the Gold Coast. Choose your area to get started, and we are rolling out across Australia city by city.</p>
+          </div>
+
+          {error && <div style={styles.errorBox}>{error}</div>}
+
+          {!wlDone ? (
+            <div style={styles.content}>
+              <div style={styles.skillGrid}>
+                {LAUNCH_REGIONS.map((r) => (
+                  <div
+                    key={r}
+                    style={styles.skillChip(false, false)}
+                    onClick={() => { setForm(prev => ({ ...prev, city: prev.city || r, state: 'QLD' })); setRegion(r); setZoneChosen(true) }}
+                  >
+                    {r}
+                  </div>
+                ))}
+              </div>
+
+              {region !== '__other__' ? (
+                <button
+                  type="button"
+                  onClick={() => setRegion('__other__')}
+                  style={{ ...styles.passwordToggleBtn, color: 'var(--text-secondary)', textAlign: 'left', fontSize: '13px' }}
+                >
+                  I&apos;m somewhere else in Australia →
+                </button>
+              ) : (
+                <div style={{ ...LIQUID_GLASS_CARD, padding: '18px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
+                    We are not in your area just yet. Leave your details and we will let you know the moment LensTrybe launches near you.
+                  </div>
+                  <Input label="Email address" type="email" placeholder="you@example.com" value={wlEmail} onChange={e => setWlEmail(e.target.value)} />
+                  <Input label="Your name (optional)" placeholder="Sarah Mitchell" value={wlName} onChange={e => setWlName(e.target.value)} />
+                  <Input label="Your city" placeholder="e.g. Sydney" value={form.city} onChange={e => update('city', e.target.value)} />
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '13px', ...TYPO.label }}>State</label>
+                    <LiquidSelect value={form.state} onChange={(v) => update('state', v)} ariaLabel="State" placeholder="Select state" options={[{ value: '', label: 'Select state' }, ...AU_STATES.map(s => ({ value: s, label: s }))]} />
+                  </div>
+                  {wlError && <div style={styles.errorBox}>{wlError}</div>}
+                  <LiquidPill primary style={{ padding: '12px 24px', fontSize: '14px', opacity: wlSaving ? 0.6 : 1 }} disabled={wlSaving} onClick={submitWaitlist}>{wlSaving ? 'Joining…' : 'Join the waitlist'}</LiquidPill>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div style={{ ...GLASS_CARD_GREEN, padding: '20px', color: 'var(--green)', ...TYPO.body }}>
+              <div style={{ fontSize: '16px', fontWeight: 600, marginBottom: '6px' }}>You&apos;re on the list.</div>
+              <div style={{ fontSize: '14px' }}>We will email you the moment LensTrybe launches in your area. Thanks for your interest.</div>
+            </div>
+          )}
+
+          <div style={styles.actions}>
+            <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => navigate('/')}>← Back to home</LiquidPill>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   if (submitted) {
     return (
       <div style={styles.page} className="signup-page">
@@ -607,9 +708,9 @@ export default function SignupPage() {
             </p>
           </div>
 
-          {foundingCode && (
+          {foundingValid && (
             <div style={{ padding: '14px 16px', fontSize: '13px', ...GLASS_CARD_GREEN, color: 'var(--green)', ...TYPO.body }}>
-              Founding invite applied. Your Expert plan is free until 1 October 2027.
+              Founding invite applied. Your Expert plan is free for 12 months, then $49/mo locked in for life.
             </div>
           )}
 
@@ -680,9 +781,9 @@ export default function SignupPage() {
           {/* Step 0 — Plan */}
           {step === 0 && (
             <>
-              {foundingCode && (
+              {foundingValid && (
                 <div style={{ padding: '14px 16px', fontSize: '13px', ...GLASS_CARD_GREEN, color: 'var(--green)', ...TYPO.body, marginBottom: '4px' }}>
-                  <strong>Founding invite applied.</strong> You are getting Expert free until 1 October 2027, with your founding price locked in after that.
+                  <strong>Founding invite applied.</strong> Expert is free for your first 12 months, then $49/mo locked in for life.
                 </div>
               )}
               <div style={styles.billingToggle}>
@@ -696,7 +797,7 @@ export default function SignupPage() {
               </div>
               <div style={styles.tierGrid}>
                 {TIERS.map((tier) => {
-                  const isExpertOffer = tier.id === 'expert' && (offerActive || !!foundingCode)
+                  const isExpertOffer = tier.id === 'expert' && foundingValid
                   const selected = form.tier === tier.id
                   const cardStyle = isExpertOffer && selected
                     ? {
@@ -731,12 +832,15 @@ export default function SignupPage() {
                             {getPlanPrice(tier)}{getPlanPeriod(tier)}
                           </span>
                         </div>
-                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>{foundingCode ? 'Free until 1 Oct 2027' : 'Free until 1 Jan 2027'}</div>
+                        <div style={{ fontSize: '11px', color: '#f59e0b', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>Free for 12 months, then $49/mo for life</div>
                       </>
                     ) : (
                       <>
                         <div style={styles.tierPrice}>{getPlanPrice(tier)}{getPlanPeriod(tier)}</div>
                         {getPlanAnnualMeta(tier) && <div style={styles.tierAnnualMeta}>{getPlanAnnualMeta(tier)}</div>}
+                        {tier.monthly > 0 && (
+                          <div style={{ fontSize: '11px', color: 'var(--green)', fontWeight: 600, fontFamily: 'var(--font-ui)' }}>First 3 months free</div>
+                        )}
                       </>
                     )}
                     <div style={styles.tierDesc}>{tier.description}</div>
@@ -805,6 +909,12 @@ export default function SignupPage() {
                   </button>
                 )}
               />
+              {foundingValid && (
+                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
+                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/terms" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the terms</a>.</span>
+                </label>
+              )}
             </>
           )}
 
@@ -919,9 +1029,9 @@ export default function SignupPage() {
               {form.tier !== 'basic' && (
                 <>
                   <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
-                    {isFoundingSignup && form.tier === 'expert'
-                      ? "You will be taken to Stripe to save your payment details. You will not be charged until 1 January 2027. Your Expert profile goes live immediately."
-                      : "After creating your account you'll be taken to Stripe to complete payment. Your profile goes live immediately after."}
+                    {foundingValid && form.tier === 'expert'
+                      ? "You'll add a card to finish. You won't be charged for 12 months, then it's $49/mo locked in for life. Your Expert profile goes live immediately."
+                      : "You'll add a card to finish. You won't be charged for your first 3 months. Your profile goes live immediately after."}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
@@ -962,7 +1072,7 @@ export default function SignupPage() {
           }
           {step < STEPS.length - 1
             ? <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: !canProceed() ? 0.6 : 1 }} disabled={!canProceed()} onClick={() => { setError(''); setStep(s => s + 1) }}>Continue →</LiquidPill>
-            : <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: loading ? 0.6 : 1 }} disabled={loading} onClick={handleSubmit}>{loading ? 'Creating account…' : form.tier === 'basic' ? 'Create Account' : 'Create Account & Pay'}</LiquidPill>
+            : <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: (loading || (foundingValid && !agreedFounding)) ? 0.6 : 1 }} disabled={loading || (foundingValid && !agreedFounding)} onClick={handleSubmit}>{loading ? 'Creating account…' : form.tier === 'basic' ? 'Create Account' : 'Create Account & Pay'}</LiquidPill>
           }
         </div>
 
