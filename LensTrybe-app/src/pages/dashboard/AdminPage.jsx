@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import FoundingAdminPanel from '../../components/dashboard/FoundingAdminPanel';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import {
@@ -1275,6 +1276,8 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      <FoundingAdminPanel />
 
       <div style={{ marginBottom: 20 }}>
         <CollapsibleHeader title="Analytics" open={analyticsOpen} onToggle={() => setAnalyticsOpen((o) => !o)} />
