@@ -123,13 +123,20 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   const t = tokens(dark)
 
   const isAdmin = Boolean(profile && (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1 || profile.is_admin === '1'))
+  const isFounding = Boolean(profile && (profile.founding_member === true || profile.founding_member === 'true'))
 
   const sections = useMemo(() => {
-    if (!isAdmin) return BASE_SECTIONS
-    return BASE_SECTIONS.map((s) => s.label === 'Account'
-      ? { ...s, items: [...s.items, { label: 'Admin', path: '/dashboard/admin', icon: 'shield' }] }
-      : s)
-  }, [isAdmin])
+    let list = BASE_SECTIONS
+    if (isFounding) {
+      list = [{ label: 'Founding', icon: 'star', items: [{ label: 'Founding Hub', path: '/dashboard/founding', icon: 'star' }] }, ...list]
+    }
+    if (isAdmin) {
+      list = list.map((s) => s.label === 'Account'
+        ? { ...s, items: [...s.items, { label: 'Admin', path: '/dashboard/admin', icon: 'shield' }] }
+        : s)
+    }
+    return list
+  }, [isAdmin, isFounding])
 
   function itemActive(path) {
     if (path === '/dashboard') return pathname === '/dashboard'

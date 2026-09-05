@@ -40,6 +40,7 @@ import SubscriptionPage from './pages/dashboard/SubscriptionPage'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage'
 import LumiPage from './pages/dashboard/LumiPage'
 import AdminPage from './pages/dashboard/AdminPage'
+import FoundingHubPage from './pages/dashboard/FoundingHubPage'
 import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
 import SignContract from './pages/SignContract'
@@ -169,6 +170,7 @@ export default function App() {
         <Route path="business/reviews" element={<ReviewsPage />} />
         <Route path="business/marketplace" element={<MarketplacePage />} />
         <Route path="collaborate" element={<CollaboratePage />} />
+        <Route path="founding" element={<FoundingHubPage />} />
         <Route path="business/team" element={<TeamPage />} />
         <Route path="my-work/my-bookings" element={<MyBookingsPage />} />
         <Route path="my-work/availability" element={<AvailabilityPage />} />
