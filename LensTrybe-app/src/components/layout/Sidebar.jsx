@@ -107,6 +107,7 @@ const BASE_SECTIONS = [
     { label: 'View Profile', path: '/dashboard/profile/view-profile', icon: 'eye' },
     { label: 'Referrals', path: '/dashboard/referrals', icon: 'gift' },
     { label: 'Settings', path: '/dashboard/settings', icon: 'settings' },
+    { label: 'Help & Support', path: '/dashboard/support', icon: 'help' },
   ] },
 ]
 

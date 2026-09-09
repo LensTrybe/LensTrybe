@@ -40,6 +40,8 @@ import SubscriptionPage from './pages/dashboard/SubscriptionPage'
 import MyBookingsPage from './pages/dashboard/MyBookingsPage'
 import LumiPage from './pages/dashboard/LumiPage'
 import AdminPage from './pages/dashboard/AdminPage'
+import SupportPage from './pages/dashboard/SupportPage'
+import PublicSupportPage from './pages/public/SupportPage'
 import FoundingHubPage from './pages/dashboard/FoundingHubPage'
 import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
@@ -125,6 +127,7 @@ export default function App() {
         <Route path="/creatives" element={<ExplorePage />} />
         <Route path="/creatives/:id" element={<PublicProfilePage />} />
         <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/support" element={<PublicSupportPage />} />
         <Route path="/upcoming-features" element={<UpcomingFeaturesPage />} />
         <Route path="/creator-partners" element={<Navigate to="/" replace />} />
         <Route path="/join" element={<JoinHubPage />} />
@@ -179,6 +182,7 @@ export default function App() {
         <Route path="profile/view-profile" element={<ViewProfilePage />} />
         <Route path="settings/subscription" element={<SubscriptionPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="support" element={<SupportPage />} />
         <Route path="referrals" element={<ReferralsPage />} />
         <Route path="lumi" element={<LumiPage />} />
         <Route path="admin" element={<AdminPage />} />

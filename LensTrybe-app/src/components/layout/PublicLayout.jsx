@@ -331,6 +331,7 @@ export default function PublicLayout() {
                 { label: 'The Trybe Edit', path: '/the-trybe-edit' },
                 { label: 'Upcoming Features', path: '/upcoming-features' },
                 { label: 'Pricing For Creatives', path: '/pricing' },
+                { label: 'Support', path: '/support' },
                 ...(user ? [
                   { label: 'Dashboard', path: isCreative ? '/dashboard' : '/client-dashboard' },
                   { label: 'Settings', path: '/dashboard/settings' },
@@ -364,6 +365,7 @@ export default function PublicLayout() {
             <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>
             <a href="/privacy" style={footerLinkStyle}>Privacy Policy</a>
             <a href="/cookies" style={footerLinkStyle}>Cookies Policy</a>
+            <a href="/support" style={footerLinkStyle}>Support</a>
             <a href="/the-trybe-edit" style={footerLinkStyle}>The Trybe Edit</a>
           </div>
         </footer>
@@ -388,6 +390,7 @@ export default function PublicLayout() {
           <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
           <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
           <button style={navLinkStyle} onClick={() => navigate('/pricing')}>Pricing For Creatives</button>
+          <button style={navLinkStyle} onClick={() => navigate('/support')}>Support</button>
         </div>
 
         {/* Right: Actions — show Log In/Join immediately; swap to user menu once auth resolves */}
@@ -461,6 +464,7 @@ export default function PublicLayout() {
           <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>
           <a href="/privacy" style={footerLinkStyle}>Privacy Policy</a>
           <a href="/cookies" style={footerLinkStyle}>Cookies Policy</a>
+          <a href="/support" style={footerLinkStyle}>Support</a>
           <a href="/the-trybe-edit" style={footerLinkStyle}>The Trybe Edit</a>
         </div>
       </footer>
