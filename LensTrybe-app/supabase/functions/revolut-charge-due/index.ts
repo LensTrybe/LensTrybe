@@ -1,20 +1,10 @@
 // Supabase Edge Function: revolut-charge-due
 // Scheduled job (run daily via cron). Charges the saved card for every
 // subscription whose next_charge_date is due, off-session (merchant-initiated).
+// Also downgrades canceled subs to Basic once their paid period ends.
+// Picks up both trialing subs whose trial/deferral ended and active renewals.
 //
 // Auth: requires header `x-cron-secret` == CRON_SECRET (if that secret is set).
-// This is NOT client-facing — only the scheduler should call it.
-//
-// Flow per due subscription:
-//   1. Create a new order (amount, currency, customer).
-//   2. POST /orders/{id}/payments with the saved payment method, initiator=merchant.
-//   3. Advance next_charge_date/current_period_end by one period (optimistic).
-// The webhook (ORDER_PAYMENT_FAILED) will flip to past_due if a charge fails.
-//
-// Required secrets:
-// - REVOLUT_SECRET_KEY, REVOLUT_ENV
-// - CRON_SECRET (shared secret the scheduler sends)
-// - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-provided)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -29,6 +19,17 @@ function revolutBase() {
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
+}
+
+// Fire a branded billing email to the creative (best effort, never blocks).
+async function notifyBilling(supabaseUrl: string, serviceKey: string, userId: string, kind: string, tier?: unknown, amountMinor?: unknown, currency?: unknown) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, kind, tier, amount_minor: amountMinor, currency }),
+    })
+  } catch (_e) { /* best effort */ }
 }
 
 async function revolut(path: string, key: string, method: string, body?: unknown) {
@@ -96,7 +97,6 @@ Deno.serve(async (req) => {
 
   for (const sub of due || []) {
     try {
-      // 1. New order for this cycle.
       const order = await revolut('/orders', REVOLUT_SECRET_KEY, 'POST', {
         amount: sub.amount_minor,
         currency: sub.currency,
@@ -110,7 +110,6 @@ Deno.serve(async (req) => {
       }
       const orderId = String(order.body.id)
 
-      // 2. Charge the saved card, merchant-initiated (off-session).
       const pay = await revolut(`/orders/${orderId}/payments`, REVOLUT_SECRET_KEY, 'POST', {
         saved_payment_method: {
           type: 'card',
@@ -119,19 +118,31 @@ Deno.serve(async (req) => {
         },
       })
 
-      // 3. Advance the period optimistically and point at the new order.
-      const base = sub.current_period_end && new Date(sub.current_period_end) > new Date()
-        ? new Date(sub.current_period_end)
-        : new Date()
-      const nextEnd = addPeriod(base, sub.billing)
+      if (pay.ok) {
+        // Payment went through: extend the paid period.
+        const base = sub.current_period_end && new Date(sub.current_period_end) > new Date()
+          ? new Date(sub.current_period_end)
+          : new Date()
+        const nextEnd = addPeriod(base, sub.billing)
 
-      await sb.from('subscriptions').update({
-        status: 'active',
-        revolut_last_order_id: orderId,
-        current_period_end: nextEnd.toISOString(),
-        next_charge_date: nextEnd.toISOString().slice(0, 10),
-        updated_at: new Date().toISOString(),
-      }).eq('id', sub.id)
+        await sb.from('subscriptions').update({
+          status: 'active',
+          revolut_last_order_id: orderId,
+          current_period_end: nextEnd.toISOString(),
+          next_charge_date: nextEnd.toISOString().slice(0, 10),
+          updated_at: new Date().toISOString(),
+        }).eq('id', sub.id)
+      } else {
+        // Renewal charge failed: mark past_due and send a dunning email. Do not
+        // extend the period; the job will retry on the next run.
+        await sb.from('subscriptions').update({
+          status: 'past_due',
+          revolut_last_order_id: orderId,
+          updated_at: new Date().toISOString(),
+        }).eq('id', sub.id)
+        await sb.from('profiles').update({ subscription_status: 'past_due' }).eq('id', sub.user_id)
+        await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'failed', sub.tier, sub.amount_minor, sub.currency)
+      }
 
       results.push({ sub: sub.id, order: orderId, charge_status: pay.status, ok: pay.ok })
     } catch (e) {

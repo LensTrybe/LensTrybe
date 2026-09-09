@@ -1,13 +1,29 @@
 // Supabase Edge Function: create-checkout-session
-// Receives: { priceId: string, userId: string, email: string }
+// Receives: { priceId: string, userId: string, email: string, referralCode?: string }
 // Returns: { url: string }
-
 import Stripe from 'https://esm.sh/stripe@14.25.0?target=deno'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const REFERRAL_COUPON_ID = 'REFERRAL10'
+
+async function ensureReferralCoupon(stripe: Stripe): Promise<string> {
+  try {
+    const existing = await stripe.coupons.retrieve(REFERRAL_COUPON_ID)
+    return existing.id
+  } catch {
+    const coupon = await stripe.coupons.create({
+      id: REFERRAL_COUPON_ID,
+      percent_off: 10,
+      duration: 'once',
+      name: '10% off first payment (referral)',
+    })
+    return coupon.id
+  }
 }
 
 Deno.serve(async (req) => {
@@ -30,6 +46,8 @@ Deno.serve(async (req) => {
     const priceId = String(body?.priceId || '')
     const userId = String(body?.userId || '')
     const email = String(body?.email || '')
+    const referralCode = String(body?.referralCode || '').trim().toUpperCase() || null
+
     if (!priceId || !userId || !email) {
       return new Response(JSON.stringify({ error: 'Missing priceId, userId, or email' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
@@ -37,7 +55,21 @@ Deno.serve(async (req) => {
     const stripe = new Stripe(STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' })
     const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-    // Load existing stripe_customer_id (if any)
+    let referrerId: string | null = null
+    if (referralCode) {
+      const { data: referrerProfile } = await sb
+        .from('profiles')
+        .select('id')
+        .eq('referral_code', referralCode)
+        .neq('id', userId)
+        .maybeSingle()
+
+      if (referrerProfile) {
+        referrerId = referrerProfile.id
+        await sb.from('profiles').update({ referred_by_code: referralCode }).eq('id', userId)
+      }
+    }
+
     const { data: prof } = await sb
       .from('profiles')
       .select('stripe_customer_id')
@@ -45,9 +77,7 @@ Deno.serve(async (req) => {
       .maybeSingle()
 
     let customerId = prof?.stripe_customer_id ? String(prof.stripe_customer_id) : ''
-
     if (!customerId) {
-      // Try to find an existing customer by email; if none, create
       const existing = await stripe.customers.list({ email, limit: 1 })
       if (existing.data?.[0]?.id) {
         customerId = existing.data[0].id
@@ -58,22 +88,40 @@ Deno.serve(async (req) => {
         })
         customerId = created.id
       }
-
-      // Persist on profile for future
       await sb.from('profiles').update({ stripe_customer_id: customerId }).eq('id', userId)
     }
 
-    const session = await stripe.checkout.sessions.create({
+    const subscriptionData: any = {
+      trial_period_days: 14,
+      metadata: { supabase_user_id: userId },
+    }
+
+    let discounts: any[] | undefined = undefined
+    if (referrerId) {
+      const couponId = await ensureReferralCoupon(stripe)
+      discounts = [{ coupon: couponId }]
+    }
+
+    const sessionParams: any = {
       mode: 'subscription',
       payment_method_types: ['card'],
-      allow_promotion_codes: true,
+      allow_promotion_codes: !referrerId,
       customer: customerId,
       line_items: [{ price: priceId, quantity: 1 }],
-      subscription_data: { trial_period_days: 14, metadata: { supabase_user_id: userId } },
+      subscription_data: subscriptionData,
       success_url: 'https://lenstrybe.com/dashboard?checkout=success',
       cancel_url: 'https://lenstrybe.com/pricing',
-      metadata: { supabase_user_id: userId, price_id: priceId },
-    })
+      metadata: {
+        supabase_user_id: userId,
+        price_id: priceId,
+        referral_code: referralCode || '',
+        referrer_id: referrerId || '',
+      },
+    }
+
+    if (discounts) sessionParams.discounts = discounts
+
+    const session = await stripe.checkout.sessions.create(sessionParams)
 
     return new Response(JSON.stringify({ url: session.url }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -86,4 +134,3 @@ Deno.serve(async (req) => {
     })
   }
 })
-

@@ -2,10 +2,13 @@
 // Client-facing (verify_jwt = false). Creates a Revolut customer and a
 // ZERO-AMOUNT setup order that saves the customer's card for future
 // merchant-initiated charges (no charge now). Records a "trialing" subscription
-// with the correct first-charge date:
-//   - Expert: first charge 1 Jan 2027 (free until then)
-//   - Pro / Elite: 14-day free trial, first charge day 14
-// The recurring-charge cron makes the first real charge on next_charge_date.
+// whose first-charge date and amount come from what the signup trigger already
+// granted on the profile:
+//   - Founding creatives (valid code): free for 12 months, then $49/mo for life.
+//   - Everyone else on a paid plan: 3-month free trial, then the normal price.
+// The single source of truth is profiles.next_billing_date + profiles.founding_member,
+// set by handle_new_user at signup. The recurring-charge cron makes the first real
+// charge on next_charge_date.
 //
 // Receives: { userId, email, tier, billing, fullName? }
 // Returns:  { token, orderId, env, trialEnd }
@@ -21,10 +24,13 @@ const corsHeaders = {
 
 const REVOLUT_API_VERSION = '2026-04-20'
 const CURRENCY = 'AUD'
-const TRIAL_DAYS = 14
-const EXPERT_FIRST_CHARGE = '2027-01-01T00:00:00+11:00'
+const TRIAL_MONTHS = 3
 
-// Real plan prices in AUD minor units (cents). Charged later by the cron.
+// Founding locked rate: $49/mo for life (or $588/yr if they pick annual).
+const FOUNDING_MONTHLY = 4900
+const FOUNDING_ANNUAL = 58800
+
+// Standard plan prices in AUD minor units (cents). Charged later by the cron.
 const PLANS: Record<string, Record<string, number>> = {
   pro: { monthly: 2499, annual: 24990 },
   expert: { monthly: 7499, annual: 74990 },
@@ -80,28 +86,39 @@ Deno.serve(async (req) => {
   const fullName = String(bodyIn?.fullName || '').trim()
 
   if (!userId || !email) return json({ error: 'Missing userId or email' }, 400)
-  const amount = PLANS?.[tier]?.[billing]
-  if (!amount) return json({ error: `Unknown plan: ${tier}/${billing}` }, 400)
-
-  // First-charge date: Expert deferred to 2027-01-01, everyone else a 14-day trial.
-  const now = new Date()
-  const isExpert = tier === 'expert'
-  const firstCharge = isExpert
-    ? new Date(EXPERT_FIRST_CHARGE)
-    : new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
-  // Use the intended calendar date. For Expert this is exactly 2027-01-01 (the
-  // promised date); deriving it from the UTC instant would slip it back a day.
-  const firstChargeDate = isExpert ? '2027-01-01' : firstCharge.toISOString().slice(0, 10)
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-  // 1. Reuse or create the Revolut customer.
+  // Read what the signup trigger already granted: founding status + first-charge date.
   const { data: prof } = await sb
     .from('profiles')
-    .select('revolut_customer_id')
+    .select('revolut_customer_id, founding_member, next_billing_date')
     .eq('id', userId)
     .maybeSingle()
 
+  const isFounding = !!prof?.founding_member
+
+  // Amount: founding locks $49/mo ($588/yr); everyone else pays the standard plan price.
+  const amount = isFounding
+    ? (billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY)
+    : PLANS?.[tier]?.[billing]
+  if (!amount) return json({ error: `Unknown plan: ${tier}/${billing}` }, 400)
+
+  // First-charge date comes from the profile (trigger set founding = +12 months,
+  // paid trial = +3 months). Fall back to a 3-month trial if it's somehow missing.
+  const now = new Date()
+  let firstChargeDate: string
+  if (prof?.next_billing_date) {
+    firstChargeDate = String(prof.next_billing_date).slice(0, 10)
+  } else {
+    const d = new Date(now)
+    d.setMonth(d.getMonth() + TRIAL_MONTHS)
+    firstChargeDate = d.toISOString().slice(0, 10)
+  }
+  // Brisbane-time start of that day, so the period end lines up with the calendar date.
+  const firstChargeInstant = new Date(`${firstChargeDate}T00:00:00+10:00`)
+
+  // 1. Reuse or create the Revolut customer.
   let customerId = prof?.revolut_customer_id ? String(prof.revolut_customer_id) : ''
   if (!customerId) {
     const cust = await revolut('/customers', REVOLUT_SECRET_KEY, { full_name: fullName || email, email })
@@ -125,7 +142,7 @@ Deno.serve(async (req) => {
   const orderId = String(order.body.id)
   const token = String(order.body.token)
 
-  // 3. Record a trialing subscription with the real price + first-charge date.
+  // 3. Record a trialing subscription with the right price + first-charge date.
   const { error: upsertErr } = await sb.from('subscriptions').upsert(
     {
       user_id: userId,
@@ -137,9 +154,9 @@ Deno.serve(async (req) => {
       revolut_last_order_id: orderId,
       amount_minor: amount,
       currency: CURRENCY,
-      current_period_end: firstCharge.toISOString(),
+      current_period_end: firstChargeInstant.toISOString(),
       next_charge_date: firstChargeDate,
-      founding_member: isExpert,
+      founding_member: isFounding,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },

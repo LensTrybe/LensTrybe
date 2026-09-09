@@ -1,20 +1,16 @@
 // Supabase Edge Function: revolut-webhook
-// Client-facing (verify_jwt = false) — authenticated via Revolut signature.
+// Client-facing (verify_jwt = false). Authenticity is enforced by fetching the
+// order's real state from Revolut with our secret key (a forged webhook can't
+// fake that), so no signing secret is required. If REVOLUT_WEBHOOK_SECRET is set
+// we also check the HMAC signature as defence-in-depth.
 //
-// Handles Merchant API order events:
-//   ORDER_COMPLETED            -> activate subscription, store saved card, set period
-//   ORDER_PAYMENT_DECLINED     -> mark past_due
-//   ORDER_PAYMENT_FAILED       -> mark past_due
-//   ORDER_CANCELLED            -> mark canceled
+// Order state drives the update:
+//   completed/authorised -> activate (store card, grant access, keep trial)
+//   failed/declined      -> past_due
+//   cancelled            -> canceled
 //
-// Signature: HMAC-SHA256 over `v1.{timestamp}.{rawBody}` using the webhook
-// signing secret, compared to the `Revolut-Signature` header (v1=<hex>).
-//
-// Required secrets:
-// - REVOLUT_SECRET_KEY          (sk_...)
-// - REVOLUT_ENV                 ('sandbox' | 'production')
-// - REVOLUT_WEBHOOK_SECRET      (whsec_... from webhook registration; optional in sandbox)
-// - SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY (auto-provided)
+// Secrets: REVOLUT_SECRET_KEY, REVOLUT_ENV, REVOLUT_WEBHOOK_SECRET (optional),
+//          SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 
@@ -39,6 +35,17 @@ function json(body: unknown, status = 200) {
   })
 }
 
+// Fire a branded billing email to the creative (best effort, never blocks).
+async function notifyBilling(supabaseUrl: string, serviceKey: string, userId: string, kind: string, tier?: unknown) {
+  try {
+    await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: userId, kind, tier }),
+    })
+  } catch (_e) { /* best effort */ }
+}
+
 async function revolutGet(path: string, key: string) {
   const res = await fetch(revolutBase() + path, {
     headers: {
@@ -53,14 +60,13 @@ async function revolutGet(path: string, key: string) {
 }
 
 async function verifySignature(rawBody: string, sigHeader: string, tsHeader: string, secret: string) {
-  if (!secret) return true // sandbox: allow if no signing secret configured yet
+  if (!secret) return true // no signing secret configured: rely on order-state verification
   if (!sigHeader || !tsHeader) return false
   const payload = `v1.${tsHeader}.${rawBody}`
   const enc = new TextEncoder()
   const cryptoKey = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign'])
   const mac = await crypto.subtle.sign('HMAC', cryptoKey, enc.encode(payload))
   const hex = [...new Uint8Array(mac)].map((b) => b.toString(16).padStart(2, '0')).join('')
-  // Header may contain multiple space-separated signatures (e.g. "v1=abc v1=def").
   const provided = sigHeader.split(/\s+/).map((s) => s.replace(/^v1=/, '').trim())
   return provided.includes(hex)
 }
@@ -101,7 +107,6 @@ Deno.serve(async (req) => {
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
-  // Map the order back to our subscription row (recorded at order creation).
   const { data: sub } = await sb
     .from('subscriptions')
     .select('id, user_id, tier, billing, revolut_customer_id, founding_member, current_period_end')
@@ -118,7 +123,6 @@ Deno.serve(async (req) => {
 
   try {
     if (state === 'completed' || state === 'authorised') {
-      // Retrieve the customer's saved payment method for future merchant-initiated charges.
       let pmId: string | null = null
       if (sub.revolut_customer_id) {
         const pm = await revolutGet(`/customers/${sub.revolut_customer_id}/payment-methods`, REVOLUT_SECRET_KEY)
@@ -130,14 +134,10 @@ Deno.serve(async (req) => {
 
       const now = new Date()
       const hasFuturePeriod = sub.current_period_end && new Date(sub.current_period_end) > now
+      const newlyActivated = !hasFuturePeriod
 
       const updates: Record<string, unknown> = { updated_at: now.toISOString() }
-      // Capture the saved card when we find one (renewals already have it).
       if (pmId) updates.revolut_payment_method_id = pmId
-      // A future period means this is the zero-amount setup order completing (trial
-      // or Expert deferral): keep the trialing status + first-charge date the order
-      // function set. Only when there is no future period do we treat this as an
-      // immediate activation (fallback path).
       if (!hasFuturePeriod) {
         updates.status = 'active'
         const periodEnd = addPeriod(now, sub.billing)
@@ -151,11 +151,16 @@ Deno.serve(async (req) => {
         subscription_tier: sub.tier,
         subscription_status: 'active',
       }).eq('id', sub.user_id)
+
+      // Only email on a fresh activation/upgrade, not on every renewal charge.
+      if (newlyActivated) await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'active', sub.tier)
     } else if (state === 'failed' || state === 'declined') {
       await sb.from('subscriptions').update({ status: 'past_due', updated_at: new Date().toISOString() }).eq('id', sub.id)
       await sb.from('profiles').update({ subscription_status: 'past_due' }).eq('id', sub.user_id)
+      await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'failed', sub.tier)
     } else if (state === 'cancelled') {
       await sb.from('subscriptions').update({ status: 'canceled', updated_at: new Date().toISOString() }).eq('id', sub.id)
+      await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'cancelled', sub.tier)
     }
 
     return json({ received: true, event, state })

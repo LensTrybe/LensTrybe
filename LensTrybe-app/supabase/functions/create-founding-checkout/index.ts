@@ -6,7 +6,16 @@ const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') ?? '', {
 });
 
 const FOUNDING_MEMBER_CAP = 500;
-const OFFER_END_DATE = new Date('2026-12-31T23:59:59+11:00');
+// Offer closes end of 31 Dec 2026 (Brisbane, UTC+10, no DST).
+const OFFER_END_DATE = new Date('2026-12-31T23:59:59+10:00');
+// Expert is free until this moment, then billing begins (Brisbane time).
+const BILLING_START = new Date('2027-01-01T00:00:00+10:00');
+
+// Live-mode Expert price IDs (verified): monthly $74.99, annual $749.90 (2 months free).
+const EXPERT_PRICES = {
+  monthly: 'price_1TKKXYHW7LVs8k6sboOI02xE',
+  annual: 'price_1TKKXbHW7LVs8k6shpoFmKAi',
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,7 +45,7 @@ Deno.serve(async (req) => {
     const { data: countData } = await supabase.rpc('get_founding_member_count');
     const now = new Date();
 
-    if (countData >= FOUNDING_MEMBER_CAP || now > OFFER_END_DATE) {
+    if ((countData ?? 0) >= FOUNDING_MEMBER_CAP || now > OFFER_END_DATE) {
       return new Response(
         JSON.stringify({ error: 'Founding member offer has closed.' }),
         { status: 410, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -60,41 +69,36 @@ Deno.serve(async (req) => {
         .eq('id', userId);
     }
 
-    let coupon;
-    try {
-      coupon = await stripe.coupons.retrieve('FOUNDING_MEMBER_2026');
-    } catch {
-      coupon = await stripe.coupons.create({
-        id: 'FOUNDING_MEMBER_2026',
-        percent_off: 100,
-        duration: 'repeating',
-        duration_in_months: 8,
-        name: 'Founding Member - Free until 1 Jan 2027',
-        max_redemptions: 500,
-        redeem_by: Math.floor(new Date('2026-12-31T23:59:59+11:00').getTime() / 1000),
-      });
-    }
+    const isAnnual = interval === 'annual' || interval === 'yearly';
+    const priceId = isAnnual ? EXPERT_PRICES.annual : EXPERT_PRICES.monthly;
 
-    const priceId = interval === 'annual'
-      ? 'price_1TKKXbHW7LVs8k6shpoFmKAi'
-      : 'price_1TKKXYHW7LVs8k6sboOI02xE';
+    // Free until 1 Jan 2027 via an absolute trial end. Card is collected now
+    // (payment_method_collection: always) and the plan bills automatically on
+    // 1 Jan 2027: monthly $74.99 or annual $749.90 (2 months free baked in).
+    const billingStartSec = Math.floor(BILLING_START.getTime() / 1000);
+    const nowSec = Math.floor(now.getTime() / 1000);
+    // Stripe requires trial_end to be >= ~48h out; guard the final days of the
+    // offer so checkout never errors that close to the billing-start date.
+    const trialEnd = billingStartSec > nowSec + 60 * 60 * 49 ? billingStartSec : undefined;
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
       line_items: [{ price: priceId, quantity: 1 }],
-      discounts: [{ coupon: coupon.id }],
       subscription_data: {
+        ...(trialEnd ? { trial_end: trialEnd } : {}),
         metadata: {
           userId,
           tier: 'expert',
           founding_member: 'true',
+          interval: isAnnual ? 'annual' : 'monthly',
         },
       },
       metadata: {
         userId,
         tier: 'expert',
         founding_member: 'true',
+        interval: isAnnual ? 'annual' : 'monthly',
       },
       success_url: 'https://app.lenstrybe.com/dashboard?founding=1',
       cancel_url: 'https://app.lenstrybe.com/pricing',
