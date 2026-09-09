@@ -5,7 +5,8 @@ function json(body: Record<string, unknown>, status = 200) { return new Response
 
 // ---- LensTrybe shared email template (inlined) ----
 const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', pink: '#FF2D78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
-const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
+const FROM = 'LensTrybe Billing <noreply@mail.lenstrybe.com>'
+const REPLY_TO = 'billing@lenstrybe.com'
 function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
 function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
 function fieldRow(label: string, valueHtml: string) { return `<div style="margin:0 0 12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">${esc(label)}</div><div style="font-size:14px;color:${BRAND.text};line-height:1.55;">${valueHtml}</div></div>` }
@@ -96,6 +97,7 @@ Deno.serve(async (req) => {
     ? panel(fieldRow('Plan', esc(tier)) + fieldRow('Amount', esc(amountStr)))
     : panel(fieldRow('Plan', esc(tier)))
 
-  await sendEmail(resendKey, { to, subject, html: emailShell({ preheader: subject, kicker, heading, intro, panelHtml, ctaText, ctaUrl: SUB_URL, footNote }) })
+  const billingFootNote = `${footNote} Questions about your subscription? Just reply to this email and the LensTrybe team will help.`
+  await sendEmail(resendKey, { to, subject, html: emailShell({ preheader: subject, kicker, heading, intro, panelHtml, ctaText, ctaUrl: SUB_URL, footNote: billingFootNote }), replyTo: REPLY_TO })
   return json({ success: true })
 })

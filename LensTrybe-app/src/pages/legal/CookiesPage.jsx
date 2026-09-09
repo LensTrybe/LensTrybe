@@ -19,7 +19,7 @@ export default function CookiesPage() {
     { title: '5. Managing Cookies', body: 'You can control and manage cookies through your browser settings. Most browsers allow you to:\n\n• View cookies that have been set\n• Block all cookies\n• Block third-party cookies\n• Delete cookies when you close your browser\n\nPlease be aware that blocking essential cookies will prevent you from logging in and using key features of the LensTrybe platform.\n\nInstructions for managing cookies in common browsers:\n• Google Chrome: chrome://settings/cookies\n• Safari: Preferences > Privacy\n• Firefox: about:preferences#privacy\n• Microsoft Edge: edge://settings/privacy' },
     { title: '6. Cookie Consent', body: 'By continuing to use the LensTrybe platform, you consent to our use of essential and functional cookies as described in this policy. Where we use non-essential cookies, we will request your consent through a cookie notice on the platform.' },
     { title: '7. Changes to This Policy', body: 'We may update this Cookies Policy from time to time, particularly if we introduce new tools or third-party services. We will notify registered users of any material changes by email. The effective date at the top of this page will always reflect the most recent version.' },
-    { title: '8. Contact Us', body: 'If you have any questions about our use of cookies, please contact us at:\n\nLensTrybe\nEmail: connect@lenstrybe.com\nWebsite: lenstrybe.com\nQueensland, Australia' },
+    { title: '8. Contact Us', body: 'If you have any questions about our use of cookies, please contact us at:\n\nLensTrybe\nEmail: privacy@lenstrybe.com\nWebsite: lenstrybe.com\nQueensland, Australia' },
   ]
 
   return (
