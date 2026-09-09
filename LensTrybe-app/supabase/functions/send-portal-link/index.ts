@@ -25,7 +25,7 @@ serve(async (req) => {
           </a>
         </div>
         <p style="color:#666;font-size:12px;margin-top:8px;text-align:center">Or copy this link: <a href="${portal_url}" style="color:#1DB954">${portal_url}</a></p>
-        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://app.lenstrybe.com" style="color:#1DB954">app.lenstrybe.com</a></p>
+        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
       </div>
     `
 

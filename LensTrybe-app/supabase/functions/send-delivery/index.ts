@@ -29,7 +29,7 @@ serve(async (req) => {
         </div>
         <p style="color:#666;font-size:12px;margin-top:8px;text-align:center">Or copy this link: <a href="${deliveryUrl}" style="color:#1DB954">${deliveryUrl}</a></p>
         ${delivery.password_protected ? `<p style="color:#888;font-size:13px;text-align:center;margin-top:16px">This gallery is password protected. Your creative will send you the password separately.</p>` : ''}
-        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://app.lenstrybe.com" style="color:#1DB954">app.lenstrybe.com</a></p>
+        <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
       </div>
     `
 
