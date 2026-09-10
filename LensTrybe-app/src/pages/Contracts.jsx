@@ -135,7 +135,7 @@ function Contracts() {
     innerBorder: '#202027',
     muted: '#555',
     label: '#888',
-    green: '#39ff14',
+    green: '#1DB954',
     amber: '#f59e0b',
     amberBg: '#1e1800',
     yellow: '#facc15',

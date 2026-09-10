@@ -137,7 +137,7 @@ function Quotes() {
     innerBorder: '#202027',
     muted: '#555',
     label: '#888',
-    green: '#39ff14',
+    green: '#1DB954',
     yellow: '#facc15',
     red: '#f87171',
     grey: '#9ca3af',

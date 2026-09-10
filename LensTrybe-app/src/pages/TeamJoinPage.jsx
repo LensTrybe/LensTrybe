@@ -121,7 +121,7 @@ export default function TeamJoinPage() {
     display: 'block',
   };
 
-  const accentColor = invitation?.profiles?.brand_primary_color || '#39ff14';
+  const accentColor = invitation?.profiles?.brand_primary_color || '#1DB954';
 
   if (loading) return (
     <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>

@@ -19,7 +19,7 @@ const PAGE = {
   text: 'rgb(242, 242, 242)',
   card: '#13131a',
   border: '#1e1e1e',
-  green: '#39ff14',
+  green: '#1DB954',
   purple: '#a78bfa',
   pink: '#e879f9',
   grey: '#888',
@@ -544,8 +544,8 @@ export default function DashboardPage() {
       {checkoutSuccess ? (
         <div
           style={{
-            background: 'rgba(57, 255, 20, 0.08)',
-            border: '1px solid rgba(57, 255, 20, 0.35)',
+            background: 'rgba(29, 185, 84, 0.08)',
+            border: '1px solid rgba(29, 185, 84, 0.35)',
             borderRadius: 10,
             padding: '12px 14px',
             marginBottom: 16,
@@ -991,7 +991,7 @@ export default function DashboardPage() {
         style={{
           marginTop: 20,
           borderRadius: 10,
-          border: `1px solid rgba(57, 255, 20, 0.35)`,
+          border: `1px solid rgba(29, 185, 84, 0.35)`,
           overflow: 'hidden',
           background: PAGE.card,
           boxSizing: 'border-box',
@@ -1005,7 +1005,7 @@ export default function DashboardPage() {
             justifyContent: 'space-between',
             gap: 12,
             padding: '14px 20px',
-            background: 'rgba(57, 255, 20, 0.06)',
+            background: 'rgba(29, 185, 84, 0.06)',
             borderBottom: `1px solid ${PAGE.border}`,
             flexWrap: 'wrap',
           }}

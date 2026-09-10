@@ -33,7 +33,7 @@ export default function JobPostModal({
   open,
   onClose,
   onPosted,
-  accentColor = '#39ff14',
+  accentColor = '#1DB954',
   successMessage = 'Your job has been posted!',
 }) {
   const [title, setTitle] = useState('')

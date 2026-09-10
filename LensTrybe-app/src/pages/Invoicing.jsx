@@ -485,7 +485,7 @@ function Invoicing() {
     innerBorder: '1px solid #202027',
     inputBorder: '1px solid #202027',
     label: '#888',
-    green: '#39ff14',
+    green: '#1DB954',
     yellow: '#facc15',
     red: '#f87171',
     grey: '#9ca3af',

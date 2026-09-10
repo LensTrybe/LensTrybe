@@ -61,7 +61,7 @@ export default function PortfolioPage() {
         body { background: #0f0f0f; }
         .port-page { min-height: 100vh; background: #0f0f0f; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
         .port-hero { background: linear-gradient(180deg, #141414 0%, #0f0f0f 100%); border-bottom: 1px solid #1e1e1e; padding: 60px 32px 40px; text-align: center; }
-        .port-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #000; margin: 0 auto 16px; overflow: hidden; }
+        .port-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #1DB954, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 700; color: #000; margin: 0 auto 16px; overflow: hidden; }
         .port-avatar img { width: 100%; height: 100%; object-fit: cover; }
         .port-name { font-size: 32px; font-weight: 800; color: #fff; margin-bottom: 8px; }
         .port-tagline { font-size: 16px; color: #888; margin-bottom: 12px; }
@@ -84,7 +84,7 @@ export default function PortfolioPage() {
         .featured-card-cat { font-size: 11px; color: #aaa; margin-top: 3px; }
         .cat-tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 24px; }
         .cat-tab { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 20px; padding: 6px 16px; font-size: 12px; color: #666; cursor: pointer; transition: all 0.15s; }
-        .cat-tab.active { background: #1e2a1e; border-color: #39ff14; color: #39ff14; }
+        .cat-tab.active { background: #1e2a1e; border-color: #1DB954; color: #1DB954; }
         .portfolio-masonry { columns: 3; gap: 12px; }
         @media (max-width: 768px) { .portfolio-masonry { columns: 2; } }
         @media (max-width: 480px) { .portfolio-masonry { columns: 1; } }
@@ -103,12 +103,12 @@ export default function PortfolioPage() {
         .reviews-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
         .review-card { background: #141414; border: 1px solid #1e1e1e; border-radius: 12px; padding: 18px; }
         .review-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .review-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #39ff14, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; flex-shrink: 0; }
+        .review-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1DB954, #a855f7); display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; color: #000; flex-shrink: 0; }
         .review-name { font-size: 14px; font-weight: 600; color: #fff; }
         .review-stars { color: #facc15; font-size: 12px; margin-top: 2px; }
         .review-comment { font-size: 13px; color: #888; line-height: 1.6; }
         .port-footer { text-align: center; padding: 40px 20px; color: #333; font-size: 12px; border-top: 1px solid #1a1a1a; margin-top: 60px; }
-        .port-footer span { color: #39ff14; font-weight: 700; }
+        .port-footer span { color: #1DB954; font-weight: 700; }
         .lightbox-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; display: flex; align-items: center; justify-content: center; cursor: pointer; }
         .lightbox-img { max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px; }
         .lightbox-close { position: absolute; top: 20px; right: 24px; font-size: 28px; color: #aaa; cursor: pointer; background: none; border: none; }

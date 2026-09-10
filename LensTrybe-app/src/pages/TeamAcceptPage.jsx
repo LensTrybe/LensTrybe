@@ -67,7 +67,7 @@ export default function TeamAcceptPage() {
   return (
     <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '32px' }}>
       <div style={{ background: '#13131a', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '40px', maxWidth: '480px', width: '100%', textAlign: 'center' }}>
-        <div style={{ fontSize: '28px', fontWeight: '900', color: '#39ff14', marginBottom: '4px' }}>LensTrybe</div>
+        <div style={{ fontSize: '28px', fontWeight: '900', color: '#1DB954', marginBottom: '4px' }}>LensTrybe</div>
         <div style={{ fontSize: '13px', color: '#555', marginBottom: '32px' }}>For creatives, by creatives</div>
 
         {accepted ? (
@@ -95,8 +95,8 @@ export default function TeamAcceptPage() {
               <div style={{ fontSize: '14px', color: '#e8e8e8', marginTop: '6px' }}><strong>Role:</strong> {invitation?.role || 'Member'}</div>
               <div style={{ fontSize: '14px', color: '#e8e8e8', marginTop: '6px' }}><strong>Email:</strong> {invitation?.email}</div>
             </div>
-            <div style={{ background: '#1e2a1e', border: '1px solid #39ff14', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', textAlign: 'left' }}>
-              <div style={{ fontSize: '12px', fontWeight: '700', color: '#39ff14', marginBottom: '6px' }}>Important: read before signing up</div>
+            <div style={{ background: '#1e2a1e', border: '1px solid #1DB954', borderRadius: '10px', padding: '14px 16px', marginBottom: '20px', textAlign: 'left' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: '#1DB954', marginBottom: '6px' }}>Important: read before signing up</div>
               <div style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.6' }}>
                 You are joining as a team member under an <strong style={{ color: 'white' }}>Elite subscription</strong>. When creating your profile, select the <strong style={{ color: 'white' }}>Basic (Free)</strong> plan. Your team owner&apos;s Elite subscription covers all features for the whole team.
               </div>
@@ -104,7 +104,7 @@ export default function TeamAcceptPage() {
             <button
               onClick={handleAccept}
               disabled={accepting}
-              style={{ background: '#39ff14', color: '#000', fontWeight: '700', fontSize: '16px', padding: '14px 36px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: '100%' }}
+              style={{ background: '#1DB954', color: '#000', fontWeight: '700', fontSize: '16px', padding: '14px 36px', borderRadius: '10px', border: 'none', cursor: 'pointer', width: '100%' }}
             >
               {accepting ? 'Accepting...' : 'Accept Invitation'}
             </button>

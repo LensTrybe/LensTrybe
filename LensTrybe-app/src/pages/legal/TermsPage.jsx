@@ -52,7 +52,7 @@ export default function TermsPage() {
           </div>
         ))}
 
-        <div style={{ marginTop: '60px', padding: '32px', background: 'rgba(57,255,20,0.05)', border: '1px solid rgba(57,255,20,0.15)', borderRadius: '12px' }}>
+        <div style={{ marginTop: '60px', padding: '32px', background: 'rgba(29, 185, 84,0.05)', border: '1px solid rgba(29, 185, 84,0.15)', borderRadius: '12px' }}>
           <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Refund Policy</h2>
           <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '32px' }}>LensTrybe · Effective Date: March 14, 2026</p>
           {[

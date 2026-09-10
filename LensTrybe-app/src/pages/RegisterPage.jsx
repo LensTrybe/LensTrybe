@@ -73,7 +73,7 @@ export default function RegisterPage() {
     innerBorder: '#202027',
     muted: '#888',
     dim: '#555',
-    green: '#39ff14',
+    green: '#1DB954',
     red: '#f87171',
   }
 

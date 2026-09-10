@@ -173,7 +173,7 @@ function BookingRequests() {
     itemBorder: '1px solid #202027',
     softText: '#aaa',
     notesText: '#888',
-    green: '#39ff14',
+    green: '#1DB954',
     red: '#f87171',
   }
 

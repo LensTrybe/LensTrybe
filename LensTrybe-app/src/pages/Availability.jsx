@@ -18,7 +18,7 @@ const THEME = {
   cardBorder: '1px solid #20202740',
   controlBg: '#1a1a24',
   controlBorder: '#202027',
-  green: '#39ff14',
+  green: '#1DB954',
   red: '#f87171',
 }
 
