@@ -166,28 +166,18 @@ export default function PortfolioWebsitePage() {
     setContactSending(true)
     setContactError('')
     try {
-      const { data: thread, error: tErr } = await supabase
-        .from('message_threads')
-        .insert({
-          creative_id: profile.id,
-          client_user_id: null,
-          client_name: name,
-          client_email: email,
-          subject: 'Enquiry from portfolio website',
-        })
-        .select()
-        .single()
-      if (tErr || !thread) throw new Error(tErr?.message || 'Could not create conversation')
-
-      const { error: mErr } = await supabase.from('messages').insert({
-        thread_id: thread.id,
-        sender_type: 'client',
-        sender_name: name,
-        body: message,
+      // Visitors aren't signed in and messages are private, so the enquiry is created
+      // server-side by a validated database function that returns only the thread id.
+      const { data: threadId, error: eErr } = await supabase.rpc('submit_website_enquiry', {
+        p_creative_id: profile.id,
+        p_name: name,
+        p_email: email,
+        p_message: message,
+        p_subject: 'Enquiry from portfolio website',
       })
-      if (mErr) throw new Error(mErr.message)
+      if (eErr || !threadId) throw new Error(eErr?.message || 'Could not send your enquiry')
 
-      await supabase.functions.invoke('send-enquiry', { body: { thread_id: thread.id } }).catch(() => {})
+      await supabase.functions.invoke('send-enquiry', { body: { thread_id: threadId } }).catch(() => {})
 
       setContactSent(true)
       setContact({ name: '', email: '', message: '' })

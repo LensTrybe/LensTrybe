@@ -37,14 +37,12 @@ function SignContract() {
       setBusinessName('')
       setAgreed(false)
 
+      // Token-checked database function: returns only the contract for this token.
       const {
-        data: contractRow,
+        data: signingData,
         error: contractError,
-      } = await supabase
-        .from('contracts')
-        .select('*')
-        .eq('signing_token', token)
-        .maybeSingle()
+      } = await supabase.rpc('contract_for_signing', { p_token: token })
+      const contractRow = signingData?.contract ?? null
 
       if (contractError) {
         if (!cancelled) {
@@ -62,22 +60,9 @@ function SignContract() {
         return
       }
 
-      const creativeId = contractRow.creative_id
-
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('business_name')
-        .eq('id', creativeId)
-        .eq('is_admin', false)
-        .maybeSingle()
-
       if (!cancelled) {
         setContract(contractRow)
-        setBusinessName(
-          !profileError && profile?.business_name?.trim()
-            ? profile.business_name.trim()
-            : '',
-        )
+        setBusinessName(String(signingData?.business_name ?? '').trim())
         setLoading(false)
       }
     }
@@ -99,14 +84,7 @@ function SignContract() {
     setErrorMessage('')
     setSuccessMessage('')
 
-    const { error } = await supabase
-      .from('contracts')
-      .update({
-        status: 'signed',
-        signed_at: new Date().toISOString(),
-      })
-      .eq('id', contract.id)
-      .eq('signing_token', token)
+    const { error } = await supabase.rpc('sign_contract', { p_token: token })
 
     if (error) {
       setErrorMessage(error.message)

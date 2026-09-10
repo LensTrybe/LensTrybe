@@ -65,11 +65,7 @@ export function AuthProvider({ children }) {
 
     // Link any message threads that were created with this client's email but no client_user_id
     if (clientData) {
-      await supabase
-        .from('message_threads')
-        .update({ client_user_id: userId })
-        .eq('client_email', clientData.email)
-        .is('client_user_id', null)
+      try { await supabase.rpc('link_my_client_threads') } catch { /* best effort */ }
     }
 
     setProfile(profileData)

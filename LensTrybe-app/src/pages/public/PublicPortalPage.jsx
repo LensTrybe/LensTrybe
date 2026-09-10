@@ -30,46 +30,38 @@ export default function PublicPortalPage() {
 
   useEffect(() => { activeThreadRef.current = activeThread }, [activeThread])
   useEffect(() => { fetchPortal() }, [token])
+  // Portal visitors aren't signed in, so realtime can't stream messages to them
+  // (messages are private). Poll the open conversation instead.
+  useEffect(() => {
+    if (!activeThread?.id) return undefined
+    const iv = setInterval(() => { fetchThreadMessages(activeThread.id, true) }, 10000)
+    return () => clearInterval(iv)
+  }, [activeThread?.id, token])
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [threadMessages])
 
+  // Everything loads through token-checked database functions: the portal token is
+  // the only key, and it only ever returns this client's own records.
   const fetchPortal = async () => {
-    const { data: portalData, error } = await supabase
-      .from('client_portals').select('*').eq('portal_token', token).maybeSingle()
-    if (error || !portalData) { setNotFound(true); setLoading(false); return }
-    setPortal(portalData)
-    const creativeId = portalData.creative_id
-    const clientEmail = portalData.client_email
-    const [prof, inv, quo, con, thr] = await Promise.all([
-      supabase.from('profiles').select('business_name, avatar_url, location, subscription_tier').eq('id', creativeId).eq('is_admin', false).maybeSingle(),
-      supabase.from('invoices').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
-      supabase.from('quotes').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
-      supabase.from('contracts').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail),
-      supabase.from('message_threads').select('*').eq('creative_id', creativeId).eq('client_email', clientEmail).order('last_message_at', { ascending: false }),
-    ])
-    setCreativeProfile(prof.data)
-    setInvoices(inv.data || [])
-    setQuotes(quo.data || [])
-    setContracts(con.data || [])
-    const thrData = thr.data || []
+    const { data, error } = await supabase.rpc('portal_load', { p_token: token })
+    if (error || !data?.portal) { setNotFound(true); setLoading(false); return }
+    setPortal(data.portal)
+    setCreativeProfile(data.creative || null)
+    setInvoices(data.invoices || [])
+    setQuotes(data.quotes || [])
+    setContracts(data.contracts || [])
+    const thrData = data.threads || []
     setThreads(thrData)
     if (thrData.length > 0) { setActiveThread(thrData[0]); fetchThreadMessages(thrData[0].id) }
     setLoading(false)
-    const sub = supabase.channel('portal-messages-' + token)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        const newMsg = payload.new
-        if (activeThreadRef.current && newMsg.thread_id === activeThreadRef.current.id) {
-          setThreadMessages((prev) => {
-            if (prev.find((m) => m.id === newMsg.id)) return prev
-            return [...prev, newMsg]
-          })
-        }
-      }).subscribe()
-    return () => { supabase.removeChannel(sub) }
   }
 
-  const fetchThreadMessages = async (threadId) => {
-    const { data } = await supabase.from('messages').select('*').eq('thread_id', threadId).order('created_at', { ascending: true })
-    setThreadMessages(data || [])
+  const fetchThreadMessages = async (threadId, isPoll = false) => {
+    const { data, error } = await supabase.rpc('portal_thread_messages', { p_token: token, p_thread_id: threadId })
+    if (error) return
+    if (isPoll && activeThreadRef.current?.id !== threadId) return
+    const rows = data || []
+    // On a poll, only re-render when something new arrived (avoids jumping the scroll).
+    setThreadMessages((prev) => (isPoll && prev.length === rows.length ? prev : rows))
   }
 
   const handleSelectThread = (thread) => {
@@ -89,15 +81,13 @@ export default function PublicPortalPage() {
       return
     }
     setSending(true)
-    const { data, error } = await supabase.from('messages').insert({
-      creative_id: portal.creative_id, thread_id: activeThread.id,
-      sender_type: 'client', sender_name: portal.client_name,
-      sender_email: portal.client_email, subject: activeThread.subject,
-      body: newMessage.trim(), read: false,
-    }).select().single()
-    if (!error && data) {
-      setThreadMessages((prev) => [...prev, data])
-      await supabase.from('message_threads').update({ last_message_at: new Date().toISOString(), unread_count: 1 }).eq('id', activeThread.id)
+    const { data, error } = await supabase.rpc('portal_send_message', {
+      p_token: token, p_thread_id: activeThread.id, p_body: newMessage.trim(),
+    })
+    if (error) {
+      setPortalMessageError('Could not send your message. Please try again.')
+    } else if (data) {
+      setThreadMessages((prev) => (prev.find((m) => m.id === data.id) ? prev : [...prev, data]))
       setNewMessage('')
     }
     setSending(false)

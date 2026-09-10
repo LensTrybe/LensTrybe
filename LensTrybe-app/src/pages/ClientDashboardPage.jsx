@@ -49,11 +49,12 @@ export default function ClientDashboardPage() {
 
   async function loadThreads() {
     if (!user) return
-    const matchEmail = (clientAccount?.email ?? user.email ?? '').trim()
-    console.log('Loading threads for user:', user.id, user.email)
-    if (matchEmail) console.log('message_threads client_email match:', matchEmail)
 
-    // First try by client_user_id
+    // Link enquiry threads sent from this person's confirmed email to their account
+    // (done server-side: threads are only readable by their participants).
+    try { await supabase.rpc('link_my_client_threads') } catch { /* best effort */ }
+
+    // Threads where this client is a participant
     const { data: byId } = await supabase
       .from('message_threads')
       .select('*')
@@ -61,25 +62,7 @@ export default function ClientDashboardPage() {
       .order('created_at', { ascending: false })
 
     // Also get any threads matching email with null client_user_id (use account email when set — may differ from auth email)
-    let byEmail = []
-    if (matchEmail) {
-      const { data: byEmailRows } = await supabase
-        .from('message_threads')
-        .select('*')
-        .eq('client_email', matchEmail)
-        .is('client_user_id', null)
-        .order('created_at', { ascending: false })
-      byEmail = byEmailRows ?? []
-    }
-
-    // Update any email-matched threads to link this user
-    if (byEmail.length > 0 && matchEmail) {
-      await supabase
-        .from('message_threads')
-        .update({ client_user_id: user.id })
-        .eq('client_email', matchEmail)
-        .is('client_user_id', null)
-    }
+    const byEmail = []
 
     const all = [...(byId ?? []), ...byEmail]
     const unique = all.filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
