@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+
+// Reviewer emails are private (review_contacts, readable by the reviewed creative only).
+async function reviewsByReviewerEmail(creativeId, email) {
+  const { data: contacts } = await supabase.from('review_contacts').select('review_id')
+    .eq('creative_id', creativeId).eq('reviewer_email', String(email).trim().toLowerCase())
+  const ids = (contacts ?? []).map((c) => c.review_id)
+  if (!ids.length) return { data: [] }
+  return supabase.from('reviews').select('id,rating,body,comment,created_at').eq('creative_id', creativeId).in('id', ids)
+}
 import { useAuth } from '../../context/AuthContext'
 
 // Canonical pipeline stages. Incoming values are normalised to these
@@ -235,7 +244,7 @@ export default function CRMPage() {
       byEmail(supabase.from('invoices').select('id,amount,status,due_date,created_at').eq('creative_id', user.id)),
       byEmail(supabase.from('bookings').select('id,service,booking_date,status').eq('creative_id', user.id)),
       byEmail(supabase.from('message_threads').select('id,subject,last_message_at,unread_count').eq('creative_id', user.id)),
-      email ? supabase.from('reviews').select('id,rating,body,comment,created_at').eq('creative_id', user.id).ilike('reviewer_email', email) : Promise.resolve({ data: [] }),
+      email ? reviewsByReviewerEmail(user.id, email) : Promise.resolve({ data: [] }),
       email ? supabase.from('client_portals').select('portal_token').eq('creative_id', user.id).ilike('client_email', email).maybeSingle() : Promise.resolve({ data: null }),
     ])
     const invoices = inv.data ?? []

@@ -35,10 +35,26 @@ Deno.serve(async (req) => {
     );
 
     if (!normalisedCode) return json({ valid: false, reason: "missing_code" }, 400);
+    if (normalisedCode.length > 64) return json({ valid: false, reason: "not_found" });
+
+    // Code checks are rate limited per IP so codes can't be brute forced.
+    if (action === "validate" || action === "redeem") {
+      const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
+      const { data: allowed, error: rlErr } = await admin.rpc("rate_limit_hit", {
+        p_key: "founding-code:ip:" + ip,
+        p_max: 20,
+        p_window_seconds: 600,
+      });
+      if (rlErr) {
+        console.error("founding-code: rate limit check failed", rlErr.message);
+        return json({ valid: false, reason: "lookup_error" }, 500);
+      }
+      if (allowed !== true) return json({ valid: false, reason: "rate_limited" }, 429);
+    }
 
     const { data: invite, error } = await admin
       .from("founding_invites")
-      .select("*")
+      .select("status, region")
       .eq("code", normalisedCode)
       .maybeSingle();
 

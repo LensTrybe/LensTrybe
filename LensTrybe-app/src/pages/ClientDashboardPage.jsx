@@ -149,30 +149,17 @@ export default function ClientDashboardPage() {
     setSending(true)
     try {
       const clientSenderName = formatClientAccountDisplayName(clientAccount) || user.email
-      await supabase.from('messages').insert({
+      const { data: sentMsg, error: sendErr } = await supabase.from('messages').insert({
         thread_id: selected.id,
         sender_type: 'client',
         sender_name: clientSenderName,
         body: bodyText,
-      })
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('business_name, business_email')
-        .eq('id', selected.creative_id)
-        .eq('is_admin', false)
-        .maybeSingle()
-      if (profile?.business_email) {
+      }).select('id').single()
+      if (sendErr) throw sendErr
+      // The notification function loads the recipient and message text from the database.
+      if (sentMsg?.id) {
         await supabase.functions.invoke('send-message-notification', {
-          body: {
-            to: profile.business_email,
-            toName: profile.business_name,
-            replyToEmail: user.email,
-            recipientRole: 'creative',
-            fromName: clientSenderName,
-            subject: `Reply from ${clientSenderName} on LensTrybe`,
-            messageBody: bodyText,
-            threadSubject: selected.subject ?? 'your enquiry',
-          }
+          body: { message_id: sentMsg.id },
         })
       }
       setReply('')

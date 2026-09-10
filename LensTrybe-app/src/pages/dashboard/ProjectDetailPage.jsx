@@ -357,7 +357,7 @@ export default function ProjectDetailPage() {
   }
   async function sendMeeting(m) {
     if (!m.client_email) { flash('Add a client email first'); return }
-    const { error } = await supabase.functions.invoke('send-meeting', { body: { meetingId: m.id, appUrl: window.location.origin, host: { name: hostName || 'Your LensTrybe creative', email: user.email } } })
+    const { error } = await supabase.functions.invoke('send-meeting', { body: { meetingId: m.id } })
     if (error) { flash('Could not send meeting'); return }
     setMeetings(prev => prev.map(x => x.id === m.id ? { ...x, status: 'sent' } : x))
     flash('Meeting sent to the client')
@@ -374,7 +374,7 @@ export default function ProjectDetailPage() {
     await supabase.from('meetings').update(patch).eq('id', m.id)
     setMeetings(prev => prev.map(x => x.id === m.id ? { ...x, ...patch } : x))
     flash('Meeting confirmed and added to your calendar')
-    try { await supabase.functions.invoke('send-event-invite', { body: { event: { ...evPayload, id: calId, updated_at: new Date().toISOString() }, host: { name: hostName, email: user.email } } }) } catch { /* best effort */ }
+    if (calId) { try { await supabase.functions.invoke('send-event-invite', { body: { event_id: calId } }) } catch { /* best effort */ } }
   }
   async function checkInGear(co) {
     setCheckouts(prev => prev.map(x => x.id === co.id ? { ...x, returned_at: new Date().toISOString() } : x))

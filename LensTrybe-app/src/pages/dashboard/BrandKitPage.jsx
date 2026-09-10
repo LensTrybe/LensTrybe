@@ -131,11 +131,12 @@ export default function BrandKitPage() {
   useEffect(() => { if (user) load() }, [user])
   async function load() {
     setLoading(true)
-    const [{ data: bk }, { data: prof }] = await Promise.all([
+    const [{ data: bk }, { data: prof }, { data: priv }] = await Promise.all([
       supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle(),
-      supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn, bank_name, bank_account_name, bank_bsb, bank_account').eq('id', user.id).maybeSingle(),
+      supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn').eq('id', user.id).maybeSingle(),
+      supabase.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account').eq('id', user.id).maybeSingle(),
     ])
-    setProfile(prof || {})
+    setProfile({ ...(prof || {}), ...(priv || {}) })
     setBrandRow(bk || null)
     const ds = (bk?.document_brand_settings && typeof bk.document_brand_settings === 'object') ? bk.document_brand_settings : {}
     setRawDs(ds)

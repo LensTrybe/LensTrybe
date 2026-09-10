@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -8,21 +9,55 @@ const corsHeaders = {
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
 
-function esc(s) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function esc(s: unknown) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+function nl2br(s: unknown) { return esc(s).replace(/\r?\n/g, '<br>') }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function jsonRes(body: Record<string, unknown>, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) }
+async function getAuthUser(admin: any, req: Request) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+  try { const { data, error } = await admin.auth.getUser(token); if (error || !data?.user) return null; return data.user } catch { return null }
 }
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonRes({ error: 'Method not allowed' }, 405)
 
   try {
-    const { delivery, profile } = await req.json()
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
 
-    const deliveryUrl = `https://lenstrybe.com/deliver/${delivery.download_token}`
-    const business = esc(profile?.business_name ?? 'Your creative')
-    const title = esc(delivery.title ?? 'your project')
-    const clientName = esc(delivery.client_name ?? 'there')
+    // Only the signed-in creative who owns the delivery can send it.
+    const user = await getAuthUser(admin, req)
+    if (!user) return jsonRes({ error: 'Not authenticated' }, 401)
+
+    let body: any = {}
+    try { body = await req.json() } catch { return jsonRes({ error: 'Invalid request' }, 400) }
+    // Accept only an id. (Older clients sent the whole record; only its id is used.)
+    const deliveryId = String(body?.delivery_id ?? body?.deliveryId ?? body?.delivery?.id ?? '')
+    if (!UUID_RE.test(deliveryId)) return jsonRes({ error: 'delivery_id required' }, 400)
+
+    const { data: delivery, error: loadErr } = await admin.from('deliveries').select('*').eq('id', deliveryId).maybeSingle()
+    if (loadErr) console.error('send-delivery load failed', loadErr)
+    if (!delivery || delivery.creative_id !== user.id) return jsonRes({ error: 'Delivery not found' }, 404)
+    if (!isEmail(delivery.client_email)) return jsonRes({ error: 'Add a valid client email to this delivery before sending.' }, 400)
+    if (!delivery.download_token) return jsonRes({ error: 'This delivery has no gallery link yet.' }, 400)
+
+    const allowed = await admin.rpc('rate_limit_hit', { p_key: 'send-delivery:' + user.id, p_max: 60, p_window_seconds: 3600 })
+    if (allowed.error) console.error('send-delivery rate limit check failed', allowed.error)
+    else if (allowed.data === false) return jsonRes({ error: 'Too many deliveries sent recently. Please try again later.' }, 429)
+
+    const { data: prof } = await admin.from('profiles').select('business_name, business_email').eq('id', user.id).maybeSingle()
+    const profile: any = prof || {}
+
+    const deliveryUrl = `https://lenstrybe.com/deliver/${encodeURIComponent(String(delivery.download_token))}`
+    const business = esc(profile.business_name || 'Your creative')
+    const title = esc(delivery.title || 'your project')
+    const clientName = esc(delivery.client_name || 'there')
     const message = delivery.message ?? delivery.notes ?? ''
     const isProtected = Boolean(delivery.password_protected || delivery.password)
     const fileCount = Array.isArray(delivery.files) ? delivery.files.length : null
@@ -39,9 +74,9 @@ serve(async (req) => {
     <p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.65;"><strong style="color:#ffffff;">${business}</strong> has delivered <strong style="color:#ffffff;">${title}</strong>.</p>
     <p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.65;">${fileLine}</p>
   </td></tr>
-  ${message ? `<tr><td style="padding:18px 36px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f16;border:1px solid rgba(255,255,255,0.07);border-radius:12px;"><tr><td style="padding:16px 18px;color:#c9c9d4;font-size:14px;line-height:1.6;">${esc(message)}</td></tr></table></td></tr>` : ''}
-  <tr><td style="padding:26px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${deliveryUrl}" style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:700;color:${GREEN_DARK};text-decoration:none;">View &amp; download your files</a></td></tr></table></td></tr>
-  <tr><td style="padding:16px 36px 0;"><p style="margin:0;color:#6a6a78;font-size:12.5px;line-height:1.6;">Or copy this link:<br><a href="${deliveryUrl}" style="color:${GREEN};word-break:break-all;">${deliveryUrl}</a></p></td></tr>
+  ${message ? `<tr><td style="padding:18px 36px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0f0f16;border:1px solid rgba(255,255,255,0.07);border-radius:12px;"><tr><td style="padding:16px 18px;color:#c9c9d4;font-size:14px;line-height:1.6;">${nl2br(message)}</td></tr></table></td></tr>` : ''}
+  <tr><td style="padding:26px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(deliveryUrl)}" style="display:inline-block;padding:14px 34px;font-size:15px;font-weight:700;color:${GREEN_DARK};text-decoration:none;">View &amp; download your files</a></td></tr></table></td></tr>
+  <tr><td style="padding:16px 36px 0;"><p style="margin:0;color:#6a6a78;font-size:12.5px;line-height:1.6;">Or copy this link:<br><a href="${esc(deliveryUrl)}" style="color:${GREEN};word-break:break-all;">${esc(deliveryUrl)}</a></p></td></tr>
   ${isProtected ? `<tr><td style="padding:16px 36px 0;"><p style="margin:0;color:#9a9aa8;font-size:13px;line-height:1.6;">🔒 This gallery is password protected. ${business} will send you the password separately.</p></td></tr>` : ''}
   <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Delivered via LensTrybe &middot; <a href="https://lenstrybe.com" style="color:${GREEN};text-decoration:none;">lenstrybe.com</a><br>Connect. Capture. Create.</div></td></tr>
 </table>
@@ -57,20 +92,20 @@ serve(async (req) => {
       body: JSON.stringify({
         from: 'LensTrybe <noreply@mail.lenstrybe.com>',
         to: [delivery.client_email],
-        reply_to: profile?.business_email || 'connect@lenstrybe.com',
-        subject: `Your files are ready from ${profile?.business_name ?? 'your creative'}`,
+        reply_to: isEmail(profile.business_email) ? profile.business_email : 'connect@lenstrybe.com',
+        subject: `Your files are ready from ${plain(profile.business_name || 'your creative', 120)}`,
         html,
       }),
     })
 
-    const data = await res.json()
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      console.error('send-delivery resend error', res.status, data)
+      return jsonRes({ error: 'Could not send the delivery email. Please try again.' }, 502)
+    }
+    return jsonRes({ success: true, id: (data as any)?.id ?? null })
   } catch (err) {
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
+    console.error('send-delivery failed', err)
+    return jsonRes({ error: 'Could not send the delivery. Please try again.' }, 500)
   }
 })

@@ -134,8 +134,8 @@ export default function CalendarWidget({ userId, hostName, hostEmail }) {
     }
     emitCalendarChange()
     setForm(null)
-    if (saved && Array.isArray(saved.invitees) && saved.invitees.length) {
-      try { await supabase.functions.invoke('send-event-invite', { body: { event: saved, host: { name: hostName, email: hostEmail } } }) } catch { /* best effort */ }
+    if (saved && saved.id && Array.isArray(saved.invitees) && saved.invitees.length) {
+      try { await supabase.functions.invoke('send-event-invite', { body: { event_id: saved.id } }) } catch { /* best effort */ }
     }
   }
   async function delEvent(ev) {

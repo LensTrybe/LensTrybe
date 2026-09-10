@@ -3,6 +3,8 @@
 // then opens the hosted card popup. savePaymentMethodFor: 'merchant' saves the
 // card so the recurring-charge job can bill it off-session each period.
 
+import { supabase } from './supabaseClient.js'
+
 const SDK_SRC = {
   sandbox: 'https://sandbox-merchant.revolut.com/embed.js',
   production: 'https://merchant.revolut.com/embed.js',
@@ -35,9 +37,20 @@ export async function payWithRevolut({ user, tier, billing, fullName, referralCo
   if (!baseUrl) throw new Error('Missing VITE_SUPABASE_URL')
   if (!user?.id || !user?.email) throw new Error('Please sign in first')
 
+  // Signed-in creatives are identified by their session token. During signup there is
+  // no session yet (email confirmation is pending), so the server falls back to a
+  // tightly limited check of the brand new account using userId + email.
+  let accessToken = ''
+  try {
+    const { data } = await supabase.auth.getSession()
+    accessToken = data?.session?.access_token || ''
+  } catch { /* no session */ }
+  const headers = { 'Content-Type': 'application/json' }
+  if (accessToken) headers.Authorization = `Bearer ${accessToken}`
+
   const res = await fetch(`${baseUrl}/functions/v1/create-revolut-order`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({
       userId: user.id,
       email: user.email,
@@ -49,7 +62,9 @@ export async function payWithRevolut({ user, tier, billing, fullName, referralCo
   })
   if (!res.ok) {
     const txt = await res.text().catch(() => '')
-    throw new Error(txt || `Order failed (${res.status})`)
+    let msg = ''
+    try { msg = JSON.parse(txt)?.error || '' } catch { /* not JSON */ }
+    throw new Error(msg || txt || `Order failed (${res.status})`)
   }
   const { token, env } = await res.json()
   if (!token) throw new Error('No checkout token returned')

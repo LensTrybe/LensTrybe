@@ -36,6 +36,10 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 }
 // ---- end shared ----
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -48,16 +52,22 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const contractId = (body.contract_id || body.contractId) as string
-  if (!contractId) return json({ error: 'contract_id required' }, 400)
+  const contractId = String(body.contract_id || body.contractId || '')
+  if (!UUID_RE.test(contractId)) return json({ error: 'contract_id required' }, 400)
 
-  const { data: contract } = await supabase.from('contracts').select('*').eq('id', contractId).single()
+  const { data: contract } = await supabase.from('contracts').select('*').eq('id', contractId).maybeSingle()
   if (!contract) return json({ error: 'Contract not found' }, 404)
+  // Only notify for contracts that really are signed, and only once.
+  if (String(contract.status || '').toLowerCase() !== 'signed') return json({ error: 'Contract is not signed' }, 409)
+  if (contract.signed_notified_at) return json({ success: true, skipped: true })
+  const { data: claimed, error: claimErr } = await supabase.from('contracts').update({ signed_notified_at: new Date().toISOString() }).eq('id', contractId).is('signed_notified_at', null).select('id')
+  if (claimErr) { console.error('notify-contract-signed claim failed', claimErr); return json({ error: 'Could not send the notification' }, 500) }
+  if (!Array.isArray(claimed) || !claimed.length) return json({ success: true, skipped: true })
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', contract.creative_id).single()
-  const creativeEmail = profile?.business_email
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', contract.creative_id).maybeSingle()
+  const creativeEmail = isEmail(profile?.business_email) ? profile.business_email : null
 
-  const clientName = contract.client_name || 'Your client'
+  const clientName = plain(contract.client_name || 'Your client', 100) || 'Your client'
   const signedAt = contract.signed_at ? new Date(contract.signed_at).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }) : new Date().toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })
 
   // In-app notification for the creative (best effort).
@@ -82,7 +92,7 @@ Deno.serve(async (req) => {
 
   await sendEmail(resendKey, {
     to: creativeEmail,
-    replyTo: contract.client_email || undefined,
+    replyTo: isEmail(contract.client_email) ? contract.client_email : undefined,
     subject: `${clientName} signed your contract`,
     html: emailShell({
       preheader: `${clientName} has signed "${contract.title || 'your contract'}"`,

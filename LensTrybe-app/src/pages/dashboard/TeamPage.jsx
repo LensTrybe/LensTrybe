@@ -51,8 +51,9 @@ export default function TeamPage() {
   async function loadTeam() {
     if (!user) return
     const [mem, inv] = await Promise.all([
-      supabase.from('team_members').select('*').eq('owner_id', user.id),
-      supabase.from('team_invitations').select('*').eq('owner_id', user.id).eq('status', 'pending'),
+      supabase.from('team_members').select('*').eq('creative_id', user.id),
+      // Invitation tokens are not readable from the browser, so list the safe columns only.
+      supabase.from('team_invitations').select('id, email, role, status, created_at').eq('creative_id', user.id).eq('status', 'pending'),
     ])
     setMembers(mem.data ?? [])
     setInvitations(inv.data ?? [])
@@ -62,7 +63,17 @@ export default function TeamPage() {
   async function sendInvite() {
     if (!email.trim()) return
     setSaving(true)
-    await supabase.functions.invoke('invite-team-member', { body: { email, ownerId: user.id } })
+    // The function checks your plan and seats, creates the invitation and emails the link.
+    const { data, error } = await supabase.functions.invoke('invite-team-member', { body: { email: email.trim() } })
+    if (error || data?.error) {
+      let msg = data?.error
+      if (!msg && error?.context && typeof error.context.json === 'function') {
+        try { msg = (await error.context.json())?.error } catch { /* ignore */ }
+      }
+      window.alert(msg || 'Could not send the invitation. Please try again.')
+      setSaving(false)
+      return
+    }
     await loadTeam()
     setShowInvite(false)
     setEmail('')

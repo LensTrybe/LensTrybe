@@ -23,18 +23,22 @@ export default function TeamJoinPage() {
 
   useEffect(() => {
     const fetchInvitation = async () => {
-      const { data, error } = await supabase
-        .from('team_invitations')
-        .select('*, profiles:creative_id(business_name, brand_primary_color)')
-        .eq('token', token)
-        .eq('status', 'pending')
-        .maybeSingle();
+      // Invitations are private: look this one up by its token through a database function
+      // that returns only what this page needs.
+      const { data: rows, error } = await supabase.rpc('get_team_invitation', { p_token: token });
+      const row = Array.isArray(rows) ? rows[0] : rows;
 
-      if (error || !data) {
+      if (error || !row || row.status !== 'pending') {
         setError('This invitation link is invalid or has already been used.');
+      } else if (row.expired) {
+        setError('This invitation has expired. Ask the studio to send you a new one.');
       } else {
-        setInvitation(data);
-        setEmail(data.email || '');
+        setInvitation({
+          email: row.email,
+          role: row.role,
+          profiles: { business_name: row.business_name, brand_primary_color: row.brand_primary_color },
+        });
+        setEmail(row.email || '');
       }
       setLoading(false);
     };
@@ -53,8 +57,8 @@ export default function TeamJoinPage() {
       setFormError('Passwords do not match.');
       return;
     }
-    if (password.length < 6) {
-      setFormError('Password must be at least 6 characters.');
+    if (password.length < 8) {
+      setFormError('Password must be at least 8 characters.');
       return;
     }
 
@@ -64,20 +68,22 @@ export default function TeamJoinPage() {
       // Use edge function to create account, bypass email confirmation,
       // create profile, link to team, all in one step
       const { data, error } = await supabase.functions.invoke('join-team', {
+        // The studio, email and role come from the invitation on the server.
         body: {
-          creative_id: invitation.creative_id,
-          email,
           password,
           business_name: businessName,
           first_name: firstName,
           last_name: lastName,
-          role: invitation.role || 'member',
           invitation_token: token,
         }
       });
 
       if (error || data?.error) {
-        setFormError(error?.message || data?.error || 'Failed to create account.');
+        let msg = data?.error;
+        if (!msg && error?.context && typeof error.context.json === 'function') {
+          try { msg = (await error.context.json())?.error; } catch { /* ignore */ }
+        }
+        setFormError(msg || 'Failed to create account.');
         setSubmitting(false);
         return;
       }
@@ -212,7 +218,7 @@ export default function TeamJoinPage() {
 
             <div style={{ marginBottom: '14px' }}>
               <label style={labelStyle}>Email *</label>
-              <input style={inputStyle} type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com" />
+              <input style={{ ...inputStyle, opacity: 0.7 }} type="email" value={email} readOnly placeholder="your@email.com" />
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '24px' }}>

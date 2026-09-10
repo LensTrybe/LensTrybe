@@ -650,8 +650,17 @@ export default function AdminPage() {
         });
       }
 
+      // Reviewer emails are stored privately in review_contacts (admins can read them).
+      const reviewIds = (data || []).map((r) => r.id);
+      const emailByReview = {};
+      if (reviewIds.length > 0) {
+        const { data: contacts } = await supabase.from('review_contacts').select('review_id, reviewer_email').in('review_id', reviewIds);
+        (contacts || []).forEach((c) => { emailByReview[c.review_id] = c.reviewer_email; });
+      }
+
       const normalized = (data || []).map((r) => ({
         ...r,
+        reviewer_email: emailByReview[r.id] || r.reviewer_email || null,
         business_name: businessNames[r.creative_id] || r.creative_id || '—',
       }));
 

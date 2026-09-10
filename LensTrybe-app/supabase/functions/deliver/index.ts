@@ -26,9 +26,17 @@ function publicDelivery(d, includeFiles) {
     download_token: d.download_token,
     files: includeFiles ? (d.files ?? []) : [],
     file_count: Array.isArray(d.files) ? d.files.length : 0,
-    favourites: d.favourites ?? [],
+    favourites: includeFiles ? (d.favourites ?? []) : [],
   }
 }
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+function plain(s, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+
+const UNLOCK_MAX = 10
+const UNLOCK_WINDOW_SECONDS = 15 * 60
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -39,8 +47,10 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
     )
 
-    const { action, token, password, file_name, favourites } = await req.json()
-    if (!token) return json({ error: 'missing_token' }, 400)
+    let body = {}
+    try { body = await req.json() } catch { return json({ error: 'bad_request' }, 400) }
+    const { action, token, password, file_name, favourites } = body ?? {}
+    if (!token || typeof token !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token)) return json({ error: 'not_found' }, 404)
 
     const { data: delivery, error } = await admin
       .from('deliveries')
@@ -64,7 +74,32 @@ serve(async (req) => {
 
     const expired = delivery.expires_at && new Date(delivery.expires_at).getTime() < Date.now()
     const locked = Boolean(delivery.password)
-    const ua = req.headers.get('user-agent') ?? null
+    const ua = (req.headers.get('user-agent') ?? '').slice(0, 300) || null
+    const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'unknown'
+    const unlockKey = 'deliver-unlock:' + delivery.id + ':' + ip
+
+    // Is this delivery+IP currently locked out after too many wrong passwords? (read only, no hit)
+    async function unlockBlocked() {
+      try {
+        const { data } = await admin.from('rate_limits').select('hits, window_start').eq('key', unlockKey).maybeSingle()
+        if (!data) return false
+        const fresh = new Date(data.window_start).getTime() > Date.now() - UNLOCK_WINDOW_SECONDS * 1000
+        return fresh && Number(data.hits) >= UNLOCK_MAX
+      } catch (_e) { return false }
+    }
+    async function recordFailedUnlock() {
+      try { await admin.rpc('rate_limit_hit', { p_key: unlockKey, p_max: UNLOCK_MAX, p_window_seconds: UNLOCK_WINDOW_SECONDS }) } catch (_e) { /* ignore */ }
+    }
+    // Password check shared by every action on a locked gallery. Returns an error response or null.
+    async function checkPassword() {
+      if (!locked) return null
+      if (await unlockBlocked()) return json({ ok: false, error: 'too_many_attempts' }, 429)
+      if (typeof password !== 'string' || password.length > 200 || password !== String(delivery.password)) {
+        await recordFailedUnlock()
+        return json({ ok: false, error: 'wrong_password' }, 403)
+      }
+      return null
+    }
 
     async function logOpen() {
       const now = new Date().toISOString()
@@ -98,9 +133,11 @@ serve(async (req) => {
 
     if (action === 'unlock') {
       if (!locked) {
-        return json({ ok: true, delivery: publicDelivery(delivery, true), creative })
+        return json({ ok: true, expired: Boolean(expired), delivery: publicDelivery(delivery, !expired), creative })
       }
-      if (String(password ?? '') !== String(delivery.password)) {
+      if (await unlockBlocked()) return json({ ok: false, error: 'too_many_attempts' })
+      if (typeof password !== 'string' || password.length > 200 || password !== String(delivery.password)) {
+        await recordFailedUnlock()
         return json({ ok: false, error: 'wrong_password' })
       }
       if (!expired) await logOpen()
@@ -108,11 +145,14 @@ serve(async (req) => {
     }
 
     if (action === 'track') {
+      const denied = await checkPassword()
+      if (denied) return denied
+      if (expired) return json({ ok: false, error: 'expired' }, 410)
       const now = new Date().toISOString()
       await admin.from('delivery_events').insert({
         delivery_id: delivery.id,
         event_type: 'download',
-        file_name: file_name ?? null,
+        file_name: typeof file_name === 'string' ? file_name.slice(0, 300) : null,
         user_agent: ua,
       })
       await admin
@@ -123,7 +163,12 @@ serve(async (req) => {
     }
 
     if (action === 'favourites') {
-      const list = Array.isArray(favourites) ? favourites.filter((x) => typeof x === 'string').slice(0, 2000) : []
+      const denied = await checkPassword()
+      if (denied) return denied
+      if (expired) return json({ ok: false, error: 'expired' }, 410)
+      // Only accept favourites that are files in this gallery.
+      const fileUrls = new Set((Array.isArray(delivery.files) ? delivery.files : []).map((f) => f && typeof f.url === 'string' ? f.url : null).filter(Boolean))
+      const list = Array.isArray(favourites) ? [...new Set(favourites.filter((x) => typeof x === 'string' && fileUrls.has(x)))].slice(0, 2000) : []
       const now = new Date().toISOString()
       await admin
         .from('deliveries')
@@ -134,6 +179,14 @@ serve(async (req) => {
         event_type: 'favourites',
         user_agent: ua,
       })
+
+      // Throttle creative notifications: at most one per delivery every 10 minutes.
+      let notify = true
+      try {
+        const { data: okToNotify, error: rlErr } = await admin.rpc('rate_limit_hit', { p_key: 'deliver-fav-notify:' + delivery.id, p_max: 1, p_window_seconds: 600 })
+        if (!rlErr && okToNotify === false) notify = false
+      } catch (_e) { /* ignore */ }
+      if (!notify) return json({ ok: true, count: list.length })
 
       // In-app notification for the creative (best effort).
       try {
@@ -163,9 +216,9 @@ serve(async (req) => {
             <div style="margin-bottom:24px"><span style="font-size:22px;font-weight:700;color:#1DB954">LensTrybe</span></div>
             <h2 style="font-size:20px;font-weight:600;color:#fff;margin:0 0 8px">Your client sent their favourites</h2>
             <p style="color:#888;font-size:14px;margin:0 0 24px">
-              <strong style="color:#fff">${delivery.client_name ?? 'Your client'}</strong> selected
+              <strong style="color:#fff">${esc(delivery.client_name ?? 'Your client')}</strong> selected
               <strong style="color:#1DB954">${list.length}</strong> favourite${list.length === 1 ? '' : 's'} from
-              <strong style="color:#fff">${delivery.title ?? 'your gallery'}</strong>.
+              <strong style="color:#fff">${esc(delivery.title ?? 'your gallery')}</strong>.
             </p>
             <div style="text-align:center;margin:32px 0">
               <a href="${dashUrl}" style="display:inline-block;background:#1DB954;color:#04120a;font-weight:700;font-size:15px;padding:14px 32px;border-radius:8px;text-decoration:none">
@@ -183,7 +236,7 @@ serve(async (req) => {
               from: 'LensTrybe <noreply@mail.lenstrybe.com>',
               to: [to],
               reply_to: 'connect@lenstrybe.com',
-              subject: `${delivery.client_name ?? 'Your client'} sent their favourites`,
+              subject: `${plain(delivery.client_name || 'Your client', 100)} sent their favourites`,
               html,
             }),
           })
@@ -195,6 +248,7 @@ serve(async (req) => {
 
     return json({ error: 'unknown_action' }, 400)
   } catch (err) {
-    return json({ error: err.message }, 500)
+    console.error('deliver failed', err)
+    return json({ error: 'server_error' }, 500)
   }
 })

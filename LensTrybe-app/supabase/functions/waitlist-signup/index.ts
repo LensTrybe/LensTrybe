@@ -17,6 +17,8 @@ const json = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 
+function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
+
 function makeRefCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
   let out = ''
@@ -39,7 +41,7 @@ function confirmationHtml(opts: { audience: string; refLink: string }) {
 
 function notifyHtml(opts: { email: string; audience: string; creativeType: string | null; city: string | null; state: string | null; referredBy: string | null }) {
   const { email, audience, creativeType, city, state, referredBy } = opts
-  const row = (k: string, v: string) => `<tr><td style=\"padding:6px 14px 6px 0;color:#8a8995;font-size:13px\">${k}</td><td style=\"padding:6px 0;color:#14111a;font-size:13px;font-weight:600\">${v}</td></tr>`
+  const row = (k: string, v: string) => `<tr><td style=\"padding:6px 14px 6px 0;color:#8a8995;font-size:13px\">${k}</td><td style=\"padding:6px 0;color:#14111a;font-size:13px;font-weight:600\">${esc(v)}</td></tr>`
   const loc = [city, state].filter(Boolean).join(', ')
   return `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"></head>\n<body style=\"margin:0;background:#f4f5f4;font-family:Arial,Helvetica,sans-serif;color:#14111a\">\n  <div style=\"max-width:480px;margin:0 auto;padding:32px 24px\">\n    <div style=\"background:#fff;border:1px solid #ececec;border-radius:14px;padding:24px\">\n      <div style=\"font-size:15px;font-weight:800;margin-bottom:14px\">New waitlist signup</div>\n      <table style=\"border-collapse:collapse\">\n        ${row('Email', email)}\n        ${row('Type', audience === 'creative' ? 'Creative' : 'Hiring / client')}\n        ${creativeType ? row('Discipline', creativeType) : ''}\n        ${loc ? row('Location', loc) : ''}\n        ${referredBy ? row('Referred by', referredBy) : ''}\n      </table>\n    </div>\n  </div>\n</body></html>`
 }
@@ -53,7 +55,7 @@ serve(async (req) => {
     if (payload.website) return json({ ok: true, position: null })
 
     const email = String(payload.email || '').trim().toLowerCase()
-    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return json({ error: 'Enter a valid email address.' }, 400)
+    if (email.length > 254 || !/^[^@\s"'<>]+@[^@\s"'<>]+\.[^@\s"'<>]+$/.test(email)) return json({ error: 'Enter a valid email address.' }, 400)
 
     const audience = payload.audience === 'client' ? 'client' : 'creative'
     const name = payload.name ? String(payload.name).trim().slice(0, 120) : null
@@ -66,6 +68,13 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
+
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown'
+    for (const [key, max] of [[`waitlist:ip:${ip}`, 10], [`waitlist:email:${email}`, 3]] as [string, number][]) {
+      const { data: allowed, error: rlErr } = await supabase.rpc('rate_limit_hit', { p_key: key, p_max: max, p_window_seconds: 3600 })
+      if (rlErr) { console.error('rate_limit_hit failed', rlErr); return json({ error: 'Please try again later.' }, 503) }
+      if (allowed === false) return json({ error: 'Too many requests. Please try again later.' }, 429)
+    }
 
     // Only keep a referral code if it matches a real waitlist code.
     let referredBy: string | null = null
@@ -85,8 +94,8 @@ serve(async (req) => {
       .from('waitlist').select('id, audience, referral_code, created_at').eq('email', email).maybeSingle()
 
     if (existing) {
-      const position = await positionFor(existing.audience, existing.created_at)
-      return json({ ok: true, already: true, audience: existing.audience, position, referralCode: existing.referral_code || null })
+      // Never reveal an existing signup's referral code or position to an anonymous caller.
+      return json({ ok: true, already: true, audience })
     }
 
     const referralCode = makeRefCode()
@@ -94,7 +103,9 @@ serve(async (req) => {
       email, name, audience, creative_type: creativeType, city, state,
       referral_code: referralCode, referred_by: referredBy, source: 'waitlist',
     })
-    if (insErr && !String(insErr.message || '').toLowerCase().includes('duplicate')) {
+    if (insErr) {
+      if (String(insErr.message || '').toLowerCase().includes('duplicate')) return json({ ok: true, already: true, audience })
+      console.error('waitlist insert failed', insErr)
       return json({ error: 'Could not save. Please try again.' }, 500)
     }
 

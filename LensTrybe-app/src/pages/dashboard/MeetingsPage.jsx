@@ -197,7 +197,7 @@ export default function MeetingsPage() {
 
   async function sendMeeting(m) {
     setBusyId(m.id)
-    const { error } = await supabase.functions.invoke('send-meeting', { body: { meetingId: m.id, appUrl: window.location.origin, host: { name: hostName || 'Your LensTrybe creative', email: user.email } } })
+    const { error } = await supabase.functions.invoke('send-meeting', { body: { meetingId: m.id } })
     setBusyId(null)
     if (error) { flash('Could not send', 'err'); return }
     setMeetings(prev => prev.map(x => x.id === m.id ? { ...x, status: 'sent' } : x))
@@ -218,7 +218,7 @@ export default function MeetingsPage() {
     setMeetings(prev => prev.map(x => x.id === m.id ? { ...x, ...patch } : x))
     // Let the client know (calendar invite + confirmation email).
     if (m.origin === 'client') { try { await supabase.functions.invoke('meeting-notify', { body: { meetingId: m.id, kind: 'confirmed' } }) } catch { /* best effort */ } }
-    else { try { await supabase.functions.invoke('send-event-invite', { body: { event: { ...evPayload, id: calId, updated_at: new Date().toISOString() }, host: { name: hostName, email: user.email } } }) } catch { /* best effort */ } }
+    else if (calId) { try { await supabase.functions.invoke('send-event-invite', { body: { event_id: calId } }) } catch { /* best effort */ } }
     setBusyId(null)
     flash('Confirmed and added to your calendar')
   }

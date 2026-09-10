@@ -1,3 +1,10 @@
+// Supabase Edge Function: delete-account
+// Client-facing (verify_jwt = false), authenticated INSIDE via the caller's JWT, so a
+// user can only delete their OWN account. Soft delete: the profile is marked
+// pending_deletion with a 30-day grace period (a separate process removes it after
+// that). The Revolut subscription is canceled straight away so revolut-charge-due can
+// never charge a deleted account, and any complimentary access is removed.
+
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
@@ -6,125 +13,86 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
   try {
-    // Get the JWT from the Authorization header to identify the user
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      return new Response(
-        JSON.stringify({ error: 'Missing authorization header' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !serviceKey) {
+      console.error('delete-account: missing env');
+      return json({ error: 'Account deletion is not available right now.' }, 500);
     }
 
-    // Create a client with the user's JWT to verify their identity
-    const supabaseUser = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_ANON_KEY')!,
-      { global: { headers: { Authorization: authHeader } } }
-    );
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    if (!token) return json({ error: 'Missing authorization header' }, 401);
 
-    // Verify the user is authenticated
-    const { data: { user }, error: userError } = await supabaseUser.auth.getUser();
-    if (userError || !user) {
-      return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const supabaseAdmin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+    if (userError || !user) return json({ error: 'Unauthorized' }, 401);
+
+    const nowIso = new Date().toISOString();
+
+    // Step 1: Cancel the Revolut subscription so it is never charged again.
+    const { error: subErr } = await supabaseAdmin
+      .from('subscriptions')
+      .update({
+        status: 'canceled',
+        next_charge_date: null,
+        pending_tier: null,
+        pending_billing: null,
+        pending_change_at: null,
+        inflight_charge: null,
+        updated_at: nowIso,
+      })
+      .eq('user_id', user.id)
+      .in('status', ['active', 'trialing', 'past_due', 'pending']);
+    if (subErr) {
+      console.error('delete-account: subscription cancel failed', subErr.message);
+      return json({ error: 'Could not cancel your subscription. Please try again or contact support.' }, 500);
     }
 
-    // Create admin client for privileged operations
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
-
-    const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
-
-    // Step 1: Cancel Stripe subscription if exists
-    if (stripeSecretKey) {
-      try {
-        const { data: profile } = await supabaseAdmin
-          .from('profiles')
-          .select('stripe_customer_id')
-          .eq('id', user.id)
-          .single();
-
-        if (profile?.stripe_customer_id) {
-          // List active subscriptions for this customer
-          const subsRes = await fetch(
-            `https://api.stripe.com/v1/subscriptions?customer=${profile.stripe_customer_id}&status=active`,
-            { headers: { 'Authorization': `Bearer ${stripeSecretKey}` } }
-          );
-          const subsData = await subsRes.json();
-
-          // Cancel all active subscriptions immediately
-          for (const sub of subsData.data || []) {
-            await fetch(`https://api.stripe.com/v1/subscriptions/${sub.id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${stripeSecretKey}` },
-            });
-          }
-
-          // Also check trialing subscriptions
-          const trialRes = await fetch(
-            `https://api.stripe.com/v1/subscriptions?customer=${profile.stripe_customer_id}&status=trialing`,
-            { headers: { 'Authorization': `Bearer ${stripeSecretKey}` } }
-          );
-          const trialData = await trialRes.json();
-
-          for (const sub of trialData.data || []) {
-            await fetch(`https://api.stripe.com/v1/subscriptions/${sub.id}`, {
-              method: 'DELETE',
-              headers: { 'Authorization': `Bearer ${stripeSecretKey}` },
-            });
-          }
-        }
-      } catch (stripeErr) {
-        // Log but don't block deletion if Stripe fails
-        console.error('Stripe cancellation error:', stripeErr);
-      }
-    }
-
-    // Step 2: Mark profile as pending deletion with 30-day grace period
+    // Step 2: Mark profile as pending deletion with 30-day grace period.
     const deletionDate = new Date();
     deletionDate.setDate(deletionDate.getDate() + 30);
 
-    await supabaseAdmin
+    const { error: profErr } = await supabaseAdmin
       .from('profiles')
       .update({
+        comp_tier: null,
         subscription_tier: 'basic',
         subscription_status: 'canceled',
         pending_deletion: true,
         deletion_scheduled_at: deletionDate.toISOString(),
       })
       .eq('id', user.id);
+    if (profErr) {
+      console.error('delete-account: profile update failed', profErr.message);
+      return json({ error: 'Could not schedule account deletion. Please try again.' }, 500);
+    }
 
-    // Step 3: Sign out the user
-    await supabaseAdmin.auth.admin.signOut(user.id);
+    // Step 3: Sign out the user everywhere.
+    try {
+      await supabaseAdmin.auth.admin.signOut(token, 'global');
+    } catch (e) {
+      console.error('delete-account: sign out failed', e instanceof Error ? e.message : String(e));
+    }
 
-    // Step 4: Schedule auth user deletion (soft delete — remove after 30 days)
-    // For now we mark the profile; a cron job or manual process handles final deletion
-    // Immediate hard delete can be done here if preferred:
-    // await supabaseAdmin.auth.admin.deleteUser(user.id);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: 'Account scheduled for deletion in 30 days',
-        deletion_date: deletionDate.toISOString()
-      }),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
+    // Final removal of the auth user happens after the 30-day grace period.
+    return json({
+      success: true,
+      message: 'Account scheduled for deletion in 30 days',
+      deletion_date: deletionDate.toISOString(),
+    });
   } catch (err) {
-    return new Response(
-      JSON.stringify({ error: err.message }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    console.error('delete-account error:', err instanceof Error ? err.message : String(err));
+    return json({ error: 'Something went wrong. Please try again.' }, 500);
   }
 });

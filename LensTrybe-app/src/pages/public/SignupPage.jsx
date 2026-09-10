@@ -382,14 +382,10 @@ export default function SignupPage() {
         setCreatedUser({ id: userId, email })
 
         try {
+          // No session yet (email confirmation is on): the function sends once, only to this
+          // new account's own address, and reads the founding status from the database.
           await supabase.functions.invoke('send-welcome-email', {
-            body: {
-              founding: foundingValid,
-              record: {
-                email,
-                user_metadata: { full_name: `${form.firstName} ${form.lastName}` }
-              }
-            }
+            body: { user_id: userId },
           })
         } catch (welcomeEmailError) {
           console.log('send-welcome-email failed', welcomeEmailError)

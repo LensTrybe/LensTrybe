@@ -233,7 +233,7 @@ export default function JobBoardPage() {
     const posterName = jobListing?.poster_name ?? posterProfile?.business_name ?? posterProfile?.full_name ?? clientDisplayName ?? 'there'
     const creativeLabel = creativeSenderDisplayName(profile, user)
 
-    const { error } = await supabase.from('job_applications').insert({
+    const { data: insertedApp, error } = await supabase.from('job_applications').insert({
       job_id: applyingJob.id,
       creative_id: user.id,
       creative_name: creativeLabel,
@@ -242,20 +242,14 @@ export default function JobBoardPage() {
       includes: applyForm.includes || null,
       message: applyForm.description,
       status: 'pending',
-    })
+    }).select('id').single()
 
     if (!error) {
-      if (posterEmail) {
+      // The notification function works out the job poster's address and the email text server-side.
+      if (insertedApp?.id) {
         try {
           await supabase.functions.invoke('send-message-notification', {
-            body: {
-              to: posterEmail,
-              toName: posterName,
-              fromName: creativeLabel,
-              subject: `New application for your job: ${jobListing?.title ?? applyingJob.title}`,
-              messageBody: `${creativeLabel} has applied for your job "${jobListing?.title ?? applyingJob.title}".\n\nOffer: AUD ${applyForm.price}\nWhat's included: ${applyForm.includes || '—'}\n\nCover message: ${applyForm.description}\n\nLog in to LensTrybe to view all applications.`,
-              threadSubject: 'Job Application',
-            },
+            body: { job_application_id: insertedApp.id },
           })
         } catch { /* non-blocking */ }
       }

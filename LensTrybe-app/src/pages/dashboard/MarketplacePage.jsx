@@ -266,15 +266,11 @@ export default function MarketplacePage() {
       if (!threadId) { showToast('Could not create message thread', 'error'); return }
       const msgRow = { thread_id: threadId, sender_type: 'client', sender_name: buyerDisplayName, body: contactMessage.trim() }
       if (isCreative) msgRow.creative_id = user.id
-      await supabase.from('messages').insert(msgRow)
-      if (sellerRow?.business_email) {
-        await supabase.functions.invoke('send-message-notification', {
-          body: {
-            to: sellerRow.business_email, toName: sellerRow.business_name ?? 'there',
-            fromName: buyerDisplayName, subject: `New message about your listing: ${selected.title}`,
-            messageBody: contactMessage.trim(), threadSubject: subject,
-          },
-        })
+      const { data: insertedMsg, error: msgErr } = await supabase.from('messages').insert(msgRow).select('id').single()
+      if (msgErr) throw msgErr
+      // The notification function loads the recipient and message text from the database.
+      if (insertedMsg?.id) {
+        await supabase.functions.invoke('send-message-notification', { body: { message_id: insertedMsg.id } })
       }
       setContactMessage(''); setShowContactSeller(false)
       showToast('Message sent to seller')

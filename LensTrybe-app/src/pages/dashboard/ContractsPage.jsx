@@ -247,7 +247,8 @@ export default function ContractsPage() {
 
   async function sendContract(contract) {
     try {
-      await supabase.functions.invoke('send-contract', { body: { contract, profile } })
+      const { data: sendData, error: sendErr } = await supabase.functions.invoke('send-contract', { body: { contract_id: contract.id } })
+      if (sendErr || sendData?.error) throw new Error('send failed')
       await supabase.from('contracts').update({ status: 'sent' }).eq('id', contract.id)
       await loadContracts()
       if (showView) setShowView(prev => ({ ...prev, status: 'sent' }))

@@ -37,6 +37,10 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 function stars(n: number) { const r = Math.max(0, Math.min(5, Math.round(n || 0))); return '&#9733;'.repeat(r) + `<span style="color:${BRAND.faint};">` + '&#9733;'.repeat(5 - r) + '</span>' }
 // ---- end shared ----
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -49,14 +53,26 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const creativeId = (body.creative_id || body.creativeId) as string
-  const rating = Number(body.rating || 0)
-  const reviewerName = (body.reviewer_name || body.client_name || body.reviewerName || 'A client') as string
-  const comment = (body.comment || body.review_text || body.body || '') as string
-  if (!creativeId) return json({ error: 'creative_id required' }, 400)
+  // Accept only a review id; everything else comes from the saved review.
+  const reviewId = String(body.review_id || body.reviewId || '')
+  if (!UUID_RE.test(reviewId)) return json({ error: 'review_id required' }, 400)
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).single()
-  const creativeEmail = profile?.business_email
+  const { data: review } = await supabase.from('reviews').select('*').eq('id', reviewId).maybeSingle()
+  if (!review || !review.creative_id) return json({ error: 'Review not found' }, 404)
+  // Only notify for fresh reviews, and only once per review.
+  const createdMs = review.created_at ? new Date(review.created_at).getTime() : 0
+  if (review.notified_at || !createdMs || Date.now() - createdMs > 24 * 60 * 60 * 1000) return json({ success: true, skipped: true })
+  const { data: claimed, error: claimErr } = await supabase.from('reviews').update({ notified_at: new Date().toISOString() }).eq('id', reviewId).is('notified_at', null).select('id')
+  if (claimErr) { console.error('notify-review claim failed', claimErr); return json({ error: 'Could not send the notification' }, 500) }
+  if (!Array.isArray(claimed) || !claimed.length) return json({ success: true, skipped: true })
+
+  const creativeId = String(review.creative_id)
+  const rating = Math.max(0, Math.min(5, Math.round(Number(review.rating || 0)) || 0))
+  const reviewerName = plain(review.reviewer_name || review.client_name || 'A client', 100) || 'A client'
+  const comment = String(review.comment || review.body || '').slice(0, 2000)
+
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).maybeSingle()
+  const creativeEmail = isEmail(profile?.business_email) ? profile.business_email : null
 
   // In-app notification for the creative (best effort).
   try {

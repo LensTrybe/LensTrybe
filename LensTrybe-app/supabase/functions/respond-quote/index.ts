@@ -49,8 +49,11 @@ Deno.serve(async (req) => {
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const quoteId = (body.quote_id || body.quoteId) as string
-  const portalToken = (body.portal_token || body.portalToken) as string
+  const quoteId = String(body.quote_id || body.quoteId || '')
+  const portalToken = String(body.portal_token || body.portalToken || '')
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (quoteId && !UUID_RE.test(quoteId)) return json({ error: 'Quote not found' }, 404)
+  if (portalToken && !UUID_RE.test(portalToken)) return json({ error: 'Invalid portal' }, 403)
   const action = String(body.action || '').toLowerCase()
   if (!quoteId || !portalToken) return json({ error: 'quote_id and portal_token required' }, 400)
   if (action !== 'accept' && action !== 'decline') return json({ error: 'action must be accept or decline' }, 400)
@@ -70,10 +73,18 @@ Deno.serve(async (req) => {
   // Only respond to a quote that is still open.
   const current = String(quote.status || '').toLowerCase()
   if (current === 'accepted' || current === 'declined') return json({ error: 'This quote has already been responded to', status: current }, 409)
+  // Drafts (and any other non-sent state) cannot be accepted or declined.
+  if (current !== 'sent' && current !== 'viewed') return json({ error: 'This quote is not open for a response' }, 409)
+  // Expired quotes cannot be accepted or declined (valid_until is inclusive, Australian date).
+  if (quote.valid_until) {
+    const todayAu = new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
+    if (String(quote.valid_until).slice(0, 10) < todayAu) return json({ error: 'This quote has expired. Please contact your creative for an updated quote.' }, 410)
+  }
 
   const newStatus = action === 'accept' ? 'accepted' : 'declined'
-  const { error: upErr } = await supabase.from('quotes').update({ status: newStatus }).eq('id', quoteId)
-  if (upErr) return json({ error: upErr.message }, 500)
+  const { data: updated, error: upErr } = await supabase.from('quotes').update({ status: newStatus }).eq('id', quoteId).in('status', ['sent', 'viewed', 'Sent', 'Viewed']).select('id')
+  if (upErr) { console.error('respond-quote update failed', upErr); return json({ error: 'Could not save your response. Please try again.' }, 500) }
+  if (!Array.isArray(updated) || !updated.length) return json({ error: 'This quote has already been responded to' }, 409)
 
   // Notify the creative.
   const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', quote.creative_id).single()

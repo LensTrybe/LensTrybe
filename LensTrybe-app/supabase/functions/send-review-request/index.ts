@@ -36,6 +36,15 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 }
 // ---- end shared ----
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+async function getAuthUser(admin: any, req: Request) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+  try { const { data, error } = await admin.auth.getUser(token); if (error || !data?.user) return null; return data.user } catch { return null }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -45,18 +54,27 @@ Deno.serve(async (req) => {
   const resendKey = Deno.env.get('RESEND_API_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
+  // Only a signed-in creative can request reviews, and only for themselves.
+  const user = await getAuthUser(supabase, req)
+  if (!user) return json({ error: 'Not authenticated' }, 401)
+
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const creativeId = (body.creative_id || body.creativeId) as string
-  const clientName = typeof body.client_name === 'string' ? body.client_name.trim() : ''
-  const clientEmail = typeof body.client_email === 'string' ? body.client_email.trim() : ''
-  const message = typeof body.message === 'string' ? body.message.trim() : ''
-  if (!creativeId || !clientEmail) return json({ error: 'creative_id and client_email are required' }, 400)
+  const creativeId = user.id
+  const clientName = typeof body.client_name === 'string' ? plain(body.client_name, 100) : ''
+  const clientEmail = typeof body.client_email === 'string' ? body.client_email.trim().toLowerCase() : ''
+  const message = typeof body.message === 'string' ? body.message.trim().slice(0, 1000) : ''
+  if (!isEmail(clientEmail)) return json({ error: 'A valid client email is required' }, 400)
+  if (!UUID_RE.test(creativeId)) return json({ error: 'Not authenticated' }, 401)
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).single()
-  const businessName = profile?.business_name || 'your creative'
-  const reviewUrl = `https://lenstrybe.com/creatives/${creativeId}`
+  const allowed = await supabase.rpc('rate_limit_hit', { p_key: 'review-request:' + creativeId, p_max: 30, p_window_seconds: 86400 })
+  if (allowed.error) console.error('send-review-request rate limit check failed', allowed.error)
+  else if (allowed.data === false) return json({ error: 'You have sent a lot of review requests today. Please try again tomorrow.' }, 429)
+
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).maybeSingle()
+  const businessName = plain(profile?.business_name || 'your creative', 120)
+  const reviewUrl = `https://lenstrybe.com/creatives/${encodeURIComponent(creativeId)}`
 
   const greeting = clientName ? `Hi ${esc(clientName)},` : 'Hi there,'
   const notePanel = message
@@ -65,7 +83,7 @@ Deno.serve(async (req) => {
 
   const res = await sendEmail(resendKey, {
     to: clientEmail,
-    replyTo: profile?.business_email || undefined,
+    replyTo: isEmail(profile?.business_email) ? profile.business_email : undefined,
     subject: `${businessName} would love your feedback`,
     html: emailShell({
       preheader: `Leave ${businessName} a quick review on LensTrybe`,
@@ -79,5 +97,9 @@ Deno.serve(async (req) => {
     }),
   })
   const data = await res.json().catch(() => ({}))
-  return json({ success: true, data })
+  if (!res.ok) {
+    console.error('send-review-request resend error', res.status, data)
+    return json({ error: 'Could not send the review request. Please try again.' }, 502)
+  }
+  return json({ success: true })
 })

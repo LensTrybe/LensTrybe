@@ -25,6 +25,15 @@ function fmtAUD(minorOrDollars, isMinor) {
   const v = isMinor ? Number(minorOrDollars) / 100 : Number(minorOrDollars)
   try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(v) } catch { return `$${v.toFixed(2)}` }
 }
+// supabase.functions.invoke hides the server's message on non-2xx responses; read it back.
+async function fnErrorMessage(error, data) {
+  try {
+    const body = await error?.context?.json?.()
+    if (body?.error) return body.error
+  } catch { /* not JSON */ }
+  return data?.error ?? error?.message ?? 'Unknown error'
+}
+
 function fmtDate(iso) {
   if (!iso) return ''
   try { return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) } catch { return '' }
@@ -71,12 +80,17 @@ export default function SubscriptionPage() {
     if (!user?.id) return
     const { data } = await supabase
       .from('subscriptions')
-      .select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing, founding_member')
+      .select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing, founding_member, revolut_payment_method_id')
       .eq('user_id', user.id)
       .eq('provider', 'revolut')
       .maybeSingle()
-    setSub(data)
-    if (data && LIVE.includes(data.status) && data.billing) setBilling(data.billing)
+    // A trial whose card setup was never finished is not a live subscription yet:
+    // choosing a plan re-opens the card popup instead of changing plans.
+    const row = data && data.status === 'trialing' && !data.revolut_payment_method_id
+      ? { ...data, status: 'setup_incomplete' }
+      : data
+    setSub(row)
+    if (row && LIVE.includes(row.status) && row.billing) setBilling(row.billing)
     setSubLoading(false)
   }, [user?.id])
 
@@ -151,7 +165,7 @@ export default function SubscriptionPage() {
     setBusyPlan(plan.id)
     const { data, error } = await supabase.functions.invoke('change-subscription', { body: { tier: plan.id, billing, preview: true } })
     setBusyPlan(null)
-    if (error || !data || data.error) { showToast('Could not load change: ' + (error?.message ?? data?.error ?? 'Unknown error'), 'error'); return }
+    if (error || !data || data.error) { showToast('Could not load change: ' + (await fnErrorMessage(error, data)), 'error'); return }
     if (data.change === 'none') { showToast('You are already on this plan.'); return }
     setConfirm({ plan, preview: data })
   }
@@ -161,7 +175,7 @@ export default function SubscriptionPage() {
     setConfirmBusy(true)
     const { data, error } = await supabase.functions.invoke('change-subscription', { body: { tier: confirm.plan.id, billing } })
     setConfirmBusy(false)
-    if (error || !data?.ok) { showToast('Change failed: ' + (error?.message ?? data?.error ?? 'Unknown error'), 'error'); return }
+    if (error || !data?.ok) { showToast('Change failed: ' + (await fnErrorMessage(error, data)), 'error'); return }
     setConfirm(null)
     if (data.change === 'upgrade') showToast(data.chargeNow > 0 ? `Upgraded. ${fmtAUD(data.chargeNow, true)} charged today.` : 'Upgraded.')
     else if (data.change === 'downgrade') showToast('Downgrade scheduled for the end of your billing period.')

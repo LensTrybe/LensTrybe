@@ -38,13 +38,18 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing Supabase env' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
 
-    const body = await req.json().catch(() => ({}))
-    const userId = String(body?.userId || '')
-    if (!userId) {
-      return new Response(JSON.stringify({ error: 'Missing userId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    // Authenticated: the code is always generated for the CALLER (any userId in the
+    // body is ignored).
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
     }
-
     const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+    const { data: userData, error: userErr } = await sb.auth.getUser(token)
+    const userId = userData?.user?.id
+    if (userErr || !userId) {
+      return new Response(JSON.stringify({ error: 'Not authenticated' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
     const { data: profile } = await sb
       .from('profiles')
@@ -64,11 +69,17 @@ Deno.serve(async (req) => {
     const baseName = sanitiseName(firstName)
     const code = await generateUniqueCode(sb, baseName)
 
-    await sb.from('profiles').update({ referral_code: code }).eq('id', userId)
+    // Only set it if still empty, so two tabs can't hand out different codes.
+    const { data: saved } = await sb.from('profiles').update({ referral_code: code }).eq('id', userId).is('referral_code', null).select('referral_code')
+    if (!saved || saved.length === 0) {
+      const { data: again } = await sb.from('profiles').select('referral_code').eq('id', userId).maybeSingle()
+      return new Response(JSON.stringify({ referral_code: again?.referral_code || null }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
 
     return new Response(JSON.stringify({ referral_code: code }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e?.message || String(e) }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    console.error('generate-referral-code error:', e instanceof Error ? e.message : String(e))
+    return new Response(JSON.stringify({ error: 'Could not create your referral code.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
   }
 })

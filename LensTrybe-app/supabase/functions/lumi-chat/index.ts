@@ -6,12 +6,33 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// monthly -1 = unlimited. Quotas are enforced atomically in the DB (lumi_consume).
 const TIER_LIMITS = {
   basic: { monthly: 0, daily: 0 },
   pro: { monthly: 5, daily: 3 },
   expert: { monthly: 100, daily: 25 },
   elite: { monthly: -1, daily: 50 },
 };
+
+const MAX_MESSAGE_CHARS = 4000;
+const MAX_HISTORY_TURNS = 20;
+const MAX_HISTORY_MSG_CHARS = 8000;
+
+// Last N turns only, well-formed for the Anthropic API (string content, starts with a user turn).
+function historyForApi(messages) {
+  const clean = (Array.isArray(messages) ? messages : [])
+    .filter((m) => m && (m.role === "user" || m.role === "assistant") && typeof m.content === "string" && m.content.trim())
+    .map((m) => ({ role: m.role, content: m.content.slice(0, MAX_HISTORY_MSG_CHARS) }))
+    .slice(-MAX_HISTORY_TURNS);
+  while (clean.length && clean[0].role !== "user") clean.shift();
+  // Merge any back-to-back turns from the same role (the API requires alternation).
+  const out = [];
+  for (const m of clean) {
+    if (out.length && out[out.length - 1].role === m.role) out[out.length - 1].content += "\n\n" + m.content;
+    else out.push({ ...m });
+  }
+  return out;
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -41,8 +62,9 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json();
-    const { message, conversationId, action, title, pinned } = body;
+    const body = await req.json().catch(() => ({}));
+    const { conversationId, action, title, pinned } = body || {};
+    const message = typeof body?.message === "string" ? body.message.trim() : "";
 
     if (action === "load_conversations") {
       const { data: convos, error } = await supabase
@@ -73,7 +95,7 @@ serve(async (req) => {
     if (action === "rename_conversation") {
       const { error } = await supabase
         .from("lumi_conversations")
-        .update({ title: title || "Untitled" })
+        .update({ title: String(title || "Untitled").slice(0, 120) })
         .eq("id", conversationId)
         .eq("user_id", user.id);
       if (error) throw error;
@@ -85,7 +107,7 @@ serve(async (req) => {
     if (action === "pin_conversation") {
       const { error } = await supabase
         .from("lumi_conversations")
-        .update({ pinned: pinned })
+        .update({ pinned: pinned === true })
         .eq("id", conversationId)
         .eq("user_id", user.id);
       if (error) throw error;
@@ -112,6 +134,12 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    if (message.length > MAX_MESSAGE_CHARS) {
+      return new Response(JSON.stringify({ error: "message_too_long", limit: MAX_MESSAGE_CHARS }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const { data: profile } = await supabase
       .from("profiles")
@@ -129,29 +157,30 @@ serve(async (req) => {
       );
     }
 
-    const now = new Date();
-    const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    const dayKey = now.toISOString().split("T")[0];
+    // Atomically check and consume one message against the tier's quota.
+    const { data: allowed, error: quotaErr } = await supabase.rpc("lumi_consume", {
+      p_user: user.id,
+      p_month_limit: limits.monthly,
+      p_day_limit: limits.daily,
+    });
+    if (quotaErr) throw new Error(`quota check failed: ${quotaErr.message}`);
 
-    const { data: usage } = await supabase
-      .from("lumi_usage")
-      .select("*")
-      .eq("user_id", user.id)
-      .single();
+    const readUsage = async () => {
+      const { data } = await supabase
+        .from("lumi_usage")
+        .select("monthly_count, daily_count")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      return { monthly: Number(data?.monthly_count || 0), daily: Number(data?.daily_count || 0) };
+    };
 
-    const currentMonthly = usage?.month_key === monthKey ? (usage?.monthly_count || 0) : 0;
-    const currentDaily = usage?.day_key === dayKey ? (usage?.daily_count || 0) : 0;
-
-    if (limits.monthly !== -1 && currentMonthly >= limits.monthly) {
+    if (allowed !== true) {
+      const used = await readUsage();
+      const monthlyHit = limits.monthly !== -1 && used.monthly >= limits.monthly;
       return new Response(
-        JSON.stringify({ error: "monthly_limit_reached", limit: limits.monthly }),
-        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    if (currentDaily >= limits.daily) {
-      return new Response(
-        JSON.stringify({ error: "daily_limit_reached", limit: limits.daily }),
+        JSON.stringify(monthlyHit
+          ? { error: "monthly_limit_reached", limit: limits.monthly }
+          : { error: "daily_limit_reached", limit: limits.daily }),
         { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -177,7 +206,7 @@ serve(async (req) => {
     }
 
     const userMessage = { role: "user", content: message };
-    const messagesForApi = [...existingMessages, userMessage];
+    const messagesForApi = historyForApi([...existingMessages, userMessage]);
 
     const systemPrompt = `You are Lumi, a friendly and knowledgeable AI business assistant built into LensTrybe - a premium no-commission marketplace for Australian visual creatives. You help photographers, videographers, drone pilots, video editors, photo editors, social media managers, hair and makeup artists, and UGC creators grow their businesses.
 
@@ -202,6 +231,8 @@ You provide practical advice on pricing, client management, quotes, invoices, co
 
     if (!anthropicRes.ok) {
       const err = await anthropicRes.text();
+      // Not the user's fault: give the message back.
+      await supabase.rpc("lumi_release", { p_user: user.id });
       throw new Error(`Anthropic error: ${err}`);
     }
 
@@ -211,7 +242,8 @@ You provide practical advice on pricing, client management, quotes, invoices, co
       content: aiData.content?.[0]?.text || "Sorry, I could not generate a response.",
     };
 
-    const updatedMessages = [...messagesForApi, assistantMessage];
+    // Keep the stored conversation bounded.
+    const updatedMessages = [...(Array.isArray(existingMessages) ? existingMessages : []), userMessage, assistantMessage].slice(-200);
 
     let autoTitle = "New conversation";
     if (existingMessages.length === 0) {
@@ -227,13 +259,7 @@ You provide practical advice on pricing, client management, quotes, invoices, co
       .eq("id", convoId)
       .eq("user_id", user.id);
 
-    await supabase.from("lumi_usage").upsert({
-      user_id: user.id,
-      month_key: monthKey,
-      day_key: dayKey,
-      monthly_count: currentMonthly + 1,
-      daily_count: currentDaily + 1,
-    }, { onConflict: "user_id" });
+    const used = await readUsage();
 
     return new Response(
       JSON.stringify({
@@ -241,9 +267,9 @@ You provide practical advice on pricing, client management, quotes, invoices, co
         conversationId: convoId,
         title: existingMessages.length === 0 ? autoTitle : undefined,
         usage: {
-          monthly: limits.monthly === -1 ? null : currentMonthly + 1,
+          monthly: limits.monthly === -1 ? null : used.monthly,
           monthly_limit: limits.monthly === -1 ? null : limits.monthly,
-          daily: currentDaily + 1,
+          daily: used.daily,
           daily_limit: limits.daily,
           tier,
         },
@@ -253,7 +279,7 @@ You provide practical advice on pricing, client management, quotes, invoices, co
   } catch (err) {
     console.error("lumi-chat error:", err);
     return new Response(
-      JSON.stringify({ error: err instanceof Error ? err.message : "Internal server error" }),
+      JSON.stringify({ error: "Internal server error" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

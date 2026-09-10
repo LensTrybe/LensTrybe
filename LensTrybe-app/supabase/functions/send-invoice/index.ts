@@ -86,29 +86,56 @@ async function htmlToPdfBase64(html: string, key: string) {
   return u8ToBase64(new Uint8Array(await res.arrayBuffer()))
 }
 
+
+// ================= security helpers =================
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+function jsonRes(body: Record<string, unknown>, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) }
+async function getAuthUser(admin: any, req: Request) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+  try { const { data, error } = await admin.auth.getUser(token); if (error || !data?.user) return null; return data.user } catch { return null }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonRes({ error: 'Method not allowed' }, 405)
   try {
-    const { invoice, profile: passedProfile, bankDetails } = await req.json()
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')!
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, serviceKey)
 
-    let profile: any = passedProfile || {}
-    let brand: any = null
-    if (invoice.creative_id) {
-      const [{ data: prof }, { data: bk }] = await Promise.all([
-        supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn, bank_name, bank_account_name, bank_bsb, bank_account').eq('id', invoice.creative_id).maybeSingle(),
-        supabase.from('brand_kit').select('*').eq('creative_id', invoice.creative_id).maybeSingle(),
-      ])
-      if (prof) profile = { ...passedProfile, ...prof }
-      brand = bk
-    }
-    profile.bank_name = profile.bank_name || bankDetails?.bank_name
-    profile.bank_account_name = profile.bank_account_name || bankDetails?.bank_account_name
-    profile.bank_bsb = profile.bank_bsb || bankDetails?.bank_bsb
-    profile.bank_account = profile.bank_account || bankDetails?.bank_account
+    // Only the signed-in creative who owns the invoice can send it.
+    const user = await getAuthUser(supabase, req)
+    if (!user) return jsonRes({ error: 'Not authenticated' }, 401)
+
+    let body: any = {}
+    try { body = await req.json() } catch { return jsonRes({ error: 'Invalid request' }, 400) }
+    // Accept only an id. (Older clients sent the whole record; only its id is used.)
+    const invoiceId = String(body?.invoice_id ?? body?.invoiceId ?? body?.invoice?.id ?? '')
+    if (!UUID_RE.test(invoiceId)) return jsonRes({ error: 'invoice_id required' }, 400)
+
+    const { data: record, error: loadErr } = await supabase.from('invoices').select('*').eq('id', invoiceId).maybeSingle()
+    if (loadErr) console.error('send-invoice load failed', loadErr)
+    if (!record || record.creative_id !== user.id) return jsonRes({ error: 'Invoice not found' }, 404)
+    if (!isEmail(record.client_email)) return jsonRes({ error: 'Add a valid client email to this invoice before sending.' }, 400)
+
+    const allowed = await supabase.rpc('rate_limit_hit', { p_key: 'send-invoice:' + user.id, p_max: 60, p_window_seconds: 3600 })
+    if (allowed.error) console.error('send-invoice rate limit check failed', allowed.error)
+    else if (allowed.data === false) return jsonRes({ error: 'Too many invoices sent recently. Please try again later.' }, 429)
+
+    // Business details, bank details and brand kit come only from the caller's own records.
+    // Bank details live in the owner-only profile_private table.
+    const [{ data: prof }, { data: priv }, { data: bk }] = await Promise.all([
+      supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn').eq('id', user.id).maybeSingle(),
+      supabase.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account').eq('id', user.id).maybeSingle(),
+      supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle(),
+    ])
+    const profile: any = { ...(prof || {}), ...(priv || {}) }
+    const brand: any = bk || null
+    const invoice: any = { ...record, line_items: Array.isArray(record.line_items) ? record.line_items : (Array.isArray(record.items) ? record.items : []) }
 
     const html = renderDocumentHtml({ type: 'invoice', doc: invoice, profile, brand })
     const num = String(invoice.id || '').slice(0, 8).toUpperCase()
@@ -118,7 +145,7 @@ serve(async (req) => {
     let isPdf = false
     if (pdfKey) {
       try { attachment = { filename: `Invoice-${num}.pdf`, content: await htmlToPdfBase64(html, pdfKey) }; isPdf = true }
-      catch (_e) { attachment = { filename: `Invoice-${num}.html`, content: htmlToBase64(html) } }
+      catch (e) { console.error('send-invoice pdf conversion failed', e); attachment = { filename: `Invoice-${num}.html`, content: htmlToBase64(html) } }
     } else {
       attachment = { filename: `Invoice-${num}.html`, content: htmlToBase64(html) }
     }
@@ -141,16 +168,21 @@ serve(async (req) => {
       headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: 'LensTrybe <noreply@mail.lenstrybe.com>',
-        to: [invoice.client_email],
-        reply_to: profile.business_email || 'connect@lenstrybe.com',
-        subject: `Invoice from ${profile.business_name || 'Your Creative'} - ${amount}`,
+        to: [record.client_email],
+        reply_to: isEmail(profile.business_email) ? profile.business_email : 'connect@lenstrybe.com',
+        subject: `Invoice from ${plain(profile.business_name || 'Your Creative', 120)} - ${amount}`,
         html: emailBody,
         attachments: [attachment],
       }),
     })
-    const data = await res.json()
-    return new Response(JSON.stringify({ ...data, pdf: isPdf }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      console.error('send-invoice resend error', res.status, data)
+      return jsonRes({ error: 'Could not send the invoice email. Please try again.' }, 502)
+    }
+    return jsonRes({ success: true, id: (data as any)?.id ?? null, pdf: isPdf })
   } catch (err) {
-    return new Response(JSON.stringify({ error: (err as Error).message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    console.error('send-invoice failed', err)
+    return jsonRes({ error: 'Could not send the invoice. Please try again.' }, 500)
   }
 })

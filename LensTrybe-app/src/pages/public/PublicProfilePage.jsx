@@ -167,7 +167,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     if (mod?.blocked) { setReviewModerationError(MODERATION_BLOCKED_USER_MESSAGE); return }
     if (mod?.flagged) console.warn('[moderation] Flagged review', mod.reason)
     setSubmittingReview(true)
-    const { error } = await supabase.from('reviews').insert({
+    const { data: insertedReviews, error } = await supabase.from('reviews').insert({
       creative_id: id,
       reviewer_name: reviewForm.reviewer_name,
       reviewer_email: reviewEmail.trim(),
@@ -178,7 +178,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       source: 'platform',
     }).select()
     if (!error) {
-      supabase.functions.invoke('notify-review', { body: { creative_id: id, rating: reviewForm.rating, reviewer_name: reviewForm.reviewer_name, comment: reviewForm.body } }).catch(() => {})
+      const newReviewId = Array.isArray(insertedReviews) ? insertedReviews[0]?.id : null
+      if (newReviewId) supabase.functions.invoke('notify-review', { body: { review_id: newReviewId } }).catch(() => {})
       setReviewSent(true)
       await loadProfile()
       setTimeout(() => { setShowReview(false); setReviewSent(false); setReviewRatingHover(null); setReviewEmail(''); setReviewForm({ rating: 5, body: '', reviewer_name: '' }) }, 2000)

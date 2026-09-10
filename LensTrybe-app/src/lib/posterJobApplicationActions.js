@@ -74,29 +74,22 @@ export async function acceptJobApplication({
     return
   }
 
-  const { error: me } = await supabase.from('messages').insert({
+  const { data: insertedMsg, error: me } = await supabase.from('messages').insert({
     thread_id: thread.id,
     sender_type: 'client',
     sender_name: client_name,
     body: `Hi ${app.creative_name}, I'd like to accept your application for "${job.title}" at AUD ${Number(app.price ?? 0).toFixed(2)}. Looking forward to working with you!`,
-  })
+  }).select('id').single()
   if (me) {
     showToast(me.message, 'error')
     return
   }
 
-  const { data: creativeProfile } = await supabase.from('profiles').select('business_email').eq('id', app.creative_id).eq('is_admin', false).maybeSingle()
-  if (creativeProfile?.business_email) {
+  // The notification function loads the recipient and message text from the database.
+  if (insertedMsg?.id) {
     try {
       await supabase.functions.invoke('send-message-notification', {
-        body: {
-          to: creativeProfile.business_email,
-          toName: app.creative_name,
-          fromName: client_name,
-          subject: `Your application for "${job.title}" has been accepted!`,
-          messageBody: `Great news! ${client_name} has accepted your application for "${job.title}" at AUD ${Number(app.price ?? 0).toFixed(2)}.\n\nLog in to LensTrybe to view your messages and get started.`,
-          threadSubject: `Job: ${job.title}`,
-        },
+        body: { message_id: insertedMsg.id },
       })
     } catch {
       /* non-blocking */

@@ -28,7 +28,7 @@ export default function ReferralsPage() {
         setReferralCount(data.referral_count || 0)
         setLoading(false)
       } else {
-        supabase.functions.invoke('generate-referral-code', { body: { userId: user.id } }).then(({ data: fnData }) => {
+        supabase.functions.invoke('generate-referral-code', { body: {} }).then(({ data: fnData }) => {
           if (fnData?.referral_code) setReferralCode(fnData.referral_code)
           setLoading(false)
         }).catch(() => setLoading(false))

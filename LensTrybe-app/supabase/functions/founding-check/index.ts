@@ -13,7 +13,7 @@
 //   - 3 real jobs (accepted quote + paid invoice) within 180 days
 //   - One piece of feedback every ~35 days
 //
-// Auth: header x-cron-secret == CRON_SECRET (if set).
+// Auth: header x-cron-secret == CRON_SECRET (fails closed if CRON_SECRET is not set).
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET, FOUNDING_AUTO_REVERT
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -30,23 +30,34 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
 }
 
+function safeEqual(a: string, b: string) {
+  if (a.length !== b.length) return false
+  let r = 0
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return r === 0
+}
+
+function esc(s: unknown) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
 function daysSince(iso: string | null): number {
   if (!iso) return 0
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
 }
 
 function warnEmail(name: string, outstanding: string[], graceEnds: string) {
-  const items = outstanding.map((o) => `<li style="margin:0 0 6px;">${o}</li>`).join('')
+  const items = outstanding.map((o) => `<li style="margin:0 0 6px;">${esc(o)}</li>`).join('')
   return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
   <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
   <table role="presentation" width="100%" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
   <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
   <tr><td style="padding:22px 36px 8px;">
   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">Founding deal, action needed</div>
-  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${name}, a quick heads-up</h1>
+  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(name)}, a quick heads-up</h1>
   <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">To keep your founding deal (12 months free Expert, then $49/mo for life), there's a little left to do:</p>
   <ul style="color:#fff;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">${items}</ul>
-  <p style="margin:0 0 4px;color:#9a9aa8;font-size:14px;line-height:1.6;">Please sort it by <strong style="color:#fff;">${graceEnds}</strong> to keep your deal. Everything is tracked in your Founding Hub.</p>
+  <p style="margin:0 0 4px;color:#9a9aa8;font-size:14px;line-height:1.6;">Please sort it by <strong style="color:#fff;">${esc(graceEnds)}</strong> to keep your deal. Everything is tracked in your Founding Hub.</p>
   </td></tr>
   <tr><td style="padding:22px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="https://lenstrybe.com/dashboard/founding" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open your Founding Hub</a></td></tr></table></td></tr>
   <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Questions? Just reply to this email. Connect. Capture. Create.</div></td></tr>
@@ -70,8 +81,13 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceKey) return json({ error: 'Missing env' }, 500)
 
+  // Cron only. Fails closed if CRON_SECRET is not configured.
   const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret && req.headers.get('x-cron-secret') !== cronSecret) return json({ error: 'Unauthorized' }, 401)
+  if (!cronSecret) {
+    console.error('CRON_SECRET is not set')
+    return json({ error: 'Not configured' }, 500)
+  }
+  if (!safeEqual(req.headers.get('x-cron-secret') || '', cronSecret)) return json({ error: 'Unauthorized' }, 401)
 
   const autoRevert = (Deno.env.get('FOUNDING_AUTO_REVERT') || '').toLowerCase() === 'true'
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
@@ -81,9 +97,12 @@ Deno.serve(async (req) => {
     .select('id, business_name, business_email, founding_member_since, founding_deal_status, founding_warned_at')
     .eq('founding_member', true)
     .neq('founding_deal_status', 'reverted')
-  if (error) return json({ error: error.message }, 500)
+  if (error) {
+    console.error('founding-check: query failed', error.message)
+    return json({ error: 'Query failed' }, 500)
+  }
 
-  const results: Array<Record<string, unknown>> = []
+  const counts: Record<string, number> = {}
 
   for (const f of founders || []) {
     try {
@@ -131,11 +150,13 @@ Deno.serve(async (req) => {
       }
 
       if (Object.keys(updates).length > 0) await sb.from('profiles').update(updates).eq('id', f.id)
-      results.push({ id: f.id, age, listingOk, jobs, outstanding: outstanding.length, status: updates.founding_deal_status || status })
+      const finalStatus = String(updates.founding_deal_status || status)
+      counts[finalStatus] = (counts[finalStatus] || 0) + 1
     } catch (e) {
-      results.push({ id: f.id, error: e instanceof Error ? e.message : String(e) })
+      console.error('founding-check: error on founder', f.id, e instanceof Error ? e.message : String(e))
+      counts.errors = (counts.errors || 0) + 1
     }
   }
 
-  return json({ ran_at: new Date().toISOString(), checked: (founders || []).length, auto_revert: autoRevert, results })
+  return json({ ran_at: new Date().toISOString(), checked: (founders || []).length, auto_revert: autoRevert, counts })
 })

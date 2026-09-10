@@ -232,7 +232,7 @@ export default function DeliverPage() {
     const { data } = await supabase.from('deliveries').select('*').eq('id', delivery.id).maybeSingle()
 
     await supabase.functions.invoke('send-delivery', {
-      body: { delivery: data ?? delivery, profile },
+      body: { delivery_id: (data ?? delivery).id },
     })
 
     await loadDeliveries()
@@ -270,7 +270,7 @@ export default function DeliverPage() {
   }
 
   async function resendDelivery(delivery) {
-    const { error } = await supabase.functions.invoke('send-delivery', { body: { delivery, profile } })
+    const { error } = await supabase.functions.invoke('send-delivery', { body: { delivery_id: delivery.id } })
     if (!error) showToast('Delivery resent to ' + delivery.client_email)
     else showToast('Failed to resend', 'error')
   }

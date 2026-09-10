@@ -105,23 +105,17 @@ export default function ClientPortalsPage() {
     setSaving(true)
     try {
       const token = crypto.randomUUID()
-      const { error } = await supabase.from('client_portals').insert({
+      const { data: created, error } = await supabase.from('client_portals').insert({
         creative_id: user.id,
         client_name: form.client_name,
         client_email: form.client_email,
         portal_token: token,
-      }).select().single()
+      }).select('id').single()
       if (error) throw error
 
-      const portalUrl = `https://lenstrybe.com/portal/${token}`
-
+      // The function loads the portal (must belong to you) and builds the link server-side.
       await supabase.functions.invoke('send-portal-link', {
-        body: {
-          to: form.client_email,
-          client_name: form.client_name,
-          creative_name: creativeSenderDisplayName(profile, user),
-          portal_url: portalUrl,
-        },
+        body: { portal_id: created.id },
       })
 
       await loadPortals()

@@ -1,7 +1,7 @@
 // Supabase Edge Function: deliver-expiry-reminders
 // Scheduled daily via pg_cron. Emails the client a reminder ~3 days before a
 // delivery gallery link expires, once per delivery.
-// Auth: header x-cron-secret == CRON_SECRET (if set).
+// Auth: header x-cron-secret == CRON_SECRET (fails closed if CRON_SECRET is not set).
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -26,6 +26,17 @@ async function sendEmail(to, replyTo, subject, html) {
   } catch (_e) { /* best effort */ }
 }
 
+function safeEqual(a, b) {
+  if (a.length !== b.length) return false
+  let r = 0
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return r === 0
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+}
+
 function reminderEmail(clientName, businessName, title, url, expiryLabel) {
   return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
   <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
@@ -33,10 +44,10 @@ function reminderEmail(clientName, businessName, title, url, expiryLabel) {
   <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
   <tr><td style="padding:22px 36px 8px;">
   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">Your gallery is expiring soon</div>
-  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${clientName || 'there'}, download your files before they go</h1>
-  <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">Your gallery <strong style="color:#fff;">${title || 'from ' + (businessName || 'your creative')}</strong> will expire on <strong style="color:#fff;">${expiryLabel}</strong>. Please download anything you would like to keep before then.</p>
+  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(clientName || 'there')}, download your files before they go</h1>
+  <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">Your gallery <strong style="color:#fff;">${esc(title || 'from ' + (businessName || 'your creative'))}</strong> will expire on <strong style="color:#fff;">${esc(expiryLabel)}</strong>. Please download anything you would like to keep before then.</p>
   </td></tr>
-  <tr><td style="padding:14px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${url}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">View &amp; download your files</a></td></tr></table></td></tr>
+  <tr><td style="padding:14px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(url)}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">View &amp; download your files</a></td></tr></table></td></tr>
   <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Delivered via LensTrybe. Connect. Capture. Create.</div></td></tr>
   </table></td></tr></table></body></html>`
 }
@@ -46,8 +57,13 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceKey) return json({ error: 'Missing env' }, 500)
 
+  // Cron only. Fails closed if CRON_SECRET is not configured.
   const cronSecret = Deno.env.get('CRON_SECRET')
-  if (cronSecret && req.headers.get('x-cron-secret') !== cronSecret) return json({ error: 'Unauthorized' }, 401)
+  if (!cronSecret) {
+    console.error('CRON_SECRET is not set')
+    return json({ error: 'Not configured' }, 500)
+  }
+  if (!safeEqual(req.headers.get('x-cron-secret') || '', cronSecret)) return json({ error: 'Unauthorized' }, 401)
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
 
@@ -61,7 +77,10 @@ Deno.serve(async (req) => {
     .not('client_email', 'is', null)
     .gt('expires_at', now.toISOString())
     .lte('expires_at', windowEnd.toISOString())
-  if (error) return json({ error: error.message }, 500)
+  if (error) {
+    console.error('deliver-expiry-reminders: query failed', error.message)
+    return json({ error: 'Query failed' }, 500)
+  }
 
   let sent = 0
   for (const d of rows || []) {
@@ -73,12 +92,12 @@ Deno.serve(async (req) => {
         if (prof?.business_name) businessName = prof.business_name
         if (prof?.business_email) replyTo = prof.business_email
       }
-      const url = `https://lenstrybe.com/deliver/${d.download_token}`
+      const url = `https://lenstrybe.com/deliver/${encodeURIComponent(String(d.download_token || ''))}`
       const expiryLabel = new Date(d.expires_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
       await sendEmail(d.client_email, replyTo, `Your gallery from ${businessName} expires soon`, reminderEmail(d.client_name, businessName, d.title, url, expiryLabel))
       await sb.from('deliveries').update({ expiry_reminder_sent: true }).eq('id', d.id)
       sent += 1
-    } catch (_e) { /* continue */ }
+    } catch (e) { console.error('deliver-expiry-reminders: send failed', d.id, e instanceof Error ? e.message : String(e)) }
   }
 
   return json({ ran_at: now.toISOString(), candidates: (rows || []).length, sent })

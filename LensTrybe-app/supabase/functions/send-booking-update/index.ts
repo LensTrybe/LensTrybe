@@ -36,6 +36,15 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 }
 // ---- end shared ----
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+async function getAuthUser(admin: any, req: Request) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+  try { const { data, error } = await admin.auth.getUser(token); if (error || !data?.user) return null; return data.user } catch { return null }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -45,19 +54,28 @@ Deno.serve(async (req) => {
   const resendKey = Deno.env.get('RESEND_API_KEY')!
   const supabase = createClient(supabaseUrl, serviceKey)
 
+  // Only the signed-in creative who owns the booking can notify its client.
+  const user = await getAuthUser(supabase, req)
+  if (!user) return json({ error: 'Not authenticated' }, 401)
+
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
-  const bookingId = (body.booking_id || body.bookingId) as string
-  const statusRaw = String(body.status || '').toLowerCase().trim()
-  if (!bookingId) return json({ error: 'booking_id required' }, 400)
+  const bookingId = String(body.booking_id || body.bookingId || '')
+  if (!UUID_RE.test(bookingId)) return json({ error: 'booking_id required' }, 400)
 
-  const { data: booking } = await supabase.from('bookings').select('*').eq('id', bookingId).single()
-  if (!booking) return json({ error: 'Booking not found' }, 404)
-  if (!booking.client_email) return json({ error: 'booking has no client email', skipped: true }, 200)
+  const { data: booking } = await supabase.from('bookings').select('*').eq('id', bookingId).maybeSingle()
+  if (!booking || booking.creative_id !== user.id) return json({ error: 'Booking not found' }, 404)
+  if (!isEmail(booking.client_email)) return json({ error: 'booking has no client email', skipped: true }, 200)
+  // The status always comes from the saved booking, never from the request.
+  const statusRaw = String(booking.status || '').toLowerCase().trim()
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', booking.creative_id).single()
-  const businessName = profile?.business_name || 'Your creative'
+  const allowed = await supabase.rpc('rate_limit_hit', { p_key: 'booking-update:' + user.id, p_max: 100, p_window_seconds: 86400 })
+  if (allowed.error) console.error('send-booking-update rate limit check failed', allowed.error)
+  else if (allowed.data === false) return json({ error: 'Too many booking updates sent today. Please try again tomorrow.' }, 429)
+
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', user.id).maybeSingle()
+  const businessName = plain(profile?.business_name || 'Your creative', 120)
 
   // Map status to a friendly, positive message.
   const confirmed = statusRaw === 'confirmed' || statusRaw === 'accepted'
@@ -77,9 +95,9 @@ Deno.serve(async (req) => {
     fieldRow('Status', `<span style="color:${confirmed ? BRAND.green : BRAND.text};text-transform:capitalize;">${esc(statusRaw || booking.status || 'updated')}</span>`)
   )
 
-  await sendEmail(resendKey, {
+  const res = await sendEmail(resendKey, {
     to: booking.client_email,
-    replyTo: profile?.business_email || undefined,
+    replyTo: isEmail(profile?.business_email) ? profile.business_email : undefined,
     subject: confirmed ? `Your booking with ${businessName} is confirmed` : `An update on your booking with ${businessName}`,
     html: emailShell({
       preheader: intro.replace(/<[^>]+>/g, ''),
@@ -92,6 +110,10 @@ Deno.serve(async (req) => {
       footNote: 'You can reply straight to this email to reach your creative.',
     }),
   })
+  if (!res.ok) {
+    console.error('send-booking-update resend error', res.status, await res.text().catch(() => ''))
+    return json({ error: 'Could not send the booking update. Please try again.' }, 502)
+  }
 
   return json({ success: true })
 })

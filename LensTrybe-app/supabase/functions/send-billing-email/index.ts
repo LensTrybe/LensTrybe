@@ -7,7 +7,7 @@ function json(body: Record<string, unknown>, status = 200) { return new Response
 const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', pink: '#FF2D78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
 const FROM = 'LensTrybe Billing <noreply@mail.lenstrybe.com>'
 const REPLY_TO = 'billing@lenstrybe.com'
-function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
+function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
 function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
 function fieldRow(label: string, valueHtml: string) { return `<div style="margin:0 0 12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">${esc(label)}</div><div style="font-size:14px;color:${BRAND.text};line-height:1.55;">${valueHtml}</div></div>` }
 function emailShell(opts: { preheader?: string; kicker?: string; heading: string; intro?: string; panelHtml?: string; ctaText?: string; ctaUrl?: string; footNote?: string }) {
@@ -38,6 +38,12 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 // ---- end shared ----
 
 const SUB_URL = 'https://lenstrybe.com/dashboard/settings/subscription'
+function safeEqual(a: string, b: string) {
+  if (!a || a.length !== b.length) return false
+  let r = 0
+  for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return r === 0
+}
 function tierLabel(t: unknown) { const s = String(t || '').toLowerCase(); if (!s || s === 'basic') return 'LensTrybe'; return 'LensTrybe ' + s.charAt(0).toUpperCase() + s.slice(1) }
 function money(minor: unknown, currency: unknown) {
   const n = Number(minor); if (!Number.isFinite(n)) return ''
@@ -49,16 +55,25 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const resendKey = Deno.env.get('RESEND_API_KEY')!
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+  const resendKey = Deno.env.get('RESEND_API_KEY')
+  if (!supabaseUrl || !serviceKey || !resendKey) {
+    console.error('send-billing-email: missing env')
+    return json({ error: 'Not configured' }, 500)
+  }
+
+  // Internal only: called by the billing Edge Functions with the service role key.
+  const bearer = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!safeEqual(bearer, serviceKey)) return json({ error: 'Unauthorized' }, 401)
+
   const supabase = createClient(supabaseUrl, serviceKey)
 
   let body: Record<string, unknown>
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   const userId = (body.user_id || body.userId) as string
-  const kind = String(body.kind || '').toLowerCase() // 'active' | 'failed' | 'cancelled'
+  const kind = String(body.kind || '').toLowerCase() // 'active' | 'failed' | 'cancelled' | 'downgraded'
   const tier = tierLabel(body.tier)
   const amountStr = money(body.amount_minor ?? body.amount, body.currency)
   if (!userId || !kind) return json({ error: 'user_id and kind required' }, 400)
@@ -89,6 +104,13 @@ Deno.serve(async (req) => {
     intro = `Hi ${esc(name)}, your ${esc(tier)} subscription has been cancelled. You'll keep access until the end of your current billing period, then move to the free Basic plan.`
     ctaText = 'Resubscribe'
     footNote = 'Changed your mind? You can pick a plan again any time.'
+  } else if (kind === 'downgraded') {
+    subject = 'Your LensTrybe plan has moved to Basic'
+    kicker = 'Plan changed'
+    heading = 'Your plan has moved to Basic'
+    intro = `Hi ${esc(name)}, we tried a few times but could not collect your ${esc(tier)} payment, so your account is now on the free Basic plan. Your profile and work are safe.`
+    ctaText = 'Choose a plan'
+    footNote = 'You can pick a paid plan again any time to get your features back.'
   } else {
     return json({ error: 'unknown kind' }, 400)
   }

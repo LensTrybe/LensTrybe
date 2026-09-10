@@ -389,6 +389,18 @@ export default function EditProfilePage() {
       other_url: credentials.other_url,
       other_credential_name: otherCredentialName || null,
     }).eq('id', user.id)
+    // Credential document links are private: save them (including removals) to
+    // the owner-only profile_private table.
+    await supabase.from('profile_private').upsert({
+      id: user.id,
+      insurance_url: credentials.insurance_url || null,
+      blue_card_url: credentials.blue_card_url || null,
+      police_check_url: credentials.police_check_url || null,
+      wwvp_url: credentials.wwvp_url || null,
+      drone_licence_url: credentials.drone_licence_url || null,
+      other_url: credentials.other_url || null,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'id' })
     await fetchUserData(user.id)
     setSaving(false)
     setSaved(true)

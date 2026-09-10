@@ -1,69 +1,77 @@
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
-const URL = Deno.env.get('SUPABASE_URL')!
-const KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || ''
 const RESEND = Deno.env.get('RESEND_API_KEY') || ''
-const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, 'Content-Type': 'application/json' }
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const EMAIL_RE = /^[^@\s"'<>]+@[^@\s"'<>]+\.[^@\s"'<>]+$/
 
 function json(o: unknown, s = 200) {
   return new Response(JSON.stringify(o), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } })
 }
-function esc(s: unknown) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') }
+function esc(s: unknown) { return String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
+function str(v: unknown, max: number) { return typeof v === 'string' ? v.trim().slice(0, max) : '' }
+function plain(s: unknown, max: number) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, max) }
 
-serve(async (req) => {
+// Public enquiry form on a creative's LensTrybe website (PublicSitePage). Anonymous.
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
   try {
-    const { creativeId, name, email, phone, message } = await req.json()
-    if (!creativeId || !name || !email) return json({ error: 'missing fields' }, 400)
+    let body: Record<string, unknown>
+    try { body = await req.json() } catch { return json({ error: 'Invalid request' }, 400) }
+    if (typeof body.website === 'string' && body.website) return json({ ok: true }) // honeypot
 
-    // Look up the creative (name + email for notification).
-    const pr = await fetch(`${URL}/rest/v1/profiles?id=eq.${creativeId}&select=business_name,business_email&portfolio_website_active=is.true`, { headers: H })
-    const prof = (await pr.json())[0]
+    const creativeId = str(body.creativeId, 64)
+    const name = plain(str(body.name, 120), 120)
+    const email = str(body.email, 254).toLowerCase()
+    const phone = plain(str(body.phone, 40), 40)
+    const message = str(body.message, 5000)
+    if (!UUID_RE.test(creativeId) || !name || !EMAIL_RE.test(email)) return json({ error: 'missing fields' }, 400)
+
+    const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim() || 'unknown'
+    for (const [key, max] of [[`site-enquiry:ip:${ip}`, 10], [`site-enquiry:email:${email}`, 5], [`site-enquiry:creative:${creativeId}`, 50]] as [string, number][]) {
+      const { data: allowed, error: rlErr } = await sb.rpc('rate_limit_hit', { p_key: key, p_max: max, p_window_seconds: 3600 })
+      if (rlErr) { console.error('rate_limit_hit failed', rlErr); return json({ error: 'Please try again later.' }, 503) }
+      if (allowed === false) return json({ error: 'Too many requests. Please try again later.' }, 429)
+    }
+
+    // Look up the creative (name + email for notification). Only published websites accept enquiries.
+    const { data: prof } = await sb.from('profiles').select('business_name, business_email')
+      .eq('id', creativeId).eq('portfolio_website_active', true).maybeSingle()
     if (!prof) return json({ error: 'site not found' }, 404)
 
-    // Create / update the CRM lead (dedupe by email; best effort, never block the enquiry).
+    // CRM lead: only ever INSERT a new contact. Anonymous input never edits an existing contact.
     try {
-      const enc = encodeURIComponent(email)
-      const ex = await fetch(`${URL}/rest/v1/crm_contacts?creative_id=eq.${creativeId}&email=ilike.${enc}&select=id&limit=1`, { headers: H })
-      const found = (await ex.json())[0]
-      if (found?.id) {
-        await fetch(`${URL}/rest/v1/crm_contacts?id=eq.${found.id}`, {
-          method: 'PATCH', headers: H,
-          body: JSON.stringify({ last_contacted_at: new Date().toISOString(), phone: phone || undefined }),
-        })
-      } else {
-        await fetch(`${URL}/rest/v1/crm_contacts`, {
-          method: 'POST', headers: H,
-          body: JSON.stringify({
-            creative_id: creativeId,
-            name,
-            email,
-            phone: phone || null,
-            notes: message || null,
-            status: 'Lead',
-            tags: ['Website enquiry'],
-            last_contacted_at: new Date().toISOString(),
-          }),
+      const pattern = email.replace(/[\\%_]/g, (m) => `\\${m}`) // exact, case-insensitive match (no wildcards)
+      const { data: found } = await sb.from('crm_contacts').select('id').eq('creative_id', creativeId).ilike('email', pattern).limit(1).maybeSingle()
+      if (!found) {
+        await sb.from('crm_contacts').insert({
+          creative_id: creativeId,
+          name,
+          email,
+          phone: phone || null,
+          notes: message || null,
+          status: 'Lead',
+          tags: ['Website enquiry'],
+          last_contacted_at: new Date().toISOString(),
         })
       }
-    } catch { /* ignore CRM failure */ }
+    } catch (e) { console.error('crm capture failed', e) }
 
     // In-app notification for the creative (best effort).
     try {
-      await fetch(`${URL}/rest/v1/notifications`, {
-        method: 'POST', headers: H,
-        body: JSON.stringify({
-          user_id: creativeId,
-          type: 'enquiry',
-          title: `New website enquiry from ${name}`,
-          body: message ? String(message).slice(0, 140) : null,
-          link: '/dashboard/clients/crm',
-          meta: { source: 'website' },
-        }),
+      await sb.from('notifications').insert({
+        user_id: creativeId,
+        type: 'enquiry',
+        title: `New website enquiry from ${name}`,
+        body: message ? message.slice(0, 140) : null,
+        link: '/dashboard/clients/crm',
+        meta: { source: 'website' },
       })
     } catch { /* ignore */ }
 
@@ -92,12 +100,13 @@ serve(async (req) => {
         await fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ from: 'LensTrybe <noreply@mail.lenstrybe.com>', to: [prof.business_email], reply_to: email, subject: `New website enquiry from ${name}`, html }),
+          body: JSON.stringify({ from: 'LensTrybe <noreply@mail.lenstrybe.com>', to: [prof.business_email], reply_to: email, subject: plain(`New website enquiry from ${name}`, 150), html }),
         })
       } catch { /* best effort */ }
     }
     return json({ ok: true })
   } catch (e) {
-    return json({ error: String((e as Error)?.message || e) }, 500)
+    console.error('site-enquiry error', e)
+    return json({ error: 'Something went wrong.' }, 500)
   }
 })

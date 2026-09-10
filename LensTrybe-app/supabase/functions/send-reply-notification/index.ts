@@ -6,7 +6,7 @@ function json(body: Record<string, unknown>, status = 200) { return new Response
 // ---- LensTrybe shared email template (inlined) ----
 const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
 const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
-function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
+function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
 function nl2br(s: unknown) { return esc(s).replace(/\n/g, '<br>') }
 function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
 function emailShell(opts: { preheader?: string; kicker?: string; heading: string; intro?: string; panelHtml?: string; ctaText?: string; ctaUrl?: string; footNote?: string }) {
@@ -36,47 +36,73 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 }
 // ---- end shared ----
 
+const APP = 'https://lenstrybe.com'
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+function plain(s: unknown, max: number) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, max) }
+function preview(s: unknown, max: number) { const t = String(s ?? '').trim(); return t.length > max ? `${t.slice(0, max)}...` : t }
+
+// Creative replied to a client: email the thread's client with the reply taken from the database.
+// Body: { message_id }
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
-  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-  const resendKey = Deno.env.get('RESEND_API_KEY')!
-  const supabase = createClient(supabaseUrl, serviceKey)
+  try {
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
+    const resendKey = Deno.env.get('RESEND_API_KEY')!
 
-  let body: Record<string, unknown>
-  try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
+    const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+    if (!token) return json({ error: 'Unauthorised' }, 401)
+    const { data: { user } } = await supabase.auth.getUser(token)
+    if (!user) return json({ error: 'Unauthorised' }, 401)
 
-  const threadId = body.thread_id as string
-  const replyBody = body.reply_body as string
-  if (!threadId || !replyBody) return json({ error: 'thread_id and reply_body required' }, 400)
+    let body: Record<string, unknown>
+    try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
+    const messageId = typeof body.message_id === 'string' ? body.message_id : ''
+    if (!UUID_RE.test(messageId)) return json({ error: 'message_id required' }, 400)
 
-  const { data: thread } = await supabase.from('message_threads').select('*').eq('id', threadId).single()
-  if (!thread) return json({ error: 'Thread not found' }, 404)
+    const { data: msg } = await supabase.from('messages').select('id, thread_id, body, sender_type, created_at').eq('id', messageId).maybeSingle()
+    if (!msg?.thread_id) return json({ error: 'Message not found' }, 404)
+    const { data: thread } = await supabase.from('message_threads').select('id, creative_id, client_name, client_email').eq('id', msg.thread_id).maybeSingle()
+    if (!thread) return json({ error: 'Message not found' }, 404)
+    if (thread.creative_id !== user.id) return json({ error: 'Forbidden' }, 403)
+    if (msg.sender_type && msg.sender_type !== 'creative') return json({ error: 'Forbidden' }, 403)
+    if (!thread.client_email) return json({ success: true, skipped: 'no_recipient' })
+    if (Date.now() - new Date(msg.created_at).getTime() > 15 * 60 * 1000) return json({ success: true, skipped: 'stale' })
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', thread.creative_id).single()
-  const businessName = profile?.business_name || 'Your creative'
-  const creativeEmail = profile?.business_email
+    const once = await supabase.rpc('rate_limit_hit', { p_key: `msg-notify:msg:${msg.id}`, p_max: 1, p_window_seconds: 86400 })
+    if (once.error || once.data === false) return json({ success: true, skipped: 'already_notified' })
+    const perUser = await supabase.rpc('rate_limit_hit', { p_key: `msg-notify:user:${user.id}`, p_max: 60, p_window_seconds: 3600 })
+    if (perUser.error || perUser.data === false) return json({ error: 'Too many requests' }, 429)
 
-  const { data: portal } = await supabase.from('client_portals').select('portal_token').eq('creative_id', thread.creative_id).eq('client_email', thread.client_email).single()
-  const portalUrl = portal ? `https://lenstrybe.com/portal/${portal.portal_token}` : 'https://lenstrybe.com'
+    const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', thread.creative_id).maybeSingle()
+    const businessName = plain(profile?.business_name || 'Your creative', 80)
+    const creativeEmail = profile?.business_email || user.email || undefined
 
-  await sendEmail(resendKey, {
-    to: thread.client_email,
-    replyTo: creativeEmail || undefined,
-    subject: `New message from ${businessName}`,
-    html: emailShell({
-      preheader: `${businessName} replied to your conversation`,
-      kicker: 'New message',
-      heading: `${esc(businessName)} sent you a message`,
-      intro: `Hi ${esc(thread.client_name)},`,
-      panelHtml: panel(`<p style="margin:0;color:${BRAND.text};font-size:15px;line-height:1.7;">${nl2br(replyBody)}</p>`),
-      ctaText: 'Reply in your portal',
-      ctaUrl: portalUrl,
-      footNote: 'You can reply straight to this email, or open your portal to see the full conversation.',
-    }),
-  })
+    const emailPattern = String(thread.client_email).replace(/[\\%_]/g, (m) => `\\${m}`)
+    const { data: portal } = await supabase.from('client_portals').select('portal_token')
+      .eq('creative_id', thread.creative_id).ilike('client_email', emailPattern).limit(1).maybeSingle()
+    const portalUrl = portal?.portal_token ? `${APP}/portal/${encodeURIComponent(String(portal.portal_token))}` : APP
 
-  return json({ success: true })
+    const res = await sendEmail(resendKey, {
+      to: thread.client_email,
+      replyTo: creativeEmail,
+      subject: plain(`New message from ${businessName}`, 150),
+      html: emailShell({
+        preheader: `${businessName} replied to your conversation`,
+        kicker: 'New message',
+        heading: `${esc(businessName)} sent you a message`,
+        intro: thread.client_name ? `Hi ${esc(plain(thread.client_name, 60))},` : '',
+        panelHtml: panel(`<p style="margin:0;color:${BRAND.text};font-size:15px;line-height:1.7;">${nl2br(preview(msg.body, 2000))}</p>`),
+        ctaText: 'Reply in your portal',
+        ctaUrl: portalUrl,
+        footNote: 'You can reply straight to this email, or open your portal to see the full conversation.',
+      }),
+    })
+    if (!res.ok) console.error('resend failed', res.status, await res.text().catch(() => ''))
+    return json({ success: true })
+  } catch (err) {
+    console.error('send-reply-notification error', err)
+    return json({ error: 'Could not send notification' }, 500)
+  }
 })

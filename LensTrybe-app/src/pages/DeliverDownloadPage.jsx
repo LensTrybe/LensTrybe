@@ -189,7 +189,7 @@ export default function DeliverDownloadPage() {
   const accentText = onAccentText(brandAccent)
 
   async function trackDownload(name) {
-    try { await supabase.functions.invoke('deliver', { body: { action: 'track', token, file_name: name } }) } catch { /* ignore */ }
+    try { await supabase.functions.invoke('deliver', { body: { action: 'track', token, file_name: name, password: password || undefined } }) } catch { /* ignore */ }
   }
 
   async function downloadOne(f) {
@@ -249,7 +249,7 @@ export default function DeliverDownloadPage() {
   async function sendFavourites() {
     setSendingFav(true)
     const ids = [...favSet]
-    const { data, error } = await supabase.functions.invoke('deliver', { body: { action: 'favourites', token, favourites: ids } })
+    const { data, error } = await supabase.functions.invoke('deliver', { body: { action: 'favourites', token, favourites: ids, password: password || undefined } })
     setSendingFav(false)
     if (error || !data?.ok) { showToast('Could not send your picks, please try again', 'error'); return }
     setFavDirty(false)

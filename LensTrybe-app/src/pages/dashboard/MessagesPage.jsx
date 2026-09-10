@@ -185,11 +185,9 @@ export default function MessagesPage() {
 
       const email = newMessageEmail.trim()
 
-      const { data: clientAccountRow } = await supabase
-        .from('client_accounts')
-        .select('id, email')
-        .eq('email', email)
-        .maybeSingle()
+      // Client accounts are private; this lookup only returns the matching account id.
+      const { data: clientAccountId } = await supabase.rpc('find_client_account_id', { p_email: email })
+      const clientAccountRow = clientAccountId ? { id: clientAccountId, email } : null
 
       const { data: thread, error: threadError } = await supabase
         .from('message_threads')
@@ -205,13 +203,13 @@ export default function MessagesPage() {
       if (threadError) throw threadError
 
       const creativeLabel = creativeSenderDisplayName(profile, user)
-      const { error: msgError } = await supabase.from('messages').insert({
+      const { data: newMsg, error: msgError } = await supabase.from('messages').insert({
         thread_id: thread.id,
         sender_type: 'creative',
         sender_name: creativeLabel,
         body: bodyText,
         creative_id: user.id,
-      })
+      }).select('id').single()
       if (msgError) {
         await supabase.from('message_threads').delete().eq('id', thread.id)
         if (isMonthlyMessageLimitError(msgError)) {
@@ -222,15 +220,7 @@ export default function MessagesPage() {
       }
 
       const { error: fnError } = await supabase.functions.invoke('send-message-notification', {
-        body: {
-          to: email,
-          toName: newMessageName || email,
-          fromName: creativeLabel,
-          subject: `New message from ${creativeLabel} on LensTrybe`,
-          messageBody: bodyText,
-          threadSubject: 'New Message',
-          replyToEmail: user.email,
-        },
+        body: { message_id: newMsg?.id },
       })
       if (fnError) throw fnError
 
@@ -380,13 +370,13 @@ export default function MessagesPage() {
     try {
       if (imListingCreative) {
         const creativeLabel = creativeSenderDisplayName(profile, user)
-        const { error: insertErr } = await supabase.from('messages').insert({
+        const { data: replyMsg, error: insertErr } = await supabase.from('messages').insert({
           thread_id: selected.id,
           sender_type: 'creative',
           sender_name: creativeLabel,
           body: bodyText,
           creative_id: user.id,
-        })
+        }).select('id').single()
         if (insertErr) {
           if (isMonthlyMessageLimitError(insertErr)) {
             showToast(MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE, 'error')
@@ -394,18 +384,9 @@ export default function MessagesPage() {
           }
           throw insertErr
         }
-        if (selected?.client_email) {
+        if (replyMsg?.id) {
           await supabase.functions.invoke('send-message-notification', {
-            body: {
-              to: selected.client_email,
-              toName: selected.resolvedClientName ?? selected.client_name ?? selected.client_email,
-              fromName: creativeLabel,
-              subject: `Reply from ${creativeLabel} on LensTrybe`,
-              messageBody: bodyText,
-              threadSubject: selected.subject ?? 'your enquiry',
-              replyToEmail: user.email,
-              recipientRole: 'client',
-            },
+            body: { message_id: replyMsg.id },
           })
         }
       } else {
@@ -417,26 +398,11 @@ export default function MessagesPage() {
           body: bodyText,
           creative_id: user.id,
         }
-        const { error: clientInsertErr } = await supabase.from('messages').insert(msgPayload)
+        const { data: clientMsg, error: clientInsertErr } = await supabase.from('messages').insert(msgPayload).select('id').single()
         if (clientInsertErr) throw clientInsertErr
-        const { data: sellerProfile } = await supabase
-          .from('profiles')
-          .select('business_email, business_name')
-          .eq('id', selected.creative_id)
-          .eq('is_admin', false)
-          .maybeSingle()
-        if (sellerProfile?.business_email) {
+        if (clientMsg?.id) {
           await supabase.functions.invoke('send-message-notification', {
-            body: {
-              to: sellerProfile.business_email,
-              toName: sellerProfile.business_name ?? 'there',
-              replyToEmail: user.email,
-              recipientRole: 'creative',
-              fromName: clientSenderName,
-              subject: `Reply from ${clientSenderName} on LensTrybe`,
-              messageBody: bodyText,
-              threadSubject: selected.subject ?? 'your enquiry',
-            },
+            body: { message_id: clientMsg.id },
           })
         }
       }

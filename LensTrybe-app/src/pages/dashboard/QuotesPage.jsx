@@ -144,8 +144,7 @@ export default function QuotesPage() {
 
   async function invokeSendQuoteEdge(quote) {
     if (!supabase || !quote?.id) return 'Not configured.'
-    const quoteForEmail = { ...quote, line_items: getQuoteItems(quote) }
-    const { data, error } = await supabase.functions.invoke('send-quote', { body: { quote: quoteForEmail, profile, bankDetails } })
+    const { data, error } = await supabase.functions.invoke('send-quote', { body: { quote_id: quote.id } })
     if (error) return error.message
     if (data?.error) return typeof data.error === 'string' ? data.error : JSON.stringify(data.error)
     return ''
@@ -234,8 +233,7 @@ export default function QuotesPage() {
     if (!supabase || !user?.id || !quote?.id) return
     setSending(true); setSendError('')
     try {
-      const quoteForEmail = { ...quote, line_items: getQuoteItems(quote) }
-      const { data, error } = await supabase.functions.invoke('send-quote', { body: { quote: quoteForEmail, profile, bankDetails } })
+      const { data, error } = await supabase.functions.invoke('send-quote', { body: { quote_id: quote.id } })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
       await supabase.from('quotes').update({ status: 'sent' }).eq('id', quote.id)

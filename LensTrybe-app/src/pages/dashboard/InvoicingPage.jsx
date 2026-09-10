@@ -229,8 +229,7 @@ export default function InvoicingPage() {
 
   async function invokeSendInvoiceEdge(invoice) {
     if (!supabase || !invoice?.id) return 'Not configured.'
-    const invoiceForEmail = { ...invoice, line_items: getInvoiceItems(invoice) }
-    const { data, error } = await supabase.functions.invoke('send-invoice', { body: { invoice: invoiceForEmail, profile, bankDetails } })
+    const { data, error } = await supabase.functions.invoke('send-invoice', { body: { invoice_id: invoice.id } })
     if (error) return error.message
     if (data?.error) return typeof data.error === 'string' ? data.error : JSON.stringify(data.error)
     return ''
@@ -240,8 +239,7 @@ export default function InvoicingPage() {
     if (!supabase || !user?.id || !invoice?.id) return
     setSending(true); setSendError('')
     try {
-      const invoiceForEmail = { ...invoice, line_items: getInvoiceItems(invoice) }
-      const { data, error } = await supabase.functions.invoke('send-invoice', { body: { invoice: invoiceForEmail, profile, bankDetails } })
+      const { data, error } = await supabase.functions.invoke('send-invoice', { body: { invoice_id: invoice.id } })
       if (error) throw new Error(error.message)
       if (data?.error) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data.error))
       await supabase.from('invoices').update({ status: 'sent' }).eq('id', invoice.id)
