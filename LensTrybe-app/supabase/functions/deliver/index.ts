@@ -7,15 +7,14 @@ const corsHeaders = {
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
 }
 
-function json(body: unknown, status = 200) {
+function json(body, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   })
 }
 
-// Delivery row without the password field, safe to send to the anonymous client.
-function publicDelivery(d: Record<string, unknown>, includeFiles: boolean) {
+function publicDelivery(d, includeFiles) {
   return {
     id: d.id,
     title: d.title,
@@ -36,8 +35,8 @@ serve(async (req) => {
 
   try {
     const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+      Deno.env.get('SUPABASE_URL'),
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY'),
     )
 
     const { action, token, password, file_name, favourites } = await req.json()
@@ -51,14 +50,14 @@ serve(async (req) => {
 
     if (error || !delivery) return json({ error: 'not_found' }, 404)
 
-    // Creative profile for gallery branding
-    let creative: Record<string, unknown> | null = null
+    // Resolve the owning creative for branding + notifications. The delivery's
+    // creative_id is the owner regardless of admin status, so no is_admin filter.
+    let creative = null
     if (delivery.creative_id) {
       const { data: prof } = await admin
         .from('profiles')
         .select('business_name, avatar_url, business_email, full_name')
         .eq('id', delivery.creative_id)
-        .eq('is_admin', false)
         .maybeSingle()
       creative = prof ?? null
     }
@@ -74,13 +73,12 @@ serve(async (req) => {
         event_type: 'open',
         user_agent: ua,
       })
-      const patch: Record<string, unknown> = { last_opened_at: now }
+      const patch = { last_opened_at: now }
       if (!delivery.opened_at) patch.opened_at = now
       await admin.from('deliveries').update(patch).eq('id', delivery.id)
     }
 
     if (action === 'load') {
-      // Locked galleries return only branding + metadata (no files) until unlocked.
       if (locked) {
         return json({
           expired: Boolean(expired),
@@ -110,7 +108,6 @@ serve(async (req) => {
     }
 
     if (action === 'track') {
-      // Only 'download' is tracked from the client here; opens are logged on load/unlock.
       const now = new Date().toISOString()
       await admin.from('delivery_events').insert({
         delivery_id: delivery.id,
@@ -138,11 +135,28 @@ serve(async (req) => {
         user_agent: ua,
       })
 
-      // Notify the creative that the client sent their picks.
+      // In-app notification for the creative (best effort).
+      try {
+        await admin.from('notifications').insert({
+          user_id: delivery.creative_id,
+          type: 'delivery_favourites',
+          title: `${delivery.client_name ?? 'Your client'} sent their favourites`,
+          body: `${list.length} favourite${list.length === 1 ? '' : 's'} selected from "${delivery.title ?? 'your gallery'}"`,
+          link: '/dashboard/portfolio-design/deliver',
+          meta: { delivery_id: delivery.id, count: list.length },
+        })
+      } catch (_e) { /* notifications table may not exist yet; non-blocking */ }
+
+      // Email the creative. Fall back to the auth-user email when no business_email is set.
       const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-      const to = creative?.business_email
+      let to = creative?.business_email
+      if (!to && delivery.creative_id) {
+        try {
+          const { data: u } = await admin.auth.admin.getUserById(delivery.creative_id)
+          to = u?.user?.email ?? null
+        } catch (_e) { /* ignore */ }
+      }
       if (RESEND_API_KEY && to) {
-        const name = (creative?.business_name || creative?.full_name || 'there') as string
         const dashUrl = 'https://lenstrybe.com/dashboard/portfolio-design/deliver'
         const html = `
           <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#fff;padding:40px 32px;border-radius:12px">
@@ -158,7 +172,7 @@ serve(async (req) => {
                 View their picks
               </a>
             </div>
-            <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe · <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
+            <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe &middot; <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
           </div>
         `
         try {
@@ -181,6 +195,6 @@ serve(async (req) => {
 
     return json({ error: 'unknown_action' }, 400)
   } catch (err) {
-    return json({ error: (err as Error).message }, 500)
+    return json({ error: err.message }, 500)
   }
 })
