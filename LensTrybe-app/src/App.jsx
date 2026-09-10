@@ -21,6 +21,7 @@ import TaxHubPage from './pages/dashboard/TaxHubPage'
 import BrandKitPage from './pages/dashboard/BrandKitPage'
 import DeliverPage from './pages/dashboard/DeliverPage'
 import CRMPage from './pages/dashboard/CRMPage'
+import ContactsPage from './pages/dashboard/ContactsPage'
 import DashboardHome from './pages/dashboard/DashboardHome'
 import ProjectsPage from './pages/dashboard/ProjectsPage'
 import ProjectDetailPage from './pages/dashboard/ProjectDetailPage'
@@ -159,6 +160,7 @@ export default function App() {
         <Route path="content/ideas" element={<ContentIdeasPage />} />
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/meetings" element={<MeetingsPage />} />
+        <Route path="clients/contacts" element={<ContactsPage />} />
         <Route path="clients/crm" element={<CRMPage />} />
         <Route path="finance/overview" element={<FinanceOverviewPage />} />
         <Route path="finance/invoicing" element={<InvoicingPage />} />

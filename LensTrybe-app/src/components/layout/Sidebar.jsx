@@ -73,6 +73,7 @@ const BASE_SECTIONS = [
   { label: 'Clients', icon: 'message', items: [
     { label: 'Messages', path: '/dashboard/clients/messages', icon: 'message' },
     { label: 'Meetings', path: '/dashboard/clients/meetings', icon: 'calendar' },
+    { label: 'Contacts', path: '/dashboard/clients/contacts', icon: 'addressBook' },
     { label: 'CRM', path: '/dashboard/clients/crm', icon: 'contact', feature: 'crm' },
   ] },
   { label: 'Finance', icon: 'receipt', items: [
