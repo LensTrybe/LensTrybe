@@ -38,7 +38,7 @@ export function LiquidSelect({ value, onChange, options, placeholder, ariaLabel,
         <span style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease', color: TEXT_MUTED, fontSize: '10px', flexShrink: 0 }}>▾</span>
       </button>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 30, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(22px) saturate(140%)', WebkitBackdropFilter: 'blur(22px) saturate(140%)', border: '1px solid rgba(20,17,26,0.08)', borderRadius: '16px', boxShadow: '0 24px 54px -16px rgba(40,30,60,0.32)', padding: '6px', maxHeight: '264px', overflowY: 'auto' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, right: 0, zIndex: 30, background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(22px) saturate(140%)', WebkitBackdropFilter: 'blur(22px) saturate(140%)', border: '1px solid rgba(20,17,26,0.08)', borderRadius: '16px', boxShadow: '0 24px 54px -16px rgba(40,30,60,0.32)', padding: '6px', maxHeight: 'min(380px, 66vh)', overflowY: 'auto' }}>
           {options.map(o => (
             <div key={o.value || 'all'} onClick={() => { onChange(o.value); setOpen(false) }}
               style={{ padding: '10px 12px', borderRadius: '11px', cursor: 'pointer', fontSize: '14px', fontFamily: FONT, color: o.value === value ? GREEN : TEXT_PRIMARY, fontWeight: o.value === value ? 600 : 400, background: o.value === value ? 'rgba(29,185,84,0.12)' : 'transparent', transition: 'background 0.12s ease' }}
