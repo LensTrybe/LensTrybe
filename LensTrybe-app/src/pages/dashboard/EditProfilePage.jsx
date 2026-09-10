@@ -8,6 +8,7 @@ import {
   partitionFilesByPortfolioImageModeration,
 } from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
+import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -15,10 +16,8 @@ const PINK = '#FF2D78'
 
 const PROFILE_TABS = ['basics', 'skills', 'location', 'social', 'credentials', 'portfolio']
 
-const SKILL_TYPES = [
-  'Photographer', 'Videographer', 'Drone Pilot', 'Video Editor',
-  'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator',
-]
+// Launch scope (Photographer, Videographer) from the shared source of truth.
+const SKILL_TYPES = CREATIVE_TYPES
 
 const SPECIALTIES_MAP = {
   Photographer: [

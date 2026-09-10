@@ -7,13 +7,15 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
 import TileField from '../../components/ui/TileField'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
 const PINK = '#FF2D78'
 const AMBER = '#f59e0b'
 
-const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
+// Launch scope (Photographer, Videographer) from the shared source of truth.
+const CATEGORIES = CREATIVE_TYPES
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
 function jobListingState(job) {

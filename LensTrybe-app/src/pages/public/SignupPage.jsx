@@ -3,6 +3,7 @@ import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { moderateText } from '../../lib/moderateContent'
 import { payWithRevolut } from '../../lib/revolut.js'
+import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 import Input from '../../components/ui/Input'
 import {
   DIVIDER_GRADIENT_STYLE,
@@ -29,10 +30,9 @@ const TIERS = [
   { id: 'elite', name: 'Elite', monthly: 149.99, annual: 1499.90, description: 'Studio-level power', color: '#EAB308' },
 ]
 
-const SKILL_TYPES = [
-  'Photographer', 'Videographer', 'Drone Pilot', 'Video Editor',
-  'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator'
-]
+// Launch scope lives in one place (src/lib/creativeTypes.js): Photographers and
+// Videographers only. Add disciplines back there to re-enable them everywhere.
+const SKILL_TYPES = CREATIVE_TYPES
 
 const SPECIALTIES = {
   'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture', 'Food', 'Newborn & Family', 'Maternity', 'Boudoir', 'Pet', 'School', 'Headshots', 'Documentary', 'Travel', 'Fine Art', 'Aerial', 'Night & Astro', 'Corporate'],

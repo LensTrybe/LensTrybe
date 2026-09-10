@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { normalizeSubscriptionTier } from '../../lib/tierFeatures'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
 // Theme-aware Collaborate hub (light + dark) built on the --lt-* tokens. Adds a
 // Saved creatives tab: creatives can be bookmarked from the Browse posters and the
@@ -30,10 +31,9 @@ const field = {
   outline: 'none',
 }
 
-const SPECIALTIES = [
-  'Photographer', 'Videographer', 'Drone Pilot', 'Video Editor',
-  'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator',
-]
+// Roles/specialties offered at launch (Photographer, Videographer) live in the
+// shared source of truth src/lib/creativeTypes.js.
+const SPECIALTIES = CREATIVE_TYPES
 
 const TIER_BADGE = {
   basic: { bg: 'rgba(136,136,170,0.14)', color: 'var(--lt-muted)' },

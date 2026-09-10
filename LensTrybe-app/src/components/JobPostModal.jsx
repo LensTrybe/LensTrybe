@@ -1,17 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { budgetStoredFromInput } from '../lib/jobPricing.js'
+import { CREATIVE_TYPES } from '../lib/creativeTypes'
 
-export const JOB_CREATIVE_TYPES = [
-  'Photographer',
-  'Videographer',
-  'Drone Pilot',
-  'Video Editor',
-  'Photo Editor',
-  'Social Media Manager',
-  'Hair & Makeup Artist',
-  'UGC Creator',
-]
+// Launch scope (Photographer, Videographer) from the shared source of truth.
+export const JOB_CREATIVE_TYPES = CREATIVE_TYPES
 
 const inputStyle = {
   width: '100%',

@@ -15,17 +15,10 @@ import {
 } from '../../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidSelect, LiquidPill } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
+import { CREATIVE_TYPE_OPTIONS } from '../../lib/creativeTypes'
 
-const CATEGORIES = [
-  { value: 'Photographer', label: 'Photographer' },
-  { value: 'Videographer', label: 'Videographer' },
-  { value: 'Drone Pilot', label: 'Drone Pilot' },
-  { value: 'Video Editor', label: 'Video Editor' },
-  { value: 'Photo Editor', label: 'Photo Editor' },
-  { value: 'Social Media Manager', label: 'Social Media Manager' },
-  { value: 'Hair & Makeup Artist', label: 'Hair & Makeup Artist' },
-  { value: 'UGC Creator', label: 'UGC Creator' },
-]
+// Launch scope (Photographer, Videographer) from the shared source of truth.
+const CATEGORIES = CREATIVE_TYPE_OPTIONS
 
 const SPECIALTIES = {
   'Photographer': ['Wedding', 'Portrait', 'Commercial', 'Real Estate', 'Events', 'Fashion', 'Product', 'Sports', 'Street', 'Architecture'],

@@ -10,21 +10,14 @@ import {
 import { LIQUID_GLASS, LIQUID_FIELD } from '../../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
+import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
 const PAGE_BG = '#ffffff'
 const GREEN = '#1DB954'
 const PINK = '#FF2D78'
 
-const SKILL_TYPES = [
-  'Photographer',
-  'Videographer',
-  'Drone Pilot',
-  'Video Editor',
-  'Photo Editor',
-  'Social Media Manager',
-  'Hair & Makeup Artist',
-  'UGC Creator',
-]
+// Launch scope (Photographer, Videographer) from the shared source of truth.
+const SKILL_TYPES = CREATIVE_TYPES
 
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
