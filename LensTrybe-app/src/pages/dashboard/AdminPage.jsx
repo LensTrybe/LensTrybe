@@ -3,22 +3,104 @@ import FoundingAdminPanel from '../../components/dashboard/FoundingAdminPanel';
 import SupportAdminPanel from '../../components/dashboard/SupportAdminPanel';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
-import {
-  GLASS_CARD,
-  GLASS_CARD_GREEN,
-  GLASS_MODAL_PANEL,
-  GLASS_MODAL_OVERLAY_BASE,
-  GLASS_NATIVE_FIELD,
-  TYPO,
-} from '../../lib/glassTokens';
-import Button from '../../components/ui/Button';
-import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark';
+// Local theme-aware shims. These replace the light-only glassTokens, the ui/Button
+// component and lib/dashboardSelectDark so this internal page renders correctly in
+// both light and dark via the --lt-* tokens. Same names/shape as the originals, so
+// the rest of the page is unchanged.
+const GREEN = '#1DB954';
+const GREEN_DARK = '#04120a';
+const PINK = '#FF2D78';
+
+const GLASS_CARD = {
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+  background: 'var(--lt-glass-bg)',
+  border: 'var(--lt-glass-border)',
+  borderRadius: '18px',
+  boxShadow: 'var(--lt-glass-shadow)',
+};
+
+const GLASS_CARD_GREEN = {
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+  background: 'linear-gradient(160deg, rgba(29,185,84,0.18) 0%, rgba(29,185,84,0.04) 100%)',
+  border: '1px solid rgba(29,185,84,0.3)',
+  borderRadius: '18px',
+  boxShadow: 'var(--lt-glass-shadow)',
+};
+
+const GLASS_MODAL_PANEL = {
+  backdropFilter: 'var(--lt-modal-blur)',
+  WebkitBackdropFilter: 'var(--lt-modal-blur)',
+  background: 'var(--lt-modal-bg)',
+  border: 'var(--lt-modal-border)',
+  borderRadius: '18px',
+  boxShadow: 'var(--lt-modal-shadow)',
+};
+
+const GLASS_MODAL_OVERLAY_BASE = {
+  background: 'rgba(0,0,0,0.5)',
+  backdropFilter: 'blur(4px)',
+  WebkitBackdropFilter: 'blur(4px)',
+};
+
+const GLASS_NATIVE_FIELD = {
+  background: 'var(--lt-input-bg)',
+  border: '1px solid var(--lt-input-border)',
+  borderRadius: '10px',
+  boxSizing: 'border-box',
+  outline: 'none',
+  color: 'var(--lt-text)',
+  fontFamily: 'inherit',
+  fontSize: '14px',
+  fontWeight: 400,
+  lineHeight: 1.6,
+};
+
+const TYPO = {
+  heading: { fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.6, color: 'var(--lt-text)' },
+  stat: { fontWeight: 700, letterSpacing: '-0.02em', lineHeight: 1.6, color: 'var(--lt-text)' },
+  label: { fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--lt-muted)', lineHeight: 1.6 },
+  body: { fontWeight: 400, lineHeight: 1.6 },
+};
+
+const LT_DASHBOARD_SELECT_CLASS = 'ltadm-select';
+const LT_DASHBOARD_SELECT_STYLE = {};
+function LtDashboardSelectDarkStyles() {
+  return (
+    <style>{`
+      .ltadm-select { background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-input-border); border-radius: 10px; font-family: inherit; outline: none; cursor: pointer; }
+      .ltadm-select:focus { border-color: ${GREEN}; }
+    `}</style>
+  );
+}
+
+function Button({ variant = 'primary', size = 'md', style, children, ...rest }) {
+  const base = {
+    display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+    borderRadius: 9, fontFamily: 'inherit', fontWeight: 700, cursor: 'pointer',
+    border: 'none', whiteSpace: 'nowrap', transition: 'filter .15s ease, background .15s ease, opacity .15s ease',
+    fontSize: size === 'sm' ? 12.5 : 13.5, padding: size === 'sm' ? '7px 12px' : '9px 16px',
+  };
+  const variants = {
+    primary: { background: GREEN, color: GREEN_DARK },
+    secondary: { background: 'var(--lt-input-bg)', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    ghost: { background: 'transparent', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    danger: { background: 'rgba(255,45,120,0.14)', color: PINK, border: '1px solid rgba(255,45,120,0.4)' },
+  };
+  const disabledStyle = rest.disabled ? { opacity: 0.55, cursor: 'default' } : null;
+  return (
+    <button style={{ ...base, ...(variants[variant] || variants.primary), ...disabledStyle, ...style }} {...rest}>
+      {children}
+    </button>
+  );
+}
 
 const COLORS = {
-  bg: '#ffffff',
-  panel: '#ffffff',
-  panelAlt: 'rgba(20,17,26,0.05)',
-  border: 'rgba(20,17,26,0.12)',
+  bg: 'transparent',
+  panel: 'var(--lt-modal-bg)',
+  panelAlt: 'var(--lt-surface-2)',
+  border: 'var(--lt-border)',
   green: '#1DB954',
   greenDim: 'rgba(29,185,84,0.12)',
   pink: '#FF2D78',
@@ -27,9 +109,9 @@ const COLORS = {
   yellowDim: 'rgba(245,166,35,0.12)',
   blue: '#4A9EFF',
   blueDim: 'rgba(74,158,255,0.12)',
-  white: '#14111a',
-  muted: '#6a6976',
-  dim: '#8a8995',
+  white: 'var(--lt-text)',
+  muted: 'var(--lt-muted)',
+  dim: 'var(--lt-faint)',
 };
 
 const FONT = { fontFamily: 'Inter, sans-serif' };
@@ -816,7 +898,7 @@ export default function AdminPage() {
             padding: '12px 20px',
             borderRadius: 10,
             background: toast.type === 'error' ? COLORS.pink : COLORS.green,
-            color: 'var(--text-primary)',
+            color: toast.type === 'error' ? '#fff' : GREEN_DARK,
             fontSize: 13,
             fontWeight: 600,
             boxShadow: '0 4px 20px rgba(0,0,0,0.4)',
