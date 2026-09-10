@@ -47,8 +47,10 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
-  async function fetchUserData(userId) {
-    setLoading(true)
+  // opts.silent: refresh profile in place without flipping `loading` (which unmounts
+  // protected routes). Used after in-page changes like an admin plan switch.
+  async function fetchUserData(userId, opts = {}) {
+    if (!opts.silent) setLoading(true)
     const { data: profileData } = await supabase
       .from('profiles')
       .select('*')

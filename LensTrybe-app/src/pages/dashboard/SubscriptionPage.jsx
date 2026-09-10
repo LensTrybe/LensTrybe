@@ -53,7 +53,7 @@ function Modal({ open, onClose, title, children, busy }) {
 }
 
 export default function SubscriptionPage() {
-  const { user, profile } = useAuth()
+  const { user, profile, fetchUserData } = useAuth()
   const { tier: ctxTier } = useSubscription()
   const navigate = useNavigate()
 
@@ -96,9 +96,25 @@ export default function SubscriptionPage() {
   // sidebar and feature gating. Access above the billed tier is complimentary.
   const accessTier = String(ctxTier || 'basic').toLowerCase()
   const isComp = accessTier !== 'basic' && accessTier !== (hasLiveSub ? currentTier : 'basic') && sub?.status !== 'canceled'
+  // Admins with no billing can switch their own access tier here to test each plan.
+  // It goes through admin-users (server-side admin check), never through Revolut.
+  const isAdmin = !!(profile && (profile.is_admin === true || profile.role === 'admin'))
+  const adminSwitch = isAdmin && !hasLiveSub
 
   async function onSelect(plan) {
     if (!user?.id || busyPlan) return
+
+    // Admin test switch: change own access tier, no billing.
+    if (adminSwitch) {
+      if (plan.id === accessTier) return
+      setBusyPlan(plan.id)
+      const { data, error } = await supabase.functions.invoke('admin-users', { body: { action: 'update_tier', userId: user.id, tier: plan.id } })
+      setBusyPlan(null)
+      if (error || !data?.success) { showToast('Could not switch plan: ' + (error?.message ?? data?.error ?? 'Unknown error'), 'error'); return }
+      await fetchUserData(user.id, { silent: true })
+      showToast(`Switched to ${plan.name}. Admin test switch, no billing.`)
+      return
+    }
 
     // Cancel → Basic
     if (plan.id === 'basic') {
@@ -172,6 +188,7 @@ export default function SubscriptionPage() {
     return RANK[plan.id] <= RANK[accessTier] && !(plan.id === currentTier && hasLiveSub)
   }
   function planLabel(plan) {
+    if (adminSwitch) return plan.id === accessTier ? (isComp ? 'Complimentary' : 'Current plan') : `Switch to ${plan.name}`
     if (isComp && plan.id === accessTier) return 'Complimentary'
     if (isIncludedByComp(plan)) return 'Included'
     if (plan.id === currentTier && billing === currentBilling && hasLiveSub) {
@@ -183,6 +200,7 @@ export default function SubscriptionPage() {
     return up ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`
   }
   function planDisabled(plan) {
+    if (adminSwitch) return plan.id === accessTier
     if (isIncludedByComp(plan)) return true
     return plan.id === currentTier && billing === currentBilling && hasLiveSub && !sub?.pending_tier
   }
@@ -240,6 +258,14 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
+      {(adminSwitch || (isComp && !hasLiveSub)) && (
+        <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6, marginTop: -8 }}>
+          {adminSwitch
+            ? 'Admin account: switch your own plan below to test each tier. No card or billing is involved.'
+            : 'Your complimentary plan is managed by LensTrybe. Contact support if you would like to change it.'}
+        </div>
+      )}
+
       {sub?.pending_tier && (
         <div className="lts-card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap' }}>
           <div style={{ fontSize: 13.5, color: 'var(--lt-text)', lineHeight: 1.5 }}>
@@ -263,9 +289,9 @@ export default function SubscriptionPage() {
         {PLANS.map((plan) => {
           const isCurrent = plan.id === currentTier && billing === currentBilling && hasLiveSub
           // Highlighted card = the plan the creative actually has (access tier).
-          const isHighlighted = isComp ? plan.id === accessTier : isCurrent
+          const isHighlighted = (isComp || adminSwitch) ? plan.id === accessTier : isCurrent
           const isBilledOnly = isComp && isCurrent
-          const muted = isHighlighted || isBilledOnly || isIncludedByComp(plan) || plan.id === 'basic'
+          const muted = isHighlighted || isBilledOnly || (!adminSwitch && isIncludedByComp(plan)) || plan.id === 'basic'
           const price = billing === 'annual' ? plan.annualPrice : plan.monthlyPrice
           const loading = busyPlan === plan.id
           return (
