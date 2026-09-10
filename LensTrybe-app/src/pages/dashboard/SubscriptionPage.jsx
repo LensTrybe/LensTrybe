@@ -165,8 +165,11 @@ export default function SubscriptionPage() {
 
   // For a complimentary user, a paid plan above what they're billed for but at or
   // below their access tier adds nothing, so it's shown as included, not sold.
+  // With no billing at all there is nothing to cancel, so Basic is included too.
   function isIncludedByComp(plan) {
-    return isComp && plan.id !== 'basic' && RANK[plan.id] <= RANK[accessTier] && !(plan.id === currentTier && hasLiveSub)
+    if (!isComp) return false
+    if (plan.id === 'basic') return !hasLiveSub
+    return RANK[plan.id] <= RANK[accessTier] && !(plan.id === currentTier && hasLiveSub)
   }
   function planLabel(plan) {
     if (isComp && plan.id === accessTier) return 'Complimentary'
