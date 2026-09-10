@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { normalizeSubscriptionTier } from '../../lib/tierFeatures'
-import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 
 // Theme-aware Collaborate hub (light + dark) built on the --lt-* tokens. Adds a
@@ -470,7 +469,22 @@ export default function CollaboratePage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', color: 'var(--lt-text)', ...FONT, paddingBottom: 40 }}>
-      <LtDashboardSelectDarkStyles />
+      <style>{`
+        .ltc-select {
+          -webkit-appearance: none; -moz-appearance: none; appearance: none;
+          background-color: var(--lt-input-bg);
+          color: var(--lt-text);
+          border: 1px solid var(--lt-input-border);
+          border-radius: 8px;
+          padding: 8px 34px 8px 12px;
+          font-size: 13px; font-family: inherit; cursor: pointer; outline: none;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%239b99a8' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+          background-repeat: no-repeat; background-position: right 11px center;
+        }
+        [data-theme="light"] .ltc-select { color-scheme: light; }
+        [data-theme="dark"] .ltc-select { color-scheme: dark; }
+        .ltc-select:disabled { opacity: .55; cursor: not-allowed; }
+      `}</style>
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 2000, padding: '12px 18px', borderRadius: 10, background: toast.type === 'error' ? PINK : GREEN, color: toast.type === 'error' ? '#fff' : GREEN_TEXT, fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.35)' }}>
           {toast.msg}
@@ -495,11 +509,11 @@ export default function CollaboratePage() {
       {tab === 'browse' && (
         <div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginBottom: 16, alignItems: 'center' }}>
-            <select className={LT_DASHBOARD_SELECT_CLASS} value={filterSpecialty} onChange={(e) => setFilterSpecialty(e.target.value)} style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13, minWidth: 160 }}>
+            <select className="ltc-select" value={filterSpecialty} onChange={(e) => setFilterSpecialty(e.target.value)} style={{ minWidth: 160 }}>
               <option value="all">All specialties</option>
               {SPECIALTIES.map((s) => (<option key={s} value={s}>{s}</option>))}
             </select>
-            <select className={LT_DASHBOARD_SELECT_CLASS} value={filterWork} onChange={(e) => setFilterWork(e.target.value)} style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13, minWidth: 160 }}>
+            <select className="ltc-select" value={filterWork} onChange={(e) => setFilterWork(e.target.value)} style={{ minWidth: 160 }}>
               <option value="all">All work types</option>
               <option value="on-location">On location</option>
               <option value="remote">Remote</option>
@@ -509,7 +523,7 @@ export default function CollaboratePage() {
               <input type="checkbox" checked={paidOnly} onChange={(e) => setPaidOnly(e.target.checked)} style={{ accentColor: GREEN }} />
               Paid only (hide TFP)
             </label>
-            <select className={LT_DASHBOARD_SELECT_CLASS} value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} style={{ ...LT_DASHBOARD_SELECT_STYLE, padding: '8px 12px', borderRadius: 8, fontSize: 13 }}>
+            <select className="ltc-select" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
               <option value="newest">Newest first</option>
               <option value="oldest">Oldest first</option>
             </select>
