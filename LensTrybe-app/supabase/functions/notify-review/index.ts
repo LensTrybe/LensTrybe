@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
       intro: `${esc(reviewerName)} just left a review on your LensTrybe profile.`,
       panelHtml,
       ctaText: 'View your reviews',
-      ctaUrl: 'https://app.lenstrybe.com/dashboard/business/reviews',
+      ctaUrl: 'https://lenstrybe.com/dashboard/business/reviews',
     }),
   })
 

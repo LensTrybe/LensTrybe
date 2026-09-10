@@ -70,7 +70,7 @@ serve(async (req) => {
         ${message ? `<div style="font-size:14px;color:#e6e6ea;line-height:1.7;"><strong>Message:</strong> ${esc(message)}</div>` : ''}
         </td></tr></table>
         </td></tr>
-        <tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#1DB954;"><a href="https://app.lenstrybe.com/dashboard/clients/crm" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open your CRM</a></td></tr></table></td></tr>
+        <tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#1DB954;"><a href="https://lenstrybe.com/dashboard/clients/crm" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open your CRM</a></td></tr></table></td></tr>
         <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;"><div style="font-size:13px;font-weight:700;color:#ffffff;">LensTrybe</div><div style="font-size:12px;color:#6a6a78;margin-top:2px;">Connect. Capture. Create.</div></div></td></tr>
         </table></td></tr></table></body></html>`
       try {

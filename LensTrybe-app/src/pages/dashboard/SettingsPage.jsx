@@ -716,9 +716,9 @@ export default function SettingsPage() {
                 </div>
                 <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
                   <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-lg)', padding: '12px 20px', flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}>
-                    {`https://app.lenstrybe.com/join?ref=${referralCode}`}
+                    {`https://lenstrybe.com/join?ref=${referralCode}`}
                   </div>
-                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(`https://app.lenstrybe.com/join?ref=${referralCode}`); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
+                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(`https://lenstrybe.com/join?ref=${referralCode}`); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
                     Copy Link
                   </Button>
                 </div>

@@ -37,7 +37,7 @@ Deno.serve(async (req: Request) => {
     }
 
     // Build the accept URL - use passed acceptUrl or fall back to default
-    const joinUrl = acceptUrl || `https://app.lenstrybe.com/dashboard`;
+    const joinUrl = acceptUrl || `https://lenstrybe.com/dashboard`;
     const studioName = businessName || 'a creative studio';
     const memberName = name || 'there';
     const memberRole = role || 'Member';

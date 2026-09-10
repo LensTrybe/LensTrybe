@@ -72,7 +72,7 @@ Deno.serve(async (req) => {
       portalToken = newPortal?.portal_token || ''
     }
   }
-  const portalUrl = `https://app.lenstrybe.com/portal/${portalToken}`
+  const portalUrl = `https://lenstrybe.com/portal/${portalToken}`
 
   // Auto-capture / update the CRM contact for this client (dedupe by email).
   if (thread.client_email) {
@@ -104,7 +104,7 @@ Deno.serve(async (req) => {
         intro: 'A new enquiry just landed in your inbox.',
         panelHtml,
         ctaText: 'Reply in your dashboard',
-        ctaUrl: 'https://app.lenstrybe.com/dashboard/clients/messages',
+        ctaUrl: 'https://lenstrybe.com/dashboard/clients/messages',
         footNote: 'Tip: you can reply directly to this email and it will reach the client.',
       }),
     })

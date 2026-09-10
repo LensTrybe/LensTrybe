@@ -48,7 +48,7 @@ function warnEmail(name: string, outstanding: string[], graceEnds: string) {
   <ul style="color:#fff;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">${items}</ul>
   <p style="margin:0 0 4px;color:#9a9aa8;font-size:14px;line-height:1.6;">Please sort it by <strong style="color:#fff;">${graceEnds}</strong> to keep your deal. Everything is tracked in your Founding Hub.</p>
   </td></tr>
-  <tr><td style="padding:22px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="https://app.lenstrybe.com/dashboard/founding" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open your Founding Hub</a></td></tr></table></td></tr>
+  <tr><td style="padding:22px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="https://lenstrybe.com/dashboard/founding" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open your Founding Hub</a></td></tr></table></td></tr>
   <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Questions? Just reply to this email. Connect. Capture. Create.</div></td></tr>
   </table></td></tr></table></body></html>`
 }

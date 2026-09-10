@@ -88,7 +88,7 @@ Deno.serve(async (req) => {
       intro,
       panelHtml,
       ctaText: 'View on LensTrybe',
-      ctaUrl: 'https://app.lenstrybe.com/client-dashboard',
+      ctaUrl: 'https://lenstrybe.com/client-dashboard',
       footNote: 'You can reply straight to this email to reach your creative.',
     }),
   })

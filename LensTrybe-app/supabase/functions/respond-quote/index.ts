@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         intro: accepted ? 'Nice work. You can move ahead when you are ready.' : `${esc(clientName)} has declined this quote. You may want to follow up with them.`,
         panelHtml,
         ctaText: 'View in your dashboard',
-        ctaUrl: 'https://app.lenstrybe.com/dashboard/finance/quotes',
+        ctaUrl: 'https://lenstrybe.com/dashboard/finance/quotes',
         footNote: 'Tip: you can reply directly to this email to reach the client.',
       }),
     })

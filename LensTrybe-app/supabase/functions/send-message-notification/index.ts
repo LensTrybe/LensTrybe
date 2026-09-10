@@ -46,8 +46,8 @@ serve(async (req) => {
     if (!to) return new Response(JSON.stringify({ error: 'recipient required' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
     const link = ctaUrl || (recipientRole === 'client'
-      ? 'https://app.lenstrybe.com/client-dashboard'
-      : 'https://app.lenstrybe.com/dashboard/clients/messages')
+      ? 'https://lenstrybe.com/client-dashboard'
+      : 'https://lenstrybe.com/dashboard/clients/messages')
 
     const hi = toName ? `Hi ${esc(toName)},` : ''
     const panelHtml = panel(

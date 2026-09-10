@@ -60,7 +60,7 @@ Deno.serve(async (req) => {
   const creativeEmail = profile?.business_email
 
   const { data: portal } = await supabase.from('client_portals').select('portal_token').eq('creative_id', thread.creative_id).eq('client_email', thread.client_email).single()
-  const portalUrl = portal ? `https://app.lenstrybe.com/portal/${portal.portal_token}` : 'https://app.lenstrybe.com'
+  const portalUrl = portal ? `https://lenstrybe.com/portal/${portal.portal_token}` : 'https://lenstrybe.com'
 
   await sendEmail(resendKey, {
     to: thread.client_email,

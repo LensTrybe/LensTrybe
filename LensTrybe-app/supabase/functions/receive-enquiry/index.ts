@@ -85,7 +85,7 @@ Deno.serve(async (req) => {
     const { data: newPortal } = await supabase.from('client_portals').insert({ creative_id: creativeId, client_name: clientName, client_email: clientEmail }).select().single()
     portalToken = newPortal?.portal_token || ''
   }
-  const portalUrl = `https://app.lenstrybe.com/portal/${portalToken}`
+  const portalUrl = `https://lenstrybe.com/portal/${portalToken}`
 
   const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).single()
   const businessName = profile?.business_name || 'Your creative'
@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
       to: creativeEmailForNotif,
       replyTo: clientEmail,
       subject: `New enquiry from ${clientName}`,
-      html: emailShell({ preheader: `${clientName} wants to work with you`, kicker: 'New enquiry', heading: `${esc(clientName)} wants to work with you`, intro: 'A new enquiry just landed in your inbox.', panelHtml, ctaText: 'Reply in your dashboard', ctaUrl: 'https://app.lenstrybe.com/dashboard/clients/messages', footNote: 'Tip: you can reply directly to this email and it will reach the client.' }),
+      html: emailShell({ preheader: `${clientName} wants to work with you`, kicker: 'New enquiry', heading: `${esc(clientName)} wants to work with you`, intro: 'A new enquiry just landed in your inbox.', panelHtml, ctaText: 'Reply in your dashboard', ctaUrl: 'https://lenstrybe.com/dashboard/clients/messages', footNote: 'Tip: you can reply directly to this email and it will reach the client.' }),
     })
   }
 

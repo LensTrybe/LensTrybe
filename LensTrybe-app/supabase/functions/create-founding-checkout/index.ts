@@ -100,8 +100,8 @@ Deno.serve(async (req) => {
         founding_member: 'true',
         interval: isAnnual ? 'annual' : 'monthly',
       },
-      success_url: 'https://app.lenstrybe.com/dashboard?founding=1',
-      cancel_url: 'https://app.lenstrybe.com/pricing',
+      success_url: 'https://lenstrybe.com/dashboard?founding=1',
+      cancel_url: 'https://lenstrybe.com/pricing',
       payment_method_collection: 'always',
       custom_text: {
         submit: {

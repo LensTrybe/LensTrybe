@@ -41,7 +41,7 @@ export default function ReferralsPage() {
     setTimeout(() => setCopied(null), 2000)
   }
 
-  const shareLink = `https://app.lenstrybe.com/join?ref=${referralCode}`
+  const shareLink = `https://lenstrybe.com/join?ref=${referralCode}`
 
   return (
     <div style={{ padding: isMobile ? '20px 16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '800px', width: '100%', boxSizing: 'border-box' }}>

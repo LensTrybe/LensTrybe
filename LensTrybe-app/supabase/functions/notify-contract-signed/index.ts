@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
       intro: 'Good news, your contract has been signed and is now locked in.',
       panelHtml,
       ctaText: 'View in your dashboard',
-      ctaUrl: 'https://app.lenstrybe.com/dashboard/finance/contracts',
+      ctaUrl: 'https://lenstrybe.com/dashboard/finance/contracts',
     }),
   })
 

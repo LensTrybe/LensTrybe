@@ -37,7 +37,7 @@ async function sendEmail(resendKey: string, args: { to: string; subject: string;
 }
 // ---- end shared ----
 
-const SUB_URL = 'https://app.lenstrybe.com/dashboard/settings/subscription'
+const SUB_URL = 'https://lenstrybe.com/dashboard/settings/subscription'
 function tierLabel(t: unknown) { const s = String(t || '').toLowerCase(); if (!s || s === 'basic') return 'LensTrybe'; return 'LensTrybe ' + s.charAt(0).toUpperCase() + s.slice(1) }
 function money(minor: unknown, currency: unknown) {
   const n = Number(minor); if (!Number.isFinite(n)) return ''

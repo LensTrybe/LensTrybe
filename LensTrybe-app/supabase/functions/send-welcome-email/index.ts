@@ -67,7 +67,7 @@ Deno.serve(async (req: Request) => {
           featureRow('&#128172;', 'Share one piece of feedback a month', 'Tell us what to build next, right from your Founding Hub.')
         ),
         ctaText: 'Open your Founding Hub',
-        ctaUrl: 'https://app.lenstrybe.com/dashboard/founding',
+        ctaUrl: 'https://lenstrybe.com/dashboard/founding',
         footNote: "Track all three at any time in your Founding Hub. Questions? Just reply to this email and we'll help.",
       })
     } else if (isClient) {
@@ -84,7 +84,7 @@ Deno.serve(async (req: Request) => {
           featureRow('&#128193;', 'Your client portal', 'Track conversations, quotes, contracts and delivered files')
         ),
         ctaText: 'Find a creative',
-        ctaUrl: 'https://app.lenstrybe.com/creatives',
+        ctaUrl: 'https://lenstrybe.com/creatives',
         footNote: 'Questions? Just reply to this email and we\'ll help.',
       })
     } else {
@@ -103,7 +103,7 @@ Deno.serve(async (req: Request) => {
           featureRow('&#128230;', 'File delivery', 'Deliver photos and files with secure download links')
         ),
         ctaText: 'Go to your dashboard',
-        ctaUrl: 'https://app.lenstrybe.com/dashboard',
+        ctaUrl: 'https://lenstrybe.com/dashboard',
         footNote: 'Questions? Just reply to this email and we\'ll help.',
       })
     }

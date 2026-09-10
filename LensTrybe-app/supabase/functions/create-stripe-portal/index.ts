@@ -53,7 +53,7 @@ serve(async (req) => {
     // Create billing portal session
     const portalParams = new URLSearchParams()
     portalParams.append('customer', customerId)
-    portalParams.append('return_url', returnUrl ?? 'https://app.lenstrybe.com/dashboard/settings')
+    portalParams.append('return_url', returnUrl ?? 'https://lenstrybe.com/dashboard/settings')
 
     const portalRes = await fetch('https://api.stripe.com/v1/billing_portal/sessions', {
       method: 'POST',

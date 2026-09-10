@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
         `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">Message</div><div style="font-size:14px;color:${BRAND.text};line-height:1.7;">${nl2br(message)}</div>`
       ),
       ctaText: 'Open the support inbox',
-      ctaUrl: 'https://app.lenstrybe.com/dashboard/admin',
+      ctaUrl: 'https://lenstrybe.com/dashboard/admin',
       footNote: 'Reply directly to this email to respond to the person who raised it.',
     }),
   })
