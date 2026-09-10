@@ -1,17 +1,45 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
-import Modal from '../../components/ui/Modal'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
-function statusVariant(status) {
-  if (status === 'confirmed') return 'green'
-  if (status === 'pending') return 'warning'
-  if (status === 'cancelled') return 'error'
-  if (status === 'completed') return 'info'
-  return 'default'
+const GREEN = '#1DB954'
+const GREEN_DARK = '#04120a'
+const PINK = '#FF2D78'
+const BLUE = '#4A9EFF'
+const AMBER = '#f59e0b'
+
+const STATUS_META = {
+  confirmed: { label: 'Confirmed', color: GREEN, bg: 'rgba(29,185,84,0.14)' },
+  pending: { label: 'Pending', color: AMBER, bg: 'rgba(245,158,11,0.16)' },
+  cancelled: { label: 'Cancelled', color: PINK, bg: 'rgba(255,45,120,0.14)' },
+  completed: { label: 'Completed', color: BLUE, bg: 'rgba(74,158,255,0.16)' },
+}
+function statusMeta(s) { return STATUS_META[s] || { label: s || '—', color: 'var(--lt-muted)', bg: 'var(--lt-surface-2)' } }
+
+function StyleBlock() {
+  return (
+    <style>{`
+      .ltb-page { display: flex; flex-direction: column; gap: 20px; overflow-x: hidden; }
+      .ltb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: none; white-space: nowrap; transition: filter .15s ease, background .15s ease, opacity .15s ease; }
+      .ltb-btn-primary { background: ${GREEN}; color: ${GREEN_DARK}; }
+      .ltb-btn-primary:hover { filter: brightness(1.06); }
+      .ltb-btn-ghost { background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-border); }
+      .ltb-btn-ghost:hover { background: var(--lt-surface-2); }
+      .ltb-chip { padding: 7px 15px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid var(--lt-border); background: var(--lt-input-bg); color: var(--lt-muted); }
+      .ltb-chip.on { border-color: ${GREEN}; background: rgba(29,185,84,0.14); color: ${GREEN}; }
+      .ltb-row { display: grid; grid-template-columns: 1fr 150px 150px 120px; gap: 12px; align-items: center; padding: 13px 18px; border-top: 1px solid var(--lt-hairline); cursor: pointer; transition: background .12s ease; }
+      .ltb-row:hover { background: var(--lt-surface-2); }
+      .ltb-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+      .ltb-modal { width: 100%; max-width: 560px; background: var(--lt-modal-bg); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); border: var(--lt-modal-border); border-radius: 18px; box-shadow: var(--lt-modal-shadow); overflow: hidden; }
+      .ltb-mhead { padding: 16px 20px; border-bottom: 1px solid var(--lt-hairline); display: flex; align-items: center; justify-content: space-between; }
+      @media (max-width: 767px) {
+        .ltb-row { grid-template-columns: 1fr auto; }
+        .ltb-row .ltb-col-date, .ltb-row .ltb-col-type { display: none; }
+        .ltb-overlay { padding: 16px; }
+        .ltb-page button { min-height: 40px; }
+      }
+    `}</style>
+  )
 }
 
 export default function MyBookingsPage() {
@@ -24,24 +52,14 @@ export default function MyBookingsPage() {
 
   useEffect(() => { loadBookings() }, [user])
   useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
   async function loadBookings() {
-    if (!user) {
-      setBookings([])
-      setLoading(false)
-      return
-    }
-    const { data } = await supabase
-      .from('bookings')
-      .select('*')
-      .eq('creative_id', user.id)
-      .order('booking_date', { ascending: true, nullsFirst: false })
+    if (!user) { setBookings([]); setLoading(false); return }
+    const { data } = await supabase.from('bookings').select('*').eq('creative_id', user.id).order('booking_date', { ascending: true, nullsFirst: false })
     setBookings(data ?? [])
     setLoading(false)
   }
@@ -69,140 +87,119 @@ export default function MyBookingsPage() {
     return true
   })
 
-  const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflowX: isMobile ? 'auto' : 'hidden', width: isMobile ? '100%' : 'fit-content' },
-    tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    tableWrap: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflowX: isMobile ? 'auto' : 'hidden', overflowY: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '12px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase', minWidth: isMobile ? '700px' : 'auto' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 120px 80px', padding: '16px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)', minWidth: isMobile ? '700px' : 'auto' },
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
-    viewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
-    viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-    viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    notes: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
-  }
+  const stats = useMemo(() => ({
+    upcoming: bookings.filter(b => b.status === 'confirmed').length,
+    completed: bookings.filter(b => b.status === 'completed').length,
+    cancelled: bookings.filter(b => b.status === 'cancelled').length,
+  }), [bookings])
+
+  const GLASS = { background: 'var(--lt-glass-bg)', border: 'var(--lt-glass-border)', boxShadow: 'var(--lt-glass-shadow)', backdropFilter: 'var(--lt-glass-blur)', WebkitBackdropFilter: 'var(--lt-glass-blur)' }
+  const card = { ...GLASS, borderRadius: 18 }
+  const stat = { ...GLASS, flex: '1 1 150px', borderRadius: 16, padding: '16px 18px' }
+  const fmt = (raw, opts) => raw ? new Date(raw).toLocaleDateString('en-AU', opts) : '—'
+
+  const filters = [
+    { key: 'upcoming', label: 'Upcoming' },
+    { key: 'past', label: 'Past' },
+    { key: 'cancelled', label: 'Cancelled' },
+    { key: 'all', label: 'All' },
+  ]
 
   return (
-    <div style={styles.page} className="my-bookings-page">
-      <style>{`
-        @media (max-width: 767px) {
-          .my-bookings-page button { min-height: 44px; }
-          .my-bookings-page input, .my-bookings-page textarea, .my-bookings-page select { width: 100% !important; font-size: 14px !important; }
-        }
-      `}</style>
-      <div>
-        <h1 style={styles.title}>My Bookings</h1>
-        <p style={styles.subtitle}>All your confirmed and upcoming bookings.</p>
-      </div>
-
-      <div style={styles.tabs}>
-        {[
-          { key: 'upcoming', label: 'Upcoming' },
-          { key: 'past', label: 'Past' },
-          { key: 'cancelled', label: 'Cancelled' },
-          { key: 'all', label: 'All' },
-        ].map(t => (
-          <button key={t.key} style={styles.tab(filter === t.key)} onClick={() => setFilter(t.key)}>
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      <div style={styles.tableWrap}>
-        <div style={styles.tableHeader}>
-          <span>Client</span>
-          <span>Date</span>
-          <span>Type</span>
-          <span>Status</span>
-          <span>Actions</span>
+    <>
+      <StyleBlock />
+      <div className="ltb-page">
+        <div>
+          <h1 style={{ margin: '0 0 4px', fontSize: isMobile ? 24 : 27, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--lt-text)' }}>My bookings</h1>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Every confirmed, upcoming and past booking in one place.</p>
         </div>
-        {loading ? (
-          <div style={styles.emptyState}>Loading bookings…</div>
-        ) : filtered.length === 0 ? (
-          <div style={styles.emptyState}>No {filter} bookings.</div>
-        ) : filtered.map((b, i) => (
-          <div
-            key={b.id}
-            style={{ ...styles.tableRow, borderBottom: i === filtered.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}
-            onClick={() => setSelected(b)}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-overlay)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            <div>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{b.client_name ?? 'Client'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{b.client_email}</div>
-            </div>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-              {(() => {
-                const raw = b.booking_date ?? b.date
-                return raw ? new Date(raw).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'
-              })()}
-            </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{b.service ?? b.type ?? '—'}</span>
-            <Badge variant={statusVariant(b.status)} size="sm">{b.status}</Badge>
-            <Button variant="ghost" size="sm" onClick={e => { e.stopPropagation(); setSelected(b) }}>View</Button>
+
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: GREEN }}>{stats.upcoming}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Upcoming</div></div>
+          <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: BLUE }}>{stats.completed}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Completed</div></div>
+          <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: stats.cancelled ? PINK : 'var(--lt-text)' }}>{stats.cancelled}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Cancelled</div></div>
+        </div>
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {filters.map(f => <button key={f.key} type="button" className={`ltb-chip${filter === f.key ? ' on' : ''}`} onClick={() => setFilter(f.key)}>{f.label}</button>)}
+        </div>
+
+        <div style={{ ...card, overflow: 'hidden' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr auto' : '1fr 150px 150px 120px', gap: 12, padding: '11px 18px', fontSize: 11, fontWeight: 700, letterSpacing: '0.05em', textTransform: 'uppercase', color: 'var(--lt-faint)' }}>
+            <span>Client</span>
+            {!isMobile && <span>Date</span>}
+            {!isMobile && <span>Type</span>}
+            <span style={{ textAlign: isMobile ? 'right' : 'left' }}>Status</span>
           </div>
-        ))}
+          {loading ? (
+            <div style={{ padding: '48px 18px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14, borderTop: '1px solid var(--lt-hairline)' }}>Loading bookings…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ padding: '48px 18px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14, borderTop: '1px solid var(--lt-hairline)' }}>No {filter} bookings.</div>
+          ) : filtered.map((b) => {
+            const m = statusMeta(b.status)
+            return (
+              <div key={b.id} className="ltb-row" onClick={() => setSelected(b)}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lt-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.client_name ?? 'Client'}</div>
+                  <div style={{ fontSize: 12, color: 'var(--lt-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.client_email || '—'}</div>
+                  {isMobile && <span style={{ display: 'inline-block', marginTop: 5, padding: '3px 9px', borderRadius: 999, fontSize: 11, fontWeight: 700, color: m.color, background: m.bg }}>{m.label}</span>}
+                </div>
+                <span className="ltb-col-date" style={{ fontSize: 13, color: 'var(--lt-muted)' }}>{fmt(b.booking_date ?? b.date, { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                <span className="ltb-col-type" style={{ fontSize: 13, color: 'var(--lt-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.service ?? b.type ?? '—'}</span>
+                <span style={{ textAlign: 'left' }} className={isMobile ? '' : ''}>
+                  {!isMobile && <span style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: m.color, background: m.bg }}>{m.label}</span>}
+                </span>
+              </div>
+            )
+          })}
+        </div>
       </div>
 
       {selected && (
-        <Modal isOpen={!!selected} onClose={() => setSelected(null)} title="Booking Details" size="md">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={styles.viewGrid}>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Client</div>
-                <div style={styles.viewValue}>{selected.client_name ?? '—'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Email</div>
-                <div style={styles.viewValue}>{selected.client_email ?? '—'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Date</div>
-                <div style={styles.viewValue}>
-                  {(() => {
-                    const raw = selected.booking_date ?? selected.date
-                    return raw ? new Date(raw).toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) : '—'
-                  })()}
+        <div className="ltb-overlay" onClick={() => setSelected(null)}>
+          <div className="ltb-modal" onClick={e => e.stopPropagation()}>
+            <div className="ltb-mhead">
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>Booking details</span>
+              <button type="button" onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
+                <Field label="Client" value={selected.client_name ?? '—'} />
+                <Field label="Email" value={selected.client_email ?? '—'} />
+                <Field label="Date" value={fmt(selected.booking_date ?? selected.date, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} />
+                <Field label="Type" value={selected.service ?? selected.type ?? '—'} />
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>Status</div>
+                  <span style={{ padding: '4px 11px', borderRadius: 999, fontSize: 11.5, fontWeight: 700, color: statusMeta(selected.status).color, background: statusMeta(selected.status).bg }}>{statusMeta(selected.status).label}</span>
                 </div>
               </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Type</div>
-                <div style={styles.viewValue}>{selected.service ?? selected.type ?? '—'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Status</div>
-                <Badge variant={statusVariant(selected.status)}>{selected.status}</Badge>
-              </div>
-            </div>
 
-            {selected.notes && (
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Notes</div>
-                <div style={styles.notes}>{selected.notes}</div>
-              </div>
-            )}
-
-            <div style={styles.modalActions}>
-              {selected.status === 'confirmed' && (
-                <Button variant="secondary" size="sm" onClick={() => updateStatus(selected.id, 'completed')}>
-                  Mark Completed
-                </Button>
+              {selected.notes && (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Notes</div>
+                  <div style={{ fontSize: 14, color: 'var(--lt-text)', lineHeight: 1.7, padding: '14px 16px', background: 'var(--lt-surface-2)', border: '1px solid var(--lt-border)', borderRadius: 12 }}>{selected.notes}</div>
+                </div>
               )}
-              {selected.status !== 'cancelled' && selected.status !== 'completed' && (
-                <Button variant="danger" size="sm" onClick={() => updateStatus(selected.id, 'cancelled')}>
-                  Cancel Booking
-                </Button>
+
+              {(selected.status === 'confirmed' || (selected.status !== 'cancelled' && selected.status !== 'completed')) && (
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                  {selected.status === 'confirmed' && <button type="button" className="ltb-btn ltb-btn-ghost" style={{ color: BLUE, borderColor: 'rgba(74,158,255,0.4)' }} onClick={() => updateStatus(selected.id, 'completed')}>Mark completed</button>}
+                  {selected.status !== 'cancelled' && selected.status !== 'completed' && <button type="button" className="ltb-btn ltb-btn-ghost" style={{ color: PINK, borderColor: 'rgba(255,45,120,0.4)' }} onClick={() => updateStatus(selected.id, 'cancelled')}>Cancel booking</button>}
+                </div>
               )}
             </div>
           </div>
-        </Modal>
+        </div>
       )}
+    </>
+  )
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 14, color: 'var(--lt-text)' }}>{value}</div>
     </div>
   )
 }

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
-import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
-import Button from '../../components/ui/Button'
+
+const GREEN = '#1DB954'
+const GREEN_DARK = '#04120a'
+const PINK = '#FF2D78'
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -12,8 +13,41 @@ const TIMES = [
   '06:00', '06:30', '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
   '10:00', '10:30', '11:00', '11:30', '12:00', '12:30', '13:00', '13:30',
   '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'
+  '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00',
 ]
+
+function StyleBlock() {
+  return (
+    <style>{`
+      .ltav-page { display: flex; flex-direction: column; gap: 20px; overflow-x: hidden; }
+      .ltav-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: none; white-space: nowrap; transition: filter .15s ease, background .15s ease, opacity .15s ease; }
+      .ltav-btn-primary { background: ${GREEN}; color: ${GREEN_DARK}; }
+      .ltav-btn-primary:hover { filter: brightness(1.06); }
+      .ltav-btn-block { background: ${PINK}; color: #fff; }
+      .ltav-btn-block:hover { filter: brightness(1.06); }
+      .ltav-btn-ghost { background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-border); }
+      .ltav-btn-ghost:hover { background: var(--lt-surface-2); }
+      .ltav-nav { background: var(--lt-input-bg); border: 1px solid var(--lt-border); border-radius: 9px; width: 34px; height: 34px; cursor: pointer; color: var(--lt-text); font-size: 16px; display: flex; align-items: center; justify-content: center; transition: background .12s ease; }
+      .ltav-nav:hover { background: var(--lt-surface-2); }
+      .ltav-day { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 13.5px; position: relative; transition: background .1s ease, border-color .1s ease; }
+      .ltav-select { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-input-border); }
+      .ltav-select:focus { border-color: ${GREEN}; }
+      .ltav-input { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-input-border); box-sizing: border-box; }
+      .ltav-input:focus { border-color: ${GREEN}; }
+      .ltav-input::placeholder { color: var(--lt-faint); }
+      .ltav-toggle { flex: 1; padding: 10px; border-radius: 10px; font-size: 13px; cursor: pointer; font-family: inherit; font-weight: 700; border: 1px solid var(--lt-border); background: var(--lt-input-bg); color: var(--lt-muted); transition: all .12s ease; }
+      .ltav-toggle.on { border-color: ${GREEN}; background: rgba(29,185,84,0.14); color: ${GREEN}; }
+      .ltav-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+      .ltav-modal { width: 100%; max-width: 460px; background: var(--lt-modal-bg); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); border: var(--lt-modal-border); border-radius: 18px; box-shadow: var(--lt-modal-shadow); overflow: hidden; }
+      .ltav-mhead { padding: 16px 20px; border-bottom: 1px solid var(--lt-hairline); display: flex; align-items: center; justify-content: space-between; }
+      @media (max-width: 767px) {
+        .ltav-overlay { padding: 16px; }
+        .ltav-page button { min-height: 40px; }
+        .ltav-nav { min-height: 34px; }
+      }
+    `}</style>
+  )
+}
 
 export default function AvailabilityPage() {
   const { user } = useAuth()
@@ -29,9 +63,7 @@ export default function AvailabilityPage() {
 
   useEffect(() => { loadAvailability() }, [user])
   useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
@@ -96,9 +128,9 @@ export default function AvailabilityPage() {
     }
   }
 
-  function getDaysInMonth(year, month) { return new Date(year, month + 1, 0).getDate() }
-  function getFirstDayOfMonth(year, month) { return new Date(year, month, 1).getDay() }
-  function formatDate(year, month, day) { return `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` }
+  function getDaysInMonth(y, m) { return new Date(y, m + 1, 0).getDate() }
+  function getFirstDayOfMonth(y, m) { return new Date(y, m, 1).getDay() }
+  function formatDate(y, m, day) { return `${y}-${String(m + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}` }
 
   const year = currentMonth.getFullYear()
   const month = currentMonth.getMonth()
@@ -107,189 +139,189 @@ export default function AvailabilityPage() {
   const today = new Date().toISOString().split('T')[0]
   const upcomingBlocked = blockedDates.filter(d => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))
 
-  const s = {
-    page: { background: 'transparent', padding: isMobile ? '16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '28px', fontFamily: 'var(--font-ui)', overflowX: 'hidden' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    layout: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: '24px', alignItems: 'start' },
-    card: { ...GLASS_CARD, borderRadius: '12px', padding: '16px' },
-    navBtn: { background: 'none', border: '1px solid var(--border-default)', borderRadius: '6px', width: '32px', height: '32px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' },
-    dayCell: (isBlocked, isToday, isPast, isEmpty) => ({
-      aspectRatio: '1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      fontSize: '13px', cursor: isEmpty || isPast ? 'default' : 'pointer',
-      background: isEmpty ? 'transparent' : isBlocked ? 'rgba(239,68,68,0.15)' : isToday ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)',
-      color: isEmpty ? 'transparent' : isBlocked ? '#ef4444' : isToday ? '#1DB954' : isPast ? 'var(--text-muted)' : 'var(--text-secondary)',
-      border: isEmpty ? 'none' : isToday ? '1px solid rgba(29,185,84,0.3)' : isBlocked ? '1px solid rgba(239,68,68,0.3)' : '1px solid transparent',
-      opacity: isPast && !isEmpty ? 0.4 : 1,
-      fontWeight: isToday ? 600 : 400,
-      transition: 'all 0.1s',
-    }),
-    modal: { position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' },
-    modalBox: { ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : '16px', width: '100%', maxWidth: isMobile ? '100vw' : '440px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' },
-    label: { ...TYPO.label, fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' },
-    select: { ...LT_DASHBOARD_SELECT_STYLE, width: '100%', padding: '9px 12px', borderRadius: '8px', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' },
-    input: { ...GLASS_NATIVE_FIELD, width: '100%', padding: '9px 12px', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none', boxSizing: 'border-box' },
+  const stats = useMemo(() => {
+    const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`
+    return {
+      upcoming: upcomingBlocked.length,
+      thisMonth: blockedDates.filter(d => d.date.startsWith(monthPrefix)).length,
+    }
+  }, [blockedDates, upcomingBlocked, year, month])
+
+  const GLASS = { background: 'var(--lt-glass-bg)', border: 'var(--lt-glass-border)', boxShadow: 'var(--lt-glass-shadow)', backdropFilter: 'var(--lt-glass-blur)', WebkitBackdropFilter: 'var(--lt-glass-blur)' }
+  const card = { ...GLASS, borderRadius: 18, padding: isMobile ? 16 : 20 }
+  const stat = { ...GLASS, flex: '1 1 150px', borderRadius: 16, padding: '16px 18px' }
+  const labelStyle = { fontSize: 12, fontWeight: 700, color: 'var(--lt-muted)', display: 'block', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '0.05em' }
+
+  function dayStyle(isBlocked, isToday, isPast, isEmpty) {
+    return {
+      cursor: isEmpty || isPast ? 'default' : 'pointer',
+      background: isEmpty ? 'transparent' : isBlocked ? 'rgba(255,45,120,0.14)' : isToday ? 'rgba(29,185,84,0.12)' : 'var(--lt-surface-2)',
+      color: isEmpty ? 'transparent' : isBlocked ? PINK : isToday ? GREEN : isPast ? 'var(--lt-faint)' : 'var(--lt-text)',
+      border: isEmpty ? '1px solid transparent' : isToday ? `1px solid rgba(29,185,84,0.4)` : isBlocked ? `1px solid rgba(255,45,120,0.4)` : '1px solid var(--lt-hairline)',
+      opacity: isPast && !isEmpty ? 0.45 : 1,
+      fontWeight: isToday || isBlocked ? 700 : 500,
+    }
   }
 
   return (
-    <div style={s.page} className="availability-page">
-      <LtDashboardSelectDarkStyles />
-      <style>{`
-        @media (max-width: 767px) {
-          .availability-page button { min-height: 44px; }
-          .availability-page input, .availability-page textarea, .availability-page select { width: 100% !important; font-size: 14px !important; }
-        }
-      `}</style>
-      {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
-          {toast.msg}
-        </div>
-      )}
+    <>
+      <StyleBlock />
+      <div className="ltav-page">
+        {toast && (
+          <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: toast.type === 'success' ? GREEN : PINK, color: toast.type === 'success' ? GREEN_DARK : '#fff', padding: '12px 20px', borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>
+            {toast.msg}
+          </div>
+        )}
 
-      <div>
-        <h1 style={s.title}>Availability</h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>Block dates or time slots you're unavailable. Clients won't see you in search results for blocked dates.</p>
-      </div>
-
-      <div style={s.layout}>
-        {/* Calendar */}
-        <div style={s.card}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-            <button type="button" style={s.navBtn} onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>‹</button>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: '18px', color: 'var(--text-primary)' }}>{MONTHS[month]} {year}</div>
-            <button type="button" style={s.navBtn} onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>›</button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '4px' }}>
-            {DAYS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: '11px', color: 'var(--text-muted)', fontWeight: 600, padding: '4px 0' }}>{d}</div>)}
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' }}>
-            {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} style={s.dayCell(false, false, false, true)} />)}
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const dateStr = formatDate(year, month, day)
-              const block = getBlockForDate(dateStr)
-              const isBlocked = !!block
-              const isToday = dateStr === today
-              const isPast = dateStr < today
-              return (
-                <div
-                  key={day}
-                  style={{ ...s.dayCell(isBlocked, isToday, isPast, false), position: 'relative' }}
-                  onClick={() => handleDayClick(dateStr, isPast)}
-                  title={block ? (block.all_day ? 'Blocked all day' : `Blocked ${block.start_time} – ${block.end_time}`) : ''}
-                >
-                  {day}
-                  {isBlocked && !block.all_day && <div style={{ position: 'absolute', bottom: '2px', left: '50%', transform: 'translateX(-50%)', width: '4px', height: '4px', borderRadius: '50%', background: '#ef4444' }} />}
-                </div>
-              )
-            })}
-          </div>
-          <div style={{ marginTop: '16px', padding: '12px 14px', ...GLASS_CARD, borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Click a date to block it. Click a blocked date (red) to unblock it.
-          </div>
+        <div>
+          <h1 style={{ margin: '0 0 4px', fontSize: isMobile ? 24 : 27, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--lt-text)' }}>Availability</h1>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Block the dates or time slots you're unavailable. Clients won't see you in search results for blocked dates.</p>
         </div>
 
-        {/* Sidebar */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          {/* Legend */}
-          <div style={s.card}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Legend</div>
-            {[
-              { color: 'rgba(29,185,84,0.3)', bg: 'rgba(29,185,84,0.1)', label: 'Today' },
-              { color: 'rgba(239,68,68,0.3)', bg: 'rgba(239,68,68,0.15)', label: 'Blocked' },
-              { color: 'transparent', bg: 'var(--bg-base)', label: 'Available' },
-            ].map(({ color, bg, label }) => (
-              <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>
-                <div style={{ width: '16px', height: '16px', borderRadius: '4px', background: bg, border: `1px solid ${color}`, flexShrink: 0 }} />
-                {label}
-              </div>
-            ))}
-          </div>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: stats.upcoming ? PINK : 'var(--lt-text)' }}>{stats.upcoming}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Upcoming blocked</div></div>
+          <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lt-text)' }}>{stats.thisMonth}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Blocked in {MONTHS[month]}</div></div>
+        </div>
 
-          {/* Blocked list */}
-          <div style={s.card}>
-            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '12px' }}>Blocked ({upcomingBlocked.length})</div>
-            {upcomingBlocked.length === 0 ? (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>No dates blocked.</div>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '300px', overflowY: 'auto' }}>
-                {upcomingBlocked.map(block => (
-                  <div key={block.id} style={{ padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>
-                          {new Date(block.date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
-                        </div>
-                        <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                          {block.all_day ? 'All day' : `${block.start_time} – ${block.end_time}`}
-                        </div>
-                        {block.notes && <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{block.notes}</div>}
-                      </div>
-                      <button type="button" onClick={() => unblockDate(block.date)} style={{ background: 'none', border: 'none', color: '#ef4444', fontSize: '16px', cursor: 'pointer', padding: '0 4px' }}>×</button>
-                    </div>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 300px', gap: 20, alignItems: 'start' }}>
+          {/* Calendar */}
+          <div style={card}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+              <button type="button" className="ltav-nav" onClick={() => setCurrentMonth(new Date(year, month - 1, 1))}>‹</button>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lt-text)' }}>{MONTHS[month]} {year}</div>
+              <button type="button" className="ltav-nav" onClick={() => setCurrentMonth(new Date(year, month + 1, 1))}>›</button>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5, marginBottom: 5 }}>
+              {DAYS.map(d => <div key={d} style={{ textAlign: 'center', fontSize: 11, color: 'var(--lt-faint)', fontWeight: 700, padding: '4px 0', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{d}</div>)}
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 5 }}>
+              {Array.from({ length: firstDay }).map((_, i) => <div key={`e${i}`} className="ltav-day" style={dayStyle(false, false, false, true)} />)}
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const day = i + 1
+                const dateStr = formatDate(year, month, day)
+                const block = getBlockForDate(dateStr)
+                const isBlocked = !!block
+                const isToday = dateStr === today
+                const isPast = dateStr < today
+                return (
+                  <div
+                    key={day}
+                    className="ltav-day"
+                    style={dayStyle(isBlocked, isToday, isPast, false)}
+                    onClick={() => handleDayClick(dateStr, isPast)}
+                    title={block ? (block.all_day ? 'Blocked all day' : `Blocked ${block.start_time} – ${block.end_time}`) : ''}
+                  >
+                    {day}
+                    {isBlocked && !block.all_day && <div style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: PINK }} />}
                   </div>
-                ))}
-              </div>
-            )}
+                )
+              })}
+            </div>
+            <div style={{ marginTop: 16, padding: '12px 14px', background: 'var(--lt-surface-2)', border: '1px solid var(--lt-hairline)', borderRadius: 12, fontSize: 12.5, color: 'var(--lt-muted)', lineHeight: 1.6 }}>
+              Click a date to block it. Click a blocked date (pink) to unblock it.
+            </div>
+          </div>
+
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={card}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lt-text)', marginBottom: 12 }}>Legend</div>
+              {[
+                { border: 'rgba(29,185,84,0.4)', bg: 'rgba(29,185,84,0.12)', label: 'Today' },
+                { border: 'rgba(255,45,120,0.4)', bg: 'rgba(255,45,120,0.14)', label: 'Blocked' },
+                { border: 'var(--lt-hairline)', bg: 'var(--lt-surface-2)', label: 'Available' },
+              ].map(({ border, bg, label }) => (
+                <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--lt-muted)', marginBottom: 9 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: 5, background: bg, border: `1px solid ${border}`, flexShrink: 0 }} />
+                  {label}
+                </div>
+              ))}
+            </div>
+
+            <div style={card}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lt-text)', marginBottom: 12 }}>Blocked ({upcomingBlocked.length})</div>
+              {loading ? (
+                <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Loading…</div>
+              ) : upcomingBlocked.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>No dates blocked.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 320, overflowY: 'auto' }}>
+                  {upcomingBlocked.map(block => (
+                    <div key={block.id} style={{ padding: '9px 12px', background: 'rgba(255,45,120,0.08)', border: '1px solid rgba(255,45,120,0.22)', borderRadius: 10 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--lt-text)' }}>
+                            {new Date(block.date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--lt-muted)' }}>
+                            {block.all_day ? 'All day' : `${block.start_time} – ${block.end_time}`}
+                          </div>
+                          {block.notes && <div style={{ fontSize: 11.5, color: 'var(--lt-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{block.notes}</div>}
+                        </div>
+                        <button type="button" onClick={() => unblockDate(block.date)} style={{ background: 'none', border: 'none', color: PINK, fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1, flexShrink: 0 }}>×</button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Time block modal */}
+      {/* Block date modal */}
       {showTimeModal && selectedDate && (
-        <div style={s.modal}>
-          <div style={s.modalBox}>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Block Date</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '20px' }}>
-              {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+        <div className="ltav-overlay" onClick={() => setShowTimeModal(false)}>
+          <div className="ltav-modal" onClick={e => e.stopPropagation()}>
+            <div className="ltav-mhead">
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>Block date</span>
+              <button type="button" onClick={() => setShowTimeModal(false)} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
             </div>
-
-            <div style={{ marginBottom: '16px' }}>
-              <label style={s.label}>Block type</label>
-              <div style={{ display: 'flex', gap: '8px', flexDirection: isMobile ? 'column' : 'row' }}>
-                <button
-                  type="button"
-                  onClick={() => setTimeForm(p => ({ ...p, all_day: true }))}
-                  style={{ flex: 1, padding: '9px', borderRadius: '8px', border: `1px solid ${timeForm.all_day ? '#1DB954' : 'var(--border-default)'}`, background: timeForm.all_day ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)', color: timeForm.all_day ? '#1DB954' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 600 }}
-                >All Day</button>
-                <button
-                  type="button"
-                  onClick={() => setTimeForm(p => ({ ...p, all_day: false }))}
-                  style={{ flex: 1, padding: '9px', borderRadius: '8px', border: `1px solid ${!timeForm.all_day ? '#1DB954' : 'var(--border-default)'}`, background: !timeForm.all_day ? 'rgba(29,185,84,0.1)' : 'var(--bg-base)', color: !timeForm.all_day ? '#1DB954' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontWeight: 600 }}
-                >Time Slot</button>
+            <div style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <div style={{ fontSize: 13.5, color: 'var(--lt-muted)' }}>
+                {new Date(selectedDate + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </div>
-            </div>
 
-            {!timeForm.all_day && (
-              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-                <div>
-                  <label style={s.label}>Start time</label>
-                  <select className={LT_DASHBOARD_SELECT_CLASS} style={s.select} value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>
-                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={s.label}>End time</label>
-                  <select className={LT_DASHBOARD_SELECT_CLASS} style={s.select} value={timeForm.end_time} onChange={e => setTimeForm(p => ({ ...p, end_time: e.target.value }))}>
-                    {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                  </select>
+              <div>
+                <label style={labelStyle}>Block type</label>
+                <div style={{ display: 'flex', gap: 8, flexDirection: isMobile ? 'column' : 'row' }}>
+                  <button type="button" className={`ltav-toggle${timeForm.all_day ? ' on' : ''}`} onClick={() => setTimeForm(p => ({ ...p, all_day: true }))}>All day</button>
+                  <button type="button" className={`ltav-toggle${!timeForm.all_day ? ' on' : ''}`} onClick={() => setTimeForm(p => ({ ...p, all_day: false }))}>Time slot</button>
                 </div>
               </div>
-            )}
 
-            <div style={{ marginBottom: '20px' }}>
-              <label style={s.label}>Notes (optional)</label>
-              <input style={s.input} value={timeForm.notes} onChange={e => setTimeForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Holiday, existing booking..." />
-            </div>
+              {!timeForm.all_day && (
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <label style={labelStyle}>Start time</label>
+                    <select className="ltav-select" value={timeForm.start_time} onChange={e => setTimeForm(p => ({ ...p, start_time: e.target.value }))}>
+                      {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={labelStyle}>End time</label>
+                    <select className="ltav-select" value={timeForm.end_time} onChange={e => setTimeForm(p => ({ ...p, end_time: e.target.value }))}>
+                      {TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                </div>
+              )}
 
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <button type="button" onClick={() => setShowTimeModal(false)} style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
-              <button type="button" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ padding: '9px 18px', background: '#ef4444', border: 'none', borderRadius: '8px', color: 'var(--text-primary)', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: saving ? 0.6 : 1 }}>
-                {saving ? 'Blocking…' : 'Block Date'}
-              </button>
+              <div>
+                <label style={labelStyle}>Notes (optional)</label>
+                <input className="ltav-input" value={timeForm.notes} onChange={e => setTimeForm(p => ({ ...p, notes: e.target.value }))} placeholder="e.g. Holiday, existing booking" />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="ltav-btn ltav-btn-ghost" onClick={() => setShowTimeModal(false)}>Cancel</button>
+                <button type="button" className="ltav-btn ltav-btn-block" onClick={() => blockDate(selectedDate)} disabled={saving} style={{ opacity: saving ? 0.6 : 1 }}>
+                  {saving ? 'Blocking…' : 'Block date'}
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   )
 }

@@ -1,41 +1,32 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Badge from '../../components/ui/Badge'
-import Modal from '../../components/ui/Modal'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
-import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
 import TileField from '../../components/ui/TileField'
-import { LT_DASHBOARD_SELECT_CLASS, LT_DASHBOARD_SELECT_STYLE, LtDashboardSelectDarkStyles } from '../../lib/dashboardSelectDark'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 
-const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
+const GREEN = '#1DB954'
+const GREEN_DARK = '#04120a'
+const PINK = '#FF2D78'
+const AMBER = '#f59e0b'
 
+const CATEGORIES = ['Photographer', 'Videographer', 'Drone Pilot', 'Video Editor', 'Photo Editor', 'Social Media Manager', 'Hair & Makeup Artist', 'UGC Creator']
 const AU_STATES = ['ACT', 'NSW', 'NT', 'QLD', 'SA', 'TAS', 'VIC', 'WA']
 
 function jobListingState(job) {
-  if (job?.state && String(job.state).trim()) {
-    return String(job.state).trim().toUpperCase()
-  }
+  if (job?.state && String(job.state).trim()) return String(job.state).trim().toUpperCase()
   const loc = (job?.location || '').toUpperCase()
-  for (const code of AU_STATES) {
-    if (loc.includes(code)) return code
-  }
+  for (const code of AU_STATES) { if (loc.includes(code)) return code }
   return null
 }
-
 function profileState(profile) {
   const s = profile?.state
   if (!s || !String(s).trim()) return null
   return String(s).trim().toUpperCase()
 }
-
 function jobIsInCreativeState(job, profile) {
   const js = jobListingState(job)
   const ps = profileState(profile)
@@ -43,9 +34,75 @@ function jobIsInCreativeState(job, profile) {
   if (!js) return true
   return js === ps
 }
-
 function daysLeft(expiresAt) {
   return Math.ceil((new Date(expiresAt) - Date.now()) / (1000 * 60 * 60 * 24))
+}
+
+// Light-mode fallback for the public /jobs page (rendered outside DashboardLayout, where --lt-* are undefined).
+const PUBLIC_TOKEN_SCOPE = `
+  .ltjb-public-scope {
+    --lt-text: #14111a; --lt-muted: #55535f; --lt-faint: #86848f;
+    --lt-glass-bg: linear-gradient(125deg, rgba(255,255,255,0.66) 0%, rgba(255,255,255,0.34) 42%, rgba(255,255,255,0.2) 100%);
+    --lt-glass-border: 1px solid rgba(255,255,255,0.78);
+    --lt-glass-shadow: 0 18px 50px -16px rgba(31,38,90,0.26), inset 0 1px 1px rgba(255,255,255,0.95);
+    --lt-glass-blur: blur(12px) saturate(180%) brightness(1.05);
+    --lt-modal-bg: linear-gradient(125deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.8) 100%);
+    --lt-modal-border: 1px solid rgba(255,255,255,0.9);
+    --lt-modal-shadow: 0 40px 100px -30px rgba(31,38,90,0.4), inset 0 1px 1px rgba(255,255,255,0.95);
+    --lt-modal-blur: blur(30px) saturate(180%) brightness(1.04);
+    --lt-surface: rgba(20,17,26,0.05); --lt-surface-2: rgba(20,17,26,0.07); --lt-border: rgba(20,17,26,0.12);
+    --lt-input-bg: rgba(255,255,255,0.72); --lt-input-border: rgba(20,17,26,0.16); --lt-hairline: rgba(20,17,26,0.09);
+  }
+`
+
+function StyleBlock() {
+  return (
+    <style>{`
+      ${PUBLIC_TOKEN_SCOPE}
+      .ltjb-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: none; white-space: nowrap; transition: filter .15s ease, background .15s ease, opacity .15s ease; }
+      .ltjb-btn-primary { background: ${GREEN}; color: ${GREEN_DARK}; }
+      .ltjb-btn-primary:hover { filter: brightness(1.06); }
+      .ltjb-btn-primary:disabled { opacity: .5; cursor: default; }
+      .ltjb-btn-ghost { background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-border); }
+      .ltjb-btn-ghost:hover { background: var(--lt-surface-2); }
+      .ltjb-chip { padding: 7px 15px; border-radius: 999px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid var(--lt-border); background: var(--lt-input-bg); color: var(--lt-muted); }
+      .ltjb-chip.on { border-color: ${GREEN}; background: rgba(29,185,84,0.14); color: ${GREEN}; }
+      .ltjb-cat { padding: 6px 14px; border-radius: 999px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit; border: 1px solid var(--lt-border); background: var(--lt-input-bg); color: var(--lt-muted); transition: all .12s ease; }
+      .ltjb-cat.on { border-color: ${GREEN}; background: rgba(29,185,84,0.14); color: ${GREEN}; }
+      .ltjb-select { padding: 9px 14px; border-radius: 10px; font-size: 13.5px; font-family: inherit; outline: none; background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-input-border); }
+      .ltjb-select:focus { border-color: ${GREEN}; }
+      .ltjb-input, .ltjb-textarea { width: 100%; padding: 10px 12px; border-radius: 10px; font-size: 14px; font-family: inherit; outline: none; background: var(--lt-input-bg); color: var(--lt-text); border: 1px solid var(--lt-input-border); box-sizing: border-box; }
+      .ltjb-textarea { min-height: 100px; resize: vertical; line-height: 1.6; }
+      .ltjb-input:focus, .ltjb-textarea:focus { border-color: ${GREEN}; }
+      .ltjb-input::placeholder, .ltjb-textarea::placeholder { color: var(--lt-faint); }
+      .ltjb-jobcard { cursor: pointer; transition: border-color .15s ease, transform .15s ease; }
+      .ltjb-jobcard:hover { transform: translateY(-2px); }
+      .ltjb-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 24px; }
+      .ltjb-modal { width: 100%; background: var(--lt-modal-bg); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); border: var(--lt-modal-border); border-radius: 18px; box-shadow: var(--lt-modal-shadow); overflow: hidden; max-height: 90vh; display: flex; flex-direction: column; }
+      .ltjb-mhead { padding: 16px 20px; border-bottom: 1px solid var(--lt-hairline); display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+      .ltjb-mbody { padding: 22px; overflow-y: auto; }
+      @media (max-width: 900px) { .ltjb-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+      @media (max-width: 767px) {
+        .ltjb-grid { grid-template-columns: 1fr !important; }
+        .ltjb-row2 { grid-template-columns: 1fr !important; }
+        .ltjb-overlay { padding: 16px; }
+        .ltjb-page button { min-height: 40px; }
+      }
+    `}</style>
+  )
+}
+
+function Pill({ children, color = 'var(--lt-muted)', bg = 'var(--lt-surface-2)' }) {
+  return <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11.5, fontWeight: 700, color, background: bg, whiteSpace: 'nowrap' }}>{children}</span>
+}
+
+function Field({ label, value }) {
+  return (
+    <div>
+      <div style={{ fontSize: 11, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 5 }}>{label}</div>
+      <div style={{ fontSize: 14, color: 'var(--lt-text)' }}>{value}</div>
+    </div>
+  )
 }
 
 export default function JobBoardPage() {
@@ -54,7 +111,7 @@ export default function JobBoardPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const isPublic = location.pathname === '/jobs'
-  const CARD = isPublic ? LIQUID_GLASS_CARD : GLASS_CARD
+
   const [jobs, setJobs] = useState([])
   const [myApplications, setMyApplications] = useState([])
   const [myPostedJobs, setMyPostedJobs] = useState([])
@@ -74,23 +131,19 @@ export default function JobBoardPage() {
   const [applyUpgradeModal, setApplyUpgradeModal] = useState(null)
   const [jobPostModerationError, setJobPostModerationError] = useState('')
   const [jobApplyModerationError, setJobApplyModerationError] = useState('')
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
 
-  const [form, setForm] = useState({
-    title: '',
-    description: '',
-    creative_types: [],
-    location: '',
-    job_date: '',
-    budget: '',
-  })
+  const [form, setForm] = useState({ title: '', description: '', creative_types: [], location: '', job_date: '', budget: '' })
 
   useEffect(() => {
     void loadJobs()
-    if (user) {
-      void loadMyApplications()
-      void loadMyPostedJobs()
-    }
+    if (user) { void loadMyApplications(); void loadMyPostedJobs() }
   }, [user])
+  useEffect(() => {
+    function handleResize() { setIsMobile(window.innerWidth < 768) }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
 
   function showToast(msg, type = 'success') {
     setToast({ msg, type })
@@ -98,18 +151,8 @@ export default function JobBoardPage() {
   }
 
   async function acceptApplication(app, job) {
-    await acceptJobApplication({
-      app,
-      job,
-      user,
-      profile,
-      clientAccount,
-      showToast,
-      reloadPostedJobs: loadMyPostedJobs,
-      reloadBrowseJobs: loadJobs,
-    })
+    await acceptJobApplication({ app, job, user, profile, clientAccount, showToast, reloadPostedJobs: loadMyPostedJobs, reloadBrowseJobs: loadJobs })
   }
-
   async function declineApplication(app) {
     await declineJobApplication({ app, showToast, reloadPostedJobs: loadMyPostedJobs })
   }
@@ -128,10 +171,7 @@ export default function JobBoardPage() {
   }
 
   async function loadMyApplications() {
-    if (!user) {
-      setMyApplications([])
-      return
-    }
+    if (!user) { setMyApplications([]); return }
     const { data } = await supabase
       .from('job_applications')
       .select('*, job_listings(title, location, budget_range)')
@@ -141,10 +181,7 @@ export default function JobBoardPage() {
   }
 
   async function loadMyPostedJobs() {
-    if (!user) {
-      setMyPostedJobs([])
-      return
-    }
+    if (!user) { setMyPostedJobs([]); return }
     const { data } = await supabase
       .from('job_listings')
       .select('*, job_applications(*)')
@@ -165,10 +202,7 @@ export default function JobBoardPage() {
     setJobApplyModerationError('')
     const applyText = [applyForm.description, applyForm.includes].filter(Boolean).join('\n')
     const applyMod = await moderateText(applyText)
-    if (applyMod?.blocked) {
-      setJobApplyModerationError(MODERATION_BLOCKED_USER_MESSAGE)
-      return
-    }
+    if (applyMod?.blocked) { setJobApplyModerationError(MODERATION_BLOCKED_USER_MESSAGE); return }
     if (applyMod?.flagged) console.warn('[moderation] Flagged job application text', applyMod.reason)
     setSubmittingApply(true)
 
@@ -221,9 +255,7 @@ export default function JobBoardPage() {
               threadSubject: 'Job Application',
             },
           })
-        } catch {
-          /* non-blocking */
-        }
+        } catch { /* non-blocking */ }
       }
       await loadMyApplications()
       setShowApplyModal(false)
@@ -243,10 +275,7 @@ export default function JobBoardPage() {
     if (!user?.id) { setJobPostModerationError('Your session expired — please sign in again to post.'); return }
     const jobText = [form.title, form.description, form.location, form.budget].filter(Boolean).join('\n')
     const jobMod = await moderateText(jobText)
-    if (jobMod?.blocked) {
-      setJobPostModerationError(MODERATION_BLOCKED_USER_MESSAGE)
-      return
-    }
+    if (jobMod?.blocked) { setJobPostModerationError(MODERATION_BLOCKED_USER_MESSAGE); return }
     if (jobMod?.flagged) console.warn('[moderation] Flagged job listing text', jobMod.reason)
     setSaving(true)
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
@@ -263,11 +292,7 @@ export default function JobBoardPage() {
       poster_email: profile?.business_email ?? user?.email ?? null,
       poster_name: profile?.business_name ?? profile?.full_name ?? user?.email ?? null,
     })
-    if (postError) {
-      setJobPostModerationError('Could not post job: ' + postError.message)
-      setSaving(false)
-      return
-    }
+    if (postError) { setJobPostModerationError('Could not post job: ' + postError.message); setSaving(false); return }
     await loadJobs()
     await loadMyPostedJobs()
     setShowPost(false)
@@ -280,412 +305,341 @@ export default function JobBoardPage() {
       ...prev,
       creative_types: prev.creative_types.includes(cat)
         ? prev.creative_types.filter(c => c !== cat)
-        : [...prev.creative_types, cat]
+        : [...prev.creative_types, cat],
     }))
   }
 
-  const filtered = jobs.filter(j =>
-    !categoryFilter || (j.creative_types ?? []).includes(categoryFilter)
-  )
+  const filtered = jobs.filter(j => !categoryFilter || (j.creative_types ?? []).includes(categoryFilter))
 
-  const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '1280px', margin: '0 auto', padding: '0 40px', width: '100%', boxSizing: 'border-box' },
-    pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' },
-    title: isPublic
-      ? { fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, fontSize: 'clamp(28px, 3.4vw, 44px)', color: 'var(--text-primary)' }
-      : { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    toolbar: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', flexWrap: 'wrap' },
-    tabs: { display: 'flex', ...CARD, borderRadius: 'var(--radius-lg)', overflow: 'hidden' },
-    tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    select: { ...LT_DASHBOARD_SELECT_STYLE, borderRadius: 'var(--radius-lg)', padding: '8px 14px', fontFamily: 'var(--font-ui)', fontSize: '13px', outline: 'none' },
-    grid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' },
-    jobCard: { ...CARD, borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px', cursor: 'pointer', transition: 'border-color var(--transition-fast)', minHeight: 'unset' },
-    jobTitle: { fontSize: '14px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    jobDesc: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' },
-    jobMeta: { display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' },
-    jobFooter: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '4px' },
-    jobLocation: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    jobExpiry: (days) => ({ fontSize: '11px', color: days <= 5 ? 'var(--warning)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }),
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', ...CARD, borderRadius: 'var(--radius-xl)' },
-    formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-    formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', display: 'block', marginBottom: '6px' },
-    textarea: { ...GLASS_NATIVE_FIELD, width: '100%', minHeight: '100px', borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', resize: 'vertical', lineHeight: 1.6, boxSizing: 'border-box' },
-    categoryWrap: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
-    categoryChip: (sel) => ({ padding: '6px 14px', borderRadius: 'var(--radius-full)', border: `1px solid ${sel ? 'var(--green)' : 'var(--border-default)'}`, background: sel ? 'var(--green-dim)' : 'transparent', color: sel ? 'var(--green)' : 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', transition: 'all var(--transition-base)', fontFamily: 'var(--font-ui)' }),
-    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
-    viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-    viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    descBox: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', ...CARD, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
-  }
+  const stats = useMemo(() => ({
+    active: jobs.length,
+    applications: myApplications.length,
+    posted: myPostedJobs.length,
+  }), [jobs, myApplications, myPostedJobs])
 
-  return (
-    <div style={isPublic ? { position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '24px 0 80px' } : { display: 'contents' }}>
-      {isPublic && <TileField animated={false} opacity={0.22} />}
-      {isPublic && (
-        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.92) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
-      )}
-      <div style={isPublic ? { position: 'relative', zIndex: 2 } : { display: 'contents' }}>
-        <div style={styles.page}>
-      <LtDashboardSelectDarkStyles />
-      {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
-          {toast.msg}
-        </div>
-      )}
-      {applyToast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9998, background: applyToast.startsWith('Failed') ? '#ef4444' : '#1DB954', color: applyToast.startsWith('Failed') ? '#fff' : '#000', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600 }}>
-          {applyToast}
-        </div>
-      )}
+  const GLASS = { background: 'var(--lt-glass-bg)', border: 'var(--lt-glass-border)', boxShadow: 'var(--lt-glass-shadow)', backdropFilter: 'var(--lt-glass-blur)', WebkitBackdropFilter: 'var(--lt-glass-blur)' }
+  const card = { ...GLASS, borderRadius: 18 }
+  const stat = { ...GLASS, flex: '1 1 150px', borderRadius: 16, padding: '16px 18px' }
+  const labelStyle = { fontSize: 12, fontWeight: 700, color: 'var(--lt-muted)', display: 'block', marginBottom: 6 }
 
-      <div style={styles.pageHeader}>
-        <div>
-          <h1 style={styles.title}>Job Board</h1>
-          <p style={styles.subtitle}>Browse and apply for jobs posted by clients looking for creatives.</p>
-        </div>
-        <Button variant="secondary" onClick={() => user ? setShowPost(true) : navigate('/join/client')}>+ Post a Job</Button>
-      </div>
-
-      <div style={{ display: 'flex', gap: '4px', ...CARD, padding: '4px', borderRadius: '10px', marginBottom: '20px', width: 'fit-content', flexWrap: 'wrap' }}>
-        {['browse', 'my-applications', 'my-posted'].map(t => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => setActiveTab(t)}
-            style={{ padding: '8px 20px', borderRadius: '8px', fontSize: '13px', fontWeight: 600, cursor: 'pointer', border: 'none', background: activeTab === t ? 'var(--bg-base)' : 'transparent', color: activeTab === t ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}
-          >
-            {t === 'browse' ? 'Browse Jobs' : t === 'my-applications' ? `My Applications (${myApplications.length})` : 'My Posted Jobs'}
-          </button>
-        ))}
-      </div>
-
-      <div style={styles.toolbar}>
-        {activeTab === 'browse' && (
-          <select className={LT_DASHBOARD_SELECT_CLASS} style={styles.select} value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
-            <option value="">All categories</option>
-            {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
+  const content = (
+    <>
+      <StyleBlock />
+      <div className="ltjb-page" style={{ display: 'flex', flexDirection: 'column', gap: 20, overflowX: 'hidden' }}>
+        {toast && (
+          <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: toast.type === 'success' ? GREEN : PINK, color: toast.type === 'success' ? GREEN_DARK : '#fff', padding: '12px 20px', borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>{toast.msg}</div>
         )}
-      </div>
+        {applyToast && (
+          <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9998, background: applyToast.startsWith('Failed') ? PINK : GREEN, color: applyToast.startsWith('Failed') ? '#fff' : GREEN_DARK, padding: '12px 20px', borderRadius: 12, fontSize: 14, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,0.25)' }}>{applyToast}</div>
+        )}
 
-      {activeTab === 'browse' ? (
-        loading ? (
-          <div style={styles.emptyState}>Loading jobs…</div>
-        ) : filtered.length === 0 ? (
-          <div style={styles.emptyState}>No active jobs right now. Check back soon.</div>
-        ) : (
-          <div style={styles.grid}>
-            {filtered.map(job => {
-              const applied = myApplications.some(a => a.job_id === job.id)
-              const days = daysLeft(job.expires_at)
-              return (
-                <div
-                  key={job.id}
-                  style={styles.jobCard}
-                  onClick={() => setSelected(job)}
-                  onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--green)'}
-                  onMouseLeave={e => e.currentTarget.style.borderColor = 'var(--border-default)'}
-                >
-                  <div style={styles.jobTitle}>{job.title}</div>
-                  {job.description && <div style={styles.jobDesc}>{job.description}</div>}
-                  <div style={styles.jobMeta}>
-                    {(job.creative_types ?? []).map(c => <Badge key={c} variant="default" size="sm">{c}</Badge>)}
-                    {applied && <Badge variant="green" size="sm">Applied</Badge>}
-                  </div>
-                  <div style={styles.jobFooter}>
-                    <div style={styles.jobLocation}>{job.location || 'Location flexible'}</div>
-                    <div style={styles.jobExpiry(days)}>{days > 0 ? `${days}d left` : 'Expired'}</div>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )
-      ) : activeTab === 'my-applications' ? (
-        <div>
-          {myApplications.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t applied to any jobs yet.</div>
-          ) : (
-            myApplications.map(app => (
-              <div key={app.id} style={{ ...CARD, borderRadius: '12px', padding: '16px 20px', marginBottom: '12px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{app.job_listings?.title ?? 'Job'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{app.job_listings?.location ?? '—'} · Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
-                  </div>
-                  <div style={{ fontSize: '18px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
-                </div>
-                {app.includes && <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px' }}><strong>Includes:</strong> {app.includes}</div>}
-              </div>
-            ))
-          )}
-        </div>
-      ) : activeTab === 'my-posted' ? (
-        <div>
-          {myPostedJobs.length === 0 ? (
-            <div style={{ padding: '60px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px' }}>You haven&apos;t posted any jobs yet.</div>
-          ) : (
-            myPostedJobs.map(job => (
-              <div key={job.id} style={{ ...CARD, borderRadius: '12px', marginBottom: '12px', overflow: 'hidden' }}>
-                <div
-                  style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' }}
-                  onClick={() => setExpandedPostedJob(expandedPostedJob === job.id ? null : job.id)}
-                >
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)' }}>{job.title}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{job.location} · {job.budget_range}</div>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    <span style={{ padding: '4px 12px', ...GLASS_CARD_GREEN, borderRadius: '999px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
-                      {job.job_applications?.length ?? 0} application{job.job_applications?.length !== 1 ? 's' : ''}
-                    </span>
-                    <span style={{ color: 'var(--text-muted)', fontSize: '16px' }}>{expandedPostedJob === job.id ? '▲' : '▼'}</span>
-                  </div>
-                </div>
-                {expandedPostedJob === job.id && (
-                  <div style={{ borderTop: '1px solid var(--border-subtle)', padding: '16px 20px' }}>
-                    {!job.job_applications?.length ? (
-                      <div style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '16px 0' }}>No applications yet.</div>
-                    ) : (
-                      job.job_applications.map(app => (
-                        <div key={app.id} style={{ padding: '16px', ...CARD, borderRadius: '10px', marginBottom: '10px' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-                            <div>
-                              <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>{app.creative_name}</div>
-                              <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
-                            </div>
-                            <div style={{ fontSize: '18px', fontWeight: 800, color: '#1DB954' }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
-                          </div>
-                          {app.includes && (
-                            <div style={{ marginBottom: '8px' }}>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>What&apos;s included</div>
-                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.includes}</div>
-                            </div>
-                          )}
-                          {app.description && (
-                            <div>
-                              <div style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '4px' }}>Cover message</div>
-                              <div style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{app.description}</div>
-                            </div>
-                          )}
-                          {isApplicationPending(app) && (
-                            <div style={{ display: 'flex', gap: '8px', marginTop: '12px', paddingTop: '12px', borderTop: '1px solid var(--border-subtle)' }}>
-                              <button
-                                type="button"
-                                onClick={e => { e.stopPropagation(); void acceptApplication(app, job) }}
-                                style={{ padding: '8px 20px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                              >
-                                ✓ Accept
-                              </button>
-                              <button
-                                type="button"
-                                onClick={e => { e.stopPropagation(); void declineApplication(app) }}
-                                style={{ padding: '8px 20px', background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', color: '#ef4444', fontSize: '13px', fontWeight: 600, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                              >
-                                Decline
-                              </button>
-                            </div>
-                          )}
-                          {app.status === 'accepted' && (
-                            <div style={{ marginTop: '12px', padding: '8px 12px', ...GLASS_CARD_GREEN, borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
-                              ✓ Accepted: message thread created
-                            </div>
-                          )}
-                          {app.status === 'declined' && (
-                            <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#ef4444' }}>
-                              Declined
-                            </div>
-                          )}
-                          {app.status === 'closed' && (
-                            <div style={{ marginTop: '12px', padding: '8px 12px', ...CARD, borderRadius: '8px', fontSize: '12px', color: 'var(--text-muted)' }}>
-                              Position filled
-                            </div>
-                          )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            ))
-          )}
-        </div>
-      ) : null}
-
-      {selected && (
-        <Modal isOpen={!!selected} onClose={() => setSelected(null)} title={selected.title} size="md">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-            <div style={styles.viewGrid}>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Location</div>
-                <div style={styles.viewValue}>{selected.location || 'Flexible'}</div>
-              </div>
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Date</div>
-                <div style={styles.viewValue}>{selected.job_date ? new Date(selected.job_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Flexible'}</div>
-              </div>
-              {selected.budget_range && (
-                <div style={styles.viewField}>
-                  <div style={styles.viewLabel}>Budget</div>
-                  <div style={styles.viewValue}>{selected.budget_range}</div>
-                </div>
-              )}
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Expires</div>
-                <div style={styles.viewValue}>{daysLeft(selected.expires_at)} days left</div>
-              </div>
-            </div>
-
-            {selected.description && (
-              <div style={styles.viewField}>
-                <div style={styles.viewLabel}>Description</div>
-                <div style={styles.descBox}>{selected.description}</div>
-              </div>
-            )}
-
-            <div style={styles.jobMeta}>
-              {(selected.creative_types ?? []).map(c => <Badge key={c} variant="default">{c}</Badge>)}
-            </div>
-
-            <div style={styles.modalActions}>
-              <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
-              {myApplications.some(a => a.job_id === selected.id) ? (
-                <Badge variant="green">Already Applied</Badge>
-              ) : !user ? (
-                <Button variant="primary" onClick={() => navigate('/join/client')}>Apply</Button>
-              ) : tier === 'basic' ? (
-                <Button variant="primary" onClick={() => setApplyUpgradeModal('pricing')}>
-                  Upgrade to Apply
-                </Button>
-              ) : tier === 'pro' && !jobIsInCreativeState(selected, profile) ? (
-                <Button variant="primary" onClick={() => setApplyUpgradeModal('interstate')}>
-                  Upgrade to Apply for This Job
-                </Button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => { setApplyingJob(selected); setShowApplyModal(true) }}
-                  style={{ padding: '8px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                >
-                  Apply
-                </button>
-              )}
-            </div>
-          </div>
-        </Modal>
-      )}
-
-      <Modal
-        isOpen={!!applyUpgradeModal}
-        onClose={() => setApplyUpgradeModal(null)}
-        title={applyUpgradeModal === 'pricing' ? 'Upgrade to apply' : 'Apply across Australia'}
-        size="sm"
-      >
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, margin: 0 }}>
-          {applyUpgradeModal === 'pricing'
-            ? 'Job applications are available on Pro and above. Upgrade your plan to start applying.'
-            : 'This job is outside your state. Upgrade to Expert or Elite to apply for jobs across Australia.'}
-        </p>
-        <div style={{ ...styles.modalActions, marginTop: '20px' }}>
-          <Button variant="ghost" onClick={() => setApplyUpgradeModal(null)}>Close</Button>
-          <Button variant="primary" onClick={() => { setApplyUpgradeModal(null); setSelected(null); navigate('/pricing') }}>
-            View pricing
-          </Button>
-        </div>
-      </Modal>
-
-      {showApplyModal && applyingJob && (
-        <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
-          <div style={{ ...GLASS_MODAL_PANEL, borderRadius: '16px', width: '100%', maxWidth: '520px', padding: '28px' }}>
-            <div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Apply for this job</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '24px' }}>{applyingJob.title}</div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Your Price (AUD) *</label>
-                <input
-                  type="number"
-                  value={applyForm.price}
-                  onChange={e => setApplyForm(p => ({ ...p, price: e.target.value }))}
-                  placeholder="e.g. 850"
-                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>What&apos;s included in your price *</label>
-                <textarea
-                  value={applyForm.includes}
-                  onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, includes: e.target.value })) }}
-                  placeholder="e.g. 4 hours on-site, 50 edited photos delivered within 7 days, 1 round of revisions..."
-                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '80px', resize: 'vertical' }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '6px' }}>Cover message *</label>
-                <textarea
-                  value={applyForm.description}
-                  onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, description: e.target.value })) }}
-                  placeholder="Introduce yourself and explain why you're the right creative for this job..."
-                  style={{ ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px', minHeight: '100px', resize: 'vertical' }}
-                />
-              </div>
-            </div>
-            {jobApplyModerationError ? (
-              <div style={{ fontSize: '13px', color: '#f87171', marginTop: '12px', fontFamily: 'var(--font-ui)' }}>{jobApplyModerationError}</div>
-            ) : null}
-
-            <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '24px' }}>
-              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null); setJobApplyModerationError('') }} style={{ padding: '9px 18px', ...CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-ui)' }}>Cancel</button>
-              <button
-                type="button"
-                onClick={() => void submitApplication()}
-                disabled={submittingApply || !applyForm.price || !applyForm.description}
-                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: submittingApply || !applyForm.price || !applyForm.description ? 0.5 : 1 }}
-              >
-                {submittingApply ? 'Submitting…' : 'Submit Application'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      <Modal isOpen={showPost} onClose={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }} title="Post a Job" size="lg">
-        <div style={styles.formSection}>
-          <Input label="Job title" placeholder="Wedding Photographer needed, Brisbane" value={form.title} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, title: e.target.value })) }} />
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
           <div>
-            <label style={styles.label}>Description</label>
-            <textarea style={styles.textarea} placeholder="Describe the job, what you need, any requirements…" value={form.description} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, description: e.target.value })) }} />
+            <h1 style={{ margin: '0 0 4px', fontSize: isPublic ? 'clamp(28px, 3.4vw, 44px)' : (isMobile ? 24 : 27), fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--lt-text)' }}>Job board</h1>
+            <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Browse and apply for jobs posted by clients looking for creatives.</p>
           </div>
-          {jobPostModerationError ? (
-            <div style={{ fontSize: '13px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{jobPostModerationError}</div>
-          ) : null}
+          <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => user ? setShowPost(true) : navigate('/join/client')}>+ Post a job</button>
+        </div>
+
+        {!isPublic && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: GREEN }}>{stats.active}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Active jobs</div></div>
+            <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lt-text)' }}>{stats.applications}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>My applications</div></div>
+            <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lt-text)' }}>{stats.posted}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Jobs I posted</div></div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { key: 'browse', label: 'Browse jobs' },
+            { key: 'my-applications', label: `My applications (${myApplications.length})` },
+            { key: 'my-posted', label: 'My posted jobs' },
+          ].map(t => (
+            <button key={t.key} type="button" className={`ltjb-chip${activeTab === t.key ? ' on' : ''}`} onClick={() => setActiveTab(t.key)}>{t.label}</button>
+          ))}
+        </div>
+
+        {activeTab === 'browse' && (
           <div>
-            <label style={styles.label}>Creative types needed</label>
-            <div style={styles.categoryWrap}>
-              {CATEGORIES.map(cat => (
-                <div key={cat} style={styles.categoryChip(form.creative_types.includes(cat))} onClick={() => toggleCategory(cat)}>{cat}</div>
+            <select className="ltjb-select" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)}>
+              <option value="">All categories</option>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        )}
+
+        {activeTab === 'browse' ? (
+          loading ? (
+            <div style={{ ...card, padding: '56px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14 }}>Loading jobs…</div>
+          ) : filtered.length === 0 ? (
+            <div style={{ ...card, padding: '56px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14 }}>No active jobs right now. Check back soon.</div>
+          ) : (
+            <div className="ltjb-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
+              {filtered.map(job => {
+                const applied = myApplications.some(a => a.job_id === job.id)
+                const days = daysLeft(job.expires_at)
+                return (
+                  <div key={job.id} className="ltjb-jobcard" style={{ ...card, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }} onClick={() => setSelected(job)}>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--lt-text)' }}>{job.title}</div>
+                    {job.description && <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{job.description}</div>}
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {(job.creative_types ?? []).map(c => <Pill key={c}>{c}</Pill>)}
+                      {applied && <Pill color={GREEN} bg="rgba(29,185,84,0.14)">Applied</Pill>}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+                      <span style={{ fontSize: 12, color: 'var(--lt-faint)' }}>{job.location || 'Location flexible'}</span>
+                      <span style={{ fontSize: 11.5, fontWeight: 600, color: days <= 5 ? AMBER : 'var(--lt-faint)' }}>{days > 0 ? `${days}d left` : 'Expired'}</span>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : activeTab === 'my-applications' ? (
+          myApplications.length === 0 ? (
+            <div style={{ ...card, padding: '56px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14 }}>You haven't applied to any jobs yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {myApplications.map(app => (
+                <div key={app.id} style={{ ...card, padding: '16px 20px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>{app.job_listings?.title ?? 'Job'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 4 }}>{app.job_listings?.location ?? '—'} · Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                    </div>
+                    <div style={{ fontSize: 18, fontWeight: 800, color: GREEN }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
+                  </div>
+                  {app.includes && <div style={{ fontSize: 13, color: 'var(--lt-muted)', marginTop: 8 }}><strong style={{ color: 'var(--lt-text)' }}>Includes:</strong> {app.includes}</div>}
+                </div>
               ))}
             </div>
-          </div>
-          <div style={styles.formRow}>
-            <Input label="Location" placeholder="Brisbane, QLD" value={form.location} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, location: e.target.value })) }} />
-            <Input label="Date needed" type="date" value={form.job_date} onChange={e => setForm(p => ({ ...p, job_date: e.target.value }))} />
-          </div>
-          <Input label="Budget (AUD)" placeholder="e.g. $500–$2,000 or negotiable" value={form.budget} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, budget: e.target.value })) }} />
-          <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }}>Cancel</Button>
-            <Button variant="primary" disabled={saving || !form.title || !form.description} onClick={() => void postJob()}>
-              {saving ? 'Posting…' : 'Post Job'}
-            </Button>
+          )
+        ) : activeTab === 'my-posted' ? (
+          myPostedJobs.length === 0 ? (
+            <div style={{ ...card, padding: '56px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14 }}>You haven't posted any jobs yet.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {myPostedJobs.map(job => (
+                <div key={job.id} style={{ ...card, overflow: 'hidden' }}>
+                  <div style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', gap: 12 }} onClick={() => setExpandedPostedJob(expandedPostedJob === job.id ? null : job.id)}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>{job.title}</div>
+                      <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 4 }}>{job.location}{job.budget_range ? ` · ${job.budget_range}` : ''}</div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+                      <Pill color={GREEN} bg="rgba(29,185,84,0.14)">{job.job_applications?.length ?? 0} application{job.job_applications?.length !== 1 ? 's' : ''}</Pill>
+                      <span style={{ color: 'var(--lt-muted)', fontSize: 13 }}>{expandedPostedJob === job.id ? '▲' : '▼'}</span>
+                    </div>
+                  </div>
+                  {expandedPostedJob === job.id && (
+                    <div style={{ borderTop: '1px solid var(--lt-hairline)', padding: '16px 20px' }}>
+                      {!job.job_applications?.length ? (
+                        <div style={{ fontSize: 13, color: 'var(--lt-muted)', padding: '8px 0' }}>No applications yet.</div>
+                      ) : (
+                        job.job_applications.map(app => (
+                          <div key={app.id} style={{ padding: 16, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-hairline)', borderRadius: 12, marginBottom: 10 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10, gap: 12 }}>
+                              <div>
+                                <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--lt-text)' }}>{app.creative_name}</div>
+                                <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 2 }}>Applied {new Date(app.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' })}</div>
+                              </div>
+                              <div style={{ fontSize: 18, fontWeight: 800, color: GREEN }}>AUD {Number(app.price ?? 0).toFixed(2)}</div>
+                            </div>
+                            {app.includes && (
+                              <div style={{ marginBottom: 8 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>What's included</div>
+                                <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.5 }}>{app.includes}</div>
+                              </div>
+                            )}
+                            {app.description && (
+                              <div>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 4 }}>Cover message</div>
+                                <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.5 }}>{app.description}</div>
+                              </div>
+                            )}
+                            {isApplicationPending(app) && (
+                              <div style={{ display: 'flex', gap: 8, marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--lt-hairline)' }}>
+                                <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={e => { e.stopPropagation(); void acceptApplication(app, job) }}>✓ Accept</button>
+                                <button type="button" className="ltjb-btn ltjb-btn-ghost" style={{ color: PINK, borderColor: 'rgba(255,45,120,0.4)' }} onClick={e => { e.stopPropagation(); void declineApplication(app) }}>Decline</button>
+                              </div>
+                            )}
+                            {app.status === 'accepted' && <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(29,185,84,0.14)', borderRadius: 8, fontSize: 12, fontWeight: 700, color: GREEN }}>✓ Accepted: message thread created</div>}
+                            {app.status === 'declined' && <div style={{ marginTop: 12, padding: '8px 12px', background: 'rgba(255,45,120,0.1)', border: '1px solid rgba(255,45,120,0.22)', borderRadius: 8, fontSize: 12, fontWeight: 700, color: PINK }}>Declined</div>}
+                            {app.status === 'closed' && <div style={{ marginTop: 12, padding: '8px 12px', background: 'var(--lt-surface-2)', borderRadius: 8, fontSize: 12, color: 'var(--lt-muted)' }}>Position filled</div>}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ) : null}
+      </div>
+
+      {/* View job modal */}
+      {selected && (
+        <div className="ltjb-overlay" onClick={() => setSelected(null)}>
+          <div className="ltjb-modal" style={{ maxWidth: 560 }} onClick={e => e.stopPropagation()}>
+            <div className="ltjb-mhead">
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>{selected.title}</span>
+              <button type="button" onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div className="ltjb-mbody" style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div className="ltjb-row2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <Field label="Location" value={selected.location || 'Flexible'} />
+                <Field label="Date" value={selected.job_date ? new Date(selected.job_date).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) : 'Flexible'} />
+                {selected.budget_range && <Field label="Budget" value={selected.budget_range} />}
+                <Field label="Expires" value={`${daysLeft(selected.expires_at)} days left`} />
+              </div>
+              {selected.description && (
+                <div>
+                  <div style={{ fontSize: 11, color: 'var(--lt-faint)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 6 }}>Description</div>
+                  <div style={{ fontSize: 14, color: 'var(--lt-text)', lineHeight: 1.7, padding: '14px 16px', background: 'var(--lt-surface-2)', border: '1px solid var(--lt-border)', borderRadius: 12 }}>{selected.description}</div>
+                </div>
+              )}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {(selected.creative_types ?? []).map(c => <Pill key={c}>{c}</Pill>)}
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button type="button" className="ltjb-btn ltjb-btn-ghost" onClick={() => setSelected(null)}>Close</button>
+                {myApplications.some(a => a.job_id === selected.id) ? (
+                  <Pill color={GREEN} bg="rgba(29,185,84,0.14)">Already applied</Pill>
+                ) : !user ? (
+                  <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => navigate('/join/client')}>Apply</button>
+                ) : tier === 'basic' ? (
+                  <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => setApplyUpgradeModal('pricing')}>Upgrade to apply</button>
+                ) : tier === 'pro' && !jobIsInCreativeState(selected, profile) ? (
+                  <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => setApplyUpgradeModal('interstate')}>Upgrade to apply for this job</button>
+                ) : (
+                  <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => { setApplyingJob(selected); setShowApplyModal(true) }}>Apply</button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
-      </Modal>
+      )}
+
+      {/* Upgrade modal */}
+      {applyUpgradeModal && (
+        <div className="ltjb-overlay" onClick={() => setApplyUpgradeModal(null)}>
+          <div className="ltjb-modal" style={{ maxWidth: 420 }} onClick={e => e.stopPropagation()}>
+            <div className="ltjb-mhead">
+              <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>{applyUpgradeModal === 'pricing' ? 'Upgrade to apply' : 'Apply across Australia'}</span>
+              <button type="button" onClick={() => setApplyUpgradeModal(null)} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div className="ltjb-mbody">
+              <p style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6, margin: '0 0 20px' }}>
+                {applyUpgradeModal === 'pricing'
+                  ? 'Job applications are available on Pro and above. Upgrade your plan to start applying.'
+                  : 'This job is outside your state. Upgrade to Expert or Elite to apply for jobs across Australia.'}
+              </p>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="ltjb-btn ltjb-btn-ghost" onClick={() => setApplyUpgradeModal(null)}>Close</button>
+                <button type="button" className="ltjb-btn ltjb-btn-primary" onClick={() => { setApplyUpgradeModal(null); setSelected(null); navigate('/pricing') }}>View pricing</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Apply modal */}
+      {showApplyModal && applyingJob && (
+        <div className="ltjb-overlay" onClick={() => { setShowApplyModal(false); setApplyingJob(null); setJobApplyModerationError('') }}>
+          <div className="ltjb-modal" style={{ maxWidth: 520 }} onClick={e => e.stopPropagation()}>
+            <div className="ltjb-mhead">
+              <div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Apply for this job</div>
+                <div style={{ fontSize: 13, color: 'var(--lt-faint)', marginTop: 2 }}>{applyingJob.title}</div>
+              </div>
+              <button type="button" onClick={() => { setShowApplyModal(false); setApplyingJob(null); setJobApplyModerationError('') }} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div className="ltjb-mbody" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Your price (AUD) *</label>
+                <input className="ltjb-input" type="number" value={applyForm.price} onChange={e => setApplyForm(p => ({ ...p, price: e.target.value }))} placeholder="e.g. 850" />
+              </div>
+              <div>
+                <label style={labelStyle}>What's included in your price *</label>
+                <textarea className="ltjb-textarea" style={{ minHeight: 80 }} value={applyForm.includes} onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, includes: e.target.value })) }} placeholder="e.g. 4 hours on-site, 50 edited photos delivered within 7 days, 1 round of revisions" />
+              </div>
+              <div>
+                <label style={labelStyle}>Cover message *</label>
+                <textarea className="ltjb-textarea" value={applyForm.description} onChange={e => { setJobApplyModerationError(''); setApplyForm(p => ({ ...p, description: e.target.value })) }} placeholder="Introduce yourself and explain why you're the right creative for this job" />
+              </div>
+              {jobApplyModerationError && <div style={{ fontSize: 13, color: PINK }}>{jobApplyModerationError}</div>}
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="ltjb-btn ltjb-btn-ghost" onClick={() => { setShowApplyModal(false); setApplyingJob(null); setJobApplyModerationError('') }}>Cancel</button>
+                <button type="button" className="ltjb-btn ltjb-btn-primary" disabled={submittingApply || !applyForm.price || !applyForm.description} onClick={() => void submitApplication()}>{submittingApply ? 'Submitting…' : 'Submit application'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Post job modal */}
+      {showPost && (
+        <div className="ltjb-overlay" onClick={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }}>
+          <div className="ltjb-modal" style={{ maxWidth: 640 }} onClick={e => e.stopPropagation()}>
+            <div className="ltjb-mhead">
+              <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Post a job</span>
+              <button type="button" onClick={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
+            </div>
+            <div className="ltjb-mbody" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Job title</label>
+                <input className="ltjb-input" placeholder="Wedding photographer needed, Brisbane" value={form.title} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, title: e.target.value })) }} />
+              </div>
+              <div>
+                <label style={labelStyle}>Description</label>
+                <textarea className="ltjb-textarea" placeholder="Describe the job, what you need, any requirements" value={form.description} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, description: e.target.value })) }} />
+              </div>
+              {jobPostModerationError && <div style={{ fontSize: 13, color: PINK }}>{jobPostModerationError}</div>}
+              <div>
+                <label style={labelStyle}>Creative types needed</label>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {CATEGORIES.map(cat => (
+                    <button type="button" key={cat} className={`ltjb-cat${form.creative_types.includes(cat) ? ' on' : ''}`} onClick={() => toggleCategory(cat)}>{cat}</button>
+                  ))}
+                </div>
+              </div>
+              <div className="ltjb-row2" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div>
+                  <label style={labelStyle}>Location</label>
+                  <input className="ltjb-input" placeholder="Brisbane, QLD" value={form.location} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, location: e.target.value })) }} />
+                </div>
+                <div>
+                  <label style={labelStyle}>Date needed</label>
+                  <input className="ltjb-input" type="date" value={form.job_date} onChange={e => setForm(p => ({ ...p, job_date: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label style={labelStyle}>Budget (AUD)</label>
+                <input className="ltjb-input" placeholder="e.g. $500–$2,000 or negotiable" value={form.budget} onChange={e => { setJobPostModerationError(''); setForm(p => ({ ...p, budget: e.target.value })) }} />
+              </div>
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button type="button" className="ltjb-btn ltjb-btn-ghost" onClick={() => { setShowPost(false); resetForm(); setJobPostModerationError('') }}>Cancel</button>
+                <button type="button" className="ltjb-btn ltjb-btn-primary" disabled={saving || !form.title || !form.description} onClick={() => void postJob()}>{saving ? 'Posting…' : 'Post job'}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  )
+
+  if (isPublic) {
+    return (
+      <div className="ltjb-public-scope" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '24px 0 80px' }}>
+        <TileField animated={false} opacity={0.22} />
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.92) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+        <div style={{ position: 'relative', zIndex: 2, maxWidth: 1280, margin: '0 auto', padding: '0 40px', width: '100%', boxSizing: 'border-box' }}>
+          {content}
         </div>
       </div>
-    </div>
-  )
+    )
+  }
+
+  return content
 }
