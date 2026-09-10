@@ -1,311 +1,111 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
-import { payWithRevolut } from '../../lib/revolut.js'
+import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Modal from '../../components/ui/Modal'
-import Badge from '../../components/ui/Badge'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 
-const FOUNDING_CAP = 500
-const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
+const GREEN = '#1DB954'
+const GREEN_TEXT = '#04120a'
+const RED = '#ef4444'
+const SUB_PAGE = '/dashboard/settings/subscription'
+const LIVE = ['active', 'trialing', 'past_due']
 
-const SUBSCRIPTION_PLAN_ORDER = { basic: 0, pro: 1, expert: 2, elite: 3 }
-
-/** Plan rows copied from src/pages/public/PricingPage.jsx `tiers`. */
-const PRICING_PAGE_TIERS = [
-  {
-    name: 'Basic',
-    monthly: 0,
-    annual: 0,
-    description: 'Get discovered. Build your presence.',
-    badge: null,
-    borderColor: 'var(--border-default)',
-    features: [
-      '5 portfolio photos',
-      'Public profile listing',
-      '5 message replies/month',
-      'Gear marketplace access',
-      'Basic search placement',
-    ],
-    cta: 'Get Started Free',
-    ctaVariant: 'secondary',
-  },
-  {
-    name: 'Pro',
-    monthly: 24.99,
-    annual: 249.90,
-    description: 'Start booking clients professionally.',
-    badge: null,
-    borderColor: 'var(--green)',
-    features: [
-      '20 portfolio photos, 1 video',
-      '20 message replies/month',
-      'Booking & scheduling',
-      'Quotes & invoicing',
-      'Review requests',
-      'Gear marketplace listings (5)',
-      'Pro badge on profile',
-    ],
-    cta: 'Start with Pro',
-    ctaVariant: 'primary',
-  },
-  {
-    name: 'Expert',
-    monthly: 74.99,
-    annual: 749.90,
-    description: 'Full business tools for serious creatives.',
-    badge: { label: 'Most Popular', variant: 'green' },
-    borderColor: 'var(--silver)',
-    features: [
-      '40 photos, 5 videos',
-      'Unlimited message replies',
-      'Custom contracts & e-signatures',
-      'CRM: 500 client records',
-      'Client portals',
-      'Brand kit',
-      'Portfolio website',
-      'LensTrybe Deliver: 50GB',
-      'Business insights',
-      'Homepage rotation',
-      'Gear marketplace listings (15)',
-    ],
-    cta: 'Start with Expert',
-    ctaVariant: 'secondary',
-  },
-  {
-    name: 'Elite',
-    monthly: 149.99,
-    annual: 1499.90,
-    description: 'Studio-level power for teams.',
-    badge: { label: 'Best Value', variant: 'default' },
-    borderColor: '#EAB308',
-    features: [
-      'Unlimited photos & videos',
-      'Unlimited message replies',
-      'Everything in Expert',
-      'CRM: unlimited records',
-      'LensTrybe Deliver: 200GB',
-      'Multi-page portfolio website',
-      'Custom domain',
-      'Team: up to 5 members',
-      'Studio profile page',
-      'Team performance insights',
-      'Elite spotlight on homepage',
-      'Unlimited marketplace listings',
-    ],
-    cta: 'Start with Elite',
-    ctaVariant: 'secondary',
-  },
-]
-
-/** Copied from PricingPage.jsx `styles` (toggle + plan cards only). */
-const PRICING_COMPARE_STYLES = {
-  toggle: {
-    ...GLASS_CARD,
-    display: 'flex',
-    alignItems: 'center',
-    gap: '12px',
-    borderRadius: 'var(--radius-full)',
-    padding: '4px',
-    width: 'fit-content',
-  },
-  toggleBtn: (active) => ({
-    padding: '6px 20px',
-    borderRadius: 'var(--radius-full)',
-    border: 'none',
-    background: active ? 'var(--green)' : 'transparent',
-    color: active ? '#000' : 'var(--text-secondary)',
-    fontSize: '13px',
-    fontWeight: 500,
-    cursor: 'pointer',
-    transition: 'all var(--transition-base)',
-    fontFamily: 'var(--font-ui)',
-    display: 'flex',
-    alignItems: 'center',
-    gap: '6px',
-  }),
-  saveBadge: {
-    fontSize: '10px',
-    background: GLASS_CARD_GREEN.background,
-    color: 'var(--green)',
-    padding: '2px 6px',
-    borderRadius: 'var(--radius-full)',
-    fontWeight: 600,
-  },
-  grid: {
-    display: 'grid',
-    gridTemplateColumns: 'repeat(4, 1fr)',
-    gap: '16px',
-    maxWidth: '1280px',
-    width: '100%',
-    alignItems: 'stretch',
-  },
-  card: (borderColor, hasBadge) => ({
-    ...glassCardAccentBorder(borderColor),
-    border: `1px solid ${borderColor}`,
-    borderRadius: 'var(--radius-xl)',
-    padding: `${hasBadge ? '44px' : '32px'} 28px 32px`,
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-    position: 'relative',
-    overflow: 'hidden',
-    height: '100%',
-    boxSizing: 'border-box',
-  }),
-  cardTop: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '24px',
-    flexShrink: 0,
-    minHeight: '200px',
-  },
-  cardHeader: { display: 'flex', flexDirection: 'column', gap: '8px' },
-  tierName: {
-    fontSize: '18px',
-    fontWeight: 600,
-    color: 'var(--text-primary)',
-    fontFamily: 'var(--font-ui)',
-  },
-  tierDesc: {
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    fontFamily: 'var(--font-ui)',
-    lineHeight: 1.5,
-  },
-  price: {
-    display: 'flex',
-    alignItems: 'baseline',
-    gap: '4px',
-  },
-  priceAmount: {
-    ...TYPO.stat,
-    fontFamily: 'var(--font-ui)',
-    fontSize: '40px',
-    color: 'var(--text-primary)',
-    lineHeight: 1,
-  },
-  pricePeriod: {
-    fontSize: '13px',
-    color: 'var(--text-muted)',
-    fontFamily: 'var(--font-ui)',
-  },
-  annualNote: {
-    fontSize: '11px',
-    color: 'var(--green)',
-    fontFamily: 'var(--font-ui)',
-    fontWeight: 500,
-  },
-  featureList: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '10px',
-    flex: 1,
-    minHeight: 0,
-  },
-  featureItem: {
-    display: 'flex',
-    alignItems: 'flex-start',
-    gap: '10px',
-    fontSize: '13px',
-    color: 'var(--text-secondary)',
-    fontFamily: 'var(--font-ui)',
-    lineHeight: 1.4,
-  },
-  featureCheck: {
-    color: 'var(--green)',
-    fontSize: '12px',
-    flexShrink: 0,
-    marginTop: '1px',
-  },
-  divider: DIVIDER_GRADIENT_STYLE,
-  badgeStrip: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    background: 'var(--green)',
-    color: '#000000',
-    fontSize: '11px',
-    fontWeight: 700,
-    letterSpacing: '0.08em',
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    padding: '6px 0',
-    borderRadius: 'var(--radius-xl) var(--radius-xl) 0 0',
-    fontFamily: 'var(--font-ui)',
-  },
-  /** Matches Button.jsx primary / secondary used on PricingPage CTAs. */
-  upgradeLink: (ctaVariant) => ({
-    fontFamily: 'var(--font-ui)',
-    fontWeight: 500,
-    borderRadius: 'var(--radius-lg)',
-    display: 'inline-flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: '8px',
-    fontSize: '13px',
-    padding: '10px 16px',
-    cursor: 'pointer',
-    transition: 'all var(--transition-base)',
-    outline: 'none',
-    textDecoration: 'none',
-    width: '100%',
-    boxSizing: 'border-box',
-    ...(ctaVariant === 'primary'
-      ? { background: 'var(--green)', color: '#000000', border: 'none' }
-      : {
-          background: 'transparent',
-          color: 'var(--text-secondary)',
-          border: '1px solid var(--border-strong)',
-        }),
-  }),
+const TIER_COLOR = { basic: '#8a8a9a', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
+const TIER_FEATURES = {
+  basic: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', 'Browse gear marketplace', 'Basic search placement'],
+  pro: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Bookings & scheduling', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'],
+  expert: ['Everything in Pro', '40 photos + 5 videos', 'Unlimited messages', 'Contracts & e-signatures', 'CRM (500 records)', 'Client portals', 'Brand kit', 'Portfolio website', 'LensTrybe Deliver (50GB)', 'Business insights'],
+  elite: ['Everything in Expert', 'Unlimited photos & videos', 'Team (up to 5 members)', 'CRM (unlimited)', 'LensTrybe Deliver (200GB)', 'Multi-page website + custom domain', 'Elite spotlight', 'Studio profile page'],
 }
 
+const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
+function fmtDate(iso) {
+  if (!iso) return ''
+  try { return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) } catch { return '' }
+}
+function maskEmail(email) {
+  const raw = String(email || '').trim()
+  const at = raw.indexOf('@')
+  if (at <= 0) return raw
+  const local = raw.slice(0, at)
+  return `${local.slice(0, 2)}${'*'.repeat(Math.max(local.length - 2, 1))}${raw.slice(at)}`
+}
+
+const inputStyle = {
+  width: '100%', boxSizing: 'border-box', padding: '11px 13px', borderRadius: 12,
+  background: 'var(--lt-input-bg)', border: '1px solid var(--lt-input-border)', color: 'var(--lt-text)',
+  fontSize: 14, fontFamily: 'inherit', outline: 'none',
+}
+
+function Modal({ open, onClose, title, children, busy }) {
+  useEffect(() => {
+    if (!open) return undefined
+    function onKey(e) { if (e.key === 'Escape' && !busy) onClose() }
+    document.addEventListener('keydown', onKey)
+    return () => document.removeEventListener('keydown', onKey)
+  }, [open, busy, onClose])
+  if (!open) return null
+  return (
+    <div className="ltset-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget && !busy) onClose() }}>
+      <div className="ltset-modal" role="dialog" aria-modal="true">
+        <div className="ltset-modal-head">
+          <h2 style={{ margin: 0, fontSize: 17, fontWeight: 800, color: 'var(--lt-text)' }}>{title}</h2>
+          <button type="button" className="ltset-x" onClick={() => !busy && onClose()} aria-label="Close">✕</button>
+        </div>
+        <div className="ltset-modal-body">{children}</div>
+      </div>
+    </div>
+  )
+}
+
+const TABS = [
+  { key: 'subscription', label: 'Subscription' },
+  { key: 'referrals', label: 'Referrals' },
+  { key: 'password', label: 'Email & Password' },
+  { key: 'danger', label: 'Danger Zone' },
+]
+
 export default function SettingsPage() {
-  const { user, profile } = useAuth()
-  const { tier } = useSubscription()
+  const { user } = useAuth()
+  const { tier: ctxTier } = useSubscription()
   const navigate = useNavigate()
+
   const [activeTab, setActiveTab] = useState('subscription')
+  const [sub, setSub] = useState(null)
+  const [toast, setToast] = useState(null)
+
   const [showCancel, setShowCancel] = useState(false)
-  const [showDelete, setShowDelete] = useState(false)
   const [cancelStep, setCancelStep] = useState(1)
+  const [exitReason, setExitReason] = useState('')
+  const [cancelBusy, setCancelBusy] = useState(false)
+
+  const [showDelete, setShowDelete] = useState(false)
   const [deleteStep, setDeleteStep] = useState(1)
   const [deleteConfirm, setDeleteConfirm] = useState('')
-  const [exitReason, setExitReason] = useState('')
-  const [loading, setLoading] = useState(false)
+  const [deleteBusy, setDeleteBusy] = useState(false)
+
   const [currentEmailInput, setCurrentEmailInput] = useState('')
   const [newEmail, setNewEmail] = useState('')
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailMsg, setEmailMsg] = useState(null)
-  const [pricingAnnual, setPricingAnnual] = useState(true)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
   const [referralCode, setReferralCode] = useState('')
   const [referralCount, setReferralCount] = useState(0)
-  const [referralCopied, setReferralCopied] = useState(false)
+  const [referralCopied, setReferralCopied] = useState('')
   const [referralLoading, setReferralLoading] = useState(false)
-  const [foundingCount, setFoundingCount] = useState(0)
-  const [foundingLoading, setFoundingLoading] = useState(false)
 
-  const offerActive = foundingCount < FOUNDING_CAP && new Date() < OFFER_END
+  const tier = (sub && LIVE.includes(sub.status) ? sub.tier : ctxTier) || 'basic'
+  const tierColor = TIER_COLOR[tier] ?? '#8a8a9a'
 
-  useEffect(() => {
-    supabase.rpc('get_founding_member_count').then(({ data }) => {
-      if (data !== null) setFoundingCount(data)
-    })
-  }, [])
-
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
+  const loadSub = useCallback(async () => {
+    if (!user?.id) return
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing')
+      .eq('user_id', user.id).eq('provider', 'revolut').maybeSingle()
+    setSub(data)
+  }, [user?.id])
+  useEffect(() => { loadSub() }, [loadSub])
 
   useEffect(() => {
     if (activeTab !== 'referrals' || !user?.id) return
@@ -324,418 +124,157 @@ export default function SettingsPage() {
     })
   }, [activeTab, user?.id])
 
-  const tierColors = { basic: 'var(--text-muted)', pro: 'var(--green)', expert: 'var(--silver)', elite: '#EAB308' }
-  const tierColor = tierColors[tier] ?? 'var(--text-muted)'
+  function showToast(msg, type = 'success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
 
-  const EXIT_REASONS = [
-    'Too expensive',
-    'Not getting enough enquiries',
-    'Missing a feature I need',
-    'Using a different platform',
-    'Temporary break: I will be back',
-    'Other',
-  ]
-
-  async function handleFoundingCheckout() {
-    if (!user?.id || !user?.email) return
-    setFoundingLoading(true)
-    try {
-      const currentInterval = pricingAnnual ? 'annual' : 'monthly'
-      const result = await payWithRevolut({
-        user: { id: user.id, email: user.email },
-        tier: 'expert',
-        billing: currentInterval,
-        fullName: profile?.business_name ?? user.email,
-      })
-      if (result === 'success') {
-        window.location.href = '/dashboard?founding=1'
-      }
-    } catch (err) {
-      alert(err?.message ?? 'Could not start checkout')
-    } finally {
-      setFoundingLoading(false)
-    }
-  }
-
-  async function openBillingPortal() {
-    if (!user?.id) return
-    setLoading(true)
-    try {
-      // Revolut has no hosted portal — send them to the in-app subscription page.
-      navigate('/dashboard/settings/subscription')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function cancelSubscription() {
-    setLoading(true)
-    await supabase.functions.invoke('cancel-subscription', {
-      body: { userId: user.id, reason: exitReason }
-    })
-    setShowCancel(false)
-    setCancelStep(1)
-    setLoading(false)
-    navigate('/dashboard')
-  }
-
-  async function deleteAccount() {
-    if (deleteConfirm !== 'DELETE') return
-    setLoading(true)
-    await supabase.functions.invoke('delete-account', {
-      body: { userId: user.id }
-    })
-    await supabase.auth.signOut()
-    navigate('/')
-    setLoading(false)
+  function copy(text, key) {
+    try { navigator.clipboard.writeText(text); setReferralCopied(key); setTimeout(() => setReferralCopied(''), 2000) } catch { /* ignore */ }
   }
 
   async function updateEmail() {
     if (String(currentEmailInput || '').trim().toLowerCase() !== String(user?.email || '').trim().toLowerCase()) {
-      setEmailMsg({ text: "That doesn't match your current email address.", error: true })
-      return
+      setEmailMsg({ text: "That doesn't match your current email address.", error: true }); return
     }
     if (!newEmail || !newEmail.includes('@')) { setEmailMsg({ text: 'Please enter a valid email.', error: true }); return }
     setEmailLoading(true)
     const { error } = await supabase.auth.updateUser({ email: newEmail })
-    if (error) {
-      setEmailMsg({ text: error.message, error: true })
-    } else {
-      setEmailMsg({ text: 'Confirmation sent to your new email address. Click the link to confirm the change.', error: false })
-      setCurrentEmailInput('')
-      setNewEmail('')
-    }
+    if (error) setEmailMsg({ text: error.message, error: true })
+    else { setEmailMsg({ text: 'Confirmation sent to your new email address. Click the link to confirm the change.', error: false }); setCurrentEmailInput(''); setNewEmail('') }
     setEmailLoading(false)
   }
 
-  function maskEmail(email) {
-    const raw = String(email || '').trim()
-    const at = raw.indexOf('@')
-    if (at <= 0) return raw
-    const local = raw.slice(0, at)
-    const domain = raw.slice(at)
-    const visible = local.slice(0, 2)
-    const maskedCount = Math.max(local.length - 2, 1)
-    return `${visible}${'*'.repeat(maskedCount)}${domain}`
+  async function cancelSubscription() {
+    setCancelBusy(true)
+    const { data, error } = await supabase.functions.invoke('cancel-revolut-subscription')
+    setCancelBusy(false)
+    if (error || !data?.ok) { showToast('Could not cancel: ' + (error?.message ?? 'Unknown error'), 'error'); return }
+    setShowCancel(false); setCancelStep(1)
+    const until = data.accessUntil ? fmtDate(data.accessUntil) : 'the end of your billing period'
+    showToast(`Subscription cancelled. You keep access until ${until}.`)
+    setTimeout(() => loadSub(), 600)
   }
 
-  function getPricingComparePrice(pt) {
-    if (pt.monthly === 0) return 'Free'
-    const amount = pricingAnnual ? pt.annual.toFixed(2) : pt.monthly.toFixed(2)
-    return `$${amount}`
+  async function deleteAccount() {
+    if (deleteConfirm !== 'DELETE') return
+    setDeleteBusy(true)
+    await supabase.functions.invoke('delete-account', { body: { userId: user.id } })
+    await supabase.auth.signOut()
+    navigate('/')
+    setDeleteBusy(false)
   }
 
-  function getPricingComparePeriod(pt) {
-    if (pt.monthly === 0) return ''
-    return pricingAnnual ? '/yr' : '/mo'
-  }
-
-  function getPricingAnnualMeta(pt) {
-    if (pt.monthly === 0 || !pricingAnnual) return null
-    const monthlyEquivalent = (pt.annual / 12).toFixed(2)
-    const saving = (pt.monthly * 12 - pt.annual).toFixed(0)
-    return `$${monthlyEquivalent}/mo · Save $${saving}/yr`
-  }
-
-  const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    tabs: { display: 'flex', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', overflow: 'hidden', width: 'fit-content' },
-    tab: (active) => ({ padding: '8px 20px', border: 'none', background: active ? 'var(--bg-overlay)' : 'transparent', color: active ? 'var(--text-primary)' : 'var(--text-muted)', fontSize: '13px', fontFamily: 'var(--font-ui)', cursor: 'pointer', transition: 'all var(--transition-fast)', fontWeight: active ? 500 : 400 }),
-    card: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' },
-    cardHeader: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
-    sectionTitle: { ...TYPO.heading, fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    sectionSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
-    tierCard: { ...glassCardAccentBorder(tierColor), borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
-    tierName: { fontFamily: 'var(--font-display)', fontSize: '28px', color: tierColor, fontWeight: 400 },
-    tierSub: { fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    dangerCard: { background: 'rgba(239,68,68,0.05)', border: '1px solid rgba(239,68,68,0.2)', borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' },
-    dangerTitle: { fontSize: '15px', fontWeight: 600, color: 'var(--error)', fontFamily: 'var(--font-ui)' },
-    dangerText: { fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 },
-    row: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' },
-    stepTitle: { fontFamily: 'var(--font-display)', fontSize: '20px', color: 'var(--text-primary)', fontWeight: 400 },
-    stepText: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7 },
-    reasonOption: (selected) => ({ padding: '12px 16px', borderRadius: 'var(--radius-lg)', border: `1px solid ${selected ? 'var(--green)' : 'var(--border-default)'}`, background: selected ? 'var(--green-dim)' : 'var(--bg-subtle)', cursor: 'pointer', fontSize: '13px', color: selected ? 'var(--green)' : 'var(--text-secondary)', fontFamily: 'var(--font-ui)', transition: 'all var(--transition-fast)' }),
-    modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    featureList: { display: 'flex', flexDirection: 'column', gap: '8px' },
-    featureItem: { display: 'flex', alignItems: 'center', gap: '10px', fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    plansSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
-  }
-
-  const tierFeatures = {
-    basic: ['Public profile', '5 portfolio photos', '5 message replies/month'],
-    pro: ['20 portfolio photos', '20 message replies', 'Invoicing & quotes', 'Booking system'],
-    expert: ['40 portfolio photos', 'Unlimited messages', 'Contracts', 'CRM', 'Brand kit', 'Deliver 50GB', 'Insights'],
-    elite: ['Unlimited everything', 'Team members', 'Studio profile', 'Elite spotlight', 'Deliver 200GB'],
-  }
+  const EXIT_REASONS = ['Too expensive', 'Not getting enough enquiries', 'Missing a feature I need', 'Using a different platform', 'Temporary break: I will be back', 'Other']
+  const hasLiveSub = !!(sub && LIVE.includes(sub.status))
 
   return (
-    <div style={{ ...styles.page, padding: isMobile ? '16px' : styles.page.padding, overflowX: 'hidden' }} className="settings-page">
+    <div className="ltset-page">
       <style>{`
-        @media (max-width: 767px) {
-          .settings-page { padding: 16px !important; }
-          .settings-page h1, .settings-page h2 { font-size: 24px !important; }
-          .settings-page button { min-height: 44px; }
-          .settings-page input, .settings-page textarea, .settings-page select { width: 100% !important; font-size: 14px !important; }
-          .settings-page [style*="grid-template-columns: repeat(4, 1fr)"] { grid-template-columns: 1fr !important; }
-          .settings-page [style*="grid-template-columns: 1fr 1fr"] { grid-template-columns: 1fr !important; }
-        }
+        .ltset-page { display: flex; flex-direction: column; gap: 22px; }
+        .ltset-btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 16px; border-radius: 12px; font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid transparent; transition: transform .12s ease, opacity .12s ease; white-space: nowrap; }
+        .ltset-btn:hover { transform: translateY(-1px); }
+        .ltset-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+        .ltset-btn-primary { background: ${GREEN}; color: ${GREEN_TEXT}; }
+        .ltset-btn-ghost { background: var(--lt-surface); color: var(--lt-text); border-color: var(--lt-border); }
+        .ltset-btn-danger { background: ${RED}; color: #fff; }
+        .ltset-card { background: var(--lt-glass-bg); border: var(--lt-glass-border); box-shadow: var(--lt-glass-shadow); backdrop-filter: var(--lt-glass-blur); -webkit-backdrop-filter: var(--lt-glass-blur); border-radius: 18px; }
+        .ltset-tabs { display: inline-flex; gap: 4px; padding: 4px; border-radius: 14px; background: var(--lt-surface); border: 1px solid var(--lt-border); width: fit-content; flex-wrap: wrap; }
+        .ltset-tab { padding: 8px 16px; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; background: transparent; color: var(--lt-muted); font-family: inherit; }
+        .ltset-tab.on { background: ${GREEN}; color: ${GREEN_TEXT}; }
+        .ltset-h { font-size: 15px; font-weight: 800; color: var(--lt-text); }
+        .ltset-sub { font-size: 13px; color: var(--lt-muted); line-height: 1.5; }
+        .ltset-overlay { position: fixed; inset: 0; z-index: 1000; background: rgba(6,6,12,0.55); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; padding: 16px; }
+        .ltset-modal { width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto; border-radius: 20px; background: var(--lt-modal-bg); border: var(--lt-modal-border); box-shadow: var(--lt-modal-shadow); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); }
+        .ltset-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 0; }
+        .ltset-modal-body { padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 16px; }
+        .ltset-x { background: var(--lt-surface); border: 1px solid var(--lt-border); color: var(--lt-muted); width: 30px; height: 30px; border-radius: 9px; cursor: pointer; font-size: 13px; }
+        @media (max-width: 767px) { .ltset-btn { min-height: 44px; } }
       `}</style>
+
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: toast.type === 'success' ? GREEN : RED, color: toast.type === 'success' ? GREEN_TEXT : '#fff', padding: '12px 20px', borderRadius: 12, fontSize: 14, fontWeight: 700, maxWidth: 360, boxShadow: '0 12px 30px -12px rgba(0,0,0,0.4)' }}>{toast.msg}</div>
+      )}
+
       <div>
-        <h1 style={styles.title}>Settings</h1>
-        <p style={styles.subtitle}>Manage your subscription, password and account.</p>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: 'var(--lt-text)', letterSpacing: '-0.01em' }}>Settings</h1>
+        <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--lt-muted)' }}>Manage your subscription, account and preferences.</p>
       </div>
 
-      <div style={styles.tabs}>
-        {['subscription', 'referrals', 'password', 'danger'].map(t => (
-          <button key={t} style={styles.tab(activeTab === t)} onClick={() => setActiveTab(t)}>
-            {t === 'danger' ? 'Danger Zone' : t === 'password' ? 'Email & Password' : t === 'referrals' ? 'Referrals' : t.charAt(0).toUpperCase() + t.slice(1)}
-          </button>
+      <div className="ltset-tabs">
+        {TABS.map((tb) => (
+          <button key={tb.key} type="button" className={`ltset-tab${activeTab === tb.key ? ' on' : ''}`} onClick={() => setActiveTab(tb.key)}>{tb.label}</button>
         ))}
       </div>
 
       {activeTab === 'subscription' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <div style={styles.tierCard}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', borderLeft: `3px solid ${tierColor}` }}>
             <div>
-              <div style={styles.tierName}>{tier.charAt(0).toUpperCase() + tier.slice(1)} Plan</div>
-              <div style={styles.tierSub}>
-                {tier === 'basic' ? 'Free forever' : 'Billed monthly or annually'}
+              <div style={{ fontSize: 24, fontWeight: 800, color: tierColor, letterSpacing: '-0.01em' }}>{cap(tier)} Plan</div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)', marginTop: 4 }}>
+                {tier === 'basic' ? 'Free forever' : `Billed ${sub?.billing === 'annual' ? 'annually' : 'monthly'}`}
+                {hasLiveSub && sub?.status === 'trialing' && sub?.next_charge_date ? ` · free trial until ${fmtDate(sub.next_charge_date)}` : ''}
+                {hasLiveSub && sub?.status === 'active' && sub?.current_period_end && !sub?.pending_tier ? ` · renews ${fmtDate(sub.current_period_end)}` : ''}
+                {sub?.pending_tier ? ` · changes to ${cap(sub.pending_tier)} on ${fmtDate(sub.current_period_end)}` : ''}
+                {sub?.status === 'canceled' && sub?.current_period_end ? ` · cancelled, access until ${fmtDate(sub.current_period_end)}` : ''}
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-              {tier !== 'elite' && (
-                <Button variant="primary" size="sm" onClick={() => navigate('/pricing')}>Upgrade Plan</Button>
-              )}
-            </div>
+            <button type="button" className="ltset-btn ltset-btn-primary" onClick={() => navigate(SUB_PAGE)}>{tier === 'basic' ? 'Upgrade plan' : 'Change plan'}</button>
           </div>
 
-          <div style={styles.card}>
-            <div style={styles.sectionTitle}>What's included in your plan</div>
-            <div style={styles.featureList}>
-              {(tierFeatures[tier] ?? []).map((f, i) => (
-                <div key={i} style={styles.featureItem}>
-                  <span style={{ color: 'var(--green)', fontSize: '12px' }}>✓</span>
-                  {f}
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="ltset-h">What's included in your {cap(tier)} plan</div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '10px 20px' }}>
+              {(TIER_FEATURES[tier] ?? []).map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.4 }}>
+                  <span style={{ color: GREEN, flexShrink: 0 }}>✓</span>{f}
                 </div>
               ))}
             </div>
-            {tier !== 'elite' && (
-              <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')}>
-                See full feature comparison →
-              </Button>
-            )}
+            <div>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => navigate(SUB_PAGE)}>Compare all plans</button>
+            </div>
           </div>
 
           {tier !== 'basic' && (
-            <div style={styles.card}>
-              <div style={styles.cardHeader}>
-                <div>
-                  <div style={styles.sectionTitle}>Billing</div>
-                  <div style={styles.sectionSub}>Manage your payment method, invoices and billing details.</div>
-                </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    disabled={loading}
-                    onClick={() => void openBillingPortal()}
-                    style={{ padding: '9px 18px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600, cursor: loading ? 'wait' : 'pointer', fontFamily: 'var(--font-ui)', opacity: loading ? 0.7 : 1 }}
-                  >
-                    {loading ? 'Loading…' : 'Manage Billing'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => navigate('/dashboard/settings/subscription')}
-                    style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)' }}
-                  >
-                    Change Plan
-                  </button>
-                </div>
+            <div className="ltset-card" style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
+              <div>
+                <div className="ltset-h">Billing</div>
+                <div className="ltset-sub" style={{ marginTop: 4 }}>Manage your plan, payment method and invoices.</div>
               </div>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => navigate(SUB_PAGE)}>Manage billing</button>
             </div>
           )}
-
-          <div style={styles.plansSection}>
-            <div style={styles.sectionTitle}>Compare plans</div>
-            <div style={PRICING_COMPARE_STYLES.toggle}>
-              <button type="button" style={PRICING_COMPARE_STYLES.toggleBtn(!pricingAnnual)} onClick={() => setPricingAnnual(false)}>
-                Monthly
-              </button>
-              <button type="button" style={PRICING_COMPARE_STYLES.toggleBtn(pricingAnnual)} onClick={() => setPricingAnnual(true)}>
-                Annual
-                <span style={PRICING_COMPARE_STYLES.saveBadge}>2 months free</span>
-              </button>
-            </div>
-            <div style={PRICING_COMPARE_STYLES.grid}>
-              {PRICING_PAGE_TIERS.map((pt, i) => {
-                const planKey = pt.name.toLowerCase()
-                const planRank = SUBSCRIPTION_PLAN_ORDER[planKey] ?? 0
-                const currentRank = SUBSCRIPTION_PLAN_ORDER[tier] ?? 0
-                const isCurrent = planKey === tier
-                const showUpgrade = planRank > currentRank
-                const isFoundingExpert = pt.name === 'Expert' && offerActive
-                const cardStyle = isFoundingExpert
-                  ? {
-                      ...PRICING_COMPARE_STYLES.card(pt.borderColor, true),
-                      border: '1px solid rgba(245,158,11,0.45)',
-                      boxShadow: '0 0 30px rgba(245,158,11,0.12)',
-                    }
-                  : PRICING_COMPARE_STYLES.card(pt.borderColor, !!pt.badge)
-                return (
-                  <div key={i} style={cardStyle}>
-                    {isFoundingExpert ? (
-                      <div style={{
-                        ...PRICING_COMPARE_STYLES.badgeStrip,
-                        background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                        color: '#000',
-                        fontWeight: 700,
-                        fontSize: '11px',
-                        letterSpacing: '0.08em',
-                        textTransform: 'uppercase',
-                      }}>
-                        Founding Member
-                      </div>
-                    ) : pt.badge ? (
-                      <div style={PRICING_COMPARE_STYLES.badgeStrip}>
-                        {pt.badge.label}
-                      </div>
-                    ) : null}
-
-                    <div style={PRICING_COMPARE_STYLES.cardTop}>
-                      <div style={PRICING_COMPARE_STYLES.cardHeader}>
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
-                          <div style={PRICING_COMPARE_STYLES.tierName}>{pt.name}</div>
-                          {isCurrent && (
-                            <Badge variant="green" size="sm">Current Plan</Badge>
-                          )}
-                        </div>
-                        <div style={PRICING_COMPARE_STYLES.tierDesc}>{pt.description}</div>
-                      </div>
-
-                      <div>
-                        {isFoundingExpert ? (
-                          <>
-                            <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-                              <span style={{ fontSize: '36px', fontWeight: 800, color: '#f59e0b', fontFamily: 'var(--font-ui)', lineHeight: 1 }}>FREE</span>
-                              <span style={{ textDecoration: 'line-through', color: '#8b8a9a', fontSize: '14px', fontFamily: 'var(--font-ui)' }}>
-                                {getPricingComparePrice(pt)}{getPricingComparePeriod(pt)}
-                              </span>
-                            </div>
-                            <div style={{ color: '#f59e0b', fontWeight: 600, fontSize: '12px', fontFamily: 'var(--font-ui)', marginTop: '8px' }}>
-                              Free until 31 December 2026
-                            </div>
-                            <div style={{ color: '#8b8a9a', fontSize: '11px', fontFamily: 'var(--font-ui)', marginTop: '4px' }}>
-                              Then $749.90/yr (or $74.99/mo) from 1 Jan 2027
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px', gap: '8px' }}>
-                              <span style={{ color: '#f59e0b', fontWeight: 600, fontSize: '12px', fontFamily: 'var(--font-ui)' }}>
-                                {FOUNDING_CAP - foundingCount} spots remaining
-                              </span>
-                              <span style={{ color: '#8b8a9a', fontSize: '12px', fontFamily: 'var(--font-ui)' }}>
-                                {foundingCount} of {FOUNDING_CAP} claimed
-                              </span>
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div style={PRICING_COMPARE_STYLES.price}>
-                              <span style={PRICING_COMPARE_STYLES.priceAmount}>{getPricingComparePrice(pt)}</span>
-                              {pt.monthly > 0 && <span style={PRICING_COMPARE_STYLES.pricePeriod}>{getPricingComparePeriod(pt)}</span>}
-                            </div>
-                            {pricingAnnual && pt.monthly > 0 && (
-                              <div style={PRICING_COMPARE_STYLES.annualNote}>{getPricingAnnualMeta(pt)}</div>
-                            )}
-                          </>
-                        )}
-                      </div>
-
-                      <div style={PRICING_COMPARE_STYLES.divider} />
-                    </div>
-
-                    <div style={PRICING_COMPARE_STYLES.featureList}>
-                      {pt.features.map((f, j) => (
-                        <div key={j} style={PRICING_COMPARE_STYLES.featureItem}>
-                          <span style={PRICING_COMPARE_STYLES.featureCheck}>✓</span>
-                          <span>{f}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div style={{ marginTop: 'auto', width: '100%' }}>
-                      {isFoundingExpert ? (
-                        <button
-                          type="button"
-                          disabled={foundingLoading}
-                          onClick={() => void handleFoundingCheckout()}
-                          style={{
-                            ...PRICING_COMPARE_STYLES.upgradeLink('primary'),
-                            background: 'linear-gradient(135deg, #f59e0b, #d97706)',
-                            color: '#000',
-                            border: 'none',
-                            cursor: foundingLoading ? 'wait' : 'pointer',
-                            opacity: foundingLoading ? 0.7 : 1,
-                          }}
-                        >
-                          {foundingLoading ? 'Loading…' : 'Claim your spot'}
-                        </button>
-                      ) : showUpgrade ? (
-                        <Link to="/pricing" style={PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant)}>
-                          Upgrade
-                        </Link>
-                      ) : (
-                        <div style={{ ...PRICING_COMPARE_STYLES.upgradeLink(pt.ctaVariant), visibility: 'hidden', pointerEvents: 'none' }} aria-hidden>
-                          Upgrade
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </div>
         </div>
       )}
 
       {activeTab === 'referrals' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={styles.sectionTitle}>Your Referral Code</div>
-            <div style={styles.sectionSub}>Share your code with other creatives. They get 10% off their first payment, and you get 10% off your next billing cycle for each successful referral.</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="ltset-h">Your referral code</div>
+            <div className="ltset-sub">Share your code with other creatives. They get 10% off their first payment, and you get 10% off your next billing cycle for each successful referral.</div>
             {referralLoading ? (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading your code...</div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Loading your code…</div>
             ) : referralCode ? (
               <>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ fontFamily: 'var(--font-ui)', fontSize: '22px', fontWeight: 700, color: 'var(--green)', letterSpacing: '0.05em', padding: '12px 20px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', flex: 1, minWidth: 0 }}>
-                    {referralCode}
-                  </div>
-                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(referralCode); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
-                    {referralCopied ? 'Copied!' : 'Copy Code'}
-                  </Button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: GREEN, letterSpacing: '0.05em', padding: '12px 20px', borderRadius: 12, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', flex: 1, minWidth: 0 }}>{referralCode}</div>
+                  <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => copy(referralCode, 'code')}>{referralCopied === 'code' ? 'Copied!' : 'Copy code'}</button>
                 </div>
-                <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-lg)', padding: '12px 20px', flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}>
-                    {`https://lenstrybe.com/join?ref=${referralCode}`}
-                  </div>
-                  <Button variant="secondary" onClick={() => { navigator.clipboard.writeText(`https://lenstrybe.com/join?ref=${referralCode}`); setReferralCopied(true); setTimeout(() => setReferralCopied(false), 2000) }}>
-                    Copy Link
-                  </Button>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <div style={{ padding: '12px 16px', borderRadius: 12, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', flex: 1, minWidth: 0, fontSize: 13, color: 'var(--lt-muted)', wordBreak: 'break-all' }}>{`https://lenstrybe.com/join?ref=${referralCode}`}</div>
+                  <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => copy(`https://lenstrybe.com/join?ref=${referralCode}`, 'link')}>{referralCopied === 'link' ? 'Copied!' : 'Copy link'}</button>
                 </div>
               </>
             ) : (
-              <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
-                Your referral code will appear here once you are on a paid plan.
-              </div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Your referral code will appear here once you are on a paid plan.</div>
             )}
           </div>
-          <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            <div style={styles.sectionTitle}>Your Referrals</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div style={{ fontSize: '48px', fontWeight: 700, color: 'var(--green)', fontFamily: 'var(--font-ui)', lineHeight: 1 }}>{referralCount}</div>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="ltset-h">Your referrals</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+              <div style={{ fontSize: 46, fontWeight: 800, color: GREEN, lineHeight: 1 }}>{referralCount}</div>
+              <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.5 }}>
                 {referralCount === 1 ? 'successful referral' : 'successful referrals'}<br />
-                <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Each confirmed referral earns you 10% off your next billing cycle.</span>
+                <span style={{ fontSize: 12, color: 'var(--lt-faint)' }}>Each confirmed referral earns you 10% off your next billing cycle.</span>
               </div>
             </div>
           </div>
@@ -743,180 +282,103 @@ export default function SettingsPage() {
       )}
 
       {activeTab === 'password' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-          <div style={{ ...GLASS_CARD, borderRadius: '12px', padding: '24px', marginBottom: '16px' }}>
-            <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '4px' }}>Update Email</div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '16px' }}>A confirmation link will be sent to your new email address.</div>
-            {emailMsg && (
-              <div style={{ fontSize: '13px', marginBottom: '12px', padding: '10px 14px', borderRadius: '8px', background: emailMsg.error ? 'rgba(239,68,68,0.1)' : 'rgba(29,185,84,0.1)', color: emailMsg.error ? '#ef4444' : '#1DB954' }}>
-                {emailMsg.text}
-              </div>
-            )}
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <input
-                value={currentEmailInput}
-                onChange={e => setCurrentEmailInput(e.target.value)}
-                placeholder="Current email"
-                type="email"
-                style={{ flex: 1, padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
-              />
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <div className="ltset-h">Update email</div>
+              <div className="ltset-sub" style={{ marginTop: 4 }}>A confirmation link will be sent to your new email address.</div>
             </div>
-            <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <input
-                value={newEmail}
-                onChange={e => setNewEmail(e.target.value)}
-                placeholder="New email address"
-                type="email"
-                style={{ flex: 1, padding: '9px 12px', ...GLASS_CARD, borderRadius: '8px', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-ui)', outline: 'none' }}
-              />
-              <button
-                onClick={updateEmail}
-                disabled={emailLoading}
-                style={{ padding: '9px 18px', background: '#1DB954', border: 'none', borderRadius: '8px', color: '#000', fontSize: '13px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-ui)', opacity: emailLoading ? 0.6 : 1 }}
-              >
-                {emailLoading ? 'Sending…' : 'Update Email'}
-              </button>
+            {emailMsg && (
+              <div style={{ fontSize: 13, padding: '10px 14px', borderRadius: 10, background: emailMsg.error ? 'rgba(239,68,68,0.12)' : 'rgba(29,185,84,0.12)', color: emailMsg.error ? RED : GREEN, lineHeight: 1.5 }}>{emailMsg.text}</div>
+            )}
+            <input style={inputStyle} type="email" placeholder="Current email" value={currentEmailInput} onChange={(e) => setCurrentEmailInput(e.target.value)} />
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <input style={{ ...inputStyle, flex: 1, minWidth: 180 }} type="email" placeholder="New email address" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} />
+              <button type="button" className="ltset-btn ltset-btn-primary" onClick={updateEmail} disabled={emailLoading}>{emailLoading ? 'Sending…' : 'Update email'}</button>
             </div>
           </div>
-
-          <div style={styles.card}>
-            <div style={styles.sectionTitle}>Change Password</div>
-            <div style={styles.sectionSub}>Send a password reset link to your email address.</div>
-            <div style={styles.row}>
-              <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
-                {maskEmail(user?.email)}
-              </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={async () => {
-                  await supabase.auth.resetPasswordForEmail(user.email)
-                  alert('Password reset email sent. Check your inbox.')
-                }}
-              >
-                Send Reset Email
-              </Button>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div>
+              <div className="ltset-h">Change password</div>
+              <div className="ltset-sub" style={{ marginTop: 4 }}>Send a password reset link to your email address.</div>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ fontSize: 14, color: 'var(--lt-muted)' }}>{maskEmail(user?.email)}</div>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={async () => { await supabase.auth.resetPasswordForEmail(user.email); showToast('Password reset email sent. Check your inbox.') }}>Send reset email</button>
             </div>
           </div>
         </div>
       )}
 
       {activeTab === 'danger' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {tier !== 'basic' && (
-            <div style={styles.dangerCard}>
-              <div style={styles.dangerTitle}>Cancel Subscription</div>
-              <div style={styles.dangerText}>
-                Cancel your subscription and downgrade to Basic. You keep access until the end of your current billing period.
-              </div>
-              <div>
-                <Button variant="secondary" size="sm" onClick={() => { setShowCancel(true); setCancelStep(1) }}>
-                  Cancel Subscription
-                </Button>
-              </div>
+            <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, border: `1px solid ${RED}44` }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: RED }}>Cancel subscription</div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Cancel your subscription and move to the free Basic plan. You keep {cap(tier)} access until the end of your current billing period. No refund for the remaining period, and this doesn't affect your rights under the Australian Consumer Law.</div>
+              <div><button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => { setShowCancel(true); setCancelStep(1) }}>Cancel subscription</button></div>
             </div>
           )}
-
-          <div style={styles.dangerCard}>
-            <div style={styles.dangerTitle}>Delete Account</div>
-            <div style={styles.dangerText}>
-              Permanently delete your account. Your profile is removed from search immediately. All data is deleted after 30 days. This cannot be undone.
-            </div>
-            <div>
-              <Button variant="danger" size="sm" onClick={() => { setShowDelete(true); setDeleteStep(1) }}>
-                Delete Account
-              </Button>
-            </div>
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, border: `1px solid ${RED}44` }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: RED }}>Delete account</div>
+            <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Permanently delete your account. Your profile is removed from search straight away, and all your data (portfolio, invoices, messages, reviews) is deleted after 30 days. You can reactivate within that 30-day window. This cannot be undone once the window passes.</div>
+            <div><button type="button" className="ltset-btn ltset-btn-danger" onClick={() => { setShowDelete(true); setDeleteStep(1); setDeleteConfirm('') }}>Delete account</button></div>
           </div>
         </div>
       )}
 
-      {/* Cancel Modal */}
-      <Modal isOpen={showCancel} onClose={() => { setShowCancel(false); setCancelStep(1) }} title="Cancel Subscription" size="md">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {cancelStep === 1 && (
-            <>
-              <div style={styles.stepTitle}>What you'll lose</div>
-              <div style={styles.featureList}>
-                {(tierFeatures[tier] ?? []).map((f, i) => (
-                  <div key={i} style={{ ...styles.featureItem, color: 'var(--error)' }}>
-                    <span style={{ color: 'var(--error)', fontSize: '12px' }}>✗</span>
-                    {f}
-                  </div>
-                ))}
-              </div>
-              <div style={styles.modalActions}>
-                <Button variant="ghost" onClick={() => setShowCancel(false)}>Keep My Plan</Button>
-                <Button variant="secondary" onClick={() => setCancelStep(2)}>Continue to Cancel →</Button>
-              </div>
-            </>
-          )}
-          {cancelStep === 2 && (
-            <>
-              <div style={styles.stepTitle}>Downgrade to Basic instead?</div>
-              <div style={styles.stepText}>
-                Basic is free and keeps your profile live. You lose business tools but stay discoverable to clients.
-              </div>
-              <div style={styles.modalActions}>
-                <Button variant="ghost" onClick={() => setCancelStep(3)}>No, cancel my subscription</Button>
-                <Button variant="primary" onClick={async () => {
-                  await supabase.from('profiles').update({ subscription_tier: 'basic' }).eq('id', user.id)
-                  setShowCancel(false)
-                }}>Downgrade to Basic</Button>
-              </div>
-            </>
-          )}
-          {cancelStep === 3 && (
-            <>
-              <div style={styles.stepTitle}>Why are you leaving?</div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {EXIT_REASONS.map(r => (
-                  <div key={r} style={styles.reasonOption(exitReason === r)} onClick={() => setExitReason(r)}>{r}</div>
-                ))}
-              </div>
-              <div style={styles.modalActions}>
-                <Button variant="ghost" onClick={() => setShowCancel(false)}>Keep My Plan</Button>
-                <Button variant="danger" disabled={loading} onClick={cancelSubscription}>
-                  {loading ? 'Cancelling…' : 'Confirm Cancellation'}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+      <Modal open={showCancel} onClose={() => { setShowCancel(false); setCancelStep(1) }} title="Cancel subscription" busy={cancelBusy}>
+        {cancelStep === 1 && (
+          <>
+            <div style={{ fontSize: 14, color: 'var(--lt-text)', fontWeight: 700 }}>What you'll lose on {cap(tier)}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {(TIER_FEATURES[tier] ?? []).filter((f) => !f.startsWith('Everything in')).map((f, i) => (
+                <div key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: 'var(--lt-muted)' }}><span style={{ color: RED }}>✕</span>{f}</div>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowCancel(false)}>Keep my plan</button>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setCancelStep(2)}>Continue</button>
+            </div>
+          </>
+        )}
+        {cancelStep === 2 && (
+          <>
+            <div style={{ fontSize: 14, color: 'var(--lt-text)', lineHeight: 1.6 }}>Basic keeps your profile live and discoverable for free. You'd lose the business tools but stay on LensTrybe. Cancelling moves you to Basic at the end of your current period.</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lt-text)', marginTop: 4 }}>Why are you leaving? (optional)</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {EXIT_REASONS.map((r) => (
+                <button key={r} type="button" onClick={() => setExitReason(r)} style={{ textAlign: 'left', padding: '11px 14px', borderRadius: 12, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13.5, border: `1px solid ${exitReason === r ? GREEN : 'var(--lt-border)'}`, background: exitReason === r ? 'rgba(29,185,84,0.12)' : 'var(--lt-surface)', color: exitReason === r ? GREEN : 'var(--lt-text)' }}>{r}</button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowCancel(false)} disabled={cancelBusy}>Keep my plan</button>
+              <button type="button" className="ltset-btn ltset-btn-danger" onClick={cancelSubscription} disabled={cancelBusy}>{cancelBusy ? 'Cancelling…' : 'Confirm cancellation'}</button>
+            </div>
+          </>
+        )}
       </Modal>
 
-      {/* Delete Modal */}
-      <Modal isOpen={showDelete} onClose={() => { setShowDelete(false); setDeleteStep(1); setDeleteConfirm('') }} title="Delete Account" size="md">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {deleteStep === 1 && (
-            <>
-              <div style={styles.stepTitle}>Are you sure?</div>
-              <div style={styles.stepText}>
-                Deleting your account will immediately remove your profile from search results. All your data (portfolio, invoices, messages, reviews) will be permanently deleted after 30 days. You have a 30-day window to reactivate.
-              </div>
-              <div style={styles.modalActions}>
-                <Button variant="ghost" onClick={() => setShowDelete(false)}>Cancel</Button>
-                <Button variant="danger" onClick={() => setDeleteStep(2)}>I understand, continue →</Button>
-              </div>
-            </>
-          )}
-          {deleteStep === 2 && (
-            <>
-              <div style={styles.stepTitle}>Type DELETE to confirm</div>
-              <Input
-                value={deleteConfirm}
-                onChange={e => setDeleteConfirm(e.target.value)}
-                placeholder="Type DELETE"
-              />
-              <div style={styles.modalActions}>
-                <Button variant="ghost" onClick={() => setShowDelete(false)}>Cancel</Button>
-                <Button variant="danger" disabled={deleteConfirm !== 'DELETE' || loading} onClick={deleteAccount}>
-                  {loading ? 'Deleting…' : 'Delete My Account'}
-                </Button>
-              </div>
-            </>
-          )}
-        </div>
+      <Modal open={showDelete} onClose={() => { setShowDelete(false); setDeleteStep(1); setDeleteConfirm('') }} title="Delete account" busy={deleteBusy}>
+        {deleteStep === 1 && (
+          <>
+            <div style={{ fontSize: 14, color: 'var(--lt-text)', lineHeight: 1.65 }}>Deleting your account removes your profile from search straight away. All your data (portfolio, invoices, messages, reviews) is permanently deleted after 30 days, and you can reactivate within that window. If you have an active paid subscription, deleting also cancels it.</div>
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowDelete(false)}>Cancel</button>
+              <button type="button" className="ltset-btn ltset-btn-danger" onClick={() => setDeleteStep(2)}>I understand, continue</button>
+            </div>
+          </>
+        )}
+        {deleteStep === 2 && (
+          <>
+            <div style={{ fontSize: 14, color: 'var(--lt-text)' }}>Type <strong>DELETE</strong> to confirm.</div>
+            <input style={inputStyle} placeholder="Type DELETE" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowDelete(false)} disabled={deleteBusy}>Cancel</button>
+              <button type="button" className="ltset-btn ltset-btn-danger" onClick={deleteAccount} disabled={deleteConfirm !== 'DELETE' || deleteBusy}>{deleteBusy ? 'Deleting…' : 'Delete my account'}</button>
+            </div>
+          </>
+        )}
       </Modal>
     </div>
   )
