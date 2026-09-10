@@ -2,10 +2,60 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { creativeSenderDisplayName } from '../../lib/creativeDisplayName'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Input from '../../components/ui/Input'
-import Modal from '../../components/ui/Modal'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+
+// Theme-aware Client Portals (light + dark) built on the --lt-* tokens.
+
+const GREEN = '#1DB954'
+const GREEN_TEXT = '#04120a'
+const PINK = '#FF2D78'
+const FONT = { fontFamily: 'Inter, sans-serif' }
+
+// Glass + field recipes on the theme tokens.
+const glassCard = {
+  background: 'var(--lt-glass-bg)',
+  border: 'var(--lt-glass-border)',
+  boxShadow: 'var(--lt-glass-shadow)',
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+}
+const field = {
+  background: 'var(--lt-input-bg)',
+  border: '1px solid var(--lt-input-border)',
+  color: 'var(--lt-text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+}
+
+function Btn({ variant = 'primary', size = 'md', children, style, disabled, ...props }) {
+  const pad = size === 'sm' ? '7px 14px' : '10px 18px'
+  const fs = size === 'sm' ? 12.5 : 13.5
+  const variants = {
+    primary: { background: GREEN, color: GREEN_TEXT, border: '1px solid transparent' },
+    secondary: { background: 'var(--lt-surface)', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    ghost: { background: 'transparent', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    danger: { background: PINK, color: '#fff', border: '1px solid transparent' },
+  }
+  return (
+    <button {...props} disabled={disabled}
+      style={{ padding: pad, fontSize: fs, fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'transform .12s ease, opacity .12s ease', opacity: disabled ? 0.55 : 1, ...variants[variant], ...style }}>
+      {children}
+    </button>
+  )
+}
+
+function Modal({ isOpen, onClose, title, children }) {
+  if (!isOpen) return null
+  return (
+    <div onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, ...FONT }}>
+      <div onClick={(e) => e.stopPropagation()}
+        style={{ width: '100%', maxWidth: 520, borderRadius: 16, padding: 24, boxSizing: 'border-box', background: 'var(--lt-modal-bg)', border: 'var(--lt-modal-border)', boxShadow: 'var(--lt-modal-shadow)', backdropFilter: 'var(--lt-modal-blur)', WebkitBackdropFilter: 'var(--lt-modal-blur)' }}>
+        {title && <h2 style={{ fontSize: 18, fontWeight: 800, margin: '0 0 18px', color: 'var(--lt-text)' }}>{title}</h2>}
+        {children}
+      </div>
+    </div>
+  )
+}
 
 export default function ClientPortalsPage() {
   const { user, profile } = useAuth()
@@ -100,24 +150,26 @@ export default function ClientPortalsPage() {
   }
 
   const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden', color: 'var(--lt-text)', ...FONT },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
-    infoBox: { padding: '16px', ...GLASS_CARD, borderRadius: 'var(--radius-xl)', fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7 },
+    title: { fontSize: isMobile ? '24px' : '28px', color: 'var(--lt-text)', fontWeight: 800, letterSpacing: '-0.01em', margin: 0 },
+    subtitle: { fontSize: '14px', color: 'var(--lt-muted)', marginTop: '4px' },
+    infoBox: { padding: '16px', ...glassCard, borderRadius: 16, fontSize: '14px', color: 'var(--lt-muted)', lineHeight: 1.7 },
     grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '16px' },
-    portalCard: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' },
+    portalCard: { ...glassCard, borderRadius: 16, padding: '16px', display: 'flex', flexDirection: 'column', gap: '16px' },
     cardHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' },
-    clientName: { fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    clientEmail: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '2px' },
+    clientName: { fontSize: '16px', fontWeight: 600, color: 'var(--lt-text)' },
+    clientEmail: { fontSize: '12px', color: 'var(--lt-muted)', marginTop: '2px' },
     copyRow: { display: 'flex', gap: '8px', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row' },
-    copyInput: { flex: 1, width: '100%', ...GLASS_CARD, borderRadius: 'var(--radius-md)', padding: '8px 12px', fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', outline: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+    copyInput: { flex: 1, width: '100%', ...field, borderRadius: 8, padding: '8px 12px', fontSize: '14px', color: 'var(--lt-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', boxSizing: 'border-box' },
     cardActions: { display: 'flex', gap: '8px', justifyContent: 'flex-end', flexWrap: 'wrap' },
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)', ...GLASS_CARD, borderRadius: 'var(--radius-xl)' },
+    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: '14px', ...glassCard, borderRadius: 16 },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     formRow: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '16px' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
-    createdAt: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
+    createdAt: { fontSize: '11px', color: 'var(--lt-faint)' },
+    fieldLabel: { display: 'block', fontSize: '13px', fontWeight: 700, color: 'var(--lt-text)', marginBottom: '6px' },
+    fieldInput: { ...field, width: '100%', padding: '10px 12px', borderRadius: 8, fontSize: '13px', boxSizing: 'border-box' },
   }
 
   return (
@@ -129,7 +181,7 @@ export default function ClientPortalsPage() {
         }
       `}</style>
       {toast && (
-        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? '#1DB954' : '#ef4444', color: toast.type === 'success' ? '#000' : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 600, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+        <div style={{ position: 'fixed', bottom: '24px', right: '24px', zIndex: 9999, background: toast.type === 'success' ? GREEN : PINK, color: toast.type === 'success' ? GREEN_TEXT : '#fff', padding: '12px 20px', borderRadius: '10px', fontSize: '14px', fontWeight: 700, boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
           {toast.type === 'success' ? '✓' : '✕'} {toast.msg}
         </div>
       )}
@@ -138,7 +190,7 @@ export default function ClientPortalsPage() {
           <h1 style={styles.title}>Client Portals</h1>
           <p style={styles.subtitle}>Share a private project space with each client, no login required.</p>
         </div>
-        <Button variant="primary" onClick={() => setShowCreate(true)}>+ New Portal</Button>
+        <Btn variant="primary" onClick={() => setShowCreate(true)}>+ New Portal</Btn>
       </div>
 
       <div style={styles.infoBox}>
@@ -166,9 +218,9 @@ export default function ClientPortalsPage() {
                   style={styles.copyInput}
                   value={getPortalUrl(portal.portal_token)}
                 />
-                <Button variant="secondary" size="sm" onClick={() => copyLink(portal.portal_token)}>
+                <Btn variant="secondary" size="sm" onClick={() => copyLink(portal.portal_token)}>
                   {copied === portal.portal_token ? '✓' : 'Copy'}
-                </Button>
+                </Btn>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -176,12 +228,12 @@ export default function ClientPortalsPage() {
                   Created {new Date(portal.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' })}
                 </div>
                 <div style={styles.cardActions}>
-                  <Button variant="ghost" size="sm" onClick={() => window.open(getPortalUrl(portal.portal_token), '_blank')}>
+                  <Btn variant="ghost" size="sm" onClick={() => window.open(getPortalUrl(portal.portal_token), '_blank')}>
                     Open
-                  </Button>
-                  <Button variant="danger" size="sm" onClick={() => deletePortal(portal.id)}>
+                  </Btn>
+                  <Btn variant="danger" size="sm" onClick={() => deletePortal(portal.id)}>
                     Delete
-                  </Button>
+                  </Btn>
                 </div>
               </div>
             </div>
@@ -189,35 +241,41 @@ export default function ClientPortalsPage() {
         </div>
       )}
 
-      <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="New Client Portal" size="md">
+      <Modal isOpen={showCreate} onClose={() => { setShowCreate(false); resetForm() }} title="New Client Portal">
         <div style={styles.formSection}>
           <div style={styles.formRow}>
-            <Input
-              label="Client name"
-              placeholder="Jane Smith"
-              value={form.client_name}
-              onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))}
-            />
-            <Input
-              label="Client email"
-              type="email"
-              placeholder="jane@example.com"
-              value={form.client_email}
-              onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))}
-            />
+            <div>
+              <label style={styles.fieldLabel}>Client name</label>
+              <input
+                placeholder="Jane Smith"
+                value={form.client_name}
+                onChange={e => setForm(p => ({ ...p, client_name: e.target.value }))}
+                style={styles.fieldInput}
+              />
+            </div>
+            <div>
+              <label style={styles.fieldLabel}>Client email</label>
+              <input
+                type="email"
+                placeholder="jane@example.com"
+                value={form.client_email}
+                onChange={e => setForm(p => ({ ...p, client_email: e.target.value }))}
+                style={styles.fieldInput}
+              />
+            </div>
           </div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.6 }}>
+          <div style={{ fontSize: '13px', color: 'var(--lt-muted)', lineHeight: 1.6 }}>
             A unique link will be generated for this portal. Share it with your client: they can access it without creating an account.
           </div>
           <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Button>
-            <Button
+            <Btn variant="ghost" onClick={() => { setShowCreate(false); resetForm() }}>Cancel</Btn>
+            <Btn
               variant="primary"
               disabled={saving || !form.client_name || !form.client_email}
               onClick={createPortal}
             >
               {saving ? 'Creating…' : 'Create Portal'}
-            </Button>
+            </Btn>
           </div>
         </div>
       </Modal>

@@ -1,10 +1,64 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import Button from '../../components/ui/Button'
-import Badge from '../../components/ui/Badge'
-import Modal from '../../components/ui/Modal'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+
+// Theme-aware Booking Requests page (light + dark) built on the --lt-* tokens.
+
+const GREEN = '#1DB954'
+const GREEN_TEXT = '#04120a'
+const PINK = '#FF2D78'
+const FONT = { fontFamily: 'Inter, sans-serif' }
+
+// Glass + field recipes on the theme tokens.
+const glassCard = {
+  background: 'var(--lt-glass-bg)',
+  border: 'var(--lt-glass-border)',
+  boxShadow: 'var(--lt-glass-shadow)',
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+}
+
+function Btn({ variant = 'primary', size = 'md', children, style, disabled, ...props }) {
+  const pad = size === 'sm' ? '7px 14px' : '10px 18px'
+  const fs = size === 'sm' ? 12.5 : 13.5
+  const variants = {
+    primary: { background: GREEN, color: GREEN_TEXT, border: '1px solid transparent' },
+    secondary: { background: 'var(--lt-surface)', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    ghost: { background: 'transparent', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    danger: { background: PINK, color: '#fff', border: '1px solid transparent' },
+  }
+  return (
+    <button {...props} disabled={disabled}
+      style={{ padding: pad, fontSize: fs, fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'transform .12s ease, opacity .12s ease', opacity: disabled ? 0.55 : 1, ...variants[variant], ...style }}>
+      {children}
+    </button>
+  )
+}
+
+function Modal({ isOpen, onClose, title, size = 'md', children }) {
+  if (!isOpen) return null
+  const maxWidth = size === 'sm' ? 420 : size === 'lg' ? 720 : 560
+  return (
+    <div
+      onClick={onClose}
+      style={{ position: 'fixed', inset: 0, zIndex: 3000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, ...FONT }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{ width: '100%', maxWidth, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, background: 'var(--lt-modal-bg)', border: 'var(--lt-modal-border)', boxShadow: 'var(--lt-modal-shadow)', backdropFilter: 'var(--lt-modal-blur)', WebkitBackdropFilter: 'var(--lt-modal-blur)', color: 'var(--lt-text)' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 22px', borderBottom: '1px solid var(--lt-hairline)' }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--lt-text)' }}>{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close"
+            style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+            &times;
+          </button>
+        </div>
+        <div style={{ padding: '22px' }}>{children}</div>
+      </div>
+    </div>
+  )
+}
 
 export default function BookingRequestsPage() {
   const { user } = useAuth()
@@ -34,10 +88,10 @@ export default function BookingRequestsPage() {
   }
 
   const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', color: 'var(--lt-text)', ...FONT },
     pageHeader: { display: 'flex', alignItems: 'center', gap: '12px' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { fontSize: '28px', color: 'var(--lt-text)', fontWeight: 800, letterSpacing: '-0.01em', margin: 0, fontFamily: 'inherit' },
+    subtitle: { fontSize: '14px', color: 'var(--lt-muted)', fontFamily: 'inherit', marginTop: '4px' },
     countBadge: {
       display: 'inline-flex',
       alignItems: 'center',
@@ -45,33 +99,33 @@ export default function BookingRequestsPage() {
       minWidth: '24px',
       height: '24px',
       padding: '0 8px',
-      borderRadius: 'var(--radius-full)',
-      background: 'var(--green)',
-      color: '#000',
+      borderRadius: '999px',
+      background: GREEN,
+      color: GREEN_TEXT,
       fontSize: '12px',
       fontWeight: 700,
-      fontFamily: 'var(--font-ui)',
+      fontFamily: 'inherit',
     },
-    tableWrap: { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', overflow: 'hidden' },
-    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', letterSpacing: '0.06em', textTransform: 'uppercase' },
-    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid rgba(20,17,26,0.08)', alignItems: 'center', cursor: 'pointer', transition: 'background var(--transition-fast)' },
+    tableWrap: { ...glassCard, borderRadius: 16, overflow: 'hidden' },
+    tableHeader: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '12px 24px', borderBottom: '1px solid var(--lt-hairline)', fontSize: '11px', color: 'var(--lt-faint)', fontFamily: 'inherit', letterSpacing: '0.06em', textTransform: 'uppercase' },
+    tableRow: { display: 'grid', gridTemplateColumns: '1fr 160px 140px 140px 160px', padding: '16px 24px', borderBottom: '1px solid var(--lt-hairline)', alignItems: 'center', cursor: 'pointer', transition: 'background .12s ease' },
     emptyState: {
       padding: '64px 24px',
       textAlign: 'center',
-      fontFamily: 'var(--font-ui)',
+      fontFamily: 'inherit',
       display: 'flex',
       flexDirection: 'column',
       alignItems: 'center',
       gap: '12px',
     },
     emptyIcon: { fontSize: '40px' },
-    emptyTitle: { ...TYPO.heading, fontSize: '16px', fontWeight: 500, color: 'var(--text-primary)' },
-    emptyText: { ...TYPO.body, fontSize: '13px', color: 'var(--text-muted)' },
+    emptyTitle: { fontSize: '16px', fontWeight: 700, color: 'var(--lt-text)' },
+    emptyText: { fontSize: '13px', color: 'var(--lt-muted)' },
     viewGrid: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' },
     viewField: { display: 'flex', flexDirection: 'column', gap: '4px' },
-    viewLabel: { fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.06em' },
-    viewValue: { fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' },
-    notes: { fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, padding: '14px 16px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', border: '1px solid var(--border-subtle)' },
+    viewLabel: { fontSize: '11px', color: 'var(--lt-faint)', fontFamily: 'inherit', textTransform: 'uppercase', letterSpacing: '0.06em' },
+    viewValue: { fontSize: '14px', color: 'var(--lt-text)', fontFamily: 'inherit' },
+    notes: { fontSize: '14px', color: 'var(--lt-muted)', fontFamily: 'inherit', lineHeight: 1.7, padding: '14px 16px', background: 'var(--lt-surface)', borderRadius: 12, border: '1px solid var(--lt-border)' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
   }
 
@@ -97,7 +151,7 @@ export default function BookingRequestsPage() {
         </div>
         {loading ? (
           <div style={styles.emptyState}>
-            <div style={{ fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading requests…</div>
+            <div style={{ fontSize: '14px', color: 'var(--lt-muted)', fontFamily: 'inherit' }}>Loading requests…</div>
           </div>
         ) : requests.length === 0 ? (
           <div style={styles.emptyState}>
@@ -108,25 +162,25 @@ export default function BookingRequestsPage() {
         ) : requests.map((r, i) => (
           <div
             key={r.id}
-            style={{ ...styles.tableRow, borderBottom: i === requests.length - 1 ? 'none' : '1px solid var(--border-subtle)' }}
+            style={{ ...styles.tableRow, borderBottom: i === requests.length - 1 ? 'none' : '1px solid var(--lt-hairline)' }}
             onClick={() => setSelected(r)}
-            onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-overlay)'}
+            onMouseEnter={e => e.currentTarget.style.background = 'var(--lt-surface)'}
             onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
           >
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{r.client_name ?? 'Client'}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{r.client_email}</div>
+              <div style={{ fontSize: '14px', fontWeight: 500, color: 'var(--lt-text)', fontFamily: 'inherit' }}>{r.client_name ?? 'Client'}</div>
+              <div style={{ fontSize: '12px', color: 'var(--lt-faint)', fontFamily: 'inherit' }}>{r.client_email}</div>
             </div>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--lt-muted)', fontFamily: 'inherit' }}>
               {r.date ? new Date(r.date).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
             </span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>{r.type ?? '—'}</span>
-            <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>
+            <span style={{ fontSize: '13px', color: 'var(--lt-muted)', fontFamily: 'inherit' }}>{r.type ?? '—'}</span>
+            <span style={{ fontSize: '13px', color: 'var(--lt-muted)', fontFamily: 'inherit' }}>
               {r.created_at ? new Date(r.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : '—'}
             </span>
             <div style={{ display: 'flex', gap: '8px' }} onClick={e => e.stopPropagation()}>
-              <Button variant="primary" size="sm" onClick={() => respond(r.id, 'confirmed')}>Accept</Button>
-              <Button variant="danger" size="sm" onClick={() => respond(r.id, 'cancelled')}>Decline</Button>
+              <Btn variant="primary" size="sm" onClick={() => respond(r.id, 'confirmed')}>Accept</Btn>
+              <Btn variant="danger" size="sm" onClick={() => respond(r.id, 'cancelled')}>Decline</Btn>
             </div>
           </div>
         ))}
@@ -170,9 +224,9 @@ export default function BookingRequestsPage() {
             )}
 
             <div style={styles.modalActions}>
-              <Button variant="ghost" onClick={() => setSelected(null)}>Close</Button>
-              <Button variant="danger" size="sm" onClick={() => respond(selected.id, 'cancelled')}>Decline</Button>
-              <Button variant="primary" size="sm" onClick={() => respond(selected.id, 'confirmed')}>Accept Booking</Button>
+              <Btn variant="ghost" onClick={() => setSelected(null)}>Close</Btn>
+              <Btn variant="danger" size="sm" onClick={() => respond(selected.id, 'cancelled')}>Decline</Btn>
+              <Btn variant="primary" size="sm" onClick={() => respond(selected.id, 'confirmed')}>Accept Booking</Btn>
             </div>
           </div>
         </Modal>

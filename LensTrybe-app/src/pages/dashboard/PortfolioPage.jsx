@@ -2,16 +2,88 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import Button from '../../components/ui/Button'
-import Modal from '../../components/ui/Modal'
-import Badge from '../../components/ui/Badge'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
 import {
   PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
   partitionFilesByPortfolioImageModeration,
 } from '../../lib/moderateContent'
 
+// Theme-aware Portfolio (light + dark) built on the --lt-* tokens. Styling only:
+// the image grid, aspect ratios, object-fit, hover overlay and upload controls are
+// preserved exactly; only colours, borders, glass, fields and buttons changed.
+
+const GREEN = '#1DB954'
+const GREEN_TEXT = '#04120a'
+const PINK = '#FF2D78'
+const ERROR = '#ef4444'
+const FONT = { fontFamily: 'Inter, sans-serif' }
+
 const LIMITS = { basic: 5, pro: 20, expert: 40, elite: 999 }
+
+// Glass + field recipes on the theme tokens.
+const glassCard = {
+  background: 'var(--lt-glass-bg)',
+  border: 'var(--lt-glass-border)',
+  boxShadow: 'var(--lt-glass-shadow)',
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+}
+const field = {
+  background: 'var(--lt-input-bg)',
+  border: '1px solid var(--lt-input-border)',
+  color: 'var(--lt-text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+}
+
+function Btn({ variant = 'primary', size = 'md', children, style, disabled, ...props }) {
+  const pad = size === 'sm' ? '7px 14px' : '10px 18px'
+  const fs = size === 'sm' ? 12.5 : 13.5
+  const variants = {
+    primary: { background: GREEN, color: GREEN_TEXT, border: '1px solid transparent' },
+    secondary: { background: 'var(--lt-surface)', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    ghost: { background: 'transparent', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    danger: { background: PINK, color: '#fff', border: '1px solid transparent' },
+  }
+  return (
+    <button {...props} disabled={disabled}
+      style={{ padding: pad, fontSize: fs, fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'transform .12s ease, opacity .12s ease', opacity: disabled ? 0.55 : 1, ...variants[variant], ...style }}>
+      {children}
+    </button>
+  )
+}
+
+const MODAL_SIZES = { sm: 400, md: 520, lg: 720 }
+
+function LtModal({ isOpen, onClose, title, size = 'md', children }) {
+  if (!isOpen) return null
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 2000, display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        padding: '48px 16px', background: 'rgba(0,0,0,0.55)', overflowY: 'auto',
+      }}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          width: '100%', maxWidth: MODAL_SIZES[size] || MODAL_SIZES.md, borderRadius: 16,
+          background: 'var(--lt-modal-bg)', border: 'var(--lt-modal-border)', boxShadow: 'var(--lt-modal-shadow)',
+          backdropFilter: 'var(--lt-modal-blur)', WebkitBackdropFilter: 'var(--lt-modal-blur)', ...FONT,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '16px 20px', borderBottom: '1px solid var(--lt-hairline)' }}>
+          <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: 'var(--lt-text)' }}>{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Close"
+            style={{ background: 'transparent', border: 'none', color: 'var(--lt-muted)', fontSize: 22, lineHeight: 1, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>
+            ×
+          </button>
+        </div>
+        <div style={{ padding: '20px' }}>{children}</div>
+      </div>
+    </div>
+  )
+}
 
 export default function PortfolioPage() {
   const { user } = useAuth()
@@ -127,25 +199,25 @@ export default function PortfolioPage() {
   }
 
   const styles = {
-    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden' },
+    page: { background: 'transparent', display: 'flex', flexDirection: 'column', gap: '32px', overflowX: 'hidden', color: 'var(--lt-text)', ...FONT },
     pageHeader: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px', flexDirection: isMobile ? 'column' : 'row' },
-    title: { ...TYPO.heading, fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400 },
-    subtitle: { ...TYPO.body, fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px' },
+    title: { fontSize: isMobile ? '24px' : '28px', color: 'var(--lt-text)', fontWeight: 800, letterSpacing: '-0.01em', margin: 0, fontFamily: 'inherit' },
+    subtitle: { fontSize: '14px', color: 'var(--lt-muted)', fontFamily: 'inherit', marginTop: '4px' },
     limitBar: { display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' },
-    limitTrack: { flex: 1, height: '4px', background: 'var(--border-default)', borderRadius: 'var(--radius-full)', overflow: 'hidden' },
-    limitFill: { height: '100%', background: items.length >= limit ? 'var(--error)' : 'var(--green)', borderRadius: 'var(--radius-full)', transition: 'width var(--transition-base)' },
-    limitText: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', whiteSpace: 'nowrap' },
-    uploadZone: { border: '2px dashed var(--border-default)', borderRadius: 'var(--radius-xl)', padding: isMobile ? '16px' : '48px', textAlign: 'center', cursor: 'pointer', transition: 'all var(--transition-base)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
+    limitTrack: { flex: 1, height: '4px', background: 'var(--lt-track)', borderRadius: '999px', overflow: 'hidden' },
+    limitFill: { height: '100%', background: items.length >= limit ? ERROR : GREEN, borderRadius: '999px', transition: 'width 0.2s ease' },
+    limitText: { fontSize: '12px', color: 'var(--lt-muted)', fontFamily: 'inherit', whiteSpace: 'nowrap' },
+    uploadZone: { border: '2px dashed var(--lt-border)', borderRadius: '16px', padding: isMobile ? '16px' : '48px', textAlign: 'center', cursor: 'pointer', transition: 'all 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' },
     grid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(4, 1fr)', gap: '12px' },
-    gridItem: (sel) => ({ position: 'relative', borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', border: `2px solid ${sel ? 'var(--green)' : 'transparent'}`, transition: 'border-color var(--transition-fast)' }),
+    gridItem: (sel) => ({ position: 'relative', borderRadius: '12px', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', border: `2px solid ${sel ? GREEN : 'transparent'}`, transition: 'border-color 0.12s ease' }),
     img: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
-    overlay: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0, transition: 'opacity var(--transition-fast)' },
-    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '14px', fontFamily: 'var(--font-ui)' },
+    overlay: { position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', opacity: 0, transition: 'opacity 0.12s ease' },
+    emptyState: { padding: '64px 24px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: '14px', fontFamily: 'inherit' },
     formSection: { display: 'flex', flexDirection: 'column', gap: '16px' },
     inputWrap: { display: 'flex', flexDirection: 'column', gap: '6px' },
-    label: { ...TYPO.label, fontSize: '13px', fontWeight: 500, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' },
-    input: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', boxSizing: 'border-box' },
-    textarea: { ...GLASS_NATIVE_FIELD, borderRadius: 'var(--radius-lg)', padding: '10px 14px', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)', outline: 'none', width: '100%', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
+    label: { fontSize: '13px', fontWeight: 500, color: 'var(--lt-muted)', fontFamily: 'inherit' },
+    input: { ...field, borderRadius: '12px', padding: '10px 14px', fontSize: '14px', width: '100%', boxSizing: 'border-box' },
+    textarea: { ...field, borderRadius: '12px', padding: '10px 14px', fontSize: '14px', width: '100%', minHeight: '80px', resize: 'vertical', boxSizing: 'border-box' },
     modalActions: { display: 'flex', gap: '10px', justifyContent: 'flex-end' },
   }
 
@@ -165,9 +237,9 @@ export default function PortfolioPage() {
             borderRadius: '10px',
             background: 'rgba(239,68,68,0.12)',
             border: '1px solid rgba(239,68,68,0.25)',
-            color: '#fecaca',
+            color: ERROR,
             fontSize: '13px',
-            fontFamily: 'var(--font-ui)',
+            fontFamily: 'inherit',
             whiteSpace: 'pre-line',
             lineHeight: 1.5,
           }}
@@ -180,9 +252,9 @@ export default function PortfolioPage() {
           <h1 style={styles.title}>Portfolio</h1>
           <p style={styles.subtitle}>Showcase your best work to potential clients.</p>
         </div>
-        <Button variant="primary" disabled={items.length >= limit || uploading} onClick={() => document.getElementById('portfolio-upload').click()}>
+        <Btn variant="primary" disabled={items.length >= limit || uploading} onClick={() => document.getElementById('portfolio-upload').click()}>
           {uploading ? (uploadPhase === 'checking' ? 'Checking photos...' : 'Uploading…') : '+ Add Photos'}
-        </Button>
+        </Btn>
         <input id="portfolio-upload" type="file" multiple accept="image/*,video/*" style={{ display: 'none' }} onChange={handleUpload} />
       </div>
 
@@ -191,7 +263,11 @@ export default function PortfolioPage() {
           <div style={{ ...styles.limitFill, width: `${Math.min(100, (items.length / limit) * 100)}%` }} />
         </div>
         <div style={styles.limitText}>{items.length} / {limit === 999 ? '∞' : limit} items</div>
-        {(tier === 'basic' || tier === 'pro') && <Badge variant="default" size="sm">Upgrade for more</Badge>}
+        {(tier === 'basic' || tier === 'pro') && (
+          <span style={{ fontSize: 10, fontWeight: 800, padding: '3px 9px', borderRadius: 20, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', color: 'var(--lt-muted)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            Upgrade for more
+          </span>
+        )}
       </div>
 
       {loading ? (
@@ -199,8 +275,8 @@ export default function PortfolioPage() {
       ) : items.length === 0 ? (
         <div style={styles.uploadZone} onClick={() => document.getElementById('portfolio-upload').click()}>
           <div style={{ fontSize: '32px' }}></div>
-          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Upload your first photo or video</div>
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>JPG, PNG, MP4: drag and drop or click to browse</div>
+          <div style={{ fontSize: '15px', fontWeight: 500, color: 'var(--lt-text)', fontFamily: 'inherit' }}>Upload your first photo or video</div>
+          <div style={{ fontSize: '13px', color: 'var(--lt-muted)', fontFamily: 'inherit' }}>JPG, PNG, MP4: drag and drop or click to browse</div>
         </div>
       ) : (
         <div style={styles.grid}>
@@ -217,18 +293,18 @@ export default function PortfolioPage() {
                 : <img src={item.file_url} alt={item.alt_text || ''} style={styles.img} />
               }
               <div className="overlay" style={styles.overlay}>
-                <Button variant="secondary" size="sm" onClick={e => { e.stopPropagation(); setEditForm({ headline: item.headline ?? '', description: item.description ?? '', alt_text: item.alt_text ?? '' }); setShowEdit(item) }}>Edit</Button>
-                <Button variant="danger" size="sm" onClick={e => { e.stopPropagation(); deleteItem(item.id, item.file_url) }}>Delete</Button>
+                <Btn variant="secondary" size="sm" onClick={e => { e.stopPropagation(); setEditForm({ headline: item.headline ?? '', description: item.description ?? '', alt_text: item.alt_text ?? '' }); setShowEdit(item) }}>Edit</Btn>
+                <Btn variant="danger" size="sm" onClick={e => { e.stopPropagation(); deleteItem(item.id, item.file_url) }}>Delete</Btn>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      <Modal isOpen={!!showEdit} onClose={() => setShowEdit(null)} title="Edit Portfolio Item" size="md">
+      <LtModal isOpen={!!showEdit} onClose={() => setShowEdit(null)} title="Edit Portfolio Item" size="md">
         <div style={styles.formSection}>
           {showEdit && (
-            <img src={showEdit.file_url} alt="" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: 'var(--radius-lg)' }} />
+            <img src={showEdit.file_url} alt="" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover', borderRadius: '12px' }} />
           )}
           <div style={styles.inputWrap}>
             <label style={styles.label}>Headline</label>
@@ -243,11 +319,11 @@ export default function PortfolioPage() {
             <input style={styles.input} placeholder="e.g. Wedding photographer Brisbane outdoor ceremony" value={editForm.alt_text} onChange={e => setEditForm(p => ({ ...p, alt_text: e.target.value }))} />
           </div>
           <div style={styles.modalActions}>
-            <Button variant="ghost" onClick={() => setShowEdit(null)}>Cancel</Button>
-            <Button variant="primary" onClick={saveEdit}>Save Changes</Button>
+            <Btn variant="ghost" onClick={() => setShowEdit(null)}>Cancel</Btn>
+            <Btn variant="primary" onClick={saveEdit}>Save Changes</Btn>
           </div>
         </div>
-      </Modal>
+      </LtModal>
     </div>
   )
 }

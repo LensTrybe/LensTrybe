@@ -3,8 +3,42 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
-import Button from '../../components/ui/Button'
-import { GLASS_CARD, GLASS_CARD_GREEN, GLASS_MODAL_PANEL, GLASS_MODAL_OVERLAY_BASE, GLASS_NATIVE_FIELD, DIVIDER_GRADIENT_STYLE, TYPO, glassCardAccentBorder } from '../../lib/glassTokens'
+
+// Theme-aware portfolio website builder (light + dark) on the --lt-* tokens.
+// This page is dashboard chrome only: it edits the creative's public site
+// (cover, headline, sections, services, gallery) but does not render a live
+// preview of that public site, so there are no creative-brand styles here.
+
+const glassCard = {
+  background: 'var(--lt-glass-bg)',
+  border: 'var(--lt-glass-border)',
+  boxShadow: 'var(--lt-glass-shadow)',
+  backdropFilter: 'var(--lt-glass-blur)',
+  WebkitBackdropFilter: 'var(--lt-glass-blur)',
+}
+const field = {
+  background: 'var(--lt-input-bg)',
+  border: '1px solid var(--lt-input-border)',
+  color: 'var(--lt-text)',
+  fontFamily: 'inherit',
+  outline: 'none',
+}
+
+function Btn({ variant = 'primary', size = 'md', children, style, disabled, ...props }) {
+  const pad = size === 'sm' ? '7px 14px' : '10px 18px'
+  const fs = size === 'sm' ? 12.5 : 13.5
+  const variants = {
+    primary: { background: '#1DB954', color: '#04120a', border: '1px solid transparent' },
+    secondary: { background: 'var(--lt-surface)', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+    ghost: { background: 'transparent', color: 'var(--lt-text)', border: '1px solid var(--lt-border)' },
+  }
+  return (
+    <button {...props} disabled={disabled}
+      style={{ padding: pad, fontSize: fs, fontWeight: 700, borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'transform .12s ease, opacity .12s ease', opacity: disabled ? 0.55 : 1, ...variants[variant], ...style }}>
+      {children}
+    </button>
+  )
+}
 
 const DEFAULT_SECTIONS = {
   client_reviews: true,
@@ -62,18 +96,18 @@ function FileThumb({ url, mime, label }) {
   const isImg = mime?.startsWith('image/')
   const isVid = mime?.startsWith('video/')
   if (isImg) {
-    return <img src={url} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-default)' }} />
+    return <img src={url} alt="" style={{ width: 48, height: 48, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} />
   }
   if (isVid) {
     return (
-      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border-default)', background: '#111', position: 'relative' }}>
+      <div style={{ width: 48, height: 48, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--lt-border)', background: 'var(--lt-surface-2)', position: 'relative' }}>
         <video src={url} muted playsInline style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         <span style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}></span>
       </div>
     )
   }
   return (
-    <div style={{ width: 48, height: 48, borderRadius: 8, border: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
+    <div style={{ width: 48, height: 48, borderRadius: 8, border: '1px solid var(--lt-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>
       {label}
     </div>
   )
@@ -525,29 +559,29 @@ export default function PortfolioWebsitePage() {
     }
   }
 
-  const card = { ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }
-  const label = { fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.05em' }
-  const inputStyle = { ...GLASS_NATIVE_FIELD, width: '100%', padding: '10px 12px', borderRadius: '8px' }
+  const card = { ...glassCard, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }
+  const label = { fontSize: '12px', fontWeight: 600, color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase', letterSpacing: '0.05em' }
+  const inputStyle = { ...field, width: '100%', padding: '10px 12px', borderRadius: '8px' }
 
-  if (!user) return <div style={{ background: 'transparent', padding: 32, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Sign in to manage your portfolio website.</div>
+  if (!user) return <div style={{ background: 'transparent', padding: 32, color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>Sign in to manage your portfolio website.</div>
 
   if (!hasAccess) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', padding: '28px 32px', maxWidth: 720, margin: '0 auto' }}>
         <div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Portfolio website</h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '8px', lineHeight: 1.6 }}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '28px', color: 'var(--lt-text)', fontWeight: 400, margin: 0 }}>Portfolio website</h1>
+          <p style={{ fontSize: '14px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)', marginTop: '8px', lineHeight: 1.6 }}>
             Your own public site at a LensTrybe subdomain, with sections you control and a gallery for client-ready files.
           </p>
         </div>
         <div style={{ ...card, textAlign: 'center', alignItems: 'center', gap: '20px', padding: '40px 28px' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--text-primary)' }}>Upgrade to Expert or Elite</div>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, maxWidth: 440, margin: 0 }}>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: '22px', color: 'var(--lt-text)' }}>Upgrade to Expert or Elite</div>
+          <p style={{ fontSize: '14px', color: 'var(--lt-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.7, maxWidth: 440, margin: 0 }}>
             The portfolio website builder is available on Expert and Elite.
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'center' }}>
-            <Link to="/pricing"><Button variant="primary">View plans</Button></Link>
-            <Link to="/dashboard/settings/subscription"><Button variant="secondary">Manage subscription</Button></Link>
+            <Link to="/pricing"><Btn variant="primary">View plans</Btn></Link>
+            <Link to="/dashboard/settings/subscription"><Btn variant="secondary">Manage subscription</Btn></Link>
           </div>
         </div>
       </div>
@@ -565,14 +599,14 @@ export default function PortfolioWebsitePage() {
         }
       `}</style>
       <header>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--text-primary)', fontWeight: 400, margin: 0 }}>Portfolio website</h1>
+        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--lt-text)', fontWeight: 400, margin: 0 }}>Portfolio website</h1>
       </header>
 
       <section style={card}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'flex-start', justifyContent: 'space-between', gap: '16px' }}>
-          <div><div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Your Website</div></div>
+          <div><div style={{ fontSize: '16px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Your Website</div></div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', fontFamily: 'var(--font-ui)', background: published ? 'rgba(29,185,84,0.15)' : 'rgba(156,163,175,0.12)', color: published ? '#1DB954' : 'var(--text-muted)', border: published ? '1px solid rgba(29,185,84,0.35)' : '1px solid var(--border-default)' }}>{published ? 'Live' : 'Offline'}</span>
+            <span style={{ fontSize: '12px', fontWeight: 700, padding: '4px 10px', borderRadius: '999px', fontFamily: 'var(--font-ui)', background: published ? 'rgba(29,185,84,0.15)' : 'rgba(156,163,175,0.12)', color: published ? '#1DB954' : 'var(--lt-faint)', border: published ? '1px solid rgba(29,185,84,0.35)' : '1px solid var(--lt-border)' }}>{published ? 'Live' : 'Offline'}</span>
             <button
               type="button"
               className="dash-switch"
@@ -582,8 +616,8 @@ export default function PortfolioWebsitePage() {
               onClick={() => savePublish(!published)}
               style={
                 isMobile
-                  ? { width: 40, height: 24, minHeight: 24, padding: 0, borderRadius: 999, border: '1px solid var(--border-default)', background: published ? '#1DB954' : 'var(--bg-base)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
-                  : { width: 52, height: 28, minHeight: 28, padding: 0, borderRadius: 999, border: '1px solid var(--border-default)', background: published ? '#1DB954' : 'var(--bg-base)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
+                  ? { width: 40, height: 24, minHeight: 24, padding: 0, borderRadius: 999, border: '1px solid var(--lt-border)', background: published ? '#1DB954' : 'var(--lt-track)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
+                  : { width: 52, height: 28, minHeight: 28, padding: 0, borderRadius: 999, border: '1px solid var(--lt-border)', background: published ? '#1DB954' : 'var(--lt-track)', position: 'relative', cursor: savingPublish ? 'wait' : 'pointer', flexShrink: 0 }
               }
             >
               <span
@@ -610,13 +644,13 @@ export default function PortfolioWebsitePage() {
       </section>
 
       <section style={card}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Your Website URL</div>
+        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Your Website URL</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '8px', fontFamily: 'var(--font-ui)', fontSize: '14px' }}>
           <input value={subdomain} onChange={(e) => setSubdomain(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))} style={{ ...inputStyle, maxWidth: 280, flex: '1 1 160px' }} autoComplete="off" spellCheck={false} />
-          <span style={{ color: 'var(--text-muted)' }}>.lenstrybe.com</span>
+          <span style={{ color: 'var(--lt-faint)' }}>.lenstrybe.com</span>
         </div>
         <div style={{ fontSize: '12px', fontFamily: 'var(--font-ui)', minHeight: 18 }}>
-          {checkingSlug ? <span style={{ color: 'var(--text-muted)' }}>Checking availability…</span> : null}
+          {checkingSlug ? <span style={{ color: 'var(--lt-faint)' }}>Checking availability…</span> : null}
           {!checkingSlug && slugAvailable === true && isValidSlug(subdomain.trim()) ? <span style={{ color: '#1DB954' }}>This subdomain is available.</span> : null}
           {!checkingSlug && slugAvailable === false ? <span style={{ color: '#f87171' }}>This subdomain is already taken.</span> : null}
         </div>
@@ -624,43 +658,43 @@ export default function PortfolioWebsitePage() {
           <>
             <div style={{ ...label, marginTop: 4 }}>Custom Domain Link</div>
             <input value={vanityUrl} onChange={(e) => setVanityUrl(e.target.value)} style={inputStyle} placeholder="https://www.mywebsite.com" />
-            <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>This link appears on your public profile. No DNS configuration required.</p>
+            <p style={{ margin: 0, fontSize: '13px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>This link appears on your public profile. No DNS configuration required.</p>
           </>
         ) : null}
         {slugError ? <p style={{ margin: 0, fontSize: '13px', color: '#f87171', fontFamily: 'var(--font-ui)' }}>{slugError}</p> : null}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <Button variant="primary" onClick={saveWebsiteUrlAndVanity} disabled={savingWebsiteUrl}>
+          <Btn variant="primary" onClick={saveWebsiteUrlAndVanity} disabled={savingWebsiteUrl}>
             {savingWebsiteUrl ? 'Saving…' : 'Save URL'}
-          </Button>
+          </Btn>
           {websiteUrlSaved ? <span style={{ fontSize: '13px', color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
         </div>
       </section>
 
       <section style={card}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Appearance</div>
+        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Appearance</div>
         <div>
           <div style={label}>Cover photo (hero banner)</div>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', marginTop: 8 }}>
-            {(coverPreview || profile?.portfolio_cover_url) ? <img src={coverPreview || profile?.portfolio_cover_url} alt="" style={{ width: 'min(100%, 320px)', maxHeight: 140, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--border-default)' }} /> : null}
+            {(coverPreview || profile?.portfolio_cover_url) ? <img src={coverPreview || profile?.portfolio_cover_url} alt="" style={{ width: 'min(100%, 320px)', maxHeight: 140, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--lt-border)' }} /> : null}
             <input ref={coverInputRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} />
-            <Button variant="secondary" type="button" onClick={() => coverInputRef.current?.click()}>{coverFile ? 'Replace image' : 'Choose image'}</Button>
+            <Btn variant="secondary" type="button" onClick={() => coverInputRef.current?.click()}>{coverFile ? 'Replace image' : 'Choose image'}</Btn>
           </div>
         </div>
         <div><div style={label}>Headline</div><input value={headline} onChange={(e) => setHeadline(e.target.value)} style={{ ...inputStyle, marginTop: 8 }} /></div>
         <div><div style={label}>Tagline</div><textarea value={tagline} onChange={(e) => setTagline(e.target.value)} rows={3} style={{ ...inputStyle, marginTop: 8, resize: 'vertical', minHeight: 72 }} /></div>
-        <div style={{ padding: '12px 14px', ...GLASS_CARD, borderRadius: 8, border: '1px solid var(--border-subtle)' }}>
-          <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.55 }}>
+        <div style={{ padding: '12px 14px', ...glassCard, borderRadius: 8, border: '1px solid var(--lt-hairline)' }}>
+          <p style={{ margin: 0, fontSize: '13px', color: 'var(--lt-muted)', fontFamily: 'var(--font-ui)', lineHeight: 1.55 }}>
             Your colour scheme is pulled from your Brand Kit{brandKit?.primary_color ? ` (${brandKit.primary_color}).` : '.'} Your font is pulled from your Brand Kit{brandKit?.font ? ` (${brandKit.font}).` : '.'}
           </p>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <Button variant="primary" onClick={saveAppearance} disabled={savingAppearance}>{savingAppearance ? 'Saving…' : 'Save appearance'}</Button>
+          <Btn variant="primary" onClick={saveAppearance} disabled={savingAppearance}>{savingAppearance ? 'Saving…' : 'Save appearance'}</Btn>
           {appearanceSaved ? <span style={{ fontSize: '13px', color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
         </div>
       </section>
 
       <section style={card}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Sections</div>
+        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Sections</div>
         {[
           { key: 'client_reviews', title: 'Client reviews' },
           { key: 'services_pricing', title: 'Services and pricing' },
@@ -670,7 +704,7 @@ export default function PortfolioWebsitePage() {
           const on = !!sections[key]
           if (isMobile) {
             return (
-              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)' }}>
+              <div key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--lt-hairline)', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--lt-text)' }}>
                 <span>{title}</span>
                 <button
                   type="button"
@@ -684,8 +718,8 @@ export default function PortfolioWebsitePage() {
                     minHeight: 22,
                     padding: 0,
                     borderRadius: 'var(--radius-full)',
-                    border: '1px solid var(--border-default)',
-                    background: on ? '#1DB954' : 'var(--bg-base)',
+                    border: '1px solid var(--lt-border)',
+                    background: on ? '#1DB954' : 'var(--lt-track)',
                     position: 'relative',
                     cursor: 'pointer',
                     flexShrink: 0,
@@ -709,24 +743,24 @@ export default function PortfolioWebsitePage() {
             )
           }
           return (
-            <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--border-subtle)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--text-primary)' }}>
+            <label key={key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', padding: '12px 14px', borderRadius: 8, border: '1px solid var(--lt-hairline)', cursor: 'pointer', fontFamily: 'var(--font-ui)', fontSize: '14px', color: 'var(--lt-text)' }}>
               <span>{title}</span>
               <input type="checkbox" checked={on} onChange={(e) => setSections((s) => ({ ...s, [key]: e.target.checked }))} style={{ width: 18, height: 18, accentColor: '#1DB954' }} />
             </label>
           )
         })}
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          <Button variant="primary" onClick={saveSections} disabled={savingSections}>{savingSections ? 'Saving…' : 'Save sections'}</Button>
+          <Btn variant="primary" onClick={saveSections} disabled={savingSections}>{savingSections ? 'Saving…' : 'Save sections'}</Btn>
           {sectionsSaved ? <span style={{ fontSize: '13px', color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
         </div>
       </section>
 
       <section style={card}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Services and Pricing</div>
-        <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
+        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Services and Pricing</div>
+        <p style={{ margin: 0, fontSize: '13px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>
           Build your public services list. This appears when Services and Pricing is enabled.
         </p>
-        {loadingServices ? <p style={{ margin: 0, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading…</p> : null}
+        {loadingServices ? <p style={{ margin: 0, color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>Loading…</p> : null}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {services.map((service, idx) => {
             const dragKey = String(service.id ?? `new-${idx}`)
@@ -737,41 +771,41 @@ export default function PortfolioWebsitePage() {
                 onDragStart={() => setDragServiceId(dragKey)}
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={() => onServiceDrop(idx)}
-                style={{ border: '1px solid var(--border-subtle)', borderRadius: 10, padding: 12, background: 'var(--bg-base)', display: 'grid', gap: 10 }}
+                style={{ border: '1px solid var(--lt-hairline)', borderRadius: 10, padding: 12, background: 'var(--lt-surface)', display: 'grid', gap: 10 }}
               >
                 <input value={service.name || ''} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, name: e.target.value } : s)))} style={inputStyle} placeholder="Service name" />
                 <textarea value={service.description || ''} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, description: e.target.value } : s)))} rows={3} style={{ ...inputStyle, resize: 'vertical' }} placeholder="Description" />
                 <input value={service.price || ''} onChange={(e) => setServices((prev) => prev.map((s, i) => (i === idx ? { ...s, price: e.target.value } : s)))} style={inputStyle} placeholder="$500, From $800, POA" />
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <Button variant="primary" size="sm" type="button" onClick={() => saveServiceRow(service, idx)} disabled={service.isSaving || service.isDeleting}>
+                  <Btn variant="primary" size="sm" type="button" onClick={() => saveServiceRow(service, idx)} disabled={service.isSaving || service.isDeleting}>
                     {service.isSaving ? 'Saving…' : 'Save'}
-                  </Button>
-                  <Button variant="ghost" size="sm" type="button" onClick={() => deleteServiceRow(service, idx)} disabled={service.isSaving || service.isDeleting}>
+                  </Btn>
+                  <Btn variant="ghost" size="sm" type="button" onClick={() => deleteServiceRow(service, idx)} disabled={service.isSaving || service.isDeleting}>
                     {service.isDeleting ? 'Deleting…' : 'Delete'}
-                  </Button>
+                  </Btn>
                 </div>
               </div>
             )
           })}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <Button variant="secondary" onClick={addServiceRow} type="button">Add Service</Button>
+          <Btn variant="secondary" onClick={addServiceRow} type="button">Add Service</Btn>
           {servicesSaved ? <span style={{ fontSize: 13, color: '#1DB954', fontFamily: 'var(--font-ui)' }}>Saved.</span> : null}
         </div>
       </section>
 
       <section style={{ ...card, gap: '20px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Gallery</div>
-        <div style={{ border: '1px dashed var(--border-default)', borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)' }}>New folder</div>
+        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>Gallery</div>
+        <div style={{ border: '1px dashed var(--lt-border)', borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--lt-muted)', fontFamily: 'var(--font-ui)' }}>New folder</div>
           <input value={newFolderName} onChange={(e) => setNewFolderName(e.target.value)} style={inputStyle} placeholder="Folder name" />
           <input ref={newFolderCoverRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => setNewFolderCover(e.target.files?.[0] ?? null)} />
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-            <Button variant="secondary" type="button" size="sm" onClick={() => newFolderCoverRef.current?.click()}>{newFolderCover ? 'Change cover' : 'Optional cover'}</Button>
+            <Btn variant="secondary" type="button" size="sm" onClick={() => newFolderCoverRef.current?.click()}>{newFolderCover ? 'Change cover' : 'Optional cover'}</Btn>
           </div>
-          <Button variant="primary" type="button" onClick={createFolder} disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'Creating…' : 'Create folder'}</Button>
+          <Btn variant="primary" type="button" onClick={createFolder} disabled={creatingFolder || !newFolderName.trim()}>{creatingFolder ? 'Creating…' : 'Create folder'}</Btn>
         </div>
-        {loadingContent ? <p style={{ color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>Loading…</p> : (
+        {loadingContent ? <p style={{ color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)', fontSize: '13px' }}>Loading…</p> : (
           <div className="folder-grid-mobile" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
             <GeneralRow count={filesForFolder('general').length} manageOpen={manageTarget === 'general'} onManage={() => setManageTarget((t) => (t === 'general' ? null : 'general'))} onAddFiles={(fl) => uploadFilesToTarget(fl, 'general')} files={filesForFolder('general')} onDeleteFile={deleteFile} uploadingFiles={uploadingFiles} addFilesRef={addFilesRef} />
             {folders.map((folder) => (
@@ -786,15 +820,15 @@ export default function PortfolioWebsitePage() {
 
 function GeneralRow({ count, manageOpen, onManage, onAddFiles, files, onDeleteFile, uploadingFiles, addFilesRef }) {
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ ...glassCard, borderRadius: 12, padding: '16px', width: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
         <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '8px' }}>
           <div>
-            <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>General</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{count} file{count === 1 ? '' : 's'}</div>
+            <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>General</div>
+            <div style={{ fontSize: '12px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>{count} file{count === 1 ? '' : 's'}</div>
           </div>
         </div>
-        <Button variant="secondary" size="sm" type="button" onClick={onManage} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
+        <Btn variant="secondary" size="sm" type="button" onClick={onManage} style={{ flexShrink: 0, whiteSpace: 'nowrap' }}>{manageOpen ? 'Close' : 'Manage Files'}</Btn>
       </div>
       {manageOpen ? <ManagePanel files={files} onDeleteFile={onDeleteFile} onPickFiles={(e) => { const fl = e.target.files; if (fl?.length) onAddFiles(Array.from(fl)) }} uploadingFiles={uploadingFiles} inputRef={addFilesRef} /> : null}
     </div>
@@ -805,15 +839,15 @@ function FolderRow({ folder, fileCount, manageOpen, onManage, onDelete, files, o
   const isMobile = typeof window !== 'undefined' ? window.innerWidth < 768 : false
   const localRef = useRef(null)
   return (
-    <div style={{ ...GLASS_CARD, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+    <div style={{ ...glassCard, borderRadius: 12, padding: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', flexWrap: 'wrap', justifyContent: 'space-between', gap: '12px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-          {folder.cover_url ? <img src={folder.cover_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--border-default)' }} /> : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--bg-base)', border: '1px solid var(--border-subtle)' }} />}
-          <div><div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>{folder.name}</div><div style={{ fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>{fileCount} file{fileCount === 1 ? '' : 's'}</div></div>
+          {folder.cover_url ? <img src={folder.cover_url} alt="" style={{ width: 56, height: 56, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} /> : <div style={{ width: 56, height: 56, borderRadius: 8, background: 'var(--lt-surface)', border: '1px solid var(--lt-hairline)' }} />}
+          <div><div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--lt-text)', fontFamily: 'var(--font-ui)' }}>{folder.name}</div><div style={{ fontSize: '12px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>{fileCount} file{fileCount === 1 ? '' : 's'}</div></div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button variant="secondary" size="sm" type="button" onClick={onManage}>{manageOpen ? 'Close' : 'Manage Files'}</Button>
-          <Button variant="ghost" size="sm" type="button" onClick={onDelete}>Delete Folder</Button>
+          <Btn variant="secondary" size="sm" type="button" onClick={onManage}>{manageOpen ? 'Close' : 'Manage Files'}</Btn>
+          <Btn variant="ghost" size="sm" type="button" onClick={onDelete}>Delete Folder</Btn>
         </div>
       </div>
       {manageOpen ? <ManagePanel files={files} onDeleteFile={onDeleteFile} onPickFiles={(e) => { const fl = e.target.files; if (fl?.length) onAddFiles(Array.from(fl)) }} uploadingFiles={uploadingFiles} inputRef={localRef} /> : null}
@@ -823,24 +857,24 @@ function FolderRow({ folder, fileCount, manageOpen, onManage, onDelete, files, o
 
 function ManagePanel({ files, onDeleteFile, onPickFiles, uploadingFiles, inputRef }) {
   return (
-    <div style={{ marginTop: 4, padding: '14px', ...GLASS_CARD, borderRadius: 10 }}>
+    <div style={{ marginTop: 4, padding: '14px', ...glassCard, borderRadius: 10 }}>
       <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: 12 }}>
-        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase' }}>Files in this folder</span>
+        <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)', textTransform: 'uppercase' }}>Files in this folder</span>
         <div>
           <input ref={inputRef} type="file" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,.pdf,application/pdf" style={{ display: 'none' }} onChange={onPickFiles} />
-          <Button variant="secondary" size="sm" type="button" disabled={uploadingFiles} onClick={() => inputRef.current?.click()}>{uploadingFiles ? 'Uploading…' : 'Add Files'}</Button>
+          <Btn variant="secondary" size="sm" type="button" disabled={uploadingFiles} onClick={() => inputRef.current?.click()}>{uploadingFiles ? 'Uploading…' : 'Add Files'}</Btn>
         </div>
       </div>
-      {files.length === 0 ? <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>No files yet. Add images, video or PDF.</p> : (
+      {files.length === 0 ? <p style={{ margin: 0, fontSize: '13px', color: 'var(--lt-faint)', fontFamily: 'var(--font-ui)' }}>No files yet. Add images, video or PDF.</p> : (
         <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {files.map((f) => (
-            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(20,17,26,0.08)' }}>
+            <li key={f.id} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '12px', padding: '10px 0', borderBottom: '1px solid var(--lt-hairline)' }}>
               <FileThumb url={f.file_url} mime={f.mime_type} label="PDF" />
               <div style={{ flex: '1 1 120px', minWidth: 0 }}>
-                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', wordBreak: 'break-word' }}>{f.filename}</div>
+                <div style={{ fontSize: '13px', fontWeight: 500, color: 'var(--lt-text)', fontFamily: 'var(--font-ui)', wordBreak: 'break-word' }}>{f.filename}</div>
                 <span style={{ display: 'inline-block', marginTop: 4, fontSize: '10px', fontWeight: 700, padding: '2px 8px', borderRadius: 4, background: 'rgba(168,85,247,0.12)', color: '#A855F7', fontFamily: 'var(--font-ui)' }}>{(f.mime_type || '').split('/')[1] || 'file'}</span>
               </div>
-              <Button variant="ghost" size="sm" type="button" onClick={() => onDeleteFile(f)}>Delete</Button>
+              <Btn variant="ghost" size="sm" type="button" onClick={() => onDeleteFile(f)}>Delete</Btn>
             </li>
           ))}
         </ul>
