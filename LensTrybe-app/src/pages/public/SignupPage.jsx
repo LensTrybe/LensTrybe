@@ -250,6 +250,18 @@ export default function SignupPage() {
     }
   }, [searchParams])
 
+  // Pre-fill (and validate) a referral code arriving via an invite link, e.g.
+  // /join/creative?ref=LENS-SARAH123. The creative can still edit it before paying.
+  useEffect(() => {
+    const ref = searchParams.get('ref')
+    if (!ref) return
+    const code = ref.toUpperCase().trim()
+    if (!code) return
+    setForm(prev => (prev.referralCode ? prev : { ...prev, referralCode: code }))
+    validateReferralCode(code)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
+
   useEffect(() => {
     if (emailPrefillApplied.current) return
     const raw = location.state?.email
@@ -396,6 +408,7 @@ export default function SignupPage() {
             tier: effectiveTier,
             billing: form.billingInterval,
             fullName: `${form.firstName} ${form.lastName}`.trim(),
+            referralCode: (form.referralCode || '').trim(),
           })
         } catch (e) {
           console.log('Revolut card setup failed', e?.message)
@@ -952,6 +965,33 @@ export default function SignupPage() {
                   <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
                   <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/terms" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the terms</a>.</span>
                 </label>
+              )}
+              {form.tier !== 'basic' && !foundingValid && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>
+                  <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <input
+                      style={{ ...LIQUID_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
+                      placeholder="e.g. LENS-SARAH123"
+                      value={form.referralCode}
+                      onChange={e => { update('referralCode', e.target.value.toUpperCase()); setReferralCodeStatus(null); setReferralCodeReferrerName('') }}
+                      onBlur={e => validateReferralCode(e.target.value)}
+                    />
+                    <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px' }} onClick={() => validateReferralCode(form.referralCode)}>
+                      Apply
+                    </LiquidPill>
+                  </div>
+                  {referralCodeStatus === 'valid' && (
+                    <div style={{ fontSize: '12px', color: 'var(--green)', fontFamily: 'var(--font-ui)' }}>
+                      Code applied. You will receive 10% off your first payment{referralCodeReferrerName ? `, referred by ${referralCodeReferrerName}` : ''}.
+                    </div>
+                  )}
+                  {referralCodeStatus === 'invalid' && (
+                    <div style={{ fontSize: '12px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>
+                      Invalid referral code. Please check and try again.
+                    </div>
+                  )}
+                </div>
               )}
             </>
           )}

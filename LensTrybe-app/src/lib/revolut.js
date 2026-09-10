@@ -30,7 +30,7 @@ function loadRevolutSdk(env) {
 }
 
 // Returns 'success' | 'cancel'. Throws on error.
-export async function payWithRevolut({ user, tier, billing, fullName }) {
+export async function payWithRevolut({ user, tier, billing, fullName, referralCode }) {
   const baseUrl = import.meta.env.VITE_SUPABASE_URL
   if (!baseUrl) throw new Error('Missing VITE_SUPABASE_URL')
   if (!user?.id || !user?.email) throw new Error('Please sign in first')
@@ -44,6 +44,7 @@ export async function payWithRevolut({ user, tier, billing, fullName }) {
       tier,
       billing,
       fullName: fullName || '',
+      referralCode: referralCode || '',
     }),
   })
   if (!res.ok) {

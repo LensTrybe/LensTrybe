@@ -10,7 +10,13 @@
 // set by handle_new_user at signup. The recurring-charge cron makes the first real
 // charge on next_charge_date.
 //
-// Receives: { userId, email, tier, billing, fullName? }
+// Referrals: if a valid referralCode is supplied (and it isn't the user's own, and
+// they haven't already been referred), we record the referral (profiles.referred_by_code
+// + a pending referrals row) and flag the subscription so the first real charge gets
+// 10% off. Because this function only ever runs for PAID tiers, referral discounts are
+// automatically limited to paid subscriptions.
+//
+// Receives: { userId, email, tier, billing, fullName?, referralCode? }
 // Returns:  { token, orderId, env, trialEnd }
 //
 // Secrets: REVOLUT_SECRET_KEY, REVOLUT_ENV, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
@@ -84,6 +90,7 @@ Deno.serve(async (req) => {
   const tier = String(bodyIn?.tier || '').toLowerCase()
   const billing = String(bodyIn?.billing || '').toLowerCase() === 'monthly' ? 'monthly' : 'annual'
   const fullName = String(bodyIn?.fullName || '').trim()
+  const referralCode = String(bodyIn?.referralCode || '').toUpperCase().trim()
 
   if (!userId || !email) return json({ error: 'Missing userId or email' }, 400)
 
@@ -92,7 +99,7 @@ Deno.serve(async (req) => {
   // Read what the signup trigger already granted: founding status + first-charge date.
   const { data: prof } = await sb
     .from('profiles')
-    .select('revolut_customer_id, founding_member, next_billing_date')
+    .select('revolut_customer_id, founding_member, next_billing_date, referred_by_code')
     .eq('id', userId)
     .maybeSingle()
 
@@ -103,6 +110,45 @@ Deno.serve(async (req) => {
     ? (billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY)
     : PLANS?.[tier]?.[billing]
   if (!amount) return json({ error: `Unknown plan: ${tier}/${billing}` }, 400)
+
+  // ---- Referral capture (paid tiers only; this function never runs for Basic) ----
+  // Record the referral once, then a pending referral means the first real charge is
+  // discounted. Idempotent across signup retries: we key the discount off whether a
+  // pending referrals row exists, not off this single request.
+  if (referralCode && !prof?.referred_by_code) {
+    const { data: referrer } = await sb
+      .from('profiles')
+      .select('id')
+      .eq('referral_code', referralCode)
+      .maybeSingle()
+    if (referrer?.id && referrer.id !== userId) {
+      await sb.from('profiles').update({ referred_by_code: referralCode }).eq('id', userId)
+      // Avoid duplicate referral rows if one somehow already exists for this user.
+      const { data: existingRef } = await sb
+        .from('referrals')
+        .select('id')
+        .eq('referred_user_id', userId)
+        .maybeSingle()
+      if (!existingRef) {
+        await sb.from('referrals').insert({
+          referrer_id: referrer.id,
+          referred_user_id: userId,
+          referral_code: referralCode,
+          status: 'pending',
+        })
+      }
+    }
+  }
+
+  // A pending referral (from this signup or an earlier attempt) means the first real
+  // charge should be discounted 10%.
+  const { data: pendingRef } = await sb
+    .from('referrals')
+    .select('id')
+    .eq('referred_user_id', userId)
+    .eq('status', 'pending')
+    .maybeSingle()
+  const firstChargeDiscount = !!pendingRef
 
   // First-charge date comes from the profile (trigger set founding = +12 months,
   // paid trial = +3 months). Fall back to a 3-month trial if it's somehow missing.
@@ -157,6 +203,7 @@ Deno.serve(async (req) => {
       current_period_end: firstChargeInstant.toISOString(),
       next_charge_date: firstChargeDate,
       founding_member: isFounding,
+      first_charge_discount: firstChargeDiscount,
       updated_at: new Date().toISOString(),
     },
     { onConflict: 'user_id' },

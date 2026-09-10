@@ -6,6 +6,13 @@
 // creative is charged the new lower price and stepped down at their period end.
 // Picks up both trialing subs whose trial/deferral ended and active renewals.
 //
+// Referral discounts (all paid-only, since only paid subs are charged here):
+//   - Referred creative's FIRST real charge gets 10% off (subscriptions.first_charge_discount).
+//     On success that referral is confirmed and the referrer is credited one reward.
+//   - Referrer rewards (profiles.pending_referral_rewards) are then redeemed on the
+//     referrer's own charges: monthly consumes one 10% reward per charge; annual stacks
+//     all pending rewards onto the one renewal, capped at 50% off (5 rewards).
+//
 // Auth: requires header `x-cron-secret` == CRON_SECRET (if that secret is set).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -20,6 +27,14 @@ const PLANS: Record<string, Record<string, number>> = {
   expert: { monthly: 7499, annual: 74990 },
   elite: { monthly: 14999, annual: 149990 },
 }
+
+// Referral discount tuning.
+const REFERRED_FIRST_CHARGE_PCT = 10   // referred creative's first real charge
+const REWARD_PCT_EACH = 10             // one confirmed referral = 10%
+const ANNUAL_MAX_REWARDS = 5           // annual stacks up to 5 (=> 50% cap)
+const TOTAL_DISCOUNT_CAP = 60          // safety cap on any single charge's combined discount
+const MIN_CHARGE_MINOR = 50            // never charge below this when a discount applies
+
 function priceFor(tier: string, billing: string, founding: boolean): number | null {
   if (founding) return billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY
   return PLANS?.[tier]?.[billing] ?? null
@@ -85,7 +100,7 @@ Deno.serve(async (req) => {
   const today = new Date().toISOString().slice(0, 10)
   const nowIso = new Date().toISOString()
 
-  // Downgrade canceled subs whose paid access period has now ended → Basic.
+  // Downgrade canceled subs whose paid access period has now ended -> Basic.
   const { data: expiredCanceled } = await sb
     .from('subscriptions')
     .select('id, user_id')
@@ -100,7 +115,7 @@ Deno.serve(async (req) => {
   // Charge both trialing subs whose trial has ended and active subs due for renewal.
   const { data: due, error } = await sb
     .from('subscriptions')
-    .select('id, user_id, tier, billing, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end, founding_member, pending_tier, pending_billing')
+    .select('id, user_id, tier, billing, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end, founding_member, pending_tier, pending_billing, first_charge_discount')
     .eq('provider', 'revolut')
     .in('status', ['active', 'trialing'])
     .not('revolut_payment_method_id', 'is', null)
@@ -114,7 +129,7 @@ Deno.serve(async (req) => {
     try {
       // Apply a scheduled downgrade at renewal: charge the NEW lower price and
       // step the tier down. pending_* is only ever set for real downgrades (never
-      // to Basic — that path is cancellation).
+      // to Basic - that path is cancellation).
       let chargeTier = String(sub.tier)
       let chargeBilling = String(sub.billing)
       let chargeAmount = Number(sub.amount_minor)
@@ -126,8 +141,37 @@ Deno.serve(async (req) => {
         if (amt != null) chargeAmount = amt
       }
 
+      // ---- Referral discounts ----
+      // (a) Referred creative's first real charge.
+      const firstChargePct = sub.first_charge_discount ? REFERRED_FIRST_CHARGE_PCT : 0
+
+      // (b) Referrer rewards owed to THIS creative.
+      let rewardPct = 0
+      let rewardsToConsume = 0
+      const { data: uprof } = await sb
+        .from('profiles')
+        .select('pending_referral_rewards')
+        .eq('id', sub.user_id)
+        .maybeSingle()
+      const pendingRewards = Number(uprof?.pending_referral_rewards || 0)
+      if (pendingRewards > 0) {
+        if (chargeBilling === 'monthly') {
+          rewardsToConsume = 1
+          rewardPct = REWARD_PCT_EACH
+        } else {
+          const usable = Math.min(pendingRewards, ANNUAL_MAX_REWARDS)
+          rewardsToConsume = usable
+          rewardPct = usable * REWARD_PCT_EACH
+        }
+      }
+
+      const discountPct = Math.min(firstChargePct + rewardPct, TOTAL_DISCOUNT_CAP)
+      const chargedAmount = discountPct > 0
+        ? Math.max(Math.round(chargeAmount * (100 - discountPct) / 100), MIN_CHARGE_MINOR)
+        : chargeAmount
+
       const order = await revolut('/orders', REVOLUT_SECRET_KEY, 'POST', {
-        amount: chargeAmount,
+        amount: chargedAmount,
         currency: sub.currency,
         capture_mode: 'automatic',
         customer: { id: sub.revolut_customer_id },
@@ -169,23 +213,45 @@ Deno.serve(async (req) => {
           patch.pending_billing = null
           patch.pending_change_at = null
         }
+        if (firstChargePct > 0) patch.first_charge_discount = false
         await sb.from('subscriptions').update(patch).eq('id', sub.id)
+
         if (applyingDowngrade) {
           await sb.from('profiles').update({ subscription_tier: chargeTier, subscription_status: 'active' }).eq('id', sub.user_id)
         }
+
+        // Confirm the referral behind this creative's first real charge and credit the referrer.
+        if (firstChargePct > 0) {
+          const { data: refRow } = await sb
+            .from('referrals')
+            .select('id, referrer_id')
+            .eq('referred_user_id', sub.user_id)
+            .eq('status', 'pending')
+            .maybeSingle()
+          if (refRow?.id) {
+            await sb.from('referrals').update({ status: 'confirmed', confirmed_at: new Date().toISOString() }).eq('id', refRow.id)
+            if (refRow.referrer_id) await sb.rpc('award_referral', { p_referrer: refRow.referrer_id })
+          }
+        }
+
+        // Redeem the referrer rewards we just applied to this charge.
+        if (rewardsToConsume > 0) {
+          await sb.rpc('consume_referral_rewards', { p_user: sub.user_id, p_n: rewardsToConsume })
+        }
       } else {
         // Renewal charge failed: mark past_due and send a dunning email. Do not
-        // extend the period or apply the downgrade; the job will retry next run.
+        // extend the period, apply the downgrade, or touch referral rewards; the job
+        // will retry next run.
         await sb.from('subscriptions').update({
           status: 'past_due',
           revolut_last_order_id: orderId,
           updated_at: new Date().toISOString(),
         }).eq('id', sub.id)
         await sb.from('profiles').update({ subscription_status: 'past_due' }).eq('id', sub.user_id)
-        await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'failed', chargeTier, chargeAmount, sub.currency)
+        await notifyBilling(supabaseUrl, serviceKey, sub.user_id, 'failed', chargeTier, chargedAmount, sub.currency)
       }
 
-      results.push({ sub: sub.id, order: orderId, charge_status: pay.status, ok: pay.ok, downgrade_applied: applyingDowngrade && pay.ok })
+      results.push({ sub: sub.id, order: orderId, charge_status: pay.status, ok: pay.ok, amount: chargedAmount, discount_pct: discountPct, downgrade_applied: applyingDowngrade && pay.ok })
     } catch (e) {
       results.push({ sub: sub.id, ok: false, error: e instanceof Error ? e.message : String(e) })
     }

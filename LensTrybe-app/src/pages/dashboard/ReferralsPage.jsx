@@ -40,8 +40,6 @@ export default function ReferralsPage() {
     try { navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 2000) } catch { /* ignore */ }
   }
 
-  const shareLink = `https://lenstrybe.com/join?ref=${referralCode}`
-
   return (
     <div className="ltref-page">
       <style>{`
@@ -69,10 +67,7 @@ export default function ReferralsPage() {
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
               <div className="ltref-field" style={{ fontSize: 22, fontWeight: 800, color: GREEN, letterSpacing: '0.05em', padding: '12px 20px' }}>{referralCode}</div>
               <button type="button" className="ltref-btn" onClick={() => copyToClipboard(referralCode, 'code')}>{copied === 'code' ? 'Copied!' : 'Copy code'}</button>
-            </div>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div className="ltref-field" style={{ padding: '12px 16px', fontSize: 13, color: 'var(--lt-muted)', wordBreak: 'break-all' }}>{shareLink}</div>
-              <button type="button" className="ltref-btn" onClick={() => copyToClipboard(shareLink, 'link')}>{copied === 'link' ? 'Copied!' : 'Copy link'}</button>
+              <button type="button" className="ltref-btn" onClick={() => copyToClipboard(`https://lenstrybe.com/join/creative?ref=${referralCode}`, 'link')}>{copied === 'link' ? 'Copied!' : 'Copy invite link'}</button>
             </div>
           </>
         ) : (
