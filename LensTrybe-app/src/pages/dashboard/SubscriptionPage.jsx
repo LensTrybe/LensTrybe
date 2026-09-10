@@ -265,7 +265,7 @@ export default function SubscriptionPage() {
                   </div>
                 ))}
               </div>
-              <button type="button" className={`lts-btn ${plan.id === currentTier && !isCurrent ? 'lts-btn-ghost' : isCurrent ? 'lts-btn-ghost' : 'lts-btn-primary'}`} style={!isCurrent && plan.id !== 'basic' ? { background: plan.color, color: plan.id === 'pro' || plan.id === 'elite' ? '#04120a' : '#fff', borderColor: 'transparent' } : undefined} disabled={planDisabled(plan) || loading} onClick={() => onSelect(plan)}>
+              <button type="button" className={`lts-btn ${(isCurrent || plan.id === 'basic') ? 'lts-btn-ghost' : 'lts-btn-primary'}`} style={!isCurrent && plan.id !== 'basic' ? { background: plan.color, color: plan.id === 'pro' || plan.id === 'elite' ? '#04120a' : '#fff', borderColor: 'transparent' } : undefined} disabled={planDisabled(plan) || loading} onClick={() => onSelect(plan)}>
                 {loading ? 'Working…' : planLabel(plan)}
               </button>
             </div>

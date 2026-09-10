@@ -60,7 +60,6 @@ function Modal({ open, onClose, title, children, busy }) {
 
 const TABS = [
   { key: 'subscription', label: 'Subscription' },
-  { key: 'referrals', label: 'Referrals' },
   { key: 'password', label: 'Email & Password' },
   { key: 'danger', label: 'Danger Zone' },
 ]
@@ -89,11 +88,6 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailMsg, setEmailMsg] = useState(null)
 
-  const [referralCode, setReferralCode] = useState('')
-  const [referralCount, setReferralCount] = useState(0)
-  const [referralCopied, setReferralCopied] = useState('')
-  const [referralLoading, setReferralLoading] = useState(false)
-
   const tier = (sub && LIVE.includes(sub.status) ? sub.tier : ctxTier) || 'basic'
   const tierColor = TIER_COLOR[tier] ?? '#8a8a9a'
 
@@ -107,28 +101,7 @@ export default function SettingsPage() {
   }, [user?.id])
   useEffect(() => { loadSub() }, [loadSub])
 
-  useEffect(() => {
-    if (activeTab !== 'referrals' || !user?.id) return
-    setReferralLoading(true)
-    supabase.from('profiles').select('referral_code, referral_count').eq('id', user.id).maybeSingle().then(({ data }) => {
-      if (data?.referral_code) {
-        setReferralCode(data.referral_code)
-        setReferralCount(data.referral_count || 0)
-        setReferralLoading(false)
-      } else {
-        supabase.functions.invoke('generate-referral-code', { body: { userId: user.id } }).then(({ data: fnData }) => {
-          if (fnData?.referral_code) setReferralCode(fnData.referral_code)
-          setReferralLoading(false)
-        }).catch(() => setReferralLoading(false))
-      }
-    })
-  }, [activeTab, user?.id])
-
   function showToast(msg, type = 'success') { setToast({ msg, type }); setTimeout(() => setToast(null), 4000) }
-
-  function copy(text, key) {
-    try { navigator.clipboard.writeText(text); setReferralCopied(key); setTimeout(() => setReferralCopied(''), 2000) } catch { /* ignore */ }
-  }
 
   async function updateEmail() {
     if (String(currentEmailInput || '').trim().toLowerCase() !== String(user?.email || '').trim().toLowerCase()) {
@@ -246,43 +219,8 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {activeTab === 'referrals' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
-            <div className="ltset-h">Your referral code</div>
-            <div className="ltset-sub">Share your code with other creatives. They get 10% off their first payment, and you get 10% off your next billing cycle for each successful referral.</div>
-            {referralLoading ? (
-              <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Loading your code…</div>
-            ) : referralCode ? (
-              <>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: GREEN, letterSpacing: '0.05em', padding: '12px 20px', borderRadius: 12, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', flex: 1, minWidth: 0 }}>{referralCode}</div>
-                  <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => copy(referralCode, 'code')}>{referralCopied === 'code' ? 'Copied!' : 'Copy code'}</button>
-                </div>
-                <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <div style={{ padding: '12px 16px', borderRadius: 12, background: 'var(--lt-surface)', border: '1px solid var(--lt-border)', flex: 1, minWidth: 0, fontSize: 13, color: 'var(--lt-muted)', wordBreak: 'break-all' }}>{`https://lenstrybe.com/join?ref=${referralCode}`}</div>
-                  <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => copy(`https://lenstrybe.com/join?ref=${referralCode}`, 'link')}>{referralCopied === 'link' ? 'Copied!' : 'Copy link'}</button>
-                </div>
-              </>
-            ) : (
-              <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Your referral code will appear here once you are on a paid plan.</div>
-            )}
-          </div>
-          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 12 }}>
-            <div className="ltset-h">Your referrals</div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-              <div style={{ fontSize: 46, fontWeight: 800, color: GREEN, lineHeight: 1 }}>{referralCount}</div>
-              <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.5 }}>
-                {referralCount === 1 ? 'successful referral' : 'successful referrals'}<br />
-                <span style={{ fontSize: 12, color: 'var(--lt-faint)' }}>Each confirmed referral earns you 10% off your next billing cycle.</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {activeTab === 'password' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 620 }}>
           <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <div className="ltset-h">Update email</div>
