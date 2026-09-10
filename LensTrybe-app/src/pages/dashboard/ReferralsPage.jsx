@@ -1,22 +1,23 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
-import { GLASS_CARD } from '../../lib/glassTokens'
-import Button from '../../components/ui/Button'
+
+const GREEN = '#1DB954'
+const GREEN_TEXT = '#04120a'
+
+const STEPS = [
+  { step: '1', text: 'Share your referral code or link with another creative.' },
+  { step: '2', text: 'They enter your code at checkout when signing up for a paid plan.' },
+  { step: '3', text: 'They receive 10% off their first payment.' },
+  { step: '4', text: 'Once their first payment is confirmed, you receive 10% off your next billing cycle.' },
+]
 
 export default function ReferralsPage() {
   const { user } = useAuth()
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [referralCode, setReferralCode] = useState('')
   const [referralCount, setReferralCount] = useState(0)
   const [copied, setCopied] = useState(null)
   const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    function handleResize() { setIsMobile(window.innerWidth < 768) }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
 
   useEffect(() => {
     if (!user?.id) return
@@ -36,78 +37,66 @@ export default function ReferralsPage() {
   }, [user?.id])
 
   function copyToClipboard(text, key) {
-    navigator.clipboard.writeText(text)
-    setCopied(key)
-    setTimeout(() => setCopied(null), 2000)
+    try { navigator.clipboard.writeText(text); setCopied(key); setTimeout(() => setCopied(null), 2000) } catch { /* ignore */ }
   }
 
   const shareLink = `https://lenstrybe.com/join?ref=${referralCode}`
 
   return (
-    <div style={{ padding: isMobile ? '20px 16px' : '32px 40px', display: 'flex', flexDirection: 'column', gap: '24px', maxWidth: '800px', width: '100%', boxSizing: 'border-box' }}>
+    <div className="ltref-page">
+      <style>{`
+        .ltref-page { display: flex; flex-direction: column; gap: 22px; max-width: 760px; width: 100%; margin: 0 auto; }
+        .ltref-card { background: var(--lt-glass-bg); border: var(--lt-glass-border); box-shadow: var(--lt-glass-shadow); backdrop-filter: var(--lt-glass-blur); -webkit-backdrop-filter: var(--lt-glass-blur); border-radius: 18px; padding: 24px; }
+        .ltref-h { font-size: 15px; font-weight: 800; color: var(--lt-text); }
+        .ltref-btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: 12px; font-size: 13.5px; font-weight: 700; font-family: inherit; cursor: pointer; border: 1px solid var(--lt-border); background: var(--lt-surface); color: var(--lt-text); flex-shrink: 0; transition: transform .12s ease; white-space: nowrap; }
+        .ltref-btn:hover { transform: translateY(-1px); }
+        .ltref-field { background: var(--lt-surface); border: 1px solid var(--lt-border); border-radius: 12px; flex: 1; min-width: 0; box-sizing: border-box; }
+      `}</style>
+
       <div>
-        <h1 style={{ fontFamily: 'var(--font-display)', fontSize: isMobile ? '24px' : '28px', color: 'var(--text-primary)', fontWeight: 400, margin: '0 0 8px' }}>Referrals</h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', margin: 0, lineHeight: 1.6 }}>
+        <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: 'var(--lt-text)', letterSpacing: '-0.01em' }}>Referrals</h1>
+        <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6 }}>
           Invite other creatives to LensTrybe. They get 10% off their first payment. You get 10% off your next billing cycle for every confirmed referral.
         </p>
       </div>
 
-      <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Your Referral Code</div>
+      <div className="ltref-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="ltref-h">Your referral code</div>
         {loading ? (
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>Loading...</div>
+          <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Loading…</div>
         ) : referralCode ? (
           <>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ fontFamily: 'var(--font-ui)', fontSize: isMobile ? '18px' : '22px', fontWeight: 700, color: 'var(--green)', letterSpacing: '0.05em', padding: '12px 20px', ...GLASS_CARD, borderRadius: 'var(--radius-lg)', flex: 1, minWidth: 0 }}>
-                {referralCode}
-              </div>
-              <Button variant="secondary" style={{ flexShrink: 0, minHeight: '44px' }} onClick={() => copyToClipboard(referralCode, 'code')}>
-                {copied === 'code' ? 'Copied!' : 'Copy Code'}
-              </Button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="ltref-field" style={{ fontSize: 22, fontWeight: 800, color: GREEN, letterSpacing: '0.05em', padding: '12px 20px' }}>{referralCode}</div>
+              <button type="button" className="ltref-btn" onClick={() => copyToClipboard(referralCode, 'code')}>{copied === 'code' ? 'Copied!' : 'Copy code'}</button>
             </div>
-            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-lg)', padding: '12px 20px', flex: 1, minWidth: 0, fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', wordBreak: 'break-all' }}>
-                {shareLink}
-              </div>
-              <Button variant="secondary" style={{ flexShrink: 0, minHeight: '44px' }} onClick={() => copyToClipboard(shareLink, 'link')}>
-                {copied === 'link' ? 'Copied!' : 'Copy Link'}
-              </Button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <div className="ltref-field" style={{ padding: '12px 16px', fontSize: 13, color: 'var(--lt-muted)', wordBreak: 'break-all' }}>{shareLink}</div>
+              <button type="button" className="ltref-btn" onClick={() => copyToClipboard(shareLink, 'link')}>{copied === 'link' ? 'Copied!' : 'Copy link'}</button>
             </div>
           </>
         ) : (
-          <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' }}>
-            Your referral code will appear here once you are on a paid plan.
-          </div>
+          <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>Your referral code will appear here once you are on a paid plan.</div>
         )}
       </div>
 
-      <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>Your Referrals</div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          <div style={{ fontSize: isMobile ? '40px' : '56px', fontWeight: 700, color: 'var(--green)', fontFamily: 'var(--font-ui)', lineHeight: 1 }}>{referralCount}</div>
+      <div className="ltref-card" style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="ltref-h">Your referrals</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div style={{ fontSize: 52, fontWeight: 800, color: GREEN, lineHeight: 1 }}>{referralCount}</div>
           <div>
-            <div style={{ fontSize: '15px', color: 'var(--text-primary)', fontFamily: 'var(--font-ui)', fontWeight: 500 }}>
-              {referralCount === 1 ? 'successful referral' : 'successful referrals'}
-            </div>
-            <div style={{ fontSize: '13px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)', marginTop: '4px', lineHeight: 1.5 }}>
-              Each confirmed referral earns you 10% off your next billing cycle.
-            </div>
+            <div style={{ fontSize: 15, color: 'var(--lt-text)', fontWeight: 700 }}>{referralCount === 1 ? 'successful referral' : 'successful referrals'}</div>
+            <div style={{ fontSize: 13, color: 'var(--lt-muted)', marginTop: 4, lineHeight: 1.5 }}>Each confirmed referral earns you 10% off your next billing cycle.</div>
           </div>
         </div>
       </div>
 
-      <div style={{ ...GLASS_CARD, borderRadius: 'var(--radius-xl)', padding: '24px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-        <div style={{ fontSize: '15px', fontWeight: 600, color: 'var(--text-primary)', fontFamily: 'var(--font-ui)' }}>How it works</div>
-        {[
-          { step: '1', text: 'Share your referral code or link with another creative.' },
-          { step: '2', text: 'They enter your code at checkout when signing up for a paid plan.' },
-          { step: '3', text: 'They receive 10% off their first payment.' },
-          { step: '4', text: 'Once their first payment is confirmed, you receive 10% off your next billing cycle.' },
-        ].map(({ step, text }) => (
-          <div key={step} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start' }}>
-            <div style={{ width: '28px', height: '28px', borderRadius: '50%', background: 'rgba(29,185,84,0.15)', border: '1px solid rgba(29,185,84,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, color: 'var(--green)', flexShrink: 0, fontFamily: 'var(--font-ui)' }}>{step}</div>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', fontFamily: 'var(--font-ui)', lineHeight: 1.6, paddingTop: '4px' }}>{text}</div>
+      <div className="ltref-card" style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div className="ltref-h">How it works</div>
+        {STEPS.map(({ step, text }) => (
+          <div key={step} style={{ display: 'flex', gap: 14, alignItems: 'flex-start' }}>
+            <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'rgba(29,185,84,0.15)', border: `1px solid ${GREEN}55`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 800, color: GREEN, flexShrink: 0 }}>{step}</div>
+            <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6, paddingTop: 4 }}>{text}</div>
           </div>
         ))}
       </div>
