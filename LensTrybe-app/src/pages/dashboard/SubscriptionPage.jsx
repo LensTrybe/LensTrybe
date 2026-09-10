@@ -163,7 +163,14 @@ export default function SubscriptionPage() {
     setTimeout(() => loadSub(), 800)
   }
 
+  // For a complimentary user, a paid plan above what they're billed for but at or
+  // below their access tier adds nothing, so it's shown as included, not sold.
+  function isIncludedByComp(plan) {
+    return isComp && plan.id !== 'basic' && RANK[plan.id] <= RANK[accessTier] && !(plan.id === currentTier && hasLiveSub)
+  }
   function planLabel(plan) {
+    if (isComp && plan.id === accessTier) return 'Complimentary'
+    if (isIncludedByComp(plan)) return 'Included'
     if (plan.id === currentTier && billing === currentBilling && hasLiveSub) {
       return sub?.pending_tier ? 'Keep this plan' : (isComp ? 'Your billed plan' : 'Current plan')
     }
@@ -173,6 +180,7 @@ export default function SubscriptionPage() {
     return up ? `Upgrade to ${plan.name}` : `Switch to ${plan.name}`
   }
   function planDisabled(plan) {
+    if (isIncludedByComp(plan)) return true
     return plan.id === currentTier && billing === currentBilling && hasLiveSub && !sub?.pending_tier
   }
 
@@ -251,12 +259,16 @@ export default function SubscriptionPage() {
       <div className="lts-grid">
         {PLANS.map((plan) => {
           const isCurrent = plan.id === currentTier && billing === currentBilling && hasLiveSub
+          // Highlighted card = the plan the creative actually has (access tier).
+          const isHighlighted = isComp ? plan.id === accessTier : isCurrent
+          const isBilledOnly = isComp && isCurrent
+          const muted = isHighlighted || isBilledOnly || isIncludedByComp(plan) || plan.id === 'basic'
           const price = billing === 'annual' ? plan.annualPrice : plan.monthlyPrice
           const loading = busyPlan === plan.id
           return (
-            <div key={plan.id} className="lts-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', border: isCurrent ? `1.5px solid ${plan.color}` : undefined }}>
-              {isCurrent && (
-                <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', background: plan.color, borderRadius: 999, fontSize: 11, fontWeight: 800, color: plan.id === 'pro' || plan.id === 'elite' || plan.id === 'basic' ? '#04120a' : '#fff', whiteSpace: 'nowrap' }}>{isComp ? 'Your billed plan' : 'Current plan'}</div>
+            <div key={plan.id} className="lts-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', border: isHighlighted ? `1.5px solid ${plan.color}` : undefined }}>
+              {isHighlighted && (
+                <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', background: plan.color, borderRadius: 999, fontSize: 11, fontWeight: 800, color: plan.id === 'pro' || plan.id === 'elite' || plan.id === 'basic' ? '#04120a' : '#fff', whiteSpace: 'nowrap' }}>{isComp ? 'Current plan · Complimentary' : 'Current plan'}</div>
               )}
               <div style={{ minHeight: 96 }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: plan.color, marginBottom: 6 }}>{plan.name}</div>
@@ -273,7 +285,7 @@ export default function SubscriptionPage() {
                   </div>
                 ))}
               </div>
-              <button type="button" className={`lts-btn ${(isCurrent || plan.id === 'basic') ? 'lts-btn-ghost' : 'lts-btn-primary'}`} style={!isCurrent && plan.id !== 'basic' ? { background: plan.color, color: plan.id === 'pro' || plan.id === 'elite' ? '#04120a' : '#fff', borderColor: 'transparent' } : undefined} disabled={planDisabled(plan) || loading} onClick={() => onSelect(plan)}>
+              <button type="button" className={`lts-btn ${muted ? 'lts-btn-ghost' : 'lts-btn-primary'}`} style={!muted ? { background: plan.color, color: plan.id === 'pro' || plan.id === 'elite' ? '#04120a' : '#fff', borderColor: 'transparent' } : undefined} disabled={planDisabled(plan) || loading} onClick={() => onSelect(plan)}>
                 {loading ? 'Working…' : planLabel(plan)}
               </button>
             </div>
