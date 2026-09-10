@@ -16,6 +16,20 @@ const FLY_GAP = 10
 const FLY_W = 230
 const SPACER = MARGIN + RAIL + 14
 
+// Which plan a gated feature unlocks — drives the badge on locked nav items so
+// lower-tier creatives can see what they're missing and tap through to upgrade.
+const FEATURE_TIER = { invoicing: 'pro', crm: 'expert', contracts: 'expert', brandKit: 'expert', deliver: 'expert', team: 'elite' }
+const TIER_LABEL = { pro: 'Pro', expert: 'Expert', elite: 'Elite' }
+
+function LockGlyph({ color = 'currentColor', size = 10 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.4" strokeLinejoin="round" style={{ display: 'block' }}>
+      <rect x="4" y="11" width="16" height="9" rx="2" />
+      <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+    </svg>
+  )
+}
+
 // Theme tokens. Light = "liquid glass" (frosted white, dark content), the
 // default. Dark = the deep HUD glass. Matches lib/dashboardTheme.js.
 function tokens(dark) {
@@ -208,22 +222,35 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     return <button key={id} type="button" title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={onClick}>{inner}</button>
   }
 
+  // A single fly-out / drawer item. Locked (above the creative's tier) items stay
+  // visible but greyed, carry a tier badge, and link through to the upgrade page
+  // so lower-tier creatives can see and unlock what they're missing.
   function flyItem(item) {
     const active = itemActive(item.path)
     const locked = item.feature ? !hasFeature(item.feature) : false
+    const reqTier = locked && item.feature ? (FEATURE_TIER[item.feature] || null) : null
+    const badgeColor = reqTier === 'elite' ? t.gold : reqTier === 'expert' ? t.green : t.pink
     const inner = (
       <>
         {chip(item.icon, active, locked)}
         <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, textShadow: t.textGlow, color: locked ? t.muted : active ? t.green : t.text }}>{item.label}</span>
-        {locked && <span style={{ marginLeft: 'auto', fontSize: 11, opacity: 0.7 }}>🔒</span>}
+        {locked && reqTier && (
+          <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.02em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: `${badgeColor}22`, border: `1px solid ${badgeColor}55`, color: badgeColor, flexShrink: 0 }}>
+            <LockGlyph color={badgeColor} size={9} />{TIER_LABEL[reqTier]}
+          </span>
+        )}
       </>
     )
     const style = {
       display: 'flex', alignItems: 'center', gap: 11, padding: '5px 10px', margin: '3px 8px', borderRadius: 13,
       background: active ? t.activeRowBg : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
-      textDecoration: 'none', cursor: locked ? 'not-allowed' : 'pointer', opacity: locked ? 0.6 : 1, transition: 'background .15s ease',
+      textDecoration: 'none', cursor: 'pointer', opacity: locked ? 0.72 : 1, transition: 'background .15s ease, opacity .15s ease',
     }
-    if (locked) return <div key={item.path} style={style} title={item.label}>{inner}</div>
+    if (locked) {
+      return (
+        <Link key={item.path} to="/dashboard/subscription" title={`${TIER_LABEL[reqTier] || 'Paid'} plan feature — tap to upgrade`} style={style} {...hoverBg(false)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
+      )
+    }
     return <Link key={item.path} to={item.path} title={item.label} style={style} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
   }
 
