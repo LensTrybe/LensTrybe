@@ -80,6 +80,19 @@ Deno.serve(async (req) => {
   const creativeEmail = profile?.business_email
   const clientName = portal.client_name || quote.client_name || 'Your client'
   const accepted = newStatus === 'accepted'
+
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: quote.creative_id,
+      type: 'quote',
+      title: `${clientName} ${accepted ? 'accepted' : 'declined'} your quote`,
+      body: quote.amount != null ? money(quote.amount) : null,
+      link: '/dashboard/finance/quotes',
+      meta: { quote_id: quoteId, status: newStatus },
+    })
+  } catch (_e) { /* non-blocking */ }
+
   if (creativeEmail) {
     const panelHtml = panel(
       fieldRow('Quote', `#${esc(String(quoteId).slice(0, 8).toUpperCase())}`) +

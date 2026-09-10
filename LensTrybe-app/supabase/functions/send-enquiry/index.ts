@@ -62,6 +62,18 @@ Deno.serve(async (req) => {
   const businessName = profile?.business_name || 'LensTrybe Creative'
   const creativeEmail = profile?.business_email
 
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: thread.creative_id,
+      type: 'enquiry',
+      title: `New enquiry from ${thread.client_name || 'a client'}`,
+      body: thread.subject || 'General enquiry',
+      link: '/dashboard/clients/messages',
+      meta: { thread_id: threadId },
+    })
+  } catch (_e) { /* non-blocking */ }
+
   // Look up (or create) the client's portal so the confirmation email links to it.
   let portalToken = (body.portal_token as string) || ''
   if (!portalToken && thread.client_email) {

@@ -57,7 +57,20 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', creativeId).single()
   const creativeEmail = profile?.business_email
-  if (!creativeEmail) return json({ error: 'creative has no email', skipped: true }, 200)
+
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: creativeId,
+      type: 'review',
+      title: `You have a new ${rating ? rating + '-star ' : ''}review`,
+      body: comment ? String(comment).slice(0, 140) : `from ${reviewerName}`,
+      link: '/dashboard/business/reviews',
+      meta: { rating },
+    })
+  } catch (_e) { /* non-blocking */ }
+
+  if (!creativeEmail) return json({ success: true, emailed: false })
 
   const panelHtml = panel(
     `<div style="font-size:18px;letter-spacing:2px;color:${BRAND.green};margin-bottom:8px;">${stars(rating)}</div>` +

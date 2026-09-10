@@ -52,6 +52,21 @@ serve(async (req) => {
       }
     } catch { /* ignore CRM failure */ }
 
+    // In-app notification for the creative (best effort).
+    try {
+      await fetch(`${URL}/rest/v1/notifications`, {
+        method: 'POST', headers: H,
+        body: JSON.stringify({
+          user_id: creativeId,
+          type: 'enquiry',
+          title: `New website enquiry from ${name}`,
+          body: message ? String(message).slice(0, 140) : null,
+          link: '/dashboard/clients/crm',
+          meta: { source: 'website' },
+        }),
+      })
+    } catch { /* ignore */ }
+
     // Email the creative (reply-to goes straight to the enquirer).
     if (RESEND && prof.business_email) {
       const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0a0f;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">

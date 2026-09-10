@@ -56,10 +56,23 @@ Deno.serve(async (req) => {
 
   const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', contract.creative_id).single()
   const creativeEmail = profile?.business_email
-  if (!creativeEmail) return json({ error: 'creative has no email', skipped: true }, 200)
 
   const clientName = contract.client_name || 'Your client'
   const signedAt = contract.signed_at ? new Date(contract.signed_at).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }) : new Date().toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })
+
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: contract.creative_id,
+      type: 'contract',
+      title: `${clientName} signed your contract`,
+      body: contract.title ? `Contract: ${contract.title}` : null,
+      link: '/dashboard/finance/contracts',
+      meta: { contract_id: contractId },
+    })
+  } catch (_e) { /* non-blocking */ }
+
+  if (!creativeEmail) return json({ success: true, emailed: false })
 
   const panelHtml = panel(
     fieldRow('Contract', esc(contract.title || 'Contract')) +

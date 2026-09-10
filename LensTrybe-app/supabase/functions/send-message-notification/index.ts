@@ -1,4 +1,5 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -48,6 +49,25 @@ serve(async (req) => {
     const link = ctaUrl || (recipientRole === 'client'
       ? 'https://lenstrybe.com/client-dashboard'
       : 'https://lenstrybe.com/dashboard/clients/messages')
+
+    // In-app notification when the recipient is a creative (dashboard user).
+    // We resolve the creative by business_email; clients won't match and are skipped.
+    if (recipientRole !== 'client') {
+      try {
+        const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+        const { data: prof } = await admin.from('profiles').select('id').eq('business_email', to).eq('is_admin', false).maybeSingle()
+        if (prof?.id) {
+          await admin.from('notifications').insert({
+            user_id: prof.id,
+            type: 'message',
+            title: `New message from ${fromName || 'someone'}`,
+            body: messageBody ? String(messageBody).slice(0, 140) : (threadSubject || null),
+            link: '/dashboard/clients/messages',
+            meta: {},
+          })
+        }
+      } catch (_e) { /* non-blocking */ }
+    }
 
     const hi = toName ? `Hi ${esc(toName)},` : ''
     const panelHtml = panel(

@@ -78,6 +78,18 @@ Deno.serve(async (req) => {
   const { error: msgErr } = await supabase.from('messages').insert({ creative_id: creativeId, thread_id: thread.id, sender_type: 'client', sender_name: clientName, sender_email: clientEmail, subject, body: message, read: false })
   if (msgErr) console.error('Message insert error:', msgErr.message)
 
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: creativeId,
+      type: 'enquiry',
+      title: `New enquiry from ${clientName}`,
+      body: subject,
+      link: '/dashboard/clients/messages',
+      meta: { thread_id: thread.id },
+    })
+  } catch (_e) { /* non-blocking */ }
+
   let portalToken = ''
   const { data: existingPortal } = await supabase.from('client_portals').select('portal_token').eq('creative_id', creativeId).eq('client_email', clientEmail).single()
   if (existingPortal) portalToken = existingPortal.portal_token
