@@ -246,6 +246,15 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       background: active ? t.activeRowBg : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
       textDecoration: 'none', cursor: 'pointer', opacity: locked ? 0.72 : 1, transition: 'background .15s ease, opacity .15s ease',
     }
+    // Lumi opens the global chat drawer in place, rather than navigating away.
+    if (item.path === '/dashboard/lumi') {
+      return (
+        <button key={item.path} type="button" title="Lumi AI" style={{ ...style, width: 'calc(100% - 16px)', border: 'none', background: active ? t.activeRowBg : 'transparent' }} {...hoverBg(false)}
+          onClick={() => { window.dispatchEvent(new Event('lt:open-lumi')); closeAll(); onCloseMobile?.() }}>
+          {inner}
+        </button>
+      )
+    }
     if (locked) {
       return (
         <Link key={item.path} to="/dashboard/subscription" title={`${TIER_LABEL[reqTier] || 'Paid'} plan feature — tap to upgrade`} style={style} {...hoverBg(false)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>

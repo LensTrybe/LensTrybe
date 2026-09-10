@@ -4,6 +4,7 @@ import Sidebar from './Sidebar'
 import TileField from '../ui/TileField'
 import NoteTaker from './NoteTaker'
 import NotificationBell from './NotificationBell'
+import LumiWidget from './LumiWidget'
 
 // Dark base + drifting pastel "northern lights" wash behind the whole dashboard.
 const AURORA_WRAP = {
@@ -198,6 +199,7 @@ export default function DashboardLayout() {
         </main>
         <NoteTaker />
         <NotificationBell />
+        <LumiWidget />
       </div>
       {isMobile && (
         <Sidebar isMobile mobileOpen={mobileSidebarOpen} onCloseMobile={() => setMobileSidebarOpen(false)} theme={theme} />
