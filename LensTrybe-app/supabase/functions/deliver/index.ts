@@ -56,7 +56,7 @@ serve(async (req) => {
     if (delivery.creative_id) {
       const { data: prof } = await admin
         .from('profiles')
-        .select('business_name, avatar_url, business_email, full_name')
+        .select('business_name, avatar_url, business_email')
         .eq('id', delivery.creative_id)
         .maybeSingle()
       creative = prof ?? null
@@ -149,7 +149,7 @@ serve(async (req) => {
 
       // Email the creative. Fall back to the auth-user email when no business_email is set.
       const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
-      let to = creative?.business_email
+      let to = creative?.business_email ?? null
       if (!to && delivery.creative_id) {
         try {
           const { data: u } = await admin.auth.admin.getUserById(delivery.creative_id)
