@@ -45,12 +45,12 @@ function StyleBlock() {
   return (
     <style>{`
       .ltsp-wrap { max-width: 860px; margin: 0 auto; padding: 8px 4px 48px; }
-      .ltsp-card { background: var(--lt-surface); border: 1px solid var(--lt-border); border-radius: 16px; padding: 22px 22px; }
+      .ltsp-card { background: var(--lt-glass-bg); border: var(--lt-glass-border); box-shadow: var(--lt-glass-shadow); backdrop-filter: var(--lt-glass-blur); -webkit-backdrop-filter: var(--lt-glass-blur); border-radius: 18px; padding: 22px 22px; }
       .ltsp-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--lt-faint); margin: 0 0 6px; }
       .ltsp-input, .ltsp-select, .ltsp-textarea {
         width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px;
-        color: var(--lt-text); background: var(--lt-surface-2);
-        border: 1px solid var(--lt-border); border-radius: 10px; padding: 11px 13px; outline: none;
+        color: var(--lt-text); background: var(--lt-input-bg);
+        border: 1px solid var(--lt-input-border); border-radius: 10px; padding: 11px 13px; outline: none;
         transition: border-color .15s ease, box-shadow .15s ease;
       }
       .ltsp-textarea { resize: vertical; min-height: 140px; line-height: 1.55; }

@@ -68,7 +68,7 @@ function StyleBlock() {
       .ltc-name { font-size: 15px; font-weight: 600; color: var(--lt-text); line-height: 1.25; }
       .ltc-sub { font-size: 12.5px; color: var(--lt-muted); margin-top: 1px; }
       .ltc-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 16px; }
-      .ltc-modal { width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; background: var(--lt-surface); border: 1px solid var(--lt-border); border-radius: 18px; box-shadow: 0 24px 60px -18px rgba(0,0,0,0.5); }
+      .ltc-modal { width: 100%; max-width: 460px; max-height: 90vh; overflow-y: auto; background: var(--lt-modal-bg); border: var(--lt-modal-border); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); border-radius: 18px; box-shadow: var(--lt-modal-shadow); }
       .ltc-label { display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: var(--lt-faint); margin: 0 0 5px; }
       .ltc-input { width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; color: var(--lt-text); background: var(--lt-surface-2); border: 1px solid var(--lt-border); border-radius: 10px; padding: 10px 12px; outline: none; transition: border-color .15s ease, box-shadow .15s ease; }
       .ltc-input:focus { border-color: ${GREEN}; box-shadow: 0 0 0 3px rgba(29,185,84,0.16); }
