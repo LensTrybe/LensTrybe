@@ -193,12 +193,13 @@ export default function OnboardingPage() {
       city: city.trim(),
       state,
       country: country.trim() || 'Australia',
-      subscription_tier: selectedTier || 'basic',
+      // Everyone starts on Basic. A paid plan is granted by the server once payment
+      // is set up (revolut-webhook), and the founding badge only via a founding code.
+      // The database enforces this too, so the browser can't grant itself a tier.
+      subscription_tier: 'basic',
       account_type: 'creative',
       avatar_url: avatarUrl,
       display_name_preference: 'business_name',
-      founding_member: true,
-      founding_member_since: new Date().toISOString(),
     }
 
     const { error: insErr } = await supabase.from('profiles').insert(row)

@@ -88,7 +88,9 @@ export default function SettingsPage() {
   const [emailLoading, setEmailLoading] = useState(false)
   const [emailMsg, setEmailMsg] = useState(null)
 
-  const tier = (sub && LIVE.includes(sub.status) ? sub.tier : ctxTier) || 'basic'
+  // Access tier comes from profiles.subscription_tier (same source as the sidebar
+  // and feature gating). The subscriptions row only describes billing.
+  const tier = String(ctxTier || 'basic').toLowerCase()
   const tierColor = TIER_COLOR[tier] ?? '#8a8a9a'
 
   const loadSub = useCallback(async () => {
@@ -137,6 +139,11 @@ export default function SettingsPage() {
 
   const EXIT_REASONS = ['Too expensive', 'Not getting enough enquiries', 'Missing a feature I need', 'Using a different platform', 'Temporary break: I will be back', 'Other']
   const hasLiveSub = !!(sub && LIVE.includes(sub.status))
+  const billedTier = hasLiveSub ? String(sub.tier || 'basic').toLowerCase() : null
+  // Access above what is billed (admin comp, founding, team seat) is complimentary.
+  const isComp = tier !== 'basic' && tier !== (billedTier || 'basic') && sub?.status !== 'canceled'
+  const cancelTier = billedTier || tier
+  const billedWord = sub?.billing === 'annual' ? 'annually' : 'monthly'
 
   return (
     <div className="ltset-page">
@@ -183,7 +190,11 @@ export default function SettingsPage() {
             <div>
               <div style={{ fontSize: 24, fontWeight: 800, color: tierColor, letterSpacing: '-0.01em' }}>{cap(tier)} Plan</div>
               <div style={{ fontSize: 13, color: 'var(--lt-muted)', marginTop: 4 }}>
-                {tier === 'basic' ? 'Free forever' : `Billed ${sub?.billing === 'annual' ? 'annually' : 'monthly'}`}
+                {tier === 'basic'
+                  ? 'Free forever'
+                  : isComp
+                    ? (billedTier && billedTier !== 'basic' ? `Complimentary access · billed as ${cap(billedTier)} ${billedWord}` : 'Complimentary access')
+                    : `Billed ${billedWord}`}
                 {hasLiveSub && sub?.status === 'trialing' && sub?.next_charge_date ? ` · free trial until ${fmtDate(sub.next_charge_date)}` : ''}
                 {hasLiveSub && sub?.status === 'active' && sub?.current_period_end && !sub?.pending_tier ? ` · renews ${fmtDate(sub.current_period_end)}` : ''}
                 {sub?.pending_tier ? ` · changes to ${cap(sub.pending_tier)} on ${fmtDate(sub.current_period_end)}` : ''}
@@ -250,10 +261,10 @@ export default function SettingsPage() {
 
       {activeTab === 'danger' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          {tier !== 'basic' && (
+          {hasLiveSub && (
             <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, border: `1px solid ${RED}44` }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: RED }}>Cancel subscription</div>
-              <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Cancel your subscription and move to the free Basic plan. You keep {cap(tier)} access until the end of your current billing period. No refund for the remaining period, and this doesn't affect your rights under the Australian Consumer Law.</div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Cancel your subscription and move to the free Basic plan. You keep {cap(cancelTier)} access until the end of your current billing period.{isComp ? ` Your complimentary ${cap(tier)} access is not affected.` : ''} No refund for the remaining period, and this doesn't affect your rights under the Australian Consumer Law.</div>
               <div><button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => { setShowCancel(true); setCancelStep(1) }}>Cancel subscription</button></div>
             </div>
           )}
@@ -268,9 +279,9 @@ export default function SettingsPage() {
       <Modal open={showCancel} onClose={() => { setShowCancel(false); setCancelStep(1) }} title="Cancel subscription" busy={cancelBusy}>
         {cancelStep === 1 && (
           <>
-            <div style={{ fontSize: 14, color: 'var(--lt-text)', fontWeight: 700 }}>What you'll lose on {cap(tier)}</div>
+            <div style={{ fontSize: 14, color: 'var(--lt-text)', fontWeight: 700 }}>What you'll lose on {cap(cancelTier)}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(TIER_FEATURES[tier] ?? []).filter((f) => !f.startsWith('Everything in')).map((f, i) => (
+              {(TIER_FEATURES[cancelTier] ?? []).filter((f) => !f.startsWith('Everything in')).map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: 'var(--lt-muted)' }}><span style={{ color: RED }}>✕</span>{f}</div>
               ))}
             </div>

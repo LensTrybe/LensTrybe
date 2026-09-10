@@ -56,7 +56,7 @@ serve(async (req) => {
       const { data: authUsers } = await supabase.auth.admin.listUsers({ perPage: 1000 });
       const { data: profiles } = await supabase
         .from("profiles")
-        .select("id, business_name, subscription_tier, subscription_status, is_admin, role, created_at, location, skill_types");
+        .select("id, business_name, subscription_tier, comp_tier, subscription_status, is_admin, role, created_at, location, skill_types");
 
       const { data: clientRows } = await supabase
         .from("client_accounts")
@@ -89,12 +89,33 @@ serve(async (req) => {
           status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
+      const TIERS = ["basic", "pro", "expert", "elite"];
+      const rank = (t) => Math.max(0, TIERS.indexOf(String(t || "basic").toLowerCase()));
+      const nextTier = String(tier || "").toLowerCase();
+      if (!TIERS.includes(nextTier)) {
+        return new Response(JSON.stringify({ error: "Invalid tier" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      // profiles.subscription_tier is the access tier; subscriptions.tier is what the
+      // creative is billed for. Access above the billed tier is recorded as a
+      // complimentary tier (comp_tier) so renewals and plan changes can't undo it.
+      const { data: liveSub } = await supabase
+        .from("subscriptions")
+        .select("tier, status")
+        .eq("user_id", userId)
+        .in("status", ["active", "trialing", "past_due"])
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      const billedTier = liveSub?.tier || "basic";
+      const compTier = rank(nextTier) > rank(billedTier) ? nextTier : null;
       const { error } = await supabase
         .from("profiles")
-        .update({ subscription_tier: tier })
+        .update({ subscription_tier: nextTier, comp_tier: compTier })
         .eq("id", userId);
       if (error) throw error;
-      return new Response(JSON.stringify({ success: true }), {
+      return new Response(JSON.stringify({ success: true, comp_tier: compTier, billed_tier: billedTier }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }

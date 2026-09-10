@@ -91,6 +91,11 @@ export default function SubscriptionPage() {
   const currentBilling = sub?.billing || 'monthly'
   const hasLiveSub = !!(sub && LIVE.includes(sub.status))
   const founding = !!sub?.founding_member
+  // currentTier above is the BILLED tier (drives plan changes). accessTier is what the
+  // creative can actually use: profiles.subscription_tier, the same source as the
+  // sidebar and feature gating. Access above the billed tier is complimentary.
+  const accessTier = String(ctxTier || 'basic').toLowerCase()
+  const isComp = accessTier !== 'basic' && accessTier !== (hasLiveSub ? currentTier : 'basic') && sub?.status !== 'canceled'
 
   async function onSelect(plan) {
     if (!user?.id || busyPlan) return
@@ -160,7 +165,7 @@ export default function SubscriptionPage() {
 
   function planLabel(plan) {
     if (plan.id === currentTier && billing === currentBilling && hasLiveSub) {
-      return sub?.pending_tier ? 'Keep this plan' : 'Current plan'
+      return sub?.pending_tier ? 'Keep this plan' : (isComp ? 'Your billed plan' : 'Current plan')
     }
     if (plan.id === 'basic') return currentTier === 'basic' ? 'Current plan' : 'Cancel to Free'
     if (!hasLiveSub) return `Choose ${plan.name}`
@@ -207,8 +212,11 @@ export default function SubscriptionPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
           <span style={{ fontSize: 13.5, color: 'var(--lt-muted)' }}>Current plan:</span>
           <span style={{ padding: '4px 14px', borderRadius: 999, fontSize: 13, fontWeight: 800, background: 'rgba(29,185,84,0.14)', border: `1px solid ${GREEN}55`, color: GREEN }}>
-            {cap(currentTier)}{hasLiveSub && currentTier !== 'basic' ? ` · ${cap(currentBilling)}` : ''}{founding ? ' · Founding' : ''}
+            {cap(accessTier)}{isComp ? ' · Complimentary' : (hasLiveSub && currentTier !== 'basic' ? ` · ${cap(currentBilling)}` : '')}{founding ? ' · Founding' : ''}
           </span>
+          {isComp && hasLiveSub && currentTier !== 'basic' && (
+            <span style={{ fontSize: 12.5, color: 'var(--lt-faint)' }}>Billed as {cap(currentTier)} · {cap(currentBilling)}</span>
+          )}
           {hasLiveSub && sub?.status === 'trialing' && sub?.next_charge_date && (
             <span style={{ fontSize: 12.5, color: 'var(--lt-faint)' }}>Free trial until {fmtDate(sub.next_charge_date)}</span>
           )}
@@ -248,7 +256,7 @@ export default function SubscriptionPage() {
           return (
             <div key={plan.id} className="lts-card" style={{ padding: 22, display: 'flex', flexDirection: 'column', gap: 14, position: 'relative', border: isCurrent ? `1.5px solid ${plan.color}` : undefined }}>
               {isCurrent && (
-                <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', background: plan.color, borderRadius: 999, fontSize: 11, fontWeight: 800, color: plan.id === 'pro' || plan.id === 'elite' || plan.id === 'basic' ? '#04120a' : '#fff', whiteSpace: 'nowrap' }}>Current plan</div>
+                <div style={{ position: 'absolute', top: -11, left: '50%', transform: 'translateX(-50%)', padding: '3px 14px', background: plan.color, borderRadius: 999, fontSize: 11, fontWeight: 800, color: plan.id === 'pro' || plan.id === 'elite' || plan.id === 'basic' ? '#04120a' : '#fff', whiteSpace: 'nowrap' }}>{isComp ? 'Your billed plan' : 'Current plan'}</div>
               )}
               <div style={{ minHeight: 96 }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: plan.color, marginBottom: 6 }}>{plan.name}</div>
