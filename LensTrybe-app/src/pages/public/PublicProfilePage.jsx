@@ -406,17 +406,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const photoRadius = Math.max(Math.min(radius, 18), 14)
   const PILL = 999
   const glassBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)'
-  const glassBorder = dark ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(255,255,255,0.75)'
+  const glassBorder = dark ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(20,17,26,0.08)'
   const glassShadow = dark ? '0 24px 60px -28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.14)' : '0 22px 55px -26px rgba(31,38,90,0.22), inset 0 1px 0 rgba(255,255,255,0.9)'
   const glassBlur = 'blur(16px) saturate(165%)'
   const glassCard = { background: glassBg, border: glassBorder, boxShadow: glassShadow, backdropFilter: glassBlur, WebkitBackdropFilter: glassBlur, borderRadius: cardRadius }
-  const chipGlass = { background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.6)', border: glassBorder, backdropFilter: 'blur(8px) saturate(160%)', WebkitBackdropFilter: 'blur(8px) saturate(160%)', borderRadius: PILL }
+  const chipGlass = { background: dark ? 'rgba(255,255,255,0.09)' : 'rgba(255,255,255,0.72)', border: glassBorder, backdropFilter: 'blur(8px) saturate(160%)', WebkitBackdropFilter: 'blur(8px) saturate(160%)', borderRadius: PILL, boxShadow: dark ? '0 4px 14px -6px rgba(0,0,0,0.5)' : '0 6px 16px -8px rgba(31,38,90,0.22)' }
   // Depth behind the glass: an accent-tinted aurora over the creative's own
   // background so the frosted panels actually read (built from THEIR colour,
   // not a LensTrybe pattern, so it stays their site).
   const pageAurora = dark
-    ? `radial-gradient(1150px 680px at 6% -14%, ${accent}3a, transparent 60%), radial-gradient(1050px 760px at 108% 112%, ${accent}28, transparent 55%), radial-gradient(900px 600px at 92% 8%, ${accent}14, transparent 60%)`
-    : `radial-gradient(1150px 680px at 6% -14%, ${accent}30, transparent 60%), radial-gradient(1050px 760px at 108% 112%, ${accent}20, transparent 55%), linear-gradient(180deg, rgba(20,17,26,0.02), rgba(20,17,26,0.05))`
+    ? `radial-gradient(1200px 760px at 50% -12%, ${accent}33, transparent 62%), radial-gradient(1000px 760px at 106% 108%, ${accent}26, transparent 55%), radial-gradient(900px 700px at -6% 40%, ${accent}1c, transparent 60%)`
+    : `radial-gradient(1200px 760px at 50% -12%, ${accent}26, transparent 62%), radial-gradient(1000px 760px at 106% 108%, ${accent}1e, transparent 55%), radial-gradient(900px 700px at -6% 40%, ${accent}14, transparent 60%), linear-gradient(180deg, rgba(20,17,26,0.02) 0%, rgba(20,17,26,0.05) 55%, rgba(20,17,26,0.08) 100%)`
   const btnBase = { display: 'inline-block', fontWeight: 700, textDecoration: 'none', padding: '13px 28px', borderRadius: PILL, fontSize: 15, cursor: 'pointer', fontFamily: bodyFont }
   const btn = btnStyle === 'outline'
     ? { ...btnBase, background: 'transparent', color: accent, border: `2px solid ${accent}` }
@@ -488,15 +488,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <>
         {hero}
-        {home.intro && (
-          <section style={{ ...wrap, padding: '44px 24px', textAlign: 'center' }}>
-            <p style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize + 2, lineHeight: 1.75, maxWidth: 680, margin: '0 auto', overflowWrap: 'anywhere' }}>{home.intro}</p>
-          </section>
-        )}
-        {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
-          <section style={{ ...wrap, padding: '0 24px 28px', display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {(profile.skill_types ?? []).map((s, i) => <span key={i} style={{ ...chipGlass, fontFamily: bodyFont, fontSize: 13, color: ink, padding: '6px 14px' }}>{s}</span>)}
-            {credentialBadges()}
+        {(home.intro || profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
+          <section style={{ ...wrap, padding: '40px 24px' }}>
+            <div style={{ ...glassCard, padding: isMobile ? '28px 22px' : '36px 44px', maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
+              {home.intro && <p style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize + 2, lineHeight: 1.75, margin: 0, overflowWrap: 'anywhere' }}>{home.intro}</p>}
+              {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: home.intro ? 24 : 0 }}>
+                  {(profile.skill_types ?? []).map((s, i) => <span key={i} style={{ ...chipGlass, fontFamily: bodyFont, fontSize: 13, color: ink, padding: '6px 14px' }}>{s}</span>)}
+                  {credentialBadges()}
+                </div>
+              ) : null}
+            </div>
           </section>
         ) : null}
         {homePhotosCapped.length > 0 && (
@@ -728,10 +730,9 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont, overflowX: 'hidden', position: 'relative' }} className="public-profile-site">
+    <div style={{ minHeight: '100vh', background: `${pageAurora}, ${bg}`, backgroundAttachment: 'fixed', fontFamily: bodyFont, overflowX: 'hidden', position: 'relative' }} className="public-profile-site">
       <style>{`.lt-navlink:hover{opacity:1 !important}.public-profile-site p,.public-profile-site h1,.public-profile-site h2,.public-profile-site h3{overflow-wrap:anywhere}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
 
-      <div aria-hidden style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'none', background: pageAurora }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: dark ? 'rgba(16,16,22,0.55)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px) saturate(160%)', WebkitBackdropFilter: 'blur(18px) saturate(160%)', borderBottom: glassBorder }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
