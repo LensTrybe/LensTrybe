@@ -396,15 +396,26 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // Resolve the website's "Site Styles" theme (colours, fonts, buttons, corners)
   // set in the builder; falls back to the Brand Kit, then defaults.
   const T = resolveTheme(profile, brand, activePage)
-  const { accent, bg, dark, ink, heading: headingCol, soft, line, surface, surfaceBorder, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnRadius, btnStyle, btnText, radius, logo } = T
+  const { accent, bg, dark, ink, heading: headingCol, soft, line, fieldBg, headingFont, bodyFont, baseSize, headingWeight, btnStyle, btnText, radius, logo } = T
   const wrap = { maxWidth: 1120, margin: '0 auto', padding: '0 24px' }
   const H = (size) => ({ fontFamily: headingFont, fontWeight: headingWeight, letterSpacing: '-0.02em', lineHeight: 1.12, color: headingCol, fontSize: size })
-  const btnBase = { display: 'inline-block', fontWeight: 700, textDecoration: 'none', padding: '13px 26px', borderRadius: btnRadius, fontSize: 15, cursor: 'pointer', fontFamily: bodyFont }
+  // Liquid-glass layer, derived from the creative's resolved theme so their
+  // colours + light/dark still come through. Curved corners + frosted surfaces
+  // + pills unify the feel with the rest of the app.
+  const cardRadius = Math.max(radius, 20)
+  const photoRadius = Math.max(Math.min(radius, 18), 14)
+  const PILL = 999
+  const glassBg = dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.55)'
+  const glassBorder = dark ? '1px solid rgba(255,255,255,0.14)' : '1px solid rgba(255,255,255,0.75)'
+  const glassShadow = dark ? '0 24px 60px -28px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.14)' : '0 22px 55px -26px rgba(31,38,90,0.22), inset 0 1px 0 rgba(255,255,255,0.9)'
+  const glassBlur = 'blur(16px) saturate(165%)'
+  const glassCard = { background: glassBg, border: glassBorder, boxShadow: glassShadow, backdropFilter: glassBlur, WebkitBackdropFilter: glassBlur, borderRadius: cardRadius }
+  const chipGlass = { background: dark ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.6)', border: glassBorder, backdropFilter: 'blur(8px) saturate(160%)', WebkitBackdropFilter: 'blur(8px) saturate(160%)', borderRadius: PILL }
+  const btnBase = { display: 'inline-block', fontWeight: 700, textDecoration: 'none', padding: '13px 28px', borderRadius: PILL, fontSize: 15, cursor: 'pointer', fontFamily: bodyFont }
   const btn = btnStyle === 'outline'
     ? { ...btnBase, background: 'transparent', color: accent, border: `2px solid ${accent}` }
-    : { ...btnBase, background: accent, color: btnText, border: 'none' }
-  const btnGhost = { ...btnBase, background: 'transparent', color: ink, border: `1px solid ${ink}22` }
-  const photoRadius = Math.min(radius, 14)
+    : { ...btnBase, background: accent, color: btnText, border: 'none', boxShadow: dark ? 'none' : `0 10px 26px -12px ${accent}88` }
+  const btnGhost = { ...btnBase, background: glassBg, color: ink, border: glassBorder, backdropFilter: glassBlur, WebkitBackdropFilter: glassBlur }
   const home = pageMap.home?.content || {}
   const about = pageMap.about?.content || {}
   const contact = pageMap.contact?.content || {}
@@ -478,7 +489,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         )}
         {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
           <section style={{ ...wrap, padding: '0 24px 28px', display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {(profile.skill_types ?? []).map((s, i) => <span key={i} style={{ fontFamily: bodyFont, fontSize: 13, color: ink, border: `1px solid ${accent}55`, borderRadius: 99, padding: '5px 13px' }}>{s}</span>)}
+            {(profile.skill_types ?? []).map((s, i) => <span key={i} style={{ ...chipGlass, fontFamily: bodyFont, fontSize: 13, color: ink, padding: '6px 14px' }}>{s}</span>)}
             {credentialBadges()}
           </section>
         ) : null}
@@ -499,7 +510,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <h2 style={{ ...H('28px'), textAlign: 'center', marginBottom: 26 }}>Kind words</h2>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
                 {reviews.slice(0, 3).map((r) => (
-                  <div key={r.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: '18px 20px' }}>
+                  <div key={r.id} style={{ ...glassCard, padding: '20px 22px' }}>
                     <div style={{ color: accent, fontSize: 15, marginBottom: 8 }}>{'★'.repeat(r.rating || 5)}</div>
                     <p style={{ fontFamily: bodyFont, color: ink, fontSize: 14.5, lineHeight: 1.6, fontStyle: 'italic', margin: '0 0 10px' }}>"{r.body || r.comment}"</p>
                     <div style={{ fontFamily: bodyFont, fontSize: 13, fontWeight: 700, color: ink }}>{r.reviewer_name || r.client_name || 'Client'}</div>
@@ -541,7 +552,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <>
                 <h3 style={{ ...H('20px'), marginBottom: 14 }}>Specialties</h3>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 24 }}>
-                  {profile.specialties.map((s, i) => <span key={i} style={{ fontFamily: bodyFont, fontSize: 13.5, color: ink, background: accent + '12', borderRadius: 8, padding: '6px 12px' }}>{s}</span>)}
+                  {profile.specialties.map((s, i) => <span key={i} style={{ fontFamily: bodyFont, fontSize: 13.5, color: ink, background: accent + '14', border: `1px solid ${accent}33`, borderRadius: PILL, padding: '6px 14px' }}>{s}</span>)}
                 </div>
               </>
             ) : null}
@@ -586,7 +597,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       body = (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {services.map((s) => (
-            <div key={s.id} style={{ display: 'grid', gridTemplateColumns: s.image_url ? '220px minmax(0,1fr)' : '1fr', gap: 22, alignItems: 'center', background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden' }} className="lt-2col">
+            <div key={s.id} style={{ ...glassCard, display: 'grid', gridTemplateColumns: s.image_url ? '220px minmax(0,1fr)' : '1fr', gap: 22, alignItems: 'center', overflow: 'hidden' }} className="lt-2col">
               {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', height: '100%', minHeight: 150, objectFit: 'cover' }} />}
               <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('21px') }}>{s.name}</div>
@@ -617,7 +628,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       body = (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))', gap: 18, justifyContent: 'center' }}>
           {services.map((s) => (
-            <div key={s.id} style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+            <div key={s.id} style={{ ...glassCard, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
               <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('20px') }}>{s.name}</div>
@@ -639,10 +650,10 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   function renderContact() {
-    const field = { width: '100%', border: `1px solid ${line}`, borderRadius: 10, padding: '12px 14px', fontSize: 15, fontFamily: bodyFont, boxSizing: 'border-box', outline: 'none', marginBottom: 12, color: ink, background: fieldBg }
+    const field = { width: '100%', border: `1px solid ${line}`, borderRadius: 14, padding: '12px 15px', fontSize: 15, fontFamily: bodyFont, boxSizing: 'border-box', outline: 'none', marginBottom: 12, color: ink, background: fieldBg }
     const heading = contact.heading || 'Get in touch'
     const formCard = (
-      <div style={{ background: surface, border: `1px solid ${surfaceBorder}`, borderRadius: radius, padding: 24, boxShadow: dark ? 'none' : '0 20px 60px -30px rgba(0,0,0,0.25)' }}>
+      <div style={{ ...glassCard, padding: 24 }}>
         {sent ? (
           <div style={{ textAlign: 'center', padding: '20px 0', fontFamily: bodyFont }}>
             <div style={{ color: accent, fontSize: 30, marginBottom: 8 }}>✓</div>
@@ -714,7 +725,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     <div style={{ minHeight: '100vh', background: bg, fontFamily: bodyFont, overflowX: 'hidden' }} className="public-profile-site">
       <style>{`.lt-navlink:hover{opacity:1 !important}.public-profile-site p,.public-profile-site h1,.public-profile-site h2,.public-profile-site h3{overflow-wrap:anywhere}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
 
-      <header style={{ position: 'sticky', top: 0, zIndex: 40, background: bg + 'e6', backdropFilter: 'blur(10px)', borderBottom: `1px solid ${line}` }}>
+      <header style={{ position: 'sticky', top: 0, zIndex: 40, background: dark ? 'rgba(16,16,22,0.55)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px) saturate(160%)', WebkitBackdropFilter: 'blur(18px) saturate(160%)', borderBottom: glassBorder }}>
         <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           <div onClick={() => setActivePage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
             {logo ? <img src={logo} alt={displayName} style={{ height: 32, objectFit: 'contain' }} /> : <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 21, color: ink, letterSpacing: '-0.02em' }}>{displayName}</span>}
@@ -958,7 +969,7 @@ function classicStyles(isMobile) {
     sectionTitle: { fontFamily: "'Inter', sans-serif", fontSize: '24px', color: 'var(--text-primary)', marginBottom: '24px', ...TYPO.heading },
     specialtySection: { display: 'flex', flexWrap: 'wrap', gap: '8px' },
     portfolioGrid: { display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(4, 1fr)', gap: '12px' },
-    portfolioItem: { borderRadius: 'var(--radius-lg)', overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', transition: 'transform var(--transition-base)', border: LIQUID_GLASS_CARD.border, borderTop: LIQUID_GLASS_CARD.borderTop, boxShadow: LIQUID_GLASS_CARD.boxShadow },
+    portfolioItem: { borderRadius: 18, overflow: 'hidden', aspectRatio: '1', cursor: 'pointer', transition: 'transform var(--transition-base)', border: LIQUID_GLASS_CARD.border, borderTop: LIQUID_GLASS_CARD.borderTop, boxShadow: LIQUID_GLASS_CARD.boxShadow },
     portfolioImg: { width: '100%', height: '100%', objectFit: 'cover', display: 'block' },
     reviewGrid: { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: '12px' },
     reviewCard: { ...LIQUID_GLASS_CARD, padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '6px' },
