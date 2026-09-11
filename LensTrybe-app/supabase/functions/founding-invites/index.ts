@@ -453,23 +453,23 @@ Deno.serve(async (req) => {
       return json({ invite: data, places: await places(sb) })
     }
 
-    // A founding creative who pulls out after signing up: end the deal (same as the
-    // automatic revert in founding-check). They keep their account, work and badge, move to
-    // standard Expert pricing, and their founding place frees up.
+    // A founding creative who pulls out after signing up: end the deal. founding_end_deal()
+    // is shared with the automatic revert in founding-check: standard price, the free period
+    // ends (first payment 7 days later), badge/profile/work kept, place freed. The creative
+    // gets the 'founding_ended' billing email with the amount and date.
     if (action === 'end_deal') {
       if (inv.status !== 'redeemed' || !inv.redeemed_by) return json({ error: 'Only signed-up invites have a founding deal to end.' }, 409)
-      const { data: prof } = await sb.from('profiles').select('id, founding_member, founding_deal_status').eq('id', inv.redeemed_by).maybeSingle()
-      if (!prof || !prof.founding_member || prof.founding_deal_status === 'reverted') {
-        return json({ error: 'Their founding deal has already ended.', places: await places(sb) }, 409)
-      }
-      const { error: pErr } = await sb.from('profiles').update({ founding_deal_status: 'reverted' }).eq('id', prof.id)
-      if (pErr) { console.error('founding-invites end_deal', pErr.message); return json({ error: 'Could not end the deal.' }, 500) }
-      const { data: sub } = await sb.from('subscriptions').select('id, billing').eq('user_id', prof.id).maybeSingle()
-      if (sub) {
-        const amount = sub.billing === 'annual' ? 74990 : 7499
-        await sb.from('subscriptions').update({ founding_member: false, amount_minor: amount, updated_at: new Date().toISOString() }).eq('id', sub.id)
-      }
-      return json({ founder: { id: prof.id, founding_deal_status: 'reverted' }, places: await places(sb) })
+      const { data: res, error: rErr } = await sb.rpc('founding_end_deal', { p_profile: inv.redeemed_by })
+      if (rErr) { console.error('founding-invites end_deal', rErr.message); return json({ error: 'Could not end the deal.' }, 500) }
+      if (!res?.ok) return json({ error: 'Their founding deal has already ended.', places: await places(sb) }, 409)
+      try {
+        await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: inv.redeemed_by, kind: 'founding_ended', tier: res.tier || 'expert', amount_minor: res.amount_minor, currency: 'AUD', billing: res.billing, first_charge_date: res.first_charge_date }),
+        })
+      } catch (e) { console.error('founding-invites end_deal email', e instanceof Error ? e.message : String(e)) }
+      return json({ founder: { id: inv.redeemed_by, founding_deal_status: 'reverted' }, first_charge_date: res.first_charge_date, places: await places(sb) })
     }
 
     if (action === 'extend') {

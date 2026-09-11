@@ -1,5 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { LegalBody } from '../../components/legal/LegalDocument'
+import { FOUNDING_TERMS_INTRO, FOUNDING_TERMS_SECTIONS, FOUNDING_TERMS_TITLE, FOUNDING_TERMS_UPDATED, FOUNDING_TERMS_VERSION } from '../../lib/foundingTerms'
 import { supabase } from '../../lib/supabaseClient'
 import { moderateText } from '../../lib/moderateContent'
 import { payWithRevolut } from '../../lib/revolut.js'
@@ -393,7 +395,12 @@ export default function SignupPage() {
               city: form.city || '',
               state: form.state || '',
               subscription_tier: effectiveTier,
-              ...(foundingCode ? { founding_code: foundingCode } : {}),
+              ...(foundingCode ? {
+                founding_code: foundingCode,
+                // Which Founding Creative Agreement they ticked (recorded at signup).
+                founding_terms_version: FOUNDING_TERMS_VERSION,
+                founding_terms_ua: (typeof navigator !== 'undefined' ? navigator.userAgent : '').slice(0, 400),
+              } : {}),
             },
           },
         })
@@ -836,7 +843,7 @@ export default function SignupPage() {
         @media (max-width: 767px) {
           .signup-page button { min-height: 44px; }
           .signup-page button.password-field-toggle { min-height: 32px; }
-          .signup-page input, .signup-page textarea, .signup-page select { width: 100% !important; font-size: 14px !important; }
+          .signup-page input:not([type=checkbox]):not([type=radio]), .signup-page textarea, .signup-page select { width: 100% !important; font-size: 14px !important; }
           .signup-page [style*="height: 3px"] { min-height: 3px; }
           .signup-page [style*="justify-content: space-between"] > button { width: 100%; }
         }
@@ -997,10 +1004,30 @@ export default function SignupPage() {
                 )}
               />
               {foundingValid && (
-                <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
-                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/founding-agreement" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the Founding Creative Agreement</a>.</span>
-                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '4px' }}>
+                  <div style={{ fontSize: '13px', ...TYPO.label }}>Your founding terms</div>
+                  <div
+                    role="region"
+                    aria-label={FOUNDING_TERMS_TITLE}
+                    tabIndex={0}
+                    style={{ ...LIQUID_FIELD, flex: 'none', height: '300px', maxHeight: '45vh', overflowY: 'auto', padding: '16px 18px', fontSize: '13.5px', lineHeight: 1.6, color: 'var(--text-secondary)', textAlign: 'left' }}
+                  >
+                    <div style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '2px' }}>{FOUNDING_TERMS_TITLE}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '12px' }}>Version {FOUNDING_TERMS_UPDATED}</div>
+                    <LegalBody text={FOUNDING_TERMS_INTRO} sid="ft-intro" />
+                    {FOUNDING_TERMS_SECTIONS.map((sec) => (
+                      <div key={sec.id}>
+                        <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', margin: '16px 0 6px' }}>{sec.title}</div>
+                        <LegalBody text={sec.body} sid={`ft-${sec.id}`} />
+                      </div>
+                    ))}
+                  </div>
+                  <a href="/founding-agreement" target="_blank" rel="noreferrer" style={{ fontSize: '12.5px', color: 'var(--green)', fontWeight: 600, alignSelf: 'flex-start' }}>Open the full agreement in a new tab</a>
+                  <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer' }}>
+                    <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
+                    <span>I've read and agree to the {FOUNDING_TERMS_TITLE} above (version {FOUNDING_TERMS_UPDATED}), including how my founding deal can end and what I'd pay if it does.</span>
+                  </label>
+                </div>
               )}
               {form.tier !== 'basic' && !foundingValid && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '4px' }}>

@@ -318,7 +318,7 @@ function InviteRow({ inv, founder, busy, confirming, onAction, onConfirm, onEdit
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {confirming === 'cancel' ? confirmBox('Cancel this code? It frees the place.', 'Yes, cancel', 'cancel')
-          : confirming === 'end_deal' ? confirmBox('End their founding deal? They keep their account and move to standard Expert pricing. The place frees up.', busy === 'end_deal' ? 'Ending…' : 'Yes, end deal', 'end_deal')
+          : confirming === 'end_deal' ? confirmBox('End their founding deal? Their free period ends and their first standard Expert payment is taken in 7 days (they get an email). They keep their account and badge, and the place frees up.', busy === 'end_deal' ? 'Ending…' : 'Yes, end deal', 'end_deal')
           : confirming === 'copy' ? confirmBox('Copying starts their 14 days. Copy link?', 'Copy link', 'copy')
           : confirming === 'send' ? confirmBox(`Email ${inv.first_name || 'them'} now?`, sendLabel, 'send')
           : (
@@ -436,7 +436,7 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
       if (res.ok) {
         setFounders((prev) => prev.map((f) => (f.id === inv.redeemed_by ? { ...f, founding_deal_status: 'reverted' } : f)))
         if (res.places) setPlaces(res.places)
-        flash(`Ended ${inv.full_name}'s founding deal. The place is free again.`)
+        flash(`Ended ${inv.full_name}'s founding deal. We've emailed them${res.first_charge_date ? ` and their first payment is ${fmtDate(res.first_charge_date)}` : ''}. The place is free again.`)
       }
     } else if (action === 'delete') {
       res = await callInvites('delete', { id: inv.id })

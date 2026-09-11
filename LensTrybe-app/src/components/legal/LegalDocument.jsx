@@ -41,6 +41,10 @@ function renderInline(text, keyBase) {
   return out
 }
 
+export function LegalBody({ text, sid }) {
+  return <Body text={text} sid={sid} />
+}
+
 function Body({ text, sid }) {
   const blocks = String(text || '').trim().split(/\n\s*\n/)
   return blocks.map((block, bi) => {

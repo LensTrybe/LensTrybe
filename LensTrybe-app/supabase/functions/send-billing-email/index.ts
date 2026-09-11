@@ -44,6 +44,12 @@ function safeEqual(a: string, b: string) {
   for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return r === 0
 }
+function fmtDate(d: unknown) {
+  const s = String(d || '').slice(0, 10)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return ''
+  const [y, m, day] = s.split('-').map(Number)
+  return new Date(Date.UTC(y, m - 1, day)).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+}
 function tierLabel(t: unknown) { const s = String(t || '').toLowerCase(); if (!s || s === 'basic') return 'LensTrybe'; return 'LensTrybe ' + s.charAt(0).toUpperCase() + s.slice(1) }
 function money(minor: unknown, currency: unknown) {
   const n = Number(minor); if (!Number.isFinite(n)) return ''
@@ -73,7 +79,7 @@ Deno.serve(async (req) => {
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   const userId = (body.user_id || body.userId) as string
-  const kind = String(body.kind || '').toLowerCase() // 'active' | 'failed' | 'cancelled' | 'downgraded'
+  const kind = String(body.kind || '').toLowerCase() // 'active' | 'failed' | 'cancelled' | 'downgraded' | 'founding_ended'
   const tier = tierLabel(body.tier)
   const amountStr = money(body.amount_minor ?? body.amount, body.currency)
   if (!userId || !kind) return json({ error: 'user_id and kind required' }, 400)
@@ -83,7 +89,7 @@ Deno.serve(async (req) => {
   if (!to) return json({ error: 'no creative email', skipped: true }, 200)
   const name = profile?.business_name || 'there'
 
-  let subject = '', kicker = '', heading = '', intro = '', ctaText = 'Manage subscription', footNote = ''
+  let subject = '', kicker = '', heading = '', intro = '', ctaText = 'Manage subscription', footNote = '', firstCharge = ''
   if (kind === 'active') {
     subject = `You're on ${tier}`
     kicker = 'Subscription active'
@@ -111,12 +117,28 @@ Deno.serve(async (req) => {
     intro = `Hi ${esc(name)}, we tried a few times but could not collect your ${esc(tier)} payment, so your account is now on the free Basic plan. Your profile and work are safe.`
     ctaText = 'Choose a plan'
     footNote = 'You can pick a paid plan again any time to get your features back.'
+  } else if (kind === 'founding_ended') {
+    // Sent when a founding deal ends (founding_end_deal): the $49 rate and the rest of the
+    // free period go; the first standard payment is 7 days later (first_charge_date).
+    firstCharge = fmtDate(body.first_charge_date)
+    subject = 'Your LensTrybe founding deal has ended'
+    kicker = 'Founding deal'
+    heading = 'Your founding deal has ended'
+    intro = `Hi ${esc(name)}, your founding deal has now ended, as set out in the <a href="https://lenstrybe.com/founding-agreement" style="color:${BRAND.green};">Founding Creative Agreement</a>. You keep your account, your work and your Founding Creative badge.`
+      + (firstCharge
+        ? ` Your ${esc(tier)} plan now continues at the standard price, and your first payment will be taken on <strong style="color:${BRAND.text};">${esc(firstCharge)}</strong>.`
+        : ` To keep your ${esc(tier)} features, choose a plan in your dashboard.`)
+    ctaText = firstCharge ? 'Manage subscription' : 'Choose a plan'
+    footNote = firstCharge
+      ? `Don't want to continue on ${esc(tier)}? Switch to the free Basic plan or cancel before ${esc(firstCharge)} and you won't be charged.`
+      : 'Your profile and work are safe, and you can pick a plan any time.'
   } else {
     return json({ error: 'unknown kind' }, 400)
   }
 
+  const period = String(body.billing || '') === 'annual' ? ' a year' : String(body.billing || '') === 'monthly' ? ' a month' : ''
   const panelHtml = amountStr
-    ? panel(fieldRow('Plan', esc(tier)) + fieldRow('Amount', esc(amountStr)))
+    ? panel(fieldRow('Plan', esc(tier)) + fieldRow('Amount', esc(amountStr + (kind === 'founding_ended' ? period : ''))) + (firstCharge ? fieldRow('First payment', esc(firstCharge)) : ''))
     : panel(fieldRow('Plan', esc(tier)))
 
   const billingFootNote = `${footNote} Questions about your subscription? Just reply to this email and the LensTrybe team will help.`

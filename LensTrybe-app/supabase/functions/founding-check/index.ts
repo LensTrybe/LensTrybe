@@ -160,12 +160,18 @@ Deno.serve(async (req) => {
       } else if (daysSince(f.founding_warned_at) >= GRACE_DAYS) {
         // Grace elapsed and still unmet.
         if (autoRevert) {
-          updates.founding_deal_status = 'reverted'
-          // Move billing to standard pricing (keep the badge; deal simply ends).
-          const { data: sub } = await sb.from('subscriptions').select('id, billing').eq('user_id', f.id).maybeSingle()
-          if (sub) {
-            const amount = sub.billing === 'annual' ? 74990 : 7499
-            await sb.from('subscriptions').update({ founding_member: false, amount_minor: amount, updated_at: new Date().toISOString() }).eq('id', sub.id)
+          // End the deal (shared with the admin End founding deal button): standard price,
+          // the free period ends with the first payment 7 days later, badge kept. Then tell them.
+          const { data: res } = await sb.rpc('founding_end_deal', { p_profile: f.id })
+          if (res?.ok) {
+            updates.founding_deal_status = 'reverted'
+            try {
+              await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+                method: 'POST',
+                headers: { Authorization: `Bearer ${serviceKey}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: f.id, kind: 'founding_ended', tier: res.tier || 'expert', amount_minor: res.amount_minor, currency: 'AUD', billing: res.billing, first_charge_date: res.first_charge_date }),
+              })
+            } catch (_e) { /* best effort */ }
           }
         } else {
           updates.founding_deal_status = 'revert_pending'
