@@ -285,11 +285,12 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         {expanded && wordmark}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2px 0' }}>
-        {TOP.map((it) => panelRow({ id: it.path, icon: it.icon, label: it.label, active: itemActive(it.path), to: it.path, title: it.label }))}
+        {TOP.map((it) => panelRow({ id: it.path, icon: it.icon, label: it.label, active: !selected && itemActive(it.path), to: it.path, title: it.label }))}
         <div style={{ height: 1, background: t.divider, margin: expanded ? '8px 18px' : '8px 14px' }} />
         {sections.map((s) => panelRow({
           id: s.label, icon: s.icon, label: s.label,
-          active: activeSection === s.label || selected === s.label,
+          // One highlight at a time: the open flyout wins, otherwise the section you're in.
+          active: selected ? selected === s.label : activeSection === s.label,
           onClick: () => { if (expanded) setSelected((v) => (v === s.label ? null : s.label)); else navigate(s.items[0].path) },
           chevron: true, chevronOpen: selected === s.label, title: s.label,
         }))}
