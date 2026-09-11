@@ -273,9 +273,13 @@ function EditInviteModal({ inv, onClose, onSaved }) {
   )
 }
 
-function InviteRow({ inv, founderName, busy, confirming, onAction, onConfirm, onEdit }) {
-  const st = inviteState(inv)
-  const k = st.key
+function InviteRow({ inv, founder, busy, confirming, onAction, onConfirm, onEdit }) {
+  const base = inviteState(inv)
+  const k = base.key
+  const founderName = founder?.business_name || ''
+  // Signed up, but the founding deal has since ended (they left, or it was reverted).
+  const dealEnded = k === 'signed_up' && (!founder || founder.founding_deal_status === 'reverted')
+  const st = dealEnded ? { key: k, label: 'Deal ended', color: 'var(--lt-faint)' } : base
   const canSend = k === 'draft' || k === 'sent' || k === 'reminded' || k === 'expired'
   const canCancel = k === 'draft' || k === 'sent' || k === 'reminded' || k === 'expired'
   const canExtend = k === 'sent' || k === 'reminded' || (k === 'expired' && inv.sent_at)
@@ -296,7 +300,7 @@ function InviteRow({ inv, founderName, busy, confirming, onAction, onConfirm, on
     <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
       <span style={{ fontSize: 12.5, color: 'var(--lt-muted)' }}>{text}</span>
       <button type="button" style={btn} onClick={() => onConfirm(null)}>No</button>
-      <button type="button" style={action === 'cancel' ? btnDanger : btnPrimary} disabled={busy} onClick={() => onAction(inv, action)}>{yesLabel}</button>
+      <button type="button" style={action === 'cancel' || action === 'end_deal' ? btnDanger : btnPrimary} disabled={busy} onClick={() => onAction(inv, action)}>{yesLabel}</button>
     </div>
   )
 
@@ -314,6 +318,7 @@ function InviteRow({ inv, founderName, busy, confirming, onAction, onConfirm, on
       </div>
       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         {confirming === 'cancel' ? confirmBox('Cancel this code? It frees the place.', 'Yes, cancel', 'cancel')
+          : confirming === 'end_deal' ? confirmBox('End their founding deal? They keep their account and move to standard Expert pricing. The place frees up.', busy === 'end_deal' ? 'Ending…' : 'Yes, end deal', 'end_deal')
           : confirming === 'copy' ? confirmBox('Copying starts their 14 days. Copy link?', 'Copy link', 'copy')
           : confirming === 'send' ? confirmBox(`Email ${inv.first_name || 'them'} now?`, sendLabel, 'send')
           : (
@@ -324,6 +329,7 @@ function InviteRow({ inv, founderName, busy, confirming, onAction, onConfirm, on
               {canEdit && <button type="button" style={btn} disabled={busy} onClick={() => onEdit(inv)}>Edit</button>}
               {k === 'draft' && <button type="button" style={btnDanger} disabled={busy} onClick={() => onAction(inv, 'delete')}>Delete</button>}
               {canCancel && k !== 'draft' && <button type="button" style={btnDanger} disabled={busy} onClick={() => onConfirm('cancel')}>Cancel code</button>}
+              {k === 'signed_up' && !dealEnded && <button type="button" style={btnDanger} disabled={busy} onClick={() => onConfirm('end_deal')}>End founding deal</button>}
             </>
           )}
       </div>
@@ -425,6 +431,13 @@ export default function FoundingInvitesPanel() {
         const ok = await copyText(INVITE_BASE + encodeURIComponent(inv.code))
         flash(ok ? `Link copied for ${inv.full_name}. It works for 14 days.` : `Couldn't copy automatically. The link is ${INVITE_BASE}${inv.code}`)
       }
+    } else if (action === 'end_deal') {
+      res = await callInvites('end_deal', { id: inv.id })
+      if (res.ok) {
+        setFounders((prev) => prev.map((f) => (f.id === inv.redeemed_by ? { ...f, founding_deal_status: 'reverted' } : f)))
+        if (res.places) setPlaces(res.places)
+        flash(`Ended ${inv.full_name}'s founding deal. The place is free again.`)
+      }
     } else if (action === 'delete') {
       res = await callInvites('delete', { id: inv.id })
       if (res.ok) { setInvites((prev) => prev.filter((p) => p.id !== inv.id)); if (res.places) setPlaces(res.places); flash(`Deleted the draft for ${inv.full_name}.`) }
@@ -515,7 +528,7 @@ export default function FoundingInvitesPanel() {
             ) : (
               shown.map((inv) => (
                 <InviteRow key={inv.id} inv={inv}
-                  founderName={founderById[inv.redeemed_by]?.business_name || ''}
+                  founder={founderById[inv.redeemed_by] || null}
                   busy={busy[inv.id] || null}
                   confirming={confirming[inv.id] || null}
                   onAction={onAction}

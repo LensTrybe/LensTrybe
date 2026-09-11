@@ -10,6 +10,7 @@
 //                              (manual: Michael shares the link himself, no email is sent)
 //    update  {id, ...fields}   fix a name, email, type, region or note on a live invite
 //    cancel  {id}              cancel an unused code (frees the place)
+//    end_deal {id}             end a signed-up creative's founding deal (frees the place)
 //    extend  {id}              add 14 days to a sent invite
 //    delete  {id}              remove a draft that was never sent
 //    preview {name, note, code} the invite email HTML
@@ -450,6 +451,25 @@ Deno.serve(async (req) => {
         .eq('id', id).in('status', ['unused', 'expired']).select(INVITE_COLS).maybeSingle()
       if (error || !data) return json({ error: 'Could not cancel. It may have just been used.' }, 409)
       return json({ invite: data, places: await places(sb) })
+    }
+
+    // A founding creative who pulls out after signing up: end the deal (same as the
+    // automatic revert in founding-check). They keep their account, work and badge, move to
+    // standard Expert pricing, and their founding place frees up.
+    if (action === 'end_deal') {
+      if (inv.status !== 'redeemed' || !inv.redeemed_by) return json({ error: 'Only signed-up invites have a founding deal to end.' }, 409)
+      const { data: prof } = await sb.from('profiles').select('id, founding_member, founding_deal_status').eq('id', inv.redeemed_by).maybeSingle()
+      if (!prof || !prof.founding_member || prof.founding_deal_status === 'reverted') {
+        return json({ error: 'Their founding deal has already ended.', places: await places(sb) }, 409)
+      }
+      const { error: pErr } = await sb.from('profiles').update({ founding_deal_status: 'reverted' }).eq('id', prof.id)
+      if (pErr) { console.error('founding-invites end_deal', pErr.message); return json({ error: 'Could not end the deal.' }, 500) }
+      const { data: sub } = await sb.from('subscriptions').select('id, billing').eq('user_id', prof.id).maybeSingle()
+      if (sub) {
+        const amount = sub.billing === 'annual' ? 74990 : 7499
+        await sb.from('subscriptions').update({ founding_member: false, amount_minor: amount, updated_at: new Date().toISOString() }).eq('id', sub.id)
+      }
+      return json({ founder: { id: prof.id, founding_deal_status: 'reverted' }, places: await places(sb) })
     }
 
     if (action === 'extend') {
