@@ -127,6 +127,21 @@ Deno.serve(async (req: Request) => {
       summary.push(`${table}: ${rows.length}`);
     }
 
+    // Clients: the bookings they requested or were booked into, without the creative's
+    // private notes (same columns as my_client_bookings()).
+    if (kind === 'client') {
+      const { data: bk, error: bkErr } = await admin.from('bookings')
+        .select('id, creative_id, client_name, client_email, client_phone, service, booking_date, all_day, start_time, end_time, location, status, origin, message, response_note, cancelled_by, cancelled_at, confirmed_at, created_at, updated_at')
+        .eq('client_user_id', user.id).limit(MAX_ROWS);
+      if (bkErr) console.error('export: bookings failed', bkErr.message);
+      const rows = clean((bk || []) as Record<string, unknown>[]);
+      if (rows.length) {
+        files['data/bookings.json'] = strToU8(JSON.stringify(rows, null, 2));
+        files['data/bookings.csv'] = strToU8(toCsv(rows));
+        summary.push(`bookings: ${rows.length}`);
+      }
+    }
+
     // Conversations: threads they are part of, and every message in them.
     const threadMap = new Map<string, Record<string, unknown>>();
     for (const col of kind === 'creative' ? ['creative_id', 'client_user_id', 'sender_user_id'] : ['client_user_id', 'sender_user_id']) {

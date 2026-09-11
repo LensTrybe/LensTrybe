@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
@@ -96,6 +97,24 @@ export default function InvoicingPage() {
     line_items: [{ description: '', quantity: 1, rate: 0 }],
   })
   const [bankDetails, setBankDetails] = useState({ bank_name: '', bank_bsb: '', bank_account: '', bank_account_name: '' })
+
+  // Opened from a booking ('Create invoice'): start a new invoice with the client's details.
+  const location = useLocation()
+  const navigate = useNavigate()
+  useEffect(() => {
+    const pre = location.state?.prefillFromBooking
+    if (!pre) return
+    setNewInvoice((inv) => ({
+      ...inv,
+      client_name: pre.client_name || '',
+      client_email: pre.client_email || '',
+      client_phone: pre.client_phone || '',
+      notes: pre.notes || inv.notes,
+      line_items: [{ description: pre.description || '', quantity: 1, rate: 0 }],
+    }))
+    setShowCreate(true)
+    navigate(location.pathname, { replace: true, state: null })
+  }, [location.state, location.pathname, navigate])
   const [editingBank, setEditingBank] = useState(false)
   const [bankSaving, setBankSaving] = useState(false)
   const [toast, setToast] = useState(null)

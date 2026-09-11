@@ -83,3 +83,18 @@ export async function loadBusyTimes(creativeId, from, to) {
   const { data } = await supabase.rpc('creative_busy_times', { p_creative: creativeId, p_from: from || null, p_to: to || null })
   return data || []
 }
+
+// Prefill for a new quote or invoice made from a booking (Quotes / Invoicing read it from
+// router state: navigate(path, { state: { prefillFromBooking } })).
+export function bookingDocPrefill(b) {
+  const when = b.booking_date ? `${fmtDayLong(b.booking_date)}, ${timeText(b)}` : ''
+  const where = b.location ? ` at ${b.location}` : ''
+  return {
+    booking_id: b.id,
+    client_name: b.client_name || '',
+    client_email: b.client_email || '',
+    client_phone: b.client_phone || '',
+    description: b.service || '',
+    notes: when ? `For your booking on ${when}${where}.` : '',
+  }
+}

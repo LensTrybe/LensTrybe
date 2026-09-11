@@ -557,6 +557,8 @@ export default function AdminPage() {
   const [foundingSummary, setFoundingSummary] = useState(null);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [flaggedReviews, setFlaggedReviews] = useState([]);
+  // Real revenue from subscriptions (admin_revenue_summary), not from plan tiers.
+  const [revenue, setRevenue] = useState(null);
   const [flagActionId, setFlagActionId] = useState(null);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -625,6 +627,8 @@ export default function AdminPage() {
         return;
       }
       loadUsers();
+      const { data: rev } = await supabase.rpc('admin_revenue_summary');
+      if (rev) setRevenue(rev);
     });
   }, [navigate]);
 
@@ -1206,8 +1210,23 @@ export default function AdminPage() {
       <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
         {[
           { label: 'Users', value: stats.total, sub: `${stats.creatives} creative${stats.creatives === 1 ? '' : 's'} · ${stats.clients} client${stats.clients === 1 ? '' : 's'}`, color: COLORS.white },
-          { label: 'Paying creatives', value: stats.payingUsers, sub: `${stats.conversionRate.toFixed(0)}% of creatives`, color: COLORS.white },
-          { label: 'Estimated MRR', value: `$${stats.mrr.toFixed(2)}`, sub: `$${stats.arpu.toFixed(2)} per paying creative`, color: COLORS.green, greenCard: true },
+          {
+            label: 'Paying creatives',
+            value: revenue ? revenue.paying : '…',
+            sub: revenue
+              ? `${revenue.trialing} on free trials${revenue.past_due ? ` · ${revenue.past_due} payment failed` : ''}`
+              : 'Loading…',
+            color: COLORS.white,
+          },
+          {
+            label: 'Estimated MRR',
+            value: revenue ? `$${(Number(revenue.mrr_minor || 0) / 100).toFixed(2)}` : '…',
+            sub: revenue && revenue.paying
+              ? `$${(Number(revenue.mrr_minor || 0) / 100 / revenue.paying).toFixed(2)} per paying creative`
+              : 'From paying subscriptions only',
+            color: COLORS.green,
+            greenCard: true,
+          },
           { label: 'Sign-ups', value: platformAnalytics.signupsMonth, sub: `this month · ${platformAnalytics.signupsWeek} this week`, color: COLORS.white },
         ].map((s) => (
           <div key={s.label} style={{ ...(s.greenCard ? GLASS_CARD_GREEN : GLASS_CARD), borderRadius: 14, padding: '14px 16px', minWidth: 0 }}>
@@ -1874,12 +1893,14 @@ export default function AdminPage() {
               }}
             >
               <div>
-                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>TOTAL MRR ESTIMATE</div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>ESTIMATED MRR</div>
                 <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.green }}>
-                  ${platformAnalytics.mrrEstimate.toFixed(2)}
+                  ${revenue ? (Number(revenue.mrr_minor || 0) / 100).toFixed(2) : '…'}
                 </div>
                 <div style={{ fontSize: 11, color: COLORS.dim, marginTop: 4 }}>
-                  Basic ${MRR_BASIC}, Pro ${MRR_PRO}, Expert ${MRR_EXPERT}, Elite ${MRR_ELITE} per user
+                  {revenue
+                    ? `From ${revenue.paying} paying subscription${revenue.paying === 1 ? '' : 's'}${revenue.annual ? ` (${revenue.annual} annual, counted monthly)` : ''}. Free trials and complimentary accounts don't count.`
+                    : 'From paying subscriptions only.'}
                 </div>
               </div>
               <div>

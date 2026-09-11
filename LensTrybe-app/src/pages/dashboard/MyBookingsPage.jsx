@@ -6,6 +6,7 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import {
   BOOKING_LIMIT_BASIC, TIME_OPTIONS, bookingAction, bookingStatus, confirmedThisMonth,
   fmtDay, fmtDayLong, fmtTime, timeText, todayIso,
+  bookingDocPrefill,
 } from '../../lib/bookings'
 
 // Creative bookings: requests from clients (accept / decline), bookings they add
@@ -217,6 +218,7 @@ function BookingForm({ mode, booking, services, onClose, onSaved, onUpgrade }) {
 
 // Booking details with the actions that fit its status.
 function BookingDetail({ booking, onClose, onChanged, onEdit, onUpgrade }) {
+  const navigate = useNavigate()
   const [busy, setBusy] = useState('')
   const [note, setNote] = useState('')
   const [mode, setMode] = useState('') // '' | 'decline' | 'cancel'
@@ -270,6 +272,18 @@ function BookingDetail({ booking, onClose, onChanged, onEdit, onUpgrade }) {
         </div>
       )}
       {error && <div style={{ fontSize: 13, color: PINK }}>{error}</div>}
+
+      {(b.status === 'pending' || b.status === 'confirmed' || b.status === 'completed') && !mode && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 12, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-border)' }}>
+          <span style={{ fontSize: 13, color: 'var(--lt-muted)', flex: '1 1 200px' }}>Paperwork for this booking, with {b.client_name || 'the client'}'s details filled in.</span>
+          {b.status !== 'completed' && (
+            <button type="button" className="ltb-btn ltb-btn-ghost" onClick={() => navigate('/dashboard/finance/quotes', { state: { prefillFromBooking: bookingDocPrefill(b) } })}>Send a quote</button>
+          )}
+          {b.status !== 'pending' && (
+            <button type="button" className="ltb-btn ltb-btn-ghost" onClick={() => navigate('/dashboard/finance/invoicing', { state: { prefillFromBooking: bookingDocPrefill(b) } })}>Create invoice</button>
+          )}
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
         {b.status === 'pending' && mode !== 'decline' && (
