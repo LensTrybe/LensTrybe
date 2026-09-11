@@ -1,6 +1,7 @@
 // Supabase Edge Function: revolut-webhook
 // Called by Revolut (verify_jwt = false). Every request must carry a valid HMAC
-// signature made with REVOLUT_WEBHOOK_SECRET (fails closed if the secret is not
+// signature made with the webhook signing secret (REVOLUT_WEBHOOK_SECRET, or fetched
+// from Revolut's webhook API when that is not set; fails closed if neither is
 // set) and a fresh timestamp. We then fetch the order's REAL state, amount and
 // currency from Revolut with our secret key and drive off that, never off the
 // claimed event.
@@ -17,7 +18,7 @@
 // Failed / cancelled orders change nothing here: revolut-charge-due owns dunning and
 // cancel-revolut-subscription owns cancellation.
 //
-// Secrets: REVOLUT_SECRET_KEY, REVOLUT_ENV, REVOLUT_WEBHOOK_SECRET,
+// Secrets: REVOLUT_SECRET_KEY, REVOLUT_ENV, REVOLUT_WEBHOOK_SECRET (optional),
 //          SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -88,26 +89,71 @@ async function verifySignature(rawBody: string, sigHeader: string, tsHeader: str
 
 const ORDER_ID_RE = /^[A-Za-z0-9-]{8,80}$/
 
+// Signing secret: REVOLUT_WEBHOOK_SECRET if set, otherwise fetched from Revolut
+// (GET /1.0/webhooks/{id} returns signing_secret for our registered webhook).
+// Cached per instance; refetched once if a signature fails, to follow rotation.
+let cachedSecret: { value: string; at: number } | null = null
+const SECRET_TTL_MS = 10 * 60 * 1000
+
+// The 1.0 webhooks endpoints take no Revolut-Api-Version header.
+async function revolutGetV1(path: string, key: string) {
+  const res = await fetch(revolutBase() + path, { headers: { Authorization: `Bearer ${key}` } })
+  const text = await res.text()
+  let parsed: unknown
+  try { parsed = JSON.parse(text) } catch { parsed = text }
+  return { ok: res.ok, status: res.status, body: parsed }
+}
+
+async function fetchSigningSecretFromRevolut(apiKey: string): Promise<string> {
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') || ''
+  const list = await revolutGetV1('/1.0/webhooks', apiKey)
+  const hooks = Array.isArray(list.body) ? list.body as Array<Record<string, unknown>> : []
+  const ours = hooks.find((w) => String(w.url || '') === `${supabaseUrl}/functions/v1/revolut-webhook`)
+    || hooks.find((w) => String(w.url || '').endsWith('/functions/v1/revolut-webhook'))
+  if (!ours?.id) return ''
+  const detail = await revolutGetV1(`/1.0/webhooks/${encodeURIComponent(String(ours.id))}`, apiKey)
+  const secret = (detail.body as Record<string, unknown> | null)?.signing_secret
+  return typeof secret === 'string' ? secret : ''
+}
+
+async function getSigningSecret(apiKey: string, forceRefresh = false): Promise<string> {
+  const fromEnv = Deno.env.get('REVOLUT_WEBHOOK_SECRET')
+  if (fromEnv) return fromEnv
+  if (!forceRefresh && cachedSecret && Date.now() - cachedSecret.at < SECRET_TTL_MS) return cachedSecret.value
+  try {
+    const value = await fetchSigningSecretFromRevolut(apiKey)
+    if (value) cachedSecret = { value, at: Date.now() }
+    return value
+  } catch (e) {
+    console.error('revolut-webhook: could not fetch signing secret', e instanceof Error ? e.message : e)
+    return ''
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
 
   const REVOLUT_SECRET_KEY = Deno.env.get('REVOLUT_SECRET_KEY')
-  const WEBHOOK_SECRET = Deno.env.get('REVOLUT_WEBHOOK_SECRET')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-  if (!REVOLUT_SECRET_KEY || !WEBHOOK_SECRET || !supabaseUrl || !serviceKey) {
-    console.error('revolut-webhook: missing env (REVOLUT_SECRET_KEY / REVOLUT_WEBHOOK_SECRET / SUPABASE_*)')
+  if (!REVOLUT_SECRET_KEY || !supabaseUrl || !serviceKey) {
+    console.error('revolut-webhook: missing env (REVOLUT_SECRET_KEY / SUPABASE_*)')
     return json({ error: 'Not configured' }, 500)
   }
 
   const rawBody = await req.text()
-  const ok = await verifySignature(
-    rawBody,
-    req.headers.get('revolut-signature') || '',
-    req.headers.get('revolut-request-timestamp') || '',
-    WEBHOOK_SECRET,
-  )
+  const sigHeader = req.headers.get('revolut-signature') || ''
+  const tsHeader = req.headers.get('revolut-request-timestamp') || ''
+  // Fail closed: no signing secret means no verification means rejected.
+  let secret = await getSigningSecret(REVOLUT_SECRET_KEY)
+  if (!secret) return json({ error: 'Not configured' }, 500)
+  let ok = await verifySignature(rawBody, sigHeader, tsHeader, secret)
+  if (!ok && sigHeader && !Deno.env.get('REVOLUT_WEBHOOK_SECRET')) {
+    // The secret may have been rotated in Revolut; refresh once and retry.
+    secret = await getSigningSecret(REVOLUT_SECRET_KEY, true)
+    ok = !!secret && await verifySignature(rawBody, sigHeader, tsHeader, secret)
+  }
   if (!ok) return json({ error: 'Invalid signature' }, 401)
 
   let payload: Record<string, unknown>
