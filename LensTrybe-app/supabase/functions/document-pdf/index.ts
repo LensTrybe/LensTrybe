@@ -39,7 +39,7 @@ function u8ToBase64(u8: Uint8Array) {
 async function htmlToPdfBase64(html: string, key: string) {
   const res = await fetch('https://api.pdfshift.io/v3/convert/pdf', {
     method: 'POST',
-    headers: { Authorization: 'Basic ' + btoa('api:' + key), 'Content-Type': 'application/json' },
+    headers: { 'X-API-Key': key, 'Content-Type': 'application/json' },
     body: JSON.stringify({ source: html, format: 'A4', use_print: false }),
   })
   if (!res.ok) throw new Error('PDF conversion failed: ' + res.status)
