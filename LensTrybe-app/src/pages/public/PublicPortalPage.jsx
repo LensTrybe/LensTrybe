@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
 import {
   MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
   messageBodyContainsContactDetails,
@@ -25,6 +26,8 @@ export default function PublicPortalPage() {
   const [activeTab, setActiveTab] = useState('messages')
   const [notFound, setNotFound] = useState(false)
   const [quoteActioning, setQuoteActioning] = useState(null)
+  const [pdfBusy, setPdfBusy] = useState(null)
+  const [pdfError, setPdfError] = useState('')
   const bottomRef = useRef(null)
   const activeThreadRef = useRef(null)
 
@@ -91,6 +94,15 @@ export default function PublicPortalPage() {
       setNewMessage('')
     }
     setSending(false)
+  }
+
+  async function downloadPdf(type, id) {
+    if (pdfBusy) return
+    setPdfError('')
+    setPdfBusy(id)
+    try { await downloadDocumentPdf({ type, id, portalToken: token }) }
+    catch (e) { setPdfError(e?.message || 'Could not create the PDF. Please try again.') }
+    setPdfBusy(null)
   }
 
   async function respondToQuote(quoteId, action) {
@@ -163,9 +175,10 @@ export default function PublicPortalPage() {
               </button>
             ))}
           </div>
-          {activeTab === 'invoices' && <div className="doc-list">{invoices.length === 0 ? <div className="empty-tab"><span></span>No invoices yet</div> : invoices.map((inv) => <div key={inv.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Invoice #{inv.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${inv.amount} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(inv.status), borderColor: statusColor(inv.status) + '44' }}>{inv.status}</span></div>)}</div>}
-          {activeTab === 'quotes' && <div className="doc-list">{quotes.length === 0 ? <div className="empty-tab"><span></span>No quotes yet</div> : quotes.map((q) => <div key={q.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Quote #{q.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${q.amount} · Valid until {q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(q.status), borderColor: statusColor(q.status) + '44' }}>{q.status}</span>{!['accepted', 'declined', 'paid'].includes(String(q.status || '').toLowerCase()) && <span className="quote-actions"><button type="button" className="doc-action" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'accept')}>Accept</button><button type="button" className="doc-decline" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'decline')}>Decline</button></span>}</div>)}</div>}
-          {activeTab === 'contracts' && <div className="doc-list">{contracts.length === 0 ? <div className="empty-tab"><span></span>No contracts yet</div> : contracts.map((c) => <div key={c.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">{c.title || 'Contract'}</div><div className="doc-meta">{c.signed_at ? `Signed ${new Date(c.signed_at).toLocaleDateString()}` : 'Awaiting signature'}</div></div><span className="doc-status" style={{ color: statusColor(c.status), borderColor: statusColor(c.status) + '44' }}>{c.status}</span>{c.status !== 'signed' && c.signing_token && <a href={`/sign/${c.signing_token}`} className="doc-action">Sign Now</a>}</div>)}</div>}
+          {pdfError && <div style={{ margin: '0 0 12px', padding: '10px 14px', borderRadius: 10, background: 'rgba(239,68,68,0.12)', color: '#f87171', fontSize: 13 }}>{pdfError}</div>}
+          {activeTab === 'invoices' && <div className="doc-list">{invoices.length === 0 ? <div className="empty-tab"><span></span>No invoices yet</div> : invoices.map((inv) => <div key={inv.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Invoice #{inv.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${inv.amount} · Due {inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(inv.status), borderColor: statusColor(inv.status) + '44' }}>{inv.status}</span><button type="button" className="doc-action" disabled={pdfBusy === inv.id} onClick={() => downloadPdf('invoice', inv.id)}>{pdfBusy === inv.id ? 'Preparing…' : 'Download PDF'}</button></div>)}</div>}
+          {activeTab === 'quotes' && <div className="doc-list">{quotes.length === 0 ? <div className="empty-tab"><span></span>No quotes yet</div> : quotes.map((q) => <div key={q.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">Quote #{q.id.slice(0, 8).toUpperCase()}</div><div className="doc-meta">${q.amount} · Valid until {q.valid_until ? new Date(q.valid_until).toLocaleDateString() : '—'}</div></div><span className="doc-status" style={{ color: statusColor(q.status), borderColor: statusColor(q.status) + '44' }}>{q.status}</span><button type="button" className="doc-action" disabled={pdfBusy === q.id} onClick={() => downloadPdf('quote', q.id)}>{pdfBusy === q.id ? 'Preparing…' : 'Download PDF'}</button>{!['accepted', 'declined', 'paid'].includes(String(q.status || '').toLowerCase()) && <span className="quote-actions"><button type="button" className="doc-action" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'accept')}>Accept</button><button type="button" className="doc-decline" disabled={quoteActioning === q.id} onClick={() => respondToQuote(q.id, 'decline')}>Decline</button></span>}</div>)}</div>}
+          {activeTab === 'contracts' && <div className="doc-list">{contracts.length === 0 ? <div className="empty-tab"><span></span>No contracts yet</div> : contracts.map((c) => <div key={c.id} className="doc-card"><span className="doc-icon"></span><div className="doc-info"><div className="doc-title">{c.title || 'Contract'}</div><div className="doc-meta">{c.signed_at ? `Signed ${new Date(c.signed_at).toLocaleDateString()}` : 'Awaiting signature'}</div></div><span className="doc-status" style={{ color: statusColor(c.status), borderColor: statusColor(c.status) + '44' }}>{c.status}</span>{c.status !== 'signed' && c.signing_token && <a href={`/sign/${c.signing_token}`} className="doc-action">Sign Now</a>}{c.contract_type === 'uploaded' ? (c.contract_file_url ? <a href={c.contract_file_url} target="_blank" rel="noopener noreferrer" className="doc-action">Download</a> : null) : <button type="button" className="doc-action" disabled={pdfBusy === c.id} onClick={() => downloadPdf('contract', c.id)}>{pdfBusy === c.id ? 'Preparing…' : 'Download PDF'}</button>}</div>)}</div>}
           {activeTab === 'messages' && (
             <div>
               {threads.length === 0 ? <div className="empty-tab"><span></span>No messages yet</div> : (

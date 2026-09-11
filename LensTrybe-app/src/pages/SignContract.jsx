@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { downloadDocumentPdf } from '../lib/downloadDocumentPdf'
 import './SignContract.css'
 
 function SignContract() {
@@ -14,6 +15,8 @@ function SignContract() {
 
   const [agreed, setAgreed] = useState(false)
   const [signing, setSigning] = useState(false)
+  const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfError, setPdfError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   const isSigned = useMemo(() => {
@@ -73,6 +76,15 @@ function SignContract() {
       cancelled = true
     }
   }, [token])
+
+  const handleDownloadPdf = async () => {
+    if (!contract || pdfBusy) return
+    setPdfError('')
+    setPdfBusy(true)
+    try { await downloadDocumentPdf({ type: 'contract', id: contract.id, signingToken: token }) }
+    catch (e) { setPdfError(e?.message || 'Could not create the PDF. Please try again.') }
+    setPdfBusy(false)
+  }
 
   const handleSign = async () => {
     if (!supabase || !contract || !token) return
@@ -194,6 +206,21 @@ function SignContract() {
               <p className="sign-contract-card__success" role="status">
                 {successMessage}
               </p>
+            )}
+
+            {!contract.contract_file_url && (
+              <div className="sign-contract-card__section">
+                <button
+                  type="button"
+                  className="sign-contract-card__link"
+                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', font: 'inherit' }}
+                  disabled={pdfBusy}
+                  onClick={handleDownloadPdf}
+                >
+                  {pdfBusy ? 'Preparing PDF…' : isSigned ? 'Download signed copy (PDF)' : 'Download a copy (PDF)'}
+                </button>
+                {pdfError && <p className="sign-contract-card__error" role="alert">{pdfError}</p>}
+              </div>
             )}
           </>
         ) : (

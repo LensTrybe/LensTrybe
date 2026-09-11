@@ -60,6 +60,7 @@ serve(async (req) => {
 
     let attachments: any[] = []
     let downloadSection = ''
+    let attachmentIsPdf = false
 
     if (isUploaded) {
       // Uploaded contracts: link to the file in our own storage only.
@@ -121,11 +122,39 @@ serve(async (req) => {
 </body>
 </html>`
 
-      attachments = [{
+      // Branded PDF from document-pdf (same renderer as the in-app and portal downloads).
+      // Falls back to the plain HTML copy if PDF generation is unavailable.
+      let pdfAttachment: any = null
+      try {
+        const pdfRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/document-pdf`, {
+          method: 'POST',
+          headers: {
+            Authorization: req.headers.get('Authorization') || '',
+            apikey: Deno.env.get('SUPABASE_ANON_KEY') || '',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: 'contract', id: contract.id }),
+        })
+        const pdfJson: any = await pdfRes.json().catch(() => ({}))
+        if (pdfRes.ok && pdfJson?.content_base64) {
+          pdfAttachment = { filename: pdfJson.filename || `Contract-${shortId}.pdf`, content: pdfJson.content_base64 }
+        } else {
+          console.error('send-contract pdf generation failed', pdfRes.status, pdfJson?.error)
+        }
+      } catch (e) {
+        console.error('send-contract pdf generation error', e instanceof Error ? e.message : e)
+      }
+      attachments = [pdfAttachment || {
         filename: `Contract-${shortId}.html`,
         content: base64Encode(new TextEncoder().encode(contractHtml)),
       }]
+      attachmentIsPdf = !!pdfAttachment
     }
+
+    // Review-and-sign link for written contracts that aren't signed yet.
+    const signUrl = (!isUploaded && contract.signing_token && String(contract.status || '').toLowerCase() !== 'signed')
+      ? `https://lenstrybe.com/sign/${encodeURIComponent(String(contract.signing_token))}`
+      : ''
 
     const emailBody = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#fff;padding:40px 32px;border-radius:12px">
@@ -136,8 +165,12 @@ serve(async (req) => {
         </p>
         ${isUploaded
           ? `<p style="color:#888;font-size:13px;margin:0 0 8px">Click the button below to download your contract.</p>${downloadSection}`
-          : `<p style="color:#888;font-size:13px;margin:0 0 8px">The contract is attached to this email. Open it in your browser and press <strong style="color:#fff">Ctrl+P</strong> (or Cmd+P on Mac) then select <strong style="color:#fff">Save as PDF</strong> to download it.</p>`
+          : (attachmentIsPdf
+              ? `<p style="color:#888;font-size:13px;margin:0 0 8px">A PDF copy of the contract is attached to this email.</p>`
+              : `<p style="color:#888;font-size:13px;margin:0 0 8px">A copy of the contract is attached to this email. Open it in your browser to read or print it.</p>`)
         }
+        ${signUrl ? `<div style="text-align:center;margin:28px 0"><a href="${esc(signUrl)}" style="display:inline-block;background:#1DB954;color:#04120a;font-weight:700;font-size:15px;padding:14px 32px;border-radius:8px;text-decoration:none">Review and sign</a></div>
+        <p style="color:#888;font-size:12px;margin:0 0 8px;text-align:center">Or copy this link: <span style="color:#fff">${esc(signUrl)}</span></p>` : ''}
         <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe &middot; <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
       </div>
     `

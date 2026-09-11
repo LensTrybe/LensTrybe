@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { resolveDocTheme } from '../../lib/documentTemplate'
+import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -103,6 +104,15 @@ export default function InvoicingPage() {
   function showToast(message, type = 'success') {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
+  }
+
+  const [pdfBusy, setPdfBusy] = useState(false)
+  async function downloadPdf(doc) {
+    if (!doc?.id || pdfBusy) return
+    setPdfBusy(true)
+    try { await downloadDocumentPdf({ type: 'invoice', id: doc.id }) }
+    catch (e) { showToast(e?.message || 'Could not create the PDF.', 'error') }
+    setPdfBusy(false)
   }
 
   const loadBrandKit = useCallback(async () => {
@@ -538,7 +548,8 @@ export default function InvoicingPage() {
                   if (editingInvoice) { void saveInvoiceEdits() }
                   else { setInvoiceViewModerationError(''); setEditingInvoice(true); setEditForm({ client_name: showView.client_name, client_email: showView.client_email, notes: showView.notes ?? '', line_items: getInvoiceItems(showView) }) }
                 }} style={editingInvoice ? { color: GREEN, borderColor: 'rgba(29,185,84,0.4)' } : undefined}>{editingInvoice ? '✓ Save' : 'Edit'}</button>
-                <button className="lti-btn lti-btn-ghost" onClick={printInvoice}>Print / PDF</button>
+                <button className="lti-btn lti-btn-ghost" type="button" disabled={pdfBusy} onClick={() => downloadPdf(showView)}>{pdfBusy ? 'Preparing PDF…' : 'Download PDF'}</button>
+                <button className="lti-btn lti-btn-ghost" onClick={printInvoice}>Print</button>
                 {showView.status !== 'paid' && <button className="lti-btn lti-btn-ghost" style={{ color: GREEN, borderColor: 'rgba(29,185,84,0.4)' }} onClick={() => { markPaid(showView.id); setShowView(prev => ({ ...prev, status: 'paid' })) }}>✓ Mark paid</button>}
                 {showView.status !== 'paid' && <button className="lti-btn lti-btn-primary" type="button" disabled={sending} onClick={() => sendInvoice(showView)}>{sending ? 'Sending…' : showView.status === 'sent' ? 'Resend' : 'Send'}</button>}
                 <button className="lti-btn lti-btn-ghost" style={{ color: PINK, borderColor: 'rgba(255,45,120,0.4)' }} onClick={() => deleteInvoice(showView.id)}>Delete</button>

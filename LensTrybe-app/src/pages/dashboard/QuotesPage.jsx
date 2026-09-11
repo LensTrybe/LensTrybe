@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { resolveDocTheme } from '../../lib/documentTemplate'
+import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -94,6 +95,15 @@ export default function QuotesPage() {
   function showToast(message, type = 'success') {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
+  }
+
+  const [pdfBusy, setPdfBusy] = useState(false)
+  async function downloadPdf(doc) {
+    if (!doc?.id || pdfBusy) return
+    setPdfBusy(true)
+    try { await downloadDocumentPdf({ type: 'quote', id: doc.id }) }
+    catch (e) { showToast(e?.message || 'Could not create the PDF.', 'error') }
+    setPdfBusy(false)
   }
 
   const loadBrandKit = useCallback(async () => {
@@ -527,7 +537,8 @@ export default function QuotesPage() {
                   if (editingQuote) { void saveQuoteEdits() }
                   else { setQuoteViewModerationError(''); setEditingQuote(true); setEditForm({ client_name: showView.client_name, client_email: showView.client_email, client_phone: showView.client_phone ?? '', client_address: showView.client_address ?? '', notes: showView.notes ?? '', line_items: getQuoteItems(showView) }) }
                 }} style={editingQuote ? { color: GREEN, borderColor: 'rgba(29,185,84,0.4)' } : undefined}>{editingQuote ? '✓ Save' : 'Edit'}</button>
-                <button className="ltq-btn ltq-btn-ghost" onClick={printQuote}>Print / PDF</button>
+                <button className="ltq-btn ltq-btn-ghost" type="button" disabled={pdfBusy} onClick={() => downloadPdf(showView)}>{pdfBusy ? 'Preparing PDF…' : 'Download PDF'}</button>
+                <button className="ltq-btn ltq-btn-ghost" onClick={printQuote}>Print</button>
                 {showView.status !== 'accepted' && showView.status !== 'declined' && (
                   <>
                     <button className="ltq-btn ltq-btn-ghost" style={{ color: GREEN, borderColor: 'rgba(29,185,84,0.4)' }} type="button" onClick={() => markAccepted(showView.id)}>✓ Accepted</button>

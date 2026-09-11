@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -139,6 +140,21 @@ export default function ContractsPage() {
   function showToast(message, type = 'success') {
     setToast({ message, type })
     setTimeout(() => setToast(null), 3000)
+  }
+
+  const [pdfBusy, setPdfBusy] = useState(false)
+  async function downloadPdf(doc) {
+    if (!doc?.id || pdfBusy) return
+    setPdfBusy(true)
+    try { await downloadDocumentPdf({ type: 'contract', id: doc.id }) }
+    catch (e) { showToast(e?.message || 'Could not create the PDF.', 'error') }
+    setPdfBusy(false)
+  }
+  async function copySigningLink(doc) {
+    if (!doc?.signing_token) return
+    const url = `${window.location.origin}/sign/${doc.signing_token}`
+    try { await navigator.clipboard.writeText(url); showToast('Signing link copied') }
+    catch { showToast(url) }
   }
 
   function storagePathFromContractsPublicUrl(fileUrl) {
@@ -571,6 +587,8 @@ export default function ContractsPage() {
               <span style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>Contract</span>
               <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button className="ltk-btn ltk-btn-ghost" onClick={() => setShowSaveTemplate(true)}>Save as template</button>
+                {showView.contract_type !== 'uploaded' && <button className="ltk-btn ltk-btn-ghost" type="button" disabled={pdfBusy} onClick={() => downloadPdf(showView)}>{pdfBusy ? 'Preparing PDF…' : 'Download PDF'}</button>}
+                {showView.contract_type !== 'uploaded' && showView.status !== 'signed' && showView.signing_token && <button className="ltk-btn ltk-btn-ghost" type="button" onClick={() => copySigningLink(showView)}>Copy signing link</button>}
                 {showView.status !== 'signed' && <button className="ltk-btn ltk-btn-primary" onClick={() => sendContract(showView)}>{showView.status === 'sent' ? 'Resend' : 'Send to client'}</button>}
                 <button className="ltk-btn ltk-btn-ghost" style={{ color: PINK, borderColor: 'rgba(255,45,120,0.4)' }} onClick={() => deleteContract(showView.id)}>Delete</button>
                 <button onClick={() => setShowView(null)} style={{ background: 'none', border: 'none', color: 'var(--lt-muted)', fontSize: 20, cursor: 'pointer', lineHeight: 1 }}>✕</button>
