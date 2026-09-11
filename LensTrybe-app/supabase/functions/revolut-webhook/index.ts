@@ -14,6 +14,10 @@
 //     through revolut_apply_charge, which checks the order matches the recorded
 //     charge (amount + currency) and applies each order exactly once. Canceled or
 //     expired subscriptions are never revived.
+//   - Card update (update-payment-method started a zero-amount order to save a new
+//     card): makes the newly saved card the subscription's card, in case the creative
+//     closed the page before the app confirmed it. A past-due subscription is then
+//     retried on the next daily run.
 //   - Anything else (already processed, unknown, old replays): ignored.
 // Failed / cancelled orders change nothing here: revolut-charge-due owns dunning and
 // cancel-revolut-subscription owns cancellation.
@@ -130,6 +134,49 @@ async function getSigningSecret(apiKey: string, forceRefresh = false): Promise<s
   }
 }
 
+// ---- Card update orders (see update-payment-method) ----
+type Card = { id: string; brand: string | null; last4: string | null; expMonth: number | null; expYear: number | null; createdAt: string }
+async function applyCardUpdate(sb: ReturnType<typeof createClient>, orderId: string, key: string): Promise<'done' | 'ignored' | 'retry'> {
+  const { data: sub } = await sb
+    .from('subscriptions')
+    .select('id, status, revolut_customer_id, processed_order_ids')
+    .eq('card_update_order_id', orderId)
+    .maybeSingle()
+  if (!sub || !sub.revolut_customer_id) return 'ignored'
+  const processed: string[] = Array.isArray(sub.processed_order_ids) ? sub.processed_order_ids : []
+  if (processed.includes(orderId)) return 'ignored'
+  const ord = await revolutGet(`/orders/${orderId}`, key)
+  if (!ord.ok) return 'retry'
+  const ob = (ord.body || {}) as Record<string, unknown>
+  const state = String(ob.state || '').toLowerCase()
+  if ((state !== 'completed' && state !== 'authorised') || Number(ob.amount) !== 0) return 'ignored'
+
+  const pm = await revolutGet(`/customers/${encodeURIComponent(String(sub.revolut_customer_id))}/payment-methods`, key)
+  const raw = Array.isArray(pm.body) ? pm.body : (pm.body as Record<string, unknown>)?.payment_methods
+  const cards: Card[] = (Array.isArray(raw) ? raw as Array<Record<string, unknown>> : [])
+    .filter((m) => m && m.id && String(m.saved_for || 'merchant') === 'merchant')
+    .map((m) => ({ id: String(m.id), brand: m.brand ? String(m.brand) : null, last4: m.last_four ? String(m.last_four) : null, expMonth: Number(m.expiry_month) || null, expYear: Number(m.expiry_year) || null, createdAt: String(m.created_at || '') }))
+  const payments = Array.isArray(ob.payments) ? ob.payments as Array<Record<string, unknown>> : []
+  let card: Card | undefined
+  for (const p of payments.slice().reverse()) {
+    const id = String((p.payment_method as Record<string, unknown> | undefined)?.id || '')
+    card = card || cards.find((c) => c.id === id)
+  }
+  card = card || cards.slice().sort((a, b) => (Date.parse(b.createdAt) || 0) - (Date.parse(a.createdAt) || 0))[0]
+  if (!card) return 'retry'
+
+  const { error } = await sb.from('subscriptions').update({
+    revolut_payment_method_id: card.id,
+    card_brand: card.brand, card_last4: card.last4, card_exp_month: card.expMonth, card_exp_year: card.expYear,
+    card_update_order_id: null, card_update_started_at: null,
+    processed_order_ids: [...processed, orderId],
+    ...(sub.status === 'past_due' ? { next_charge_date: new Date().toISOString().slice(0, 10) } : {}),
+    updated_at: new Date().toISOString(),
+  }).eq('id', sub.id).eq('card_update_order_id', orderId)
+  if (error) { console.error('revolut-webhook: card update failed', error.message); return 'retry' }
+  return 'done'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -173,7 +220,10 @@ Deno.serve(async (req) => {
     console.error('revolut-webhook: lookup failed', subErr.message)
     return json({ error: 'Lookup failed' }, 500)
   }
-  if (!sub) return json({ received: true })
+  if (!sub) {
+    const handled = await applyCardUpdate(sb, orderId, REVOLUT_SECRET_KEY)
+    return handled === 'retry' ? json({ error: 'Not ready' }, 500) : json({ received: true })
+  }
 
   const processed: string[] = Array.isArray(sub.processed_order_ids) ? sub.processed_order_ids : []
   if (processed.includes(orderId)) return json({ received: true })
@@ -196,11 +246,14 @@ Deno.serve(async (req) => {
       if (sub.status !== 'trialing') return json({ received: true })
 
       let pmId: string | null = null
+      let cardInfo: Record<string, unknown> = {}
       if (sub.revolut_customer_id) {
         const pm = await revolutGet(`/customers/${sub.revolut_customer_id}/payment-methods`, REVOLUT_SECRET_KEY)
         const list = Array.isArray(pm.body) ? pm.body : (pm.body as Record<string, unknown>)?.payment_methods
         if (Array.isArray(list) && list.length > 0) {
-          pmId = String((list[list.length - 1] as Record<string, unknown>)?.id || '') || null
+          const last = (list[list.length - 1] || {}) as Record<string, unknown>
+          pmId = String(last.id || '') || null
+          cardInfo = { card_brand: last.brand ? String(last.brand) : null, card_last4: last.last_four ? String(last.last_four) : null, card_exp_month: Number(last.expiry_month) || null, card_exp_year: Number(last.expiry_year) || null }
         }
       }
       if (!pmId) {
@@ -210,6 +263,7 @@ Deno.serve(async (req) => {
 
       const { data: upd, error: upErr } = await sb.from('subscriptions').update({
         revolut_payment_method_id: pmId,
+        ...cardInfo,
         processed_order_ids: [...processed, orderId],
         updated_at: new Date().toISOString(),
       }).eq('id', sub.id).eq('status', 'trialing').eq('revolut_last_order_id', orderId).select('id')

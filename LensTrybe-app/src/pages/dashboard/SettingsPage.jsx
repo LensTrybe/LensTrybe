@@ -184,6 +184,14 @@ export default function SettingsPage() {
 
       {activeTab === 'subscription' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          {sub?.status === 'past_due' && (
+            <div className="ltset-card" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', border: '1.5px solid rgba(255,45,120,0.55)', background: 'rgba(255,45,120,0.08)' }}>
+              <div style={{ fontSize: 13.5, color: 'var(--lt-text)', lineHeight: 1.55, flex: '1 1 260px' }}>
+                <strong style={{ color: '#FF2D78' }}>Your last payment didn't go through.</strong> Update your card to keep your {cap(tier)} features.
+              </div>
+              <button type="button" className="ltset-btn ltset-btn-primary" onClick={() => navigate(`${SUB_PAGE}?card=update`)}>Update card</button>
+            </div>
+          )}
           <div className="ltset-card" style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', borderLeft: `3px solid ${tierColor}` }}>
             <div>
               <div style={{ fontSize: 24, fontWeight: 800, color: tierColor, letterSpacing: '-0.01em' }}>{cap(tier)} Plan</div>
@@ -220,7 +228,7 @@ export default function SettingsPage() {
             <div className="ltset-card" style={{ padding: 24, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
               <div>
                 <div className="ltset-h">Billing</div>
-                <div className="ltset-sub" style={{ marginTop: 4 }}>Manage your plan, payment method and invoices.</div>
+                <div className="ltset-sub" style={{ marginTop: 4 }}>Manage your plan and update the card your subscription is charged to.</div>
               </div>
               <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => navigate(SUB_PAGE)}>Manage billing</button>
             </div>

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { Outlet, useLocation } from 'react-router-dom'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../../context/AuthContext'
 import Sidebar from './Sidebar'
 import TileField from '../ui/TileField'
 import NoteTaker from './NoteTaker'
@@ -54,6 +55,11 @@ export default function DashboardLayout() {
   const dark = theme === 'dark'
   const location = useLocation()
   const isHome = location.pathname === '/dashboard' || location.pathname === '/dashboard/'
+  const navigate = useNavigate()
+  const { profile } = useAuth()
+  // A failed subscription payment: nudge them to update their card on every page.
+  const pastDue = String(profile?.subscription_status || '').toLowerCase() === 'past_due'
+  const onSubPage = location.pathname.startsWith('/dashboard/settings/subscription')
   function toggleTheme() {
     setTheme((p) => {
       const n = p === 'dark' ? 'light' : 'dark'
@@ -195,6 +201,12 @@ export default function DashboardLayout() {
             margin: '0 auto',
             boxSizing: 'border-box',
           }} className="dash-main">
+            {pastDue && !onSubPage && (
+              <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 16px', marginBottom: 20, borderRadius: 14, border: '1.5px solid rgba(255,45,120,0.55)', background: dark ? 'rgba(255,45,120,0.12)' : 'rgba(255,45,120,0.08)', color: 'var(--lt-text)', fontSize: 13.5, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ flex: '1 1 240px' }}><strong style={{ color: '#FF2D78' }}>Your last payment didn't go through.</strong> Update your card to keep your plan's features.</span>
+                <button type="button" onClick={() => navigate('/dashboard/settings/subscription?card=update')} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: '#1DB954', color: '#04120a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Update card</button>
+              </div>
+            )}
             <Outlet context={{ theme, toggleTheme, dark }} />
           </div>
         </main>

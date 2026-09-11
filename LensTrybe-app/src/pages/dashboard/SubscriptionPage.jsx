@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { payWithRevolut } from '../../lib/revolut.js'
+import { payWithRevolut, getSavedCard, updateSavedCard } from '../../lib/revolut.js'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 
@@ -40,6 +40,48 @@ function fmtDate(iso) {
 }
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
 
+const BRAND_NAME = { visa: 'Visa', mastercard: 'Mastercard', amex: 'American Express', american_express: 'American Express', maestro: 'Maestro', discover: 'Discover', jcb: 'JCB', diners: 'Diners Club', unionpay: 'UnionPay' }
+function brandName(b) { const k = String(b || '').toLowerCase().replace(/\s+/g, '_'); return BRAND_NAME[k] || (b ? cap(String(b)) : 'Card') }
+// 'expired' | 'soon' (this month or next) | null
+function expiryState(card) {
+  if (!card?.expMonth || !card?.expYear) return null
+  const now = new Date()
+  const months = (Number(card.expYear) - now.getFullYear()) * 12 + (Number(card.expMonth) - (now.getMonth() + 1))
+  if (months < 0) return 'expired'
+  if (months <= 1) return 'soon'
+  return null
+}
+const PAST_DUE_DAYS = 7
+
+// The card saved on the subscription, with an Update card button.
+function PaymentMethodCard({ card, loading, busy, pastDue, highlight, onUpdate }) {
+  const exp = expiryState(card)
+  const warn = pastDue || exp === 'expired'
+  return (
+    <div id="payment-method" className={`lts-card${highlight ? ' lts-flash' : ''}`} style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', border: warn ? '1.5px solid rgba(255,45,120,0.55)' : undefined }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0 }}>
+        <div aria-hidden style={{ width: 46, height: 32, borderRadius: 7, flexShrink: 0, background: 'linear-gradient(135deg, var(--lt-surface-2), var(--lt-surface))', border: '1px solid var(--lt-border)', display: 'flex', alignItems: 'flex-end', justifyContent: 'flex-start', padding: '0 0 5px 6px', boxSizing: 'border-box' }}>
+          <span style={{ width: 11, height: 8, borderRadius: 2, background: 'rgba(234,179,8,0.75)' }} />
+        </div>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--lt-faint)' }}>Payment method</div>
+          <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)', marginTop: 3 }}>
+            {loading ? 'Loading your card…' : card ? `${brandName(card.brand)} ending ${card.last4}` : 'Saved card'}
+          </div>
+          {card?.expMonth && card?.expYear ? (
+            <div style={{ fontSize: 12.5, marginTop: 2, color: exp ? '#FF2D78' : 'var(--lt-muted)', fontWeight: exp ? 700 : 400 }}>
+              {exp === 'expired' ? 'Expired' : exp === 'soon' ? 'Expires soon' : 'Expires'} {String(card.expMonth).padStart(2, '0')}/{String(card.expYear).slice(-2)}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <button type="button" className={`lts-btn ${warn ? 'lts-btn-primary' : 'lts-btn-ghost'}`} onClick={onUpdate} disabled={busy}>
+        {busy ? 'Opening…' : 'Update card'}
+      </button>
+    </div>
+  )
+}
+
 function Modal({ open, onClose, title, children, busy }) {
   useEffect(() => {
     if (!open) return undefined
@@ -65,6 +107,11 @@ export default function SubscriptionPage() {
   const { user, profile, fetchUserData } = useAuth()
   const { tier: ctxTier } = useSubscription()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const [card, setCard] = useState(null)
+  const [cardLoading, setCardLoading] = useState(false)
+  const [cardBusy, setCardBusy] = useState(false)
+  const [cardFlash, setCardFlash] = useState(false)
 
   const [sub, setSub] = useState(null)
   const [subLoading, setSubLoading] = useState(true)
@@ -80,7 +127,7 @@ export default function SubscriptionPage() {
     if (!user?.id) return
     const { data } = await supabase
       .from('subscriptions')
-      .select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing, founding_member, revolut_payment_method_id')
+      .select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing, founding_member, revolut_payment_method_id, past_due_since, card_brand, card_last4, card_exp_month, card_exp_year')
       .eq('user_id', user.id)
       .eq('provider', 'revolut')
       .maybeSingle()
@@ -92,7 +139,42 @@ export default function SubscriptionPage() {
     setSub(row)
     if (row && LIVE.includes(row.status) && row.billing) setBilling(row.billing)
     setSubLoading(false)
+    // The saved card: stored on the row once known, otherwise looked up once.
+    if (row && LIVE.includes(row.status) && row.revolut_payment_method_id) {
+      if (row.card_last4) setCard({ brand: row.card_brand, last4: row.card_last4, expMonth: row.card_exp_month, expYear: row.card_exp_year })
+      else { setCardLoading(true); setCard(await getSavedCard()); setCardLoading(false) }
+    } else setCard(null)
   }, [user?.id])
+
+  // From the "payment did not go through" email or banner: bring the card into view.
+  useEffect(() => {
+    if (subLoading || searchParams.get('card') !== 'update') return
+    const el = document.getElementById('payment-method')
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); setCardFlash(true); setTimeout(() => setCardFlash(false), 2800) }
+  }, [subLoading, searchParams])
+
+  async function onUpdateCard() {
+    if (cardBusy) return
+    setCardBusy(true)
+    try {
+      const res = await updateSavedCard()
+      if (res?.cancelled) return
+      if (res?.card) setCard(res.card)
+      if (res?.paid) {
+        showToast('Card updated and your payment went through. Thanks!')
+        await fetchUserData(user.id, { silent: true })
+      } else if (res?.retried) {
+        showToast("Card saved, but the payment didn't go through. Please check with your bank or try another card.", 'error')
+      } else {
+        showToast(sub?.status === 'past_due' ? "Card updated. We'll retry your payment shortly." : 'Card updated. Future payments will use this card.')
+      }
+      await loadSub()
+    } catch (e) {
+      showToast('Could not update your card: ' + (e?.message || 'Unknown error'), 'error')
+    } finally {
+      setCardBusy(false)
+    }
+  }
 
   useEffect(() => { loadSub() }, [loadSub])
 
@@ -239,6 +321,8 @@ export default function SubscriptionPage() {
         .lts-modal { width: 100%; max-width: 460px; max-height: 88vh; overflow-y: auto; border-radius: 20px; background: var(--lt-modal-bg); border: var(--lt-modal-border); box-shadow: var(--lt-modal-shadow); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); }
         .lts-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 20px 22px 0; }
         .lts-modal-body { padding: 14px 22px 22px; display: flex; flex-direction: column; gap: 16px; }
+        .lts-flash { animation: ltsflash 2.6s ease; }
+        @keyframes ltsflash { 0% { box-shadow: 0 0 0 0 rgba(29,185,84,0); } 10% { box-shadow: 0 0 0 3px rgba(29,185,84,0.6); } 75% { box-shadow: 0 0 0 3px rgba(29,185,84,0.6); } 100% { box-shadow: 0 0 0 0 rgba(29,185,84,0); } }
         .lts-x { background: var(--lt-surface); border: 1px solid var(--lt-border); color: var(--lt-muted); width: 30px; height: 30px; border-radius: 9px; cursor: pointer; font-size: 13px; }
         @media (max-width: 900px) { .lts-grid { grid-template-columns: repeat(2, 1fr); } }
         @media (max-width: 520px) { .lts-grid { grid-template-columns: 1fr; } }
@@ -278,6 +362,20 @@ export default function SubscriptionPage() {
             ? 'Admin account: switch your own plan below to test each tier. No card or billing is involved.'
             : 'Your complimentary plan is managed by LensTrybe. Contact support if you would like to change it.'}
         </div>
+      )}
+
+      {sub?.status === 'past_due' && (
+        <div className="lts-card" style={{ padding: '16px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 14, flexWrap: 'wrap', border: '1.5px solid rgba(255,45,120,0.55)', background: 'rgba(255,45,120,0.08)' }}>
+          <div style={{ fontSize: 13.5, color: 'var(--lt-text)', lineHeight: 1.55, minWidth: 0, flex: '1 1 280px' }}>
+            <strong style={{ color: '#FF2D78' }}>Your last payment didn't go through.</strong> Update your card to keep your {cap(currentTier)} features.
+            {sub.past_due_since ? ` If it isn't paid by ${fmtDate(new Date(new Date(sub.past_due_since).getTime() + PAST_DUE_DAYS * 86400000).toISOString())}, your account moves to the free Basic plan.` : ''} We'll also retry automatically each day.
+          </div>
+          <button type="button" className="lts-btn lts-btn-primary" onClick={onUpdateCard} disabled={cardBusy}>{cardBusy ? 'Opening…' : 'Update card'}</button>
+        </div>
+      )}
+
+      {hasLiveSub && sub?.revolut_payment_method_id && (
+        <PaymentMethodCard card={card} loading={cardLoading} busy={cardBusy} pastDue={sub.status === 'past_due'} highlight={cardFlash} onUpdate={onUpdateCard} />
       )}
 
       {sub?.pending_tier && (

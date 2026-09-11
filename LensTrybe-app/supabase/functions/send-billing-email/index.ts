@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
     heading = 'Your payment did not go through'
     intro = `Hi ${esc(name)}, we could not process your latest ${esc(tier)} payment. Please update your card so you don't lose access to your features.`
     ctaText = 'Update payment details'
-    footNote = "We'll try again automatically, but updating your card now is the fastest fix."
+    footNote = "Updating your card now is the fastest fix. We'll also retry automatically each day for up to 7 days, after which your account moves to the free Basic plan."
   } else if (kind === 'cancelled') {
     subject = 'Your LensTrybe subscription has been cancelled'
     kicker = 'Subscription cancelled'
@@ -120,6 +120,6 @@ Deno.serve(async (req) => {
     : panel(fieldRow('Plan', esc(tier)))
 
   const billingFootNote = `${footNote} Questions about your subscription? Just reply to this email and the LensTrybe team will help.`
-  await sendEmail(resendKey, { to, subject, html: emailShell({ preheader: subject, kicker, heading, intro, panelHtml, ctaText, ctaUrl: SUB_URL, footNote: billingFootNote }), replyTo: REPLY_TO })
+  await sendEmail(resendKey, { to, subject, html: emailShell({ preheader: subject, kicker, heading, intro, panelHtml, ctaText, ctaUrl: kind === 'failed' ? `${SUB_URL}?card=update` : SUB_URL, footNote: billingFootNote }), replyTo: REPLY_TO })
   return json({ success: true })
 })

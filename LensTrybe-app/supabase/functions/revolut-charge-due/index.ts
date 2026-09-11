@@ -25,6 +25,12 @@
 //     referrer's own charges: monthly consumes one 10% reward per charge; annual stacks
 //     all pending rewards onto the one renewal, capped at 50% off (5 rewards).
 //
+// Single subscription retry: body { subscription_id } runs only the charge step for
+// that one subscription (used by update-payment-method right after a creative replaces
+// the card on a past-due subscription). A failed manual retry never moves them to
+// Basic by itself and sends no email (they see the result on screen); the 7-day
+// past-due limit still applies.
+//
 // Auth: requires header `x-cron-secret` == CRON_SECRET. Fails closed if CRON_SECRET
 // is not set.
 
@@ -152,12 +158,16 @@ Deno.serve(async (req) => {
   }
 
   const sb = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+  const reqBody = await req.json().catch(() => ({}))
+  const onlySub = typeof reqBody?.subscription_id === 'string' && /^[0-9a-f-]{36}$/i.test(reqBody.subscription_id) ? String(reqBody.subscription_id) : ''
+  const manual = !!onlySub
   const today = new Date().toISOString().slice(0, 10)
   const nowIso = new Date().toISOString()
   const counts = { expired_canceled: 0, expired_no_card: 0, due: 0, charged: 0, failed: 0, pending: 0, downgraded: 0, skipped: 0, errors: 0 }
 
   // Downgrade canceled subs whose paid access period has now ended -> Basic.
-  const { data: expiredCanceled } = await sb
+  // (Daily run only, not a single-subscription retry.)
+  const { data: expiredCanceled } = manual ? { data: [] as Array<{ id: string; user_id: string }> } : await sb
     .from('subscriptions')
     .select('id, user_id')
     .eq('provider', 'revolut')
@@ -170,7 +180,7 @@ Deno.serve(async (req) => {
   }
 
   // Trials that ended without a saved card cannot be charged: move them to Basic.
-  const { data: noCard } = await sb
+  const { data: noCard } = manual ? { data: [] as Array<{ id: string; user_id: string }> } : await sb
     .from('subscriptions')
     .select('id, user_id')
     .eq('provider', 'revolut')
@@ -184,13 +194,15 @@ Deno.serve(async (req) => {
   }
 
   // Due: trialing subs whose trial has ended, active renewals, and past_due retries.
-  const { data: due, error } = await sb
+  let dueQuery = sb
     .from('subscriptions')
     .select('id, user_id, tier, billing, status, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end, founding_member, pending_tier, pending_billing, first_charge_discount, failed_attempts, past_due_since, inflight_charge')
     .eq('provider', 'revolut')
     .in('status', ['active', 'trialing', 'past_due'])
     .not('revolut_payment_method_id', 'is', null)
     .lte('next_charge_date', today)
+  if (manual) dueQuery = dueQuery.eq('id', onlySub).eq('status', 'past_due')
+  const { data: due, error } = await dueQuery
 
   if (error) {
     console.error('revolut-charge-due: due query failed', error.message)
@@ -200,10 +212,13 @@ Deno.serve(async (req) => {
 
   // Record a failed charge: past_due + retry tomorrow, or move to Basic once dunning is exhausted.
   async function recordFailure(sub: Record<string, any>, orderId: string | null, tier: string, amount: number) {
-    const attempts = Number(sub.failed_attempts || 0) + 1
+    // A manual retry (new card just added) counts, but never uses up the last attempt.
+    const attempts = manual
+      ? Math.min(Number(sub.failed_attempts || 0) + 1, MAX_FAILED_ATTEMPTS - 1)
+      : Number(sub.failed_attempts || 0) + 1
     const since = sub.past_due_since ? new Date(sub.past_due_since) : new Date()
     const daysPastDue = (Date.now() - since.getTime()) / 86400000
-    if (attempts >= MAX_FAILED_ATTEMPTS || daysPastDue >= MAX_PAST_DUE_DAYS) {
+    if ((!manual && attempts >= MAX_FAILED_ATTEMPTS) || daysPastDue >= MAX_PAST_DUE_DAYS) {
       await sb.from('subscriptions').update({
         status: 'expired',
         next_charge_date: null,
@@ -231,7 +246,7 @@ Deno.serve(async (req) => {
       updated_at: new Date().toISOString(),
     }).eq('id', sub.id)
     await sb.from('profiles').update({ subscription_status: 'past_due' }).eq('id', sub.user_id)
-    await notifyBilling(supabaseUrl!, serviceKey!, sub.user_id, 'failed', tier, amount, sub.currency)
+    if (!manual) await notifyBilling(supabaseUrl!, serviceKey!, sub.user_id, 'failed', tier, amount, sub.currency)
     counts.failed++
   }
 
@@ -412,5 +427,5 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ ran_at: new Date().toISOString(), ...counts })
+  return json({ ran_at: new Date().toISOString(), ...(manual ? { subscription_id: onlySub } : {}), ...counts })
 })

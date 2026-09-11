@@ -85,3 +85,49 @@ export async function payWithRevolut({ user, tier, billing, fullName, referralCo
       .catch(reject)
   })
 }
+
+// ---- Update the saved card on an existing subscription ----
+
+// supabase.functions.invoke hides the server's message on non-2xx responses; read it back.
+async function invokeError(error, data) {
+  try {
+    const body = await error?.context?.json?.()
+    if (body?.error) return body.error
+  } catch { /* not JSON */ }
+  return data?.error || error?.message || 'Something went wrong. Please try again.'
+}
+
+// The card saved on the creative's subscription: { brand, last4, expMonth, expYear } or null.
+export async function getSavedCard() {
+  const { data, error } = await supabase.functions.invoke('update-payment-method', { body: { action: 'card' } })
+  if (error) return null
+  return data?.card || null
+}
+
+// Opens Revolut's card popup to save a new card (nothing is charged), then makes it the
+// subscription's card. A past-due payment is retried on the new card straight away.
+// Returns { cancelled: true } or { ok, card, retried, paid, status }. Throws on error.
+export async function updateSavedCard() {
+  const { data, error } = await supabase.functions.invoke('update-payment-method', { body: { action: 'start' } })
+  if (error || !data?.token) throw new Error(await invokeError(error, data))
+
+  const RevolutCheckout = await loadRevolutSdk(data.env)
+  const mode = data.env === 'production' ? 'prod' : 'sandbox'
+  const outcome = await new Promise((resolve, reject) => {
+    RevolutCheckout(data.token, mode)
+      .then((instance) => {
+        instance.payWithPopup({
+          savePaymentMethodFor: 'merchant',
+          onSuccess() { resolve('success') },
+          onCancel() { resolve('cancel') },
+          onError(e) { reject(e instanceof Error ? e : new Error(String(e?.message || e))) },
+        })
+      })
+      .catch(reject)
+  })
+  if (outcome === 'cancel') return { cancelled: true }
+
+  const conf = await supabase.functions.invoke('update-payment-method', { body: { action: 'confirm', orderId: data.orderId } })
+  if (conf.error || !conf.data?.ok) throw new Error(await invokeError(conf.error, conf.data))
+  return conf.data
+}
