@@ -158,9 +158,13 @@ Deno.serve(async (req) => {
   // Read what the signup trigger already granted: founding status + first-charge date.
   const { data: prof } = await sb
     .from('profiles')
-    .select('revolut_customer_id, founding_member, next_billing_date, referred_by_code')
+    .select('revolut_customer_id, founding_member, next_billing_date, referred_by_code, pending_deletion')
     .eq('id', userId)
     .maybeSingle()
+
+  if (prof?.pending_deletion) {
+    return json({ error: 'Your account is scheduled for deletion. Reactivate it before choosing a plan.' }, 403)
+  }
 
   const isFounding = !!prof?.founding_member
 

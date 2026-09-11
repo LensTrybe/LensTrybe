@@ -67,6 +67,7 @@ import TrybeEditPage from './pages/public/TrybeEditPage'
 import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
+import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
 
 const LAUNCH_DATE = new Date('2026-10-01T00:00:00+10:00')
 
@@ -89,9 +90,11 @@ function PlaceholderPage({ page }) {
 }
 
 function ProtectedRoute({ children }) {
-  const { user, loading } = useAuth()
+  const { user, loading, profile, clientAccount } = useAuth()
   if (loading) return null
   if (!user) return <Navigate to="/login" replace />
+  // Accounts in their 30-day deletion window only see the reactivate / download screen.
+  if (profile?.pending_deletion || (!profile && clientAccount?.pending_deletion)) return <AccountPendingDeletionPage />
   return children
 }
 

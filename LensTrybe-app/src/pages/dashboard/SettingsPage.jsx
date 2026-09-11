@@ -3,6 +3,8 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import DeleteAccountModal from '../../components/account/DeleteAccountModal'
+import DownloadDataCard from '../../components/account/DownloadDataCard'
 
 const GREEN = '#1DB954'
 const GREEN_TEXT = '#04120a'
@@ -61,6 +63,7 @@ function Modal({ open, onClose, title, children, busy }) {
 const TABS = [
   { key: 'subscription', label: 'Subscription' },
   { key: 'password', label: 'Email & Password' },
+  { key: 'data', label: 'Your Data' },
   { key: 'danger', label: 'Danger Zone' },
 ]
 
@@ -79,9 +82,6 @@ export default function SettingsPage() {
   const [cancelBusy, setCancelBusy] = useState(false)
 
   const [showDelete, setShowDelete] = useState(false)
-  const [deleteStep, setDeleteStep] = useState(1)
-  const [deleteConfirm, setDeleteConfirm] = useState('')
-  const [deleteBusy, setDeleteBusy] = useState(false)
 
   const [currentEmailInput, setCurrentEmailInput] = useState('')
   const [newEmail, setNewEmail] = useState('')
@@ -128,13 +128,10 @@ export default function SettingsPage() {
     setTimeout(() => loadSub(), 600)
   }
 
-  async function deleteAccount() {
-    if (deleteConfirm !== 'DELETE') return
-    setDeleteBusy(true)
-    await supabase.functions.invoke('delete-account', { body: { userId: user.id } })
-    await supabase.auth.signOut()
-    navigate('/')
-    setDeleteBusy(false)
+  async function afterDeleted() {
+    setShowDelete(false)
+    try { await supabase.auth.signOut() } catch { /* session already revoked server-side */ }
+    navigate('/', { replace: true })
   }
 
   const EXIT_REASONS = ['Too expensive', 'Not getting enough enquiries', 'Missing a feature I need', 'Using a different platform', 'Temporary break: I will be back', 'Other']
@@ -259,6 +256,16 @@ export default function SettingsPage() {
         </div>
       )}
 
+      {activeTab === 'data' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16, maxWidth: 720 }}>
+          <DownloadDataCard kind="creative" />
+          <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="ltset-h">Documents as PDFs</div>
+            <div className="ltset-sub">Branded PDF copies of individual invoices, quotes and contracts can be downloaded from the Invoicing, Quotes and Contracts pages.</div>
+          </div>
+        </div>
+      )}
+
       {activeTab === 'danger' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {hasLiveSub && (
@@ -270,8 +277,11 @@ export default function SettingsPage() {
           )}
           <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, border: `1px solid ${RED}44` }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: RED }}>Delete account</div>
-            <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Permanently delete your account. Your profile is removed from search straight away, and all your data (portfolio, invoices, messages, reviews) is deleted after 30 days. You can reactivate within that 30-day window. This cannot be undone once the window passes.</div>
-            <div><button type="button" className="ltset-btn ltset-btn-danger" onClick={() => { setShowDelete(true); setDeleteStep(1); setDeleteConfirm('') }}>Delete account</button></div>
+            <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Permanently delete your account. Your profile is hidden from search straight away and any paid plan is cancelled. Everything (portfolio, clients, invoices, messages, files and reviews) is permanently deleted after 30 days. You can reactivate any time within those 30 days by signing in. We'll email you a code to confirm it's you.</div>
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+              <button type="button" className="ltset-btn ltset-btn-danger" onClick={() => setShowDelete(true)}>Delete account</button>
+              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setActiveTab('data')}>Download my data first</button>
+            </div>
           </div>
         </div>
       )}
@@ -308,27 +318,7 @@ export default function SettingsPage() {
         )}
       </Modal>
 
-      <Modal open={showDelete} onClose={() => { setShowDelete(false); setDeleteStep(1); setDeleteConfirm('') }} title="Delete account" busy={deleteBusy}>
-        {deleteStep === 1 && (
-          <>
-            <div style={{ fontSize: 14, color: 'var(--lt-text)', lineHeight: 1.65 }}>Deleting your account removes your profile from search straight away. All your data (portfolio, invoices, messages, reviews) is permanently deleted after 30 days, and you can reactivate within that window. If you have an active paid subscription, deleting also cancels it.</div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowDelete(false)}>Cancel</button>
-              <button type="button" className="ltset-btn ltset-btn-danger" onClick={() => setDeleteStep(2)}>I understand, continue</button>
-            </div>
-          </>
-        )}
-        {deleteStep === 2 && (
-          <>
-            <div style={{ fontSize: 14, color: 'var(--lt-text)' }}>Type <strong>DELETE</strong> to confirm.</div>
-            <input style={inputStyle} placeholder="Type DELETE" value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} />
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => setShowDelete(false)} disabled={deleteBusy}>Cancel</button>
-              <button type="button" className="ltset-btn ltset-btn-danger" onClick={deleteAccount} disabled={deleteConfirm !== 'DELETE' || deleteBusy}>{deleteBusy ? 'Deleting…' : 'Delete my account'}</button>
-            </div>
-          </>
-        )}
-      </Modal>
+      <DeleteAccountModal open={showDelete} onClose={() => setShowDelete(false)} kind="creative" onDeleted={afterDeleted} />
     </div>
   )
 }

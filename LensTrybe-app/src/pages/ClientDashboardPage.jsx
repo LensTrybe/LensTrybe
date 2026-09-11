@@ -10,6 +10,8 @@ import {
 import { useAuth } from '../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../lib/moderateContent'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
+import DeleteAccountModal from '../components/account/DeleteAccountModal'
+import DownloadDataCard from '../components/account/DownloadDataCard'
 
 export default function ClientDashboardPage() {
   const { user, clientAccount, profile } = useAuth()
@@ -26,6 +28,7 @@ export default function ClientDashboardPage() {
   const [view, setView] = useState('messages')
   const [editingNickname, setEditingNickname] = useState(false)
   const [replyModerationError, setReplyModerationError] = useState('')
+  const [showDelete, setShowDelete] = useState(false)
 
   useEffect(() => {
     if (window.location.pathname.startsWith('/portal/')) return
@@ -266,6 +269,7 @@ export default function ClientDashboardPage() {
           <div style={s.navItem(view === 'jobs')} onClick={() => setView('jobs')}>My Jobs {jobs.length > 0 && `(${jobs.length})`}</div>
           <div style={s.navItem(false)} onClick={() => navigate('/creatives')}>Find a Creative</div>
           <div style={s.navItem(false)} onClick={() => navigate('/jobs')}>Job Board</div>
+          <div style={s.navItem(view === 'account')} onClick={() => setView('account')}>Account &amp; Data</div>
 
           {view === 'messages' && threads.length > 0 && (
             <>
@@ -377,6 +381,20 @@ export default function ClientDashboardPage() {
             </div>
           )}
 
+          {view === 'account' && (
+            <div style={s.content}>
+              <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px' }}>Account &amp; Data</h2>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '640px' }}>
+                <DownloadDataCard kind="client" />
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '24px', borderRadius: '18px', background: 'var(--bg-elevated)', border: '1px solid rgba(239,68,68,0.3)' }}>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#ef4444' }}>Delete account</div>
+                  <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-muted)' }}>Close your LensTrybe account. Your account, messages and saved creatives are permanently deleted after 30 days, and you can reactivate any time before then by signing in. We'll email you a code to confirm it's you.</div>
+                  <div><button type="button" onClick={() => setShowDelete(true)} style={{ padding: '10px 16px', borderRadius: '12px', border: 'none', background: '#ef4444', color: '#fff', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>Delete account</button></div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {view === 'jobs' && (
             <div style={s.content}>
               <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '16px' }}>My Jobs</h2>
@@ -447,7 +465,7 @@ export default function ClientDashboardPage() {
                             )}
                             {app.status === 'accepted' && (
                               <div style={{ marginTop: '12px', padding: '8px 12px', background: 'rgba(29,185,84,0.1)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '8px', fontSize: '12px', fontWeight: 700, color: '#1DB954' }}>
-                                ✓ Accepted — message thread created
+                                ✓ Accepted, message thread created
                               </div>
                             )}
                             {app.status === 'declined' && (
@@ -471,6 +489,12 @@ export default function ClientDashboardPage() {
           )}
         </div>
       </div>
+      <DeleteAccountModal
+        open={showDelete}
+        onClose={() => setShowDelete(false)}
+        kind="client"
+        onDeleted={async () => { setShowDelete(false); try { await supabase.auth.signOut() } catch { /* already signed out */ } navigate('/', { replace: true }) }}
+      />
     </div>
   )
 }
