@@ -47,7 +47,12 @@ function tokens(dark) {
     divider: 'rgba(255,255,255,0.08)',
     chipIdleBg: 'transparent', chipIdleBorder: 'none',
     chipActiveBg: 'transparent', chipActiveBorder: 'none', chipActiveGlow: 'none',
-    hoverBg: 'rgba(255,255,255,0.06)', activeRowBg: 'rgba(29,185,84,0.16)',
+    hoverBg: 'rgba(255,255,255,0.06)', activeRowBg: 'rgba(255,255,255,0.1)',
+    // Neon white selection: bright text and icon with a soft white glow.
+    activeText: '#ffffff', activeIcon: '#ffffff',
+    activeTextGlow: '0 0 6px rgba(255,255,255,0.9), 0 0 16px rgba(255,255,255,0.55)',
+    activeIconGlow: 'drop-shadow(0 0 4px rgba(255,255,255,0.9)) drop-shadow(0 0 10px rgba(255,255,255,0.5))',
+    activeRowShadow: 'inset 0 0 0 1px rgba(255,255,255,0.28), 0 0 18px -4px rgba(255,255,255,0.45)',
     avatarBg: 'rgba(255,45,120,0.18)', avatarBorder: '1px solid rgba(255,45,120,0.4)',
     textGlow: 'none', iconGlow: 'none',
   }
@@ -68,7 +73,12 @@ function tokens(dark) {
     chipIdleBg: 'rgba(255,255,255,0.55)', chipIdleBorder: '1px solid rgba(20,17,26,0.08)',
     chipActiveBg: 'linear-gradient(135deg, rgba(29,185,84,0.22), rgba(29,185,84,0.05))',
     chipActiveBorder: '1px solid rgba(29,185,84,0.4)', chipActiveGlow: '0 0 14px -4px rgba(29,185,84,0.4)',
-    hoverBg: 'rgba(20,17,26,0.045)', activeRowBg: 'rgba(29,185,84,0.1)',
+    hoverBg: 'rgba(20,17,26,0.045)', activeRowBg: 'rgba(255,255,255,0.92)',
+    // Neon white selection on light glass: a glowing white pill with dark text.
+    activeText: '#14111a', activeIcon: '#14111a',
+    activeTextGlow: 'none',
+    activeIconGlow: 'none',
+    activeRowShadow: 'inset 0 0 0 1px rgba(255,255,255,1), 0 0 22px -2px rgba(255,255,255,0.95), 0 6px 16px -8px rgba(31,38,90,0.35)',
     avatarBg: 'rgba(255,45,120,0.12)', avatarBorder: '1px solid rgba(255,45,120,0.35)',
     textGlow: '0 0 8px rgba(255,255,255,0.85), 0 1px 2px rgba(255,255,255,0.7)',
     iconGlow: 'drop-shadow(0 0 3px rgba(255,255,255,0.9))',
@@ -186,8 +196,9 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       <span style={{
         width: 38, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
         background: 'transparent', border: 'none', boxShadow: 'none',
-        color: locked ? t.muted : active ? t.green : t.icon,
-        transition: 'color .15s ease',
+        color: locked ? t.muted : active ? t.activeIcon : t.icon,
+        filter: active && !locked ? t.activeIconGlow : 'none',
+        transition: 'color .15s ease, filter .15s ease',
       }}>
         <NavIcon name={iconName} size={19} />
       </span>
@@ -199,10 +210,11 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       display: 'flex', alignItems: 'center', gap: expanded ? 11 : 0,
       padding: expanded ? '5px 12px' : '5px 0', justifyContent: expanded ? 'flex-start' : 'center',
       margin: '3px 12px', borderRadius: 13, width: 'auto', boxSizing: 'border-box',
-      color: active ? t.green : t.text, background: expanded && active ? t.activeRowBg : 'transparent',
+      color: active ? t.activeText : t.text, background: expanded && active ? t.activeRowBg : 'transparent',
+      boxShadow: expanded && active ? t.activeRowShadow : 'none',
       border: 'none', outline: 'none', appearance: 'none', WebkitAppearance: 'none',
-      fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 500, textDecoration: 'none', textShadow: t.textGlow,
-      cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', transition: 'background .15s ease, color .15s ease',
+      fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 500, textDecoration: 'none', textShadow: active ? t.activeTextGlow : t.textGlow,
+      cursor: 'pointer', whiteSpace: 'nowrap', overflow: 'hidden', transition: 'background .15s ease, color .15s ease, box-shadow .15s ease',
     }
   }
   const hoverBg = (active) => ({
@@ -233,7 +245,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     const inner = (
       <>
         {chip(item.icon, active, locked)}
-        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, textShadow: t.textGlow, color: locked ? t.muted : active ? t.green : t.text }}>{item.label}</span>
+        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontWeight: 500, textShadow: active && !locked ? t.activeTextGlow : t.textGlow, color: locked ? t.muted : active ? t.activeText : t.text }}>{item.label}</span>
         {locked && reqTier && (
           <span style={{ marginLeft: 'auto', display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 10, fontWeight: 800, letterSpacing: '0.02em', textTransform: 'uppercase', padding: '2px 8px', borderRadius: 999, background: `${badgeColor}22`, border: `1px solid ${badgeColor}55`, color: badgeColor, flexShrink: 0 }}>
             <LockGlyph color={badgeColor} size={9} />{TIER_LABEL[reqTier]}
@@ -243,7 +255,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     )
     const style = {
       display: 'flex', alignItems: 'center', gap: 11, padding: '5px 10px', margin: '3px 8px', borderRadius: 13,
-      background: active ? t.activeRowBg : 'transparent', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
+      background: active ? t.activeRowBg : 'transparent', boxShadow: active ? t.activeRowShadow : 'none', fontFamily: FONT, fontSize: 13.5, fontWeight: active ? 600 : 450,
       textDecoration: 'none', cursor: 'pointer', opacity: locked ? 0.72 : 1, transition: 'background .15s ease, opacity .15s ease',
     }
     // Lumi opens the global chat drawer in place, rather than navigating away.
