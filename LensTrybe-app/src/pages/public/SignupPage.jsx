@@ -959,7 +959,7 @@ export default function SignupPage() {
               {foundingValid && (
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer' }}>
                   <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
-                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/terms" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the terms</a>.</span>
+                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/terms#plans" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the terms</a>.</span>
                 </label>
               )}
               {form.tier !== 'basic' && !foundingValid && (
@@ -1104,8 +1104,8 @@ export default function SignupPage() {
                 <>
                   <div style={{ padding: '16px', fontSize: '13px', color: 'var(--green)', ...GLASS_CARD_GREEN, ...TYPO.body }}>
                     {foundingValid && form.tier === 'expert'
-                      ? "You'll add a card to finish. You won't be charged for 12 months, then it's $49/mo locked in for life. Your Expert profile goes live immediately."
-                      : "You'll add a card to finish. You won't be charged for your first 3 months. Your profile goes live immediately after."}
+                      ? "You'll add a card to finish. You won't be charged for 12 months, then it's $49/mo locked in for life, renewing automatically until you cancel. You can cancel any time in Settings. Your Expert profile goes live immediately."
+                      : "You'll add a card to finish. You won't be charged for your first 3 months, and you won't be charged at all if you cancel before then. After that your plan renews automatically at the price shown until you cancel. You can cancel any time in Settings. Your profile goes live immediately after."}
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                     <label style={{ fontSize: '13px', ...TYPO.label }}>Referral code (optional)</label>
@@ -1151,7 +1151,7 @@ export default function SignupPage() {
         </div>
 
         <div style={styles.footerNote}>
-          By creating an account you agree to our Terms of Service and Privacy Policy.
+          By creating an account you confirm you're 18 or over and agree to our <a href="/terms" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Terms and Conditions</a>, <a href="/privacy" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Privacy Policy</a>, <a href="/cookies" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Cookies Policy</a> and <a href="/refunds" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Refund Policy</a>.
         </div>
 
       </div>

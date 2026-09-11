@@ -365,6 +365,7 @@ export default function PublicLayout() {
             <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>
             <a href="/privacy" style={footerLinkStyle}>Privacy Policy</a>
             <a href="/cookies" style={footerLinkStyle}>Cookies Policy</a>
+            <a href="/refunds" style={footerLinkStyle}>Refund Policy</a>
             <a href="/support" style={footerLinkStyle}>Support</a>
             <a href="/the-trybe-edit" style={footerLinkStyle}>The Trybe Edit</a>
           </div>
@@ -464,6 +465,7 @@ export default function PublicLayout() {
           <a href="/terms" style={footerLinkStyle}>Terms & Conditions</a>
           <a href="/privacy" style={footerLinkStyle}>Privacy Policy</a>
           <a href="/cookies" style={footerLinkStyle}>Cookies Policy</a>
+            <a href="/refunds" style={footerLinkStyle}>Refund Policy</a>
           <a href="/support" style={footerLinkStyle}>Support</a>
           <a href="/the-trybe-edit" style={footerLinkStyle}>The Trybe Edit</a>
         </div>

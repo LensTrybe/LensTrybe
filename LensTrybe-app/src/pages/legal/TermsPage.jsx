@@ -1,85 +1,250 @@
-import { useEffect, useState } from 'react'
-import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
-import TileField from '../../components/ui/TileField'
+import LegalDocument from '../../components/legal/LegalDocument'
+
+const UPDATED = '11 September 2026'
+
+const INTRO = `These Terms and Conditions ("Terms") are the agreement between you and LensTrybe ("LensTrybe", "we", "us", "our") for your use of the LensTrybe website, app and services at lenstrybe.com (the "Platform").
+
+Please read them carefully. By creating an account or using the Platform you agree to these Terms, our [Privacy Policy](/privacy), our [Cookies Policy](/cookies) and our [Refund Policy](/refunds). If you don't agree, please don't use the Platform.
+
+Nothing in these Terms excludes, restricts or modifies any right or remedy you have under the Australian Consumer Law or any other law that cannot be excluded. See [section 16](#consumer-law).`
+
+const SECTIONS = [
+  {
+    id: 'about',
+    title: 'About LensTrybe',
+    body: `LensTrybe is an online platform for Australian visual creatives, including photographers, videographers, drone pilots, video and photo editors, social media managers, hair and makeup artists and UGC creators ("Creatives"), and the people and businesses who hire them ("Clients").
+
+Creatives can list a public profile and portfolio, be found in search, and use business tools such as messaging, quotes, invoices, contracts, client portals, file delivery, a CRM, bookings and a portfolio website. Clients can search for Creatives, message them, post jobs and save favourites.
+
+LensTrybe does not charge commission on work Creatives win through the Platform. Creatives pay a subscription for paid plans. Client accounts are free.`,
+  },
+  {
+    id: 'role',
+    title: 'Our role',
+    body: `LensTrybe provides the Platform only. We are not a party to any agreement between a Creative and a Client, and we are not an agent, employer, partner or representative of any user.
+
+• Creatives and Clients deal with each other directly. Each is responsible for agreeing the scope, price, timing and terms of any work, and for meeting their own obligations.
+• We do not process, hold or guarantee payments between Creatives and Clients. Invoices created on LensTrybe are paid directly to the Creative using the payment details the Creative provides.
+• We do not supervise, direct or control the work Creatives perform, and we don't guarantee the quality, safety, legality or outcome of any work.
+• Credential badges (for example ABN, insurance, Blue Card, police check or Working with Vulnerable People registration) are based on information and documents supplied by the Creative. Unless we clearly say otherwise, we don't independently verify them. Clients should make their own checks before engaging a Creative, particularly for work involving children or vulnerable people.
+• Reviews reflect the opinions of the people who wrote them, not LensTrybe.`,
+  },
+  {
+    id: 'accounts',
+    title: 'Your account',
+    body: `### Eligibility
+You must be at least 18 years old to create an account. If you use LensTrybe on behalf of a business, you confirm you are authorised to bind that business to these Terms.
+
+### Accurate information
+You must give accurate and up-to-date information when you sign up and keep it current. Your profile must represent you or your business honestly.
+
+### Keeping your account secure
+Keep your password private and don't share your account. You are responsible for activity on your account unless it happens because of our failure to take reasonable security measures. Tell us straight away at [support@lenstrybe.com](mailto:support@lenstrybe.com) if you think someone has accessed your account without permission.
+
+### Team members
+Elite Creatives can invite team members. The account owner is responsible for the people they invite and for removing access when it is no longer needed. Team members must also follow these Terms.`,
+  },
+  {
+    id: 'plans',
+    title: 'Creative plans, trials and billing',
+    body: `### Plans
+Creatives can use the free Basic plan or subscribe to a paid plan (currently Pro, Expert and Elite). The features, limits and prices of each plan are shown on our pricing page and in your dashboard at the time you subscribe. Prices are in Australian dollars and include GST where applicable.
+
+### Free trials
+New paid subscriptions may include a free trial. You add a card when you start the trial, and we charge it automatically when the trial ends unless you cancel before then. The trial length and first charge date are shown before you confirm, and in Settings > Subscription.
+
+### Automatic renewal
+Paid plans are billed monthly or annually in advance and renew automatically at the end of each billing period until you cancel. By subscribing, you authorise us (through our payment provider, Revolut) to charge your saved payment method for each renewal.
+
+### Changing plans
+Upgrades take effect straight away. We charge the difference for the rest of your current billing period, and the new price applies from your next renewal. Switching from monthly to annual starts a new annual period straight away, with credit for the unused part of your current month. Changes made during a free trial cost nothing until the trial ends. Downgrades take effect at your next renewal, and you keep your current features until then.
+
+### Cancelling
+You can cancel at any time online in Settings > Subscription or Settings > Danger Zone. Cancelling stops future renewals. You keep your paid features until the end of the period you have already paid for, then your account moves to the free Basic plan. Refunds are covered by our [Refund Policy](/refunds).
+
+### Failed payments
+If a renewal payment fails, we'll tell you by email and try again each day. If payment still hasn't succeeded after 3 attempts or 7 days (whichever comes first), your account moves to the free Basic plan. Your profile and data stay safe, and you can choose a paid plan again at any time.
+
+### Price changes
+We may change our prices. We will give you at least 30 days' notice by email before a new price applies to your subscription. If you don't want to continue at the new price, you can cancel before it takes effect and you won't be charged the new price.
+
+### Founding Creatives, referrals and promotions
+If you joined through the Founding Creative programme, the Founding Creative Agreement you accepted also applies. If it conflicts with these Terms, the Founding Creative Agreement applies to the extent of the conflict. Referral rewards, discounts and other promotions apply as described when they are offered, have no cash value and can't be transferred.`,
+  },
+  {
+    id: 'clients',
+    title: 'Clients',
+    body: `Client accounts are free. Clients can browse profiles, message Creatives, post jobs, save favourites, and use the client portals, file delivery links and document signing links Creatives send them.
+
+When you hire a Creative, your agreement is with that Creative, not LensTrybe. Please agree the details of the job in writing (for example using the Creative's quote or contract) and pay the Creative directly as agreed.`,
+  },
+  {
+    id: 'business-tools',
+    title: 'Business tools for Creatives',
+    body: `Our business tools help you run your business. You remain responsible for how you use them.
+
+• **Your clients' information.** When you add details about your own clients to LensTrybe (for example in your CRM, quotes, invoices, contracts, client portals, bookings or review requests), you are responsible for having the right to collect and use that information and for complying with privacy law. We handle that information on your behalf to provide the tools to you, as explained in our [Privacy Policy](/privacy).
+• **Emails you send through LensTrybe.** Quotes, invoices, contracts, portal links, delivery links, meeting invites and review requests are sent at your request. Only send them to people you have a genuine business relationship with. Don't use LensTrybe to send marketing or unsolicited messages.
+• **Documents and e-signatures.** You are responsible for the content of your quotes, invoices, contracts and templates, and for making sure they suit your business and comply with the law, including tax invoice requirements. Contracts can be signed electronically on LensTrybe. It is up to you to decide whether electronic signing is appropriate for a particular agreement. LensTrybe does not provide legal advice.
+• **Finance, tax and insight tools.** Figures and estimates in tools such as Finance, Expenses and the Tax Hub are general information to help you stay organised. They are not financial, tax or accounting advice. Please check with a registered tax agent or adviser before relying on them.
+• **File delivery and storage.** Delivery links, galleries and stored files are subject to the storage limits and expiry settings of your plan. Please keep your own backup copies of your original files. LensTrybe is not an archive service.
+• **Portfolio websites and custom domains.** You are responsible for the content of your website and for any domain you connect, including renewing it with your domain registrar.
+• **Lumi, our AI assistant.** Lumi uses artificial intelligence to generate suggestions. Its answers can be inaccurate or incomplete, so check anything important before you rely on it. Don't enter sensitive information you don't need to share.`,
+  },
+  {
+    id: 'content',
+    title: 'Your content',
+    body: `### You own your content
+You keep ownership of everything you upload or create on LensTrybe, including your photos, videos, portfolio, profile, messages and documents ("Your Content").
+
+### The licence you give us
+You give LensTrybe a non-exclusive, worldwide, royalty-free licence to host, store, copy, resize, display and transmit Your Content, only as needed to run and improve the Platform. This includes showing your public profile and portfolio in search, on your profile and portfolio website, and in LensTrybe features such as carousels and spotlights.
+
+We may also feature your public profile content (for example your name, profile photo and selected portfolio images) when promoting LensTrybe, such as on our social media or website. We will credit you where practical. If you'd rather not be featured, email [connect@lenstrybe.com](mailto:connect@lenstrybe.com). We'll stop using your content in new promotional material and remove it from our website and social media accounts where reasonably practical.
+
+This licence ends when you delete the content or your account, although it may take a short time to remove copies from backups.
+
+### Your promises about Your Content
+You confirm that you own Your Content or have permission to use it, and that it doesn't infringe anyone else's rights or break the law. If Your Content shows identifiable people, you are responsible for having any consent you need, particularly for images of children.`,
+  },
+  {
+    id: 'conduct',
+    title: 'Rules for using LensTrybe',
+    body: `You must not:
+
+• post false, misleading or deceptive information, including fake credentials, fake reviews or someone else's work presented as your own
+• write, request or offer rewards for reviews that aren't genuine, or pressure anyone to change a review
+• impersonate anyone or misrepresent your connection with anyone
+• harass, threaten, abuse or discriminate against anyone
+• upload content that is sexually explicit, violent, hateful, illegal, or that sexualises or exploits children in any way
+• infringe anyone's copyright, trade marks, privacy or other rights
+• send spam or use LensTrybe for unsolicited marketing
+• scrape, copy or harvest data from the Platform, or use automated tools to access it without our written permission
+• try to get around plan limits, security measures or restrictions (for example, limits on sharing contact details in messages on some plans)
+• interfere with, overload or attempt to gain unauthorised access to the Platform or other users' accounts
+• use LensTrybe for any unlawful purpose
+
+We use automated checks and human review to help keep the Platform safe. Some text and images are checked automatically when uploaded and may be blocked or flagged for review. See our [Privacy Policy](/privacy#automated-decisions) for more about automated decisions.`,
+  },
+  {
+    id: 'marketplace',
+    title: 'Marketplace, job board and collaborations',
+    body: `Gear marketplace listings, job posts and collaboration posts are created by users. The person who posts a listing is responsible for it being accurate, lawful and honoured.
+
+Any sale, hire or engagement arranged through these features is between the users involved. LensTrybe is not a party to it, doesn't hold payments and doesn't guarantee the items, jobs or people involved. Please take sensible precautions, such as inspecting gear before paying and meeting in safe places.`,
+  },
+  {
+    id: 'moderation',
+    title: 'Moderation, suspension and termination',
+    body: `### What we may do
+We may remove or restrict content, limit features, or suspend or close an account if we reasonably believe:
+
+• these Terms or the law have been broken
+• there is a risk of harm to users, the public or LensTrybe
+• the account is fraudulent or is being used to mislead people
+• we are required to do so by law or a regulator
+
+Where it is reasonable to do so, we will tell you why and give you a chance to respond or fix the problem first. We may act immediately in serious cases, such as illegal content, fraud, or a risk to someone's safety.
+
+### If you think we got it wrong
+Email [support@lenstrybe.com](mailto:support@lenstrybe.com) and we will review our decision.
+
+### Refunds when we close an account
+If we close your paid account because you seriously or repeatedly broke these Terms, you won't receive a refund for the rest of your billing period, except where the law requires one. If we close it for any other reason, or stop offering the Platform, we will refund the unused part of any fees you have paid in advance.`,
+  },
+  {
+    id: 'deletion',
+    title: 'Deleting your account',
+    body: `You can delete your account at any time in Settings (Creatives) or Account & Data (Clients). We'll email you a code to confirm it's you.
+
+When you delete your account, your profile is hidden straight away and any paid plan is cancelled. Your account and its data are permanently deleted 30 days later. You can sign in and reactivate your account at any time within those 30 days. If you reactivate before the end of a period you have already paid for, your plan continues.
+
+You can download a copy of your data at any time before deletion. See our [Privacy Policy](/privacy#retention) for what we keep and for how long.
+
+If you're a Creative, deleting your account also ends your client portals, delivery links, signing links and portfolio website once the 30 days are up. Please make sure your clients have what they need first.`,
+  },
+  {
+    id: 'third-parties',
+    title: 'Third-party services',
+    body: `LensTrybe relies on third-party services, including Revolut for subscription payments, Google for optional sign-in, and our hosting, email and file services. These services have their own terms. We aren't responsible for them, but we choose our providers carefully and they are only allowed to use your information to provide their service to us.
+
+Links to other websites (for example a Creative's own website or social media) are provided for convenience. We don't control those sites.`,
+  },
+  {
+    id: 'availability',
+    title: 'Availability and changes to the Platform',
+    body: `We work hard to keep LensTrybe running smoothly, but we can't promise it will always be available or error-free. We may carry out maintenance, and we'll try to give notice of planned downtime where we can.
+
+We are always improving LensTrybe and may add, change or remove features. If we make a change that significantly reduces the main features of a paid plan you've already paid for, we'll give you reasonable notice. You can then cancel and receive a refund of the unused part of your fees.`,
+  },
+  {
+    id: 'ip',
+    title: 'LensTrybe intellectual property',
+    body: `LensTrybe owns (or licenses) the Platform, including its software, design, logos and the LensTrybe name. You may not copy, modify, reverse engineer or reuse them, except as allowed by law or with our written permission. Your use of the Platform doesn't give you any ownership of it.
+
+If you send us feedback or ideas, we may use them to improve LensTrybe without owing you anything.
+
+If you believe content on LensTrybe infringes your copyright or other rights, email [support@lenstrybe.com](mailto:support@lenstrybe.com) with the details and we'll look into it promptly.`,
+  },
+  {
+    id: 'disputes-users',
+    title: 'Disputes between users',
+    body: `Disputes about work, payments, deliverables or listings are between the Creative and Client (or users) involved. We encourage you to resolve them directly and in good faith.
+
+We are not obliged to mediate, but you can report behaviour that breaks these Terms and we'll review it. Clients and Creatives who are consumers may also contact their state or territory consumer protection agency, such as the Office of Fair Trading in Queensland.`,
+  },
+  {
+    id: 'consumer-law',
+    title: 'Australian Consumer Law',
+    body: `Our services come with guarantees that cannot be excluded under the Australian Consumer Law. For major failures with the service, you are entitled to cancel your service contract with us and to a refund for the unused portion, or to compensation for its reduced value. You are also entitled to be compensated for any other reasonably foreseeable loss or damage. If a failure does not amount to a major failure, you are entitled to have problems with the service rectified in a reasonable time and, if this is not done, to cancel your contract and obtain a refund for the unused portion of the contract.
+
+Nothing in these Terms, including sections 17 and 18, limits these rights.`,
+  },
+  {
+    id: 'liability',
+    title: 'Our liability',
+    body: `Subject to [section 16](#consumer-law), and to the extent the law allows:
+
+• we are not liable for losses caused by other users, including a Creative's or Client's work, conduct, payments, content or listings
+• we are not liable for indirect or consequential loss, or for loss of profits, revenue, business opportunity or goodwill
+• where our liability for failing to meet a consumer guarantee can be limited, it is limited to supplying the services again or paying the cost of having them supplied again
+• otherwise, our total liability to you for all claims relating to LensTrybe is limited to the fees you paid us in the 12 months before the claim arose, or $100 if you haven't paid us anything
+
+These limits don't apply to liability that can't be limited by law, or to loss caused by our fraud, wilful misconduct or gross negligence. Our liability is also reduced to the extent that you or someone else caused or contributed to the loss.`,
+  },
+  {
+    id: 'indemnity',
+    title: 'Your responsibility for claims',
+    body: `If a third party makes a claim against LensTrybe because Your Content infringes their rights, or because you broke these Terms or the law, you agree to cover the reasonable costs and losses we incur in dealing with that claim. This doesn't apply to the extent the claim was caused or contributed to by LensTrybe.`,
+  },
+  {
+    id: 'changes',
+    title: 'Changes to these Terms',
+    body: `We may update these Terms from time to time, for example to reflect new features or changes in the law. The "last updated" date at the top shows when they last changed.
+
+If a change materially affects you, we'll email you at least 30 days before it takes effect, unless the change is needed sooner for legal or safety reasons. If you don't agree with the change, you can stop using LensTrybe and cancel or delete your account before it takes effect. If you have a paid plan and the change is to your detriment, we'll refund the unused part of any fees you have paid in advance.`,
+  },
+  {
+    id: 'general',
+    title: 'General',
+    body: `• **Governing law.** These Terms are governed by the laws of Queensland, Australia. You and we submit to the non-exclusive jurisdiction of the courts of Queensland and any courts that can hear appeals from them.
+• **Talk to us first.** If you have a complaint or dispute with us, please contact us first so we can try to resolve it informally.
+• **Notices.** We'll send notices to the email address on your account. You can contact us at the addresses below.
+• **Transfer.** You may not transfer your account or these Terms without our consent. We may transfer our rights and obligations to a business that takes over LensTrybe, and we'll tell you if that happens.
+• **Severability.** If part of these Terms is invalid or unenforceable, the rest continues to apply.
+• **Waiver.** If we don't enforce a right straight away, we can still enforce it later.
+• **Entire agreement.** These Terms, together with the policies they refer to and (for Founding Creatives) the Founding Creative Agreement, are the entire agreement between you and LensTrybe about the Platform.`,
+  },
+  {
+    id: 'contact',
+    title: 'Contact us',
+    body: `• General enquiries: [connect@lenstrybe.com](mailto:connect@lenstrybe.com)
+• Account and technical support: [support@lenstrybe.com](mailto:support@lenstrybe.com)
+• Billing and refunds: [billing@lenstrybe.com](mailto:billing@lenstrybe.com)
+• Privacy: [privacy@lenstrybe.com](mailto:privacy@lenstrybe.com)`,
+  },
+]
 
 export default function TermsPage() {
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-  return (
-    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }} className="legal-terms-page">
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      <style>{`
-        @media (max-width: 767px) {
-          .legal-terms-page h1 { font-size: 24px !important; }
-          .legal-terms-page h2 { font-size: 16px !important; }
-          .legal-terms-page h3 { font-size: 15px !important; }
-          .legal-terms-page p, .legal-terms-page div, .legal-terms-page span { font-size: max(14px, 0.875rem) !important; }
-        }
-      `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8, ...LIQUID_GLASS_CARD, position: 'relative', zIndex: 2, padding: isMobile ? '28px 20px' : '48px 56px', borderRadius: '20px' }}>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '8px' }}>Terms and Conditions</h1>
-        <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
-
-        {[
-          { title: '1. Acceptance of Terms', body: 'These Terms and Conditions ("Terms") govern your use of the LensTrybe platform operated by Michael Trybe (Sole Trader), Queensland, Australia ("LensTrybe", "we", "us"). By creating an account or using LensTrybe, you agree to be bound by these Terms. If you do not agree, do not use the platform.' },
-          { title: '2. Description of Service', body: 'LensTrybe is a subscription-based directory and marketplace platform that connects visual creative professionals (Photographers, Videographers, Drone Pilots, Video Editors, Photo Editors, Social Media Managers, Hair and Makeup Artists, and UGC Creators) with clients who wish to hire them.\n\nLensTrybe operates as a directory and discovery platform. We do not act as an agent, employer, or contractor of any creative or client. We do not facilitate or process payments between creatives and clients. Any agreements, contracts, payments, and disputes arising from arrangements between creatives and clients are solely between those parties.' },
-          { title: '3. User Accounts', body: '3.1 Eligibility\nYou must be at least 18 years of age to create an account on LensTrybe. By registering, you confirm that you meet this requirement.\n\n3.2 Account Responsibility\nYou are responsible for maintaining the confidentiality of your account credentials. You are responsible for all activity that occurs under your account. Notify us immediately at support@lenstrybe.com if you suspect unauthorised access to your account.\n\n3.3 Accurate Information\nYou agree to provide accurate, current, and complete information when creating your account and profile, and to keep this information up to date.' },
-          { title: '4. Creative Subscriptions', body: '4.1 Subscription Tiers\nLensTrybe offers four subscription tiers for creative professionals: Basic (free), Pro, Expert, and Elite. The features included in each tier are described on the pricing page at lenstrybe.com. LensTrybe reserves the right to modify tier features with reasonable notice to subscribers.\n\n4.2 Billing\nPaid subscriptions are billed monthly or annually through Stripe. By subscribing, you authorise LensTrybe to charge your payment method on a recurring basis. Annual subscriptions are billed upfront and include two months free compared to the monthly rate.\n\n4.3 Founding Member Period\nCreatives who join during the Founding Member period (prior to September 1, 2026) may build their profile without charge. Billing for paid tiers commences on September 1, 2026. Founding Members receive a permanent Founding Member badge on their profile.\n\n4.4 Price Changes\nLensTrybe reserves the right to change subscription prices. We will provide at least 30 days notice of any price increase. Continued use of the platform after a price change takes effect constitutes acceptance of the new price.' },
-          { title: '5. Refund Policy', body: 'Please refer to our Refund Policy section below for full details on cancellations and refunds.' },
-          { title: '6. Client Accounts', body: 'Client accounts are free. Clients may browse creative profiles, save favourites, and contact creatives through the platform. LensTrybe does not charge clients any fees for using the platform.' },
-          { title: '7. User Conduct', body: 'You agree not to:\n\n• Post false, misleading, or fraudulent information on your profile\n• Impersonate any person or entity\n• Use the platform for any unlawful purpose\n• Harass, abuse, or harm other users\n• Upload content that infringes third-party intellectual property rights\n• Attempt to gain unauthorised access to the platform or other user accounts\n• Use automated tools to scrape or extract data from the platform\n• Post content that is offensive, discriminatory, or inappropriate\n\nLensTrybe reserves the right to suspend or terminate accounts that violate these Terms without notice or refund.' },
-          { title: '8. Content Ownership', body: '8.1 Your Content\nYou retain ownership of all content you upload to LensTrybe, including profile photos, portfolio images, and videos. By uploading content, you grant LensTrybe a non-exclusive, royalty-free licence to display, reproduce, and distribute your content solely for the purpose of operating the platform and marketing LensTrybe.\n\n8.2 Content Responsibility\nYou are solely responsible for the content you upload. You warrant that you own or have the necessary rights to all content you post, and that your content does not infringe any third-party rights.' },
-          { title: '9. Credentials and Verification', body: 'LensTrybe allows creatives to display credential badges (ABN, insurance, Blue Card, police check, WWVP) on their profiles. LensTrybe does not independently verify the authenticity of uploaded credential documents. Clients are responsible for independently verifying any credentials before engaging a creative.' },
-          { title: '10. Disputes Between Users', body: 'LensTrybe is not a party to any agreement between a creative and a client. All disputes arising from such arrangements are solely between the creative and the client. LensTrybe does not mediate, arbitrate, or resolve disputes between users and accepts no liability for any loss or damage arising from arrangements made through the platform.' },
-          { title: '11. Limitation of Liability', body: 'To the maximum extent permitted by Australian law, LensTrybe is not liable for any indirect, incidental, special, or consequential damages arising from your use of the platform, including but not limited to loss of income, loss of data, or loss of business opportunity.\n\nOur total liability to you for any claim arising from your use of LensTrybe is limited to the subscription fees you have paid to us in the 12 months preceding the claim.' },
-          { title: '12. Platform Availability', body: 'LensTrybe does not guarantee uninterrupted or error-free access to the platform. We may suspend the platform temporarily for maintenance, upgrades, or reasons beyond our control. We will endeavour to provide advance notice of planned downtime where possible.' },
-          { title: '13. Termination', body: 'You may cancel your account at any time through your account settings. LensTrybe may suspend or terminate your account at any time for breach of these Terms or for any other reason at our discretion.\n\nUpon termination, your profile will be removed from the platform. Content you have uploaded may be retained for a period as described in our Privacy Policy.' },
-          { title: '14. Governing Law', body: 'These Terms are governed by the laws of Queensland, Australia. Any disputes arising from these Terms will be subject to the exclusive jurisdiction of the courts of Queensland, Australia.' },
-          { title: '15. Changes to These Terms', body: 'LensTrybe may update these Terms from time to time. We will notify registered users of material changes by email. Continued use of the platform after changes take effect constitutes acceptance of the updated Terms.' },
-          { title: '16. Contact', body: 'For any questions regarding these Terms, contact us at connect@lenstrybe.com.' },
-        ].map((section, i) => (
-          <div key={i} style={{ marginBottom: '40px' }}>
-            <h2 style={{ color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(20,17,26,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
-            {section.body.split('\n\n').map((para, j) => (
-              <p key={j} style={{ marginBottom: '12px', whiteSpace: 'pre-line' }}>{para}</p>
-            ))}
-          </div>
-        ))}
-
-        <div style={{ marginTop: '60px', padding: '32px', background: 'rgba(29, 185, 84,0.05)', border: '1px solid rgba(29, 185, 84,0.15)', borderRadius: '12px' }}>
-          <h2 style={{ color: 'var(--text-primary)', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Refund Policy</h2>
-          <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '32px' }}>LensTrybe · Effective Date: March 14, 2026</p>
-          {[
-            { title: '1. Overview', body: 'This Refund Policy applies to all paid subscriptions on the LensTrybe platform. By subscribing to a paid tier, you agree to this policy.' },
-            { title: '2. Monthly Subscriptions', body: 'Monthly subscriptions are non-refundable. If you cancel a monthly subscription, you will retain access to your paid tier features until the end of the current billing period. Your subscription will not renew after that date and you will not be charged again.\n\nNo partial refunds are issued for unused days in a monthly billing period.' },
-            { title: '3. Annual Subscriptions', body: '3.1 Within 14 Days of Purchase\nIf you purchase an annual subscription and request a refund within 14 days of the initial purchase date, you are entitled to a full refund of the annual subscription fee. To request a refund, contact billing@lenstrybe.com within 14 days of your purchase with your account email and reason for the refund request.\n\n3.2 After 14 Days\nIf you cancel an annual subscription after the 14-day refund window, you are entitled to a partial refund equivalent to 50% of the subscription fees for the remaining complete months of your annual term.\n\nFor example: if you purchase an annual subscription and cancel after 4 months, you have 8 months remaining. You would receive a refund of 50% of the value of those 8 remaining months.\n\nRefunds after 14 days are processed at LensTrybe\'s discretion and will be calculated based on the original purchase price.' },
-            { title: '4. Founding Member Period', body: 'During the Founding Member period (prior to September 1, 2026), creative profiles are built free of charge and no billing occurs. This policy applies from September 1, 2026 when billing commences.' },
-            { title: '5. Free (Basic) Tier', body: 'The Basic tier is free and no refunds apply. There are no charges associated with the Basic tier.' },
-            { title: '6. How to Request a Refund', body: 'To request a refund, email billing@lenstrybe.com with:\n\n• Your full name and account email address\n• Your subscription tier and billing period (monthly or annual)\n• The date of your subscription purchase\n• Your reason for requesting a refund\n\nWe will respond to refund requests within 1-3 business days. Approved refunds will be processed to your original payment method within 10 business days.' },
-            { title: '7. Exceptional Circumstances', body: 'LensTrybe may issue refunds outside of this policy at our sole discretion in exceptional circumstances, such as significant platform downtime or technical issues that prevent access to paid features.' },
-            { title: '8. Changes to This Policy', body: 'LensTrybe reserves the right to modify this Refund Policy at any time. Changes will be communicated to subscribers by email with at least 30 days notice before taking effect.' },
-            { title: '9. Contact', body: 'For all refund enquiries, contact us at billing@lenstrybe.com.' },
-          ].map((section, i) => (
-            <div key={i} style={{ marginBottom: '32px' }}>
-              <h3 style={{ color: 'var(--text-primary)', fontSize: '16px', fontWeight: 600, marginBottom: '10px' }}>{section.title}</h3>
-              {section.body.split('\n\n').map((para, j) => (
-                <p key={j} style={{ marginBottom: '10px', whiteSpace: 'pre-line' }}>{para}</p>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(20,17,26,0.08)', fontSize: '13px', color: 'var(--text-muted)' }}>
-          <p>LensTrybe · Queensland, Australia · lenstrybe.com</p>
-          <p>© 2026 LensTrybe. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
-  )
+  return <LegalDocument title="Terms and Conditions" updated={UPDATED} intro={INTRO} sections={SECTIONS} />
 }

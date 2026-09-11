@@ -1,53 +1,95 @@
-import { useEffect, useState } from 'react'
-import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
-import TileField from '../../components/ui/TileField'
+import LegalDocument from '../../components/legal/LegalDocument'
+
+const UPDATED = '11 September 2026'
+
+const INTRO = `This Cookies Policy explains how LensTrybe ("we", "us") uses cookies and similar technologies on lenstrybe.com.
+
+In short: we only use what's needed to run LensTrybe, remember your settings and count visits anonymously. We don't use advertising or tracking cookies, and we don't follow you around other websites.`
+
+const SECTIONS = [
+  {
+    id: 'what',
+    title: 'What cookies and similar technologies are',
+    body: `Cookies are small text files a website saves in your browser. Similar technologies include your browser's local storage and session storage, which let a website remember information on your device.
+
+LensTrybe mostly uses local storage and session storage rather than cookies. In this policy, "cookies" means all of these.`,
+  },
+  {
+    id: 'essential',
+    title: 'Essential',
+    body: `These are needed for LensTrybe to work. They can't be switched off in our settings. If you block them in your browser, you won't be able to sign in.
+
+• **Sign-in session** (local storage): keeps you signed in securely as you move around the Platform. Removed when you sign out.
+• **Sign-in redirect** (session storage): remembers the page you were on so we can take you back after you sign in, and shows the right message after signing in with Google. Cleared when you close the tab.
+• **Sign-up progress** (session storage): remembers the plan you chose and any founding code you entered while you finish signing up.
+• **Security:** protections against misuse, such as rate limits, work on our servers and don't store anything extra on your device.`,
+  },
+  {
+    id: 'preferences',
+    title: 'Preferences',
+    body: `These remember choices you make so LensTrybe works the way you like. They stay on your device and are never sent to advertisers.
+
+• **Theme** (local storage): whether you prefer the light or dark dashboard.
+• **Dashboard layout** (local storage): your dashboard widget layout, quick links and where you've placed the note-taker.
+• **Templates and dismissed notices** (local storage): templates you've saved on this device, and notices you've already closed so we don't show them again.
+• **Intro animation** (session storage): whether you've already seen the opening animation, so it doesn't replay during the same visit.
+• **View counting** (session storage): stops the same visit counting as more than one profile view or search appearance.
+• **Preview and demo modes** (local storage or session storage): used when you open a preview or demo link.
+
+You can clear these at any time by clearing your browser's site data for lenstrybe.com.`,
+  },
+  {
+    id: 'analytics',
+    title: 'Analytics',
+    body: `We use Vercel Web Analytics to understand, in aggregate, which pages are visited and how the site performs. It doesn't use cookies and doesn't identify you. Visits are counted using a temporary anonymous identifier that is discarded after 24 hours. We remove private link codes (such as client portal, delivery and signing links) from page addresses before they're counted.
+
+We don't use Google Analytics, advertising pixels or session recording tools.`,
+  },
+  {
+    id: 'third-party',
+    title: 'Third-party services',
+    body: `Some features load services from other companies, which may set their own cookies under their own policies:
+
+• **Revolut**, when you enter card details to subscribe. Revolut may use cookies to process your payment securely and prevent fraud.
+• **Google**, if you choose to sign in with Google. Google may set cookies on its own sign-in pages.
+• **Google Fonts**, which we use for typefaces. Google receives your IP address when fonts load, but no cookies are set for LensTrybe.
+• **Cloudflare**, which delivers the tool used to download files as a ZIP on delivery pages. Cloudflare receives your IP address when it loads.
+
+We don't control these cookies. You can read [Revolut's privacy policy](https://www.revolut.com/legal/privacy/) and [Google's privacy policy](https://policies.google.com/privacy) for more information.`,
+  },
+  {
+    id: 'not-used',
+    title: 'What we don’t use cookies for',
+    body: `We never use cookies to:
+
+• show you ads, or build advertising profiles
+• track you across other websites
+• sell or share information with advertisers`,
+  },
+  {
+    id: 'control',
+    title: 'Managing cookies',
+    body: `You can view, block or delete cookies and site data in your browser settings:
+
+• **Chrome:** Settings > Privacy and security > Third-party cookies, or Site settings
+• **Safari:** Settings > Safari > Advanced > Website Data (iPhone), or Safari > Settings > Privacy (Mac)
+• **Firefox:** Settings > Privacy & Security > Cookies and Site Data
+• **Edge:** Settings > Cookies and site permissions
+
+If you block essential storage, you won't be able to sign in. Clearing site data will sign you out and reset your preferences.`,
+  },
+  {
+    id: 'changes',
+    title: 'Changes to this policy',
+    body: `If we start using a new kind of cookie, we'll update this policy first. If it isn't essential, we'll ask for your consent before using it where the law requires. If we make a significant change, we'll email registered users at least 30 days before it takes effect.`,
+  },
+  {
+    id: 'contact',
+    title: 'Contact us',
+    body: `Questions about cookies: [privacy@lenstrybe.com](mailto:privacy@lenstrybe.com). Our [Privacy Policy](/privacy) explains how we handle personal information more generally.`,
+  },
+]
 
 export default function CookiesPage() {
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-  useEffect(() => {
-    function handleResize() {
-      setIsMobile(window.innerWidth < 768)
-    }
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [])
-  const sections = [
-    { title: '1. What Are Cookies', body: 'Cookies are small text files that are stored on your device when you visit a website. They are widely used to make websites work efficiently and to provide information to the website operator. Cookies do not give us access to your device or any information beyond what you choose to share with us.' },
-    { title: '2. How LensTrybe Uses Cookies', body: 'LensTrybe uses cookies solely to operate the platform correctly. We do not use cookies for advertising, remarketing, or tracking you across other websites.\n\n2.1 Essential Cookies\nThese cookies are necessary for the platform to function. Without them, core features such as logging in, maintaining your session, and accessing your dashboard would not work. These cookies cannot be disabled.\n\n• Session cookies — keep you logged in while you navigate the platform\n• Authentication cookies — verify your identity and account permissions\n• Security cookies — protect against cross-site request forgery and other security threats\n• Preference cookies — remember your region and currency selection\n\n2.2 Functional Cookies\nThese cookies allow the platform to remember choices you have made and provide enhanced functionality. Disabling these may affect your experience but will not prevent you from using the platform.\n\n• UI preference cookies — remember display settings and navigation state\n• Form state cookies — preserve form data if you navigate away mid-completion\n\n2.3 Analytics Cookies\nLensTrybe currently uses only built-in platform analytics to understand how the platform is being used. This data is used solely to improve the platform experience. We do not use Google Analytics or any third-party analytics tools at this time.\n\nIf we introduce third-party analytics tools in the future, this policy will be updated and users will be notified.' },
-    { title: '3. What We Do Not Use Cookies For', body: 'LensTrybe does not use cookies for:\n\n• Advertising or retargeting\n• Tracking your activity on other websites\n• Selling or sharing your data with advertisers\n• Building advertising profiles' },
-    { title: '4. Third-Party Cookies', body: 'Some third-party services we use may set their own cookies on your device:\n\n• Stripe — our payment processor may set cookies during the checkout process to prevent fraud and ensure payment security. These cookies are governed by Stripe\'s own privacy and cookie policy.\n\nWe do not control third-party cookies and recommend reviewing the relevant third-party policies for more information.' },
-    { title: '5. Managing Cookies', body: 'You can control and manage cookies through your browser settings. Most browsers allow you to:\n\n• View cookies that have been set\n• Block all cookies\n• Block third-party cookies\n• Delete cookies when you close your browser\n\nPlease be aware that blocking essential cookies will prevent you from logging in and using key features of the LensTrybe platform.\n\nInstructions for managing cookies in common browsers:\n• Google Chrome: chrome://settings/cookies\n• Safari: Preferences > Privacy\n• Firefox: about:preferences#privacy\n• Microsoft Edge: edge://settings/privacy' },
-    { title: '6. Cookie Consent', body: 'By continuing to use the LensTrybe platform, you consent to our use of essential and functional cookies as described in this policy. Where we use non-essential cookies, we will request your consent through a cookie notice on the platform.' },
-    { title: '7. Changes to This Policy', body: 'We may update this Cookies Policy from time to time, particularly if we introduce new tools or third-party services. We will notify registered users of any material changes by email. The effective date at the top of this page will always reflect the most recent version.' },
-    { title: '8. Contact Us', body: 'If you have any questions about our use of cookies, please contact us at:\n\nLensTrybe\nEmail: privacy@lenstrybe.com\nWebsite: lenstrybe.com\nQueensland, Australia' },
-  ]
-
-  return (
-    <div style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }} className="legal-cookies-page">
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      <style>{`
-        @media (max-width: 767px) {
-          .legal-cookies-page h1 { font-size: 24px !important; }
-          .legal-cookies-page h2 { font-size: 16px !important; }
-          .legal-cookies-page p, .legal-cookies-page div, .legal-cookies-page span { font-size: max(14px, 0.875rem) !important; }
-        }
-      `}</style>
-      <div style={{ maxWidth: '800px', margin: '0 auto', color: 'var(--text-secondary)', lineHeight: 1.8, ...LIQUID_GLASS_CARD, position: 'relative', zIndex: 2, padding: isMobile ? '28px 20px' : '48px 56px', borderRadius: '20px' }}>
-        <h1 style={{ color: 'var(--text-primary)', fontSize: '32px', fontWeight: 600, letterSpacing: '-0.02em', marginBottom: '8px' }}>Cookies Policy</h1>
-        <p style={{ color: '#0f7a37', fontSize: '14px', marginBottom: '48px' }}>LensTrybe · Effective Date: March 14, 2026</p>
-        {sections.map((section, i) => (
-          <div key={i} style={{ marginBottom: '40px' }}>
-            <h2 style={{ color: 'var(--text-primary)', fontSize: '18px', fontWeight: 600, marginBottom: '12px', borderBottom: '1px solid rgba(20,17,26,0.08)', paddingBottom: '8px' }}>{section.title}</h2>
-            {section.body.split('\n\n').map((para, j) => (
-              <p key={j} style={{ marginBottom: '12px', whiteSpace: 'pre-line' }}>{para}</p>
-            ))}
-          </div>
-        ))}
-        <div style={{ marginTop: '48px', paddingTop: '24px', borderTop: '1px solid rgba(20,17,26,0.08)', fontSize: '13px', color: 'var(--text-muted)' }}>
-          <p>LensTrybe · Queensland, Australia · lenstrybe.com</p>
-          <p>© 2026 LensTrybe. All rights reserved.</p>
-        </div>
-      </div>
-    </div>
-  )
+  return <LegalDocument title="Cookies Policy" updated={UPDATED} intro={INTRO} sections={SECTIONS} />
 }

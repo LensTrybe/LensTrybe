@@ -271,7 +271,7 @@ export default function SettingsPage() {
           {hasLiveSub && (
             <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14, border: `1px solid ${RED}44` }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: RED }}>Cancel subscription</div>
-              <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Cancel your subscription and move to the free Basic plan. You keep {cap(cancelTier)} access until the end of your current billing period.{isComp ? ` Your complimentary ${cap(tier)} access is not affected.` : ''} No refund for the remaining period, and this doesn't affect your rights under the Australian Consumer Law.</div>
+              <div style={{ fontSize: 13, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Cancel your subscription and move to the free Basic plan. You keep {cap(cancelTier)} access until the end of your current billing period.{isComp ? ` Your complimentary ${cap(tier)} access is not affected.` : ''} Part periods aren't refunded, except that annual plans can be refunded in full within 14 days of your first annual payment (see our <a href="/refunds" target="_blank" rel="noreferrer" style={{ color: GREEN, fontWeight: 700 }}>Refund Policy</a>). This doesn't affect your rights under the Australian Consumer Law.</div>
               <div><button type="button" className="ltset-btn ltset-btn-ghost" onClick={() => { setShowCancel(true); setCancelStep(1) }}>Cancel subscription</button></div>
             </div>
           )}

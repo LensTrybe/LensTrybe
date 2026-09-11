@@ -170,6 +170,9 @@ export default function ClientSignupPage() {
           <LiquidPill primary type="submit" disabled={loading || !canSubmit} style={{ width: '100%', display: 'inline-flex', padding: '15px 22px', opacity: loading || !canSubmit ? 0.6 : 1 }} onClick={handleSubmit}>
             {loading ? 'Creating account…' : 'Create Free Account'}
           </LiquidPill>
+          <p style={{ margin: '4px 0 0', fontSize: '12.5px', lineHeight: 1.6, color: 'var(--text-muted)', textAlign: 'center' }}>
+            By creating an account you confirm you're 18 or over and agree to our <Link to="/terms" style={styles.link}>Terms and Conditions</Link>, <Link to="/privacy" style={styles.link}>Privacy Policy</Link> and <Link to="/cookies" style={styles.link}>Cookies Policy</Link>.
+          </p>
         </form>
 
         <div style={styles.divider}>

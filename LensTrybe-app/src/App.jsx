@@ -63,6 +63,7 @@ import PasswordResetPage from './pages/PasswordResetPage'
 import TermsPage from './pages/legal/TermsPage'
 import PrivacyPage from './pages/legal/PrivacyPage'
 import CookiesPage from './pages/legal/CookiesPage'
+import RefundPolicyPage from './pages/legal/RefundPolicyPage'
 import TrybeEditPage from './pages/public/TrybeEditPage'
 import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
@@ -143,6 +144,8 @@ export default function App() {
         <Route path="/terms" element={<TermsPage />} />
         <Route path="/privacy" element={<PrivacyPage />} />
         <Route path="/cookies" element={<CookiesPage />} />
+        <Route path="/refunds" element={<RefundPolicyPage />} />
+        <Route path="/refund-policy" element={<Navigate to="/refunds" replace />} />
         <Route path="/the-trybe-edit" element={<TrybeEditPage />} />
         <Route path="/the-trybe-edit/issue-01" element={<TrybeEditIssue01 />} />
         <Route path="/trybe-edit" element={<Navigate to="/the-trybe-edit" replace />} />
