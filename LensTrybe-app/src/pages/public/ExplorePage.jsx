@@ -154,14 +154,22 @@ function TypeSpecialtyPicker({ type, specialties, selected, onChange, onRemove }
   const toggle = (s) => onChange(selected.includes(s) ? selected.filter(x => x !== s) : [...selected, s])
   return (
     <div ref={ref} style={{ position: 'relative', flex: '0 0 auto' }}>
-      <button type="button" onClick={() => setOpen(o => !o)}
-        style={{ ...LIQUID_FIELD, width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', borderRadius: '999px', padding: '9px 16px', fontWeight: 600, color: '#0f7a37', border: '1px solid rgba(29,185,84,0.4)', background: 'linear-gradient(135deg, rgba(29,185,84,0.18) 0%, rgba(29,185,84,0.06) 100%)' }}>
-        <span style={{ whiteSpace: 'nowrap' }}>{type}{count > 0 ? ` · ${count}` : ''}</span>
-        <span style={{ fontSize: '10px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▾</span>
-      </button>
+      {/* The chip: tap the name to pick specialties, tap × to unselect the type. */}
+      <div style={{ ...LIQUID_FIELD, width: 'auto', display: 'inline-flex', alignItems: 'center', padding: 0, borderRadius: '999px', border: '1px solid rgba(29,185,84,0.4)', background: 'linear-gradient(135deg, rgba(29,185,84,0.18) 0%, rgba(29,185,84,0.06) 100%)', overflow: 'hidden' }}>
+        <button type="button" onClick={() => setOpen(o => !o)} aria-expanded={open}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', cursor: 'pointer', padding: '9px 8px 9px 16px', fontWeight: 600, color: '#0f7a37', background: 'transparent', border: 'none', fontFamily: 'inherit', fontSize: 'inherit' }}>
+          <span style={{ whiteSpace: 'nowrap' }}>{type}{count > 0 ? ` · ${count}` : ''}</span>
+          <span style={{ fontSize: '10px', transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.15s ease' }}>▾</span>
+        </button>
+        <button type="button" onClick={() => { setOpen(false); onRemove() }} aria-label={`Unselect ${type}`} title={`Unselect ${type}`}
+          style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', alignSelf: 'stretch', padding: '0 13px 0 9px', cursor: 'pointer', color: '#0f7a37', background: 'transparent', border: 'none', borderLeft: '1px solid rgba(29,185,84,0.3)', fontSize: '15px', lineHeight: 1, fontFamily: 'inherit' }}
+          onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(29,185,84,0.16)' }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent' }}>×</button>
+      </div>
       {open && (
-        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 40, minWidth: '230px', background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(22px) saturate(140%)', WebkitBackdropFilter: 'blur(22px) saturate(140%)', border: '1px solid rgba(20,17,26,0.08)', borderRadius: '16px', boxShadow: '0 24px 54px -16px rgba(40,30,60,0.32)', padding: '6px', maxHeight: '288px', overflowY: 'auto' }}>
+        <div style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 40, minWidth: '230px', background: 'rgba(255,255,255,0.97)', backdropFilter: 'blur(22px) saturate(140%)', WebkitBackdropFilter: 'blur(22px) saturate(140%)', border: '1px solid rgba(20,17,26,0.08)', borderRadius: '16px', boxShadow: '0 24px 54px -16px rgba(40,30,60,0.32)', padding: '6px' }}>
           <div style={{ padding: '6px 11px 8px', fontSize: '11px', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#8a8995' }}>{type} specialties</div>
+          <div style={{ maxHeight: '240px', overflowY: 'auto' }}>
           {specialties.map(s => {
             const on = selected.includes(s)
             return (
@@ -175,6 +183,7 @@ function TypeSpecialtyPicker({ type, specialties, selected, onChange, onRemove }
               </div>
             )
           })}
+          </div>
           <div style={{ height: '1px', background: 'rgba(20,17,26,0.08)', margin: '6px 4px' }} />
           <div onClick={onRemove} style={{ padding: '9px 11px', borderRadius: '11px', cursor: 'pointer', fontSize: '13px', fontFamily: "'Inter', sans-serif", color: '#b4232a', fontWeight: 500 }}
             onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(180,35,42,0.08)'}
@@ -237,7 +246,7 @@ export default function ExplorePage() {
     )
     setSpecialtiesByType(prev => {
       const next = { ...prev }
-      if (next[value]) delete next[value]
+      if (selectedTypes.includes(value)) delete next[value]
       else next[value] = []
       return next
     })
