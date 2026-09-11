@@ -22,7 +22,7 @@ const CATEGORIES = [
 const FAQS = [
   {
     q: 'What is LensTrybe?',
-    a: 'LensTrybe is a no-commission marketplace for Australian visual creatives, from photographers and videographers to editors, drone pilots and more. Creatives keep everything they charge and pay only a simple monthly subscription.',
+    a: 'LensTrybe is a no-commission marketplace for Australian visual creatives, starting with photographers and videographers, with more creative types coming soon. Creatives keep everything they charge and pay only a simple monthly subscription.',
   },
   {
     q: 'I am a client. How do I book a creative?',

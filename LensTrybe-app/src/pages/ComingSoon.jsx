@@ -341,7 +341,7 @@ export default function ComingSoon() {
                     {audience === 'creative' && (
                       <div style={{ marginBottom: 10 }}>
                         <LiquidSelect value={creativeType} onChange={setCreativeType} ariaLabel="Creative type" placeholder="What do you do? (optional)"
-                          options={[{ value: '', label: 'What do you do? (optional)' }, ...CREATIVE_TYPES.map(t => ({ value: t, label: t }))]} />
+                          options={[{ value: '', label: 'What do you do? (optional)' }, ...CREATIVE_TYPES.map(t => ({ value: t, label: (t === 'Photographer' || t === 'Videographer' || t === 'Other') ? t : `${t} (coming soon)` }))]} />
                       </div>
                     )}
 

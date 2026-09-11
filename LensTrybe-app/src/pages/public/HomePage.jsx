@@ -655,24 +655,28 @@ export default function HomePage() {
         <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: '48px' }}>
             {sectionHeading('Browse by Specialty')}
-            {sectionSubtitle('Find exactly the creative talent you need for your project')}
+            {sectionSubtitle('Photographers and videographers across South East Queensland, with more creative types joining soon')}
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
-            {CATEGORIES.map(cat => (
-              <button key={cat.key} type="button" onClick={() => navigate(`/creatives?type=${encodeURIComponent(cat.value)}`)} style={{
+            {CATEGORIES.map(cat => {
+              const live = LAUNCH_CATEGORIES.includes(cat.value);
+              return (
+              <button key={cat.key} type="button" disabled={!live} aria-disabled={!live} onClick={() => { if (live) navigate(`/creatives?type=${encodeURIComponent(cat.value)}`) }} style={{
                 ...LIQUID_GLASS_CARD,
                 borderRadius: '16px',
                 padding: isMobile ? '16px 12px' : '24px 16px',
-                cursor: 'pointer', textAlign: 'left', color: TEXT_PRIMARY,
+                cursor: live ? 'pointer' : 'default', textAlign: 'left', color: TEXT_PRIMARY, opacity: live ? 1 : 0.6,
                 minHeight: isMobile ? '140px' : '160px', display: 'flex', flexDirection: 'column',
                 fontFamily: FONT, transition: 'transform 0.2s ease, box-shadow 0.2s ease',
               }}
               onMouseEnter={(e) => {
+                if (!live) return;
                 e.currentTarget.style.transform = 'translateY(-3px)';
                 e.currentTarget.style.boxShadow = '0 26px 56px -16px rgba(31,38,90,0.36), inset 0 1px 1px rgba(255,255,255,1), inset 0 -1.5px 3px rgba(255,255,255,0.6)';
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.9)';
               }}
               onMouseLeave={(e) => {
+                if (!live) return;
                 e.currentTarget.style.transform = '';
                 e.currentTarget.style.boxShadow = LIQUID_GLASS_CARD.boxShadow;
                 e.currentTarget.style.borderColor = 'rgba(255,255,255,0.7)';
@@ -687,9 +691,12 @@ export default function HomePage() {
                   {CATEGORY_ICONS[cat.key]}
                 </div>
                 <div style={{ fontSize: isMobile ? '14px' : '15px', fontWeight: 600, letterSpacing: '-0.01em', marginBottom: '4px', lineHeight: 1.35, color: TEXT_PRIMARY }}>{cat.label}</div>
-                <div style={{ fontSize: '12px', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: TEXT_MUTED, marginTop: 'auto', lineHeight: 1.6 }}>Browse all →</div>
+                {live
+                  ? <div style={{ fontSize: '12px', fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase', color: TEXT_MUTED, marginTop: 'auto', lineHeight: 1.6 }}>Browse all →</div>
+                  : <div style={{ marginTop: 'auto' }}><span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#FF2D78', background: 'rgba(255,45,120,0.1)', border: '1px solid rgba(255,45,120,0.3)' }}>Coming soon</span></div>}
               </button>
-            ))}
+              );
+            })}
           </div>
         </div>
       </section>

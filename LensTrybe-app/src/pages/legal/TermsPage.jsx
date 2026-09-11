@@ -12,7 +12,7 @@ const SECTIONS = [
   {
     id: 'about',
     title: 'About LensTrybe',
-    body: `LensTrybe is an online platform for Australian visual creatives, including photographers, videographers, drone pilots, video and photo editors, social media managers, hair and makeup artists and UGC creators ("Creatives"), and the people and businesses who hire them ("Clients").
+    body: `LensTrybe is an online platform for Australian visual creatives, starting with photographers and videographers and growing to other creative disciplines (such as drone pilots, video and photo editors, social media managers, hair and makeup artists and UGC creators) as we add them ("Creatives"), and the people and businesses who hire them ("Clients").
 
 Creatives can list a public profile and portfolio, be found in search, and use business tools such as messaging, quotes, invoices, contracts, client portals, file delivery, a CRM, bookings and a portfolio website. Clients can search for Creatives, message them, post jobs and save favourites.
 

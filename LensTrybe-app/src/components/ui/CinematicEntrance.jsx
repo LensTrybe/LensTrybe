@@ -114,11 +114,11 @@ export default function CinematicEntrance({ onComplete }) {
   const chips = [
     { text: 'Photography', top: '9%', left: '3%', delay: 1800, startX: -20, float: 'A', dur: 9, dot: '#1DB954' },
     { text: 'Videography', top: '20%', right: '4%', delay: 2000, startX: 20, float: 'B', dur: 10.5, dot: '#D4537E' },
-    { text: 'Drone Pilots', top: '46%', left: '2%', delay: 2200, startX: -20, float: 'A', dur: 11, dot: '#378ADD' },
-    { text: 'UGC Creators', top: '40%', right: '3%', delay: 2400, startX: 20, float: 'B', dur: 8.5, dot: '#BA7517' },
-    { text: 'Video Editing', bottom: '12%', left: '4%', delay: 2600, startX: -20, float: 'A', dur: 9.5, dot: '#7F77DD' },
-    { text: 'Photo Editing', bottom: '9%', right: '5%', delay: 2500, startX: 20, float: 'B', dur: 10, dot: '#1D9E75' },
-    { text: 'Social Media', top: '70%', left: '9%', delay: 2700, startX: -20, float: 'B', dur: 8, dot: '#D4537E' },
+    { text: 'Weddings', top: '46%', left: '2%', delay: 2200, startX: -20, float: 'A', dur: 11, dot: '#378ADD' },
+    { text: 'Brand Films', top: '40%', right: '3%', delay: 2400, startX: 20, float: 'B', dur: 8.5, dot: '#BA7517' },
+    { text: 'Events', bottom: '12%', left: '4%', delay: 2600, startX: -20, float: 'A', dur: 9.5, dot: '#7F77DD' },
+    { text: 'Portraits', bottom: '9%', right: '5%', delay: 2500, startX: 20, float: 'B', dur: 10, dot: '#1D9E75' },
+    { text: 'Real Estate', top: '70%', left: '9%', delay: 2700, startX: -20, float: 'B', dur: 8, dot: '#D4537E' },
   ]
 
   return (

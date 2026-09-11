@@ -18,6 +18,9 @@ const IconShare = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="n
 const IconMakeup = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>)
 const IconPhone = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>)
 
+// Creative types live at launch. The rest join LensTrybe later.
+const LAUNCH_SKILLS = ['photographer', 'videographer']
+
 const SKILLS = [
   { key: 'photographer', label: 'Photographer', icon: <IconCamera /> },
   { key: 'videographer', label: 'Videographer', icon: <IconVideo /> },
@@ -180,6 +183,9 @@ export default function UpcomingFeaturesPage() {
                     {skill.icon}
                   </div>
                   <div style={{ fontSize: isMobile ? '14px' : '15px', marginBottom: '4px', lineHeight: 1.35, ...TYPO.heading }}>{skill.label}</div>
+                  {!LAUNCH_SKILLS.includes(skill.key) && (
+                    <div style={{ marginBottom: '8px' }}><span style={{ display: 'inline-block', padding: '3px 9px', borderRadius: '999px', fontSize: '10.5px', fontWeight: 700, color: '#FF2D78', background: 'rgba(255,45,120,0.1)', border: '1px solid rgba(255,45,120,0.3)' }}>Joining after launch</span></div>
+                  )}
                   <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: 'auto', ...TYPO.body }}>View features →</div>
                 </button>
               ))}
@@ -192,7 +198,11 @@ export default function UpcomingFeaturesPage() {
             </LiquidPill>
 
             <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{selectedSkillLabel} upcoming features</h2>
-            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Planned features for this skill category.</p>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>
+              {LAUNCH_SKILLS.includes(selectedSkill)
+                ? 'Planned features for this skill category.'
+                : `${selectedSkillLabel}s join LensTrybe after launch. These are the tools we're planning for them.`}
+            </p>
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
               {selectedSkillFeatures.map((feature) => (
