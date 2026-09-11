@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
@@ -143,7 +143,14 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   const { pathname } = useLocation()
   const [hover, setHover] = useState(false)
   const [selected, setSelected] = useState(null)
-  const expanded = isMobile || hover
+  // The dashboard tour keeps the menu expanded while it's showing.
+  const [tourOpen, setTourOpen] = useState(false)
+  useEffect(() => {
+    function onTour(e) { setTourOpen(!!e.detail); setSelected(null) }
+    window.addEventListener('lt:tour-sidebar', onTour)
+    return () => window.removeEventListener('lt:tour-sidebar', onTour)
+  }, [])
+  const expanded = isMobile || hover || tourOpen
 
   const dark = theme === 'dark'
   const t = tokens(dark)
@@ -230,8 +237,8 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         {expanded && chevron && <NavIcon name="chevron" size={14} style={{ color: t.icon, filter: t.iconGlow, transform: chevronOpen ? 'rotate(90deg)' : 'none', transition: 'transform .18s ease' }} />}
       </>
     )
-    if (to) return <Link key={id} to={to} title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
-    return <button key={id} type="button" title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={onClick}>{inner}</button>
+    if (to) return <Link key={id} data-tour={`nav-${label}`} to={to} title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
+    return <button key={id} data-tour={`nav-${label}`} type="button" title={title} style={rowStyle(active)} {...hoverBg(active)} onClick={onClick}>{inner}</button>
   }
 
   // A single fly-out / drawer item. Locked (above the creative's tier) items stay
@@ -360,7 +367,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
       <div aria-hidden style={{ width: SPACER, flexShrink: 0 }} />
       <div onMouseEnter={() => setHover(true)} onMouseLeave={closeAll}
         style={{ position: 'fixed', left: MARGIN, top: MARGIN, bottom: MARGIN, zIndex: 60, display: 'flex', alignItems: 'stretch', gap: FLY_GAP }}>
-        <aside style={{ position: 'relative', width: expanded ? OPEN_W : RAIL, ...t.glass, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', transition: 'width .2s cubic-bezier(.4,0,.2,1)' }}>
+        <aside data-tour="sidebar" style={{ position: 'relative', width: expanded ? OPEN_W : RAIL, ...t.glass, borderRadius: 24, overflow: 'hidden', boxSizing: 'border-box', transition: 'width .2s cubic-bezier(.4,0,.2,1)' }}>
           {sheen(24)}
           {firstBody}
         </aside>

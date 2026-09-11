@@ -173,7 +173,7 @@ export default function SettingsPage() {
 
       <div>
         <h1 style={{ margin: 0, fontSize: 26, fontWeight: 800, color: 'var(--lt-text)', letterSpacing: '-0.01em' }}>Settings</h1>
-        <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--lt-muted)' }}>Manage your subscription, account and preferences.</p>
+        <p style={{ margin: '6px 0 0', fontSize: 14, color: 'var(--lt-muted)' }}>Manage your subscription, account and preferences. <button type="button" onClick={() => window.dispatchEvent(new Event('lt:start-tour'))} style={{ background: 'none', border: 'none', padding: 0, color: GREEN, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>Take the dashboard tour</button></p>
       </div>
 
       <div className="ltset-tabs">
