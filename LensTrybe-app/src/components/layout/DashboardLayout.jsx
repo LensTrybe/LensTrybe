@@ -5,6 +5,7 @@ import Sidebar from './Sidebar'
 import TileField from '../ui/TileField'
 import NoteTaker from './NoteTaker'
 import NotificationBell from './NotificationBell'
+import BroadcastHost from '../broadcasts/BroadcastHost'
 import LumiWidget from './LumiWidget'
 import DashboardTour from './DashboardTour'
 
@@ -201,6 +202,7 @@ export default function DashboardLayout() {
             margin: '0 auto',
             boxSizing: 'border-box',
           }} className="dash-main">
+            <BroadcastHost bannerWrapStyle={{ marginBottom: 8 }} />
             {pastDue && !onSubPage && (
               <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 16px', marginBottom: 20, borderRadius: 14, border: '1.5px solid rgba(255,45,120,0.55)', background: dark ? 'rgba(255,45,120,0.12)' : 'rgba(255,45,120,0.08)', color: 'var(--lt-text)', fontSize: 13.5, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
                 <span style={{ flex: '1 1 240px' }}><strong style={{ color: '#FF2D78' }}>Your last payment didn't go through.</strong> Update your card to keep your plan's features.</span>

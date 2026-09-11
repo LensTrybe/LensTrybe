@@ -15,6 +15,7 @@ import DownloadDataCard from '../components/account/DownloadDataCard'
 import NewsletterPreferenceCard from '../components/account/NewsletterPreferenceCard'
 import ClientBookingsView from '../components/bookings/ClientBookingsView'
 import NotificationBell from '../components/layout/NotificationBell'
+import BroadcastHost from '../components/broadcasts/BroadcastHost'
 
 export default function ClientDashboardPage() {
   const { user, clientAccount, profile } = useAuth()
@@ -274,6 +275,8 @@ export default function ClientDashboardPage() {
           <button style={s.signOutBtn} onClick={signOut}>Sign Out</button>
         </div>
       </nav>
+
+      <BroadcastHost bannerWrapStyle={{ padding: '14px 24px 0', maxWidth: 1280, margin: '0 auto', boxSizing: 'border-box' }} />
 
       <div style={s.body}>
         <div style={s.sidebar}>

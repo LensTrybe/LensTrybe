@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import FoundingAdminPanel from '../../components/dashboard/FoundingAdminPanel';
 import FoundingInvitesPanel from '../../components/dashboard/FoundingInvitesPanel';
+import BroadcastModal from '../../components/dashboard/BroadcastModal';
 import SupportAdminPanel from '../../components/dashboard/SupportAdminPanel';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
@@ -564,9 +565,6 @@ export default function AdminPage() {
   const [panelUserId, setPanelUserId] = useState(null);
   const [usersListOpen, setUsersListOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
-  const [broadcastAudience, setBroadcastAudience] = useState('all');
-  const [broadcastTitle, setBroadcastTitle] = useState('');
-  const [broadcastBody, setBroadcastBody] = useState('');
   const [flaggedReviews, setFlaggedReviews] = useState([]);
   const [flagActionId, setFlagActionId] = useState(null);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
@@ -855,14 +853,6 @@ export default function AdminPage() {
     showToast('CSV downloaded');
   };
 
-  const queueBroadcast = () => {
-    setBroadcastOpen(false);
-    setBroadcastTitle('');
-    setBroadcastBody('');
-    setBroadcastAudience('all');
-    showToast('Broadcast queued - feature coming soon');
-  };
-
   async function handleKeepFlaggedReview(reviewId) {
     setFlagActionId(reviewId);
     const { error } = await supabase
@@ -940,106 +930,7 @@ export default function AdminPage() {
         />
       )}
 
-      {broadcastOpen && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            ...GLASS_MODAL_OVERLAY_BASE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 1250,
-          }}
-          onClick={() => setBroadcastOpen(false)}
-        >
-          <div
-            role="dialog"
-            aria-modal="true"
-            style={{
-              ...GLASS_MODAL_PANEL,
-              borderRadius: 14,
-              padding: 24,
-              maxWidth: 480,
-              width: '92%',
-              textAlign: 'left',
-            }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div style={{ fontSize: 16, fontWeight: 700, color: COLORS.white, marginBottom: 16 }}>Broadcast message</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <label style={{ fontSize: 12, color: COLORS.muted, ...TYPO.label }}>Target audience</label>
-              <select
-                className={LT_DASHBOARD_SELECT_CLASS}
-                value={broadcastAudience}
-                onChange={(e) => setBroadcastAudience(e.target.value)}
-                style={{
-                  ...LT_DASHBOARD_SELECT_STYLE,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  fontSize: 13,
-                  ...FONT,
-                }}
-              >
-                <option value="all">All users</option>
-                <option value="basic">Basic only</option>
-                <option value="pro">Pro only</option>
-                <option value="expert">Expert only</option>
-                <option value="elite">Elite only</option>
-                <option value="creatives">Creatives only</option>
-              </select>
-              <label style={{ fontSize: 12, color: COLORS.muted, ...TYPO.label }}>Message title</label>
-              <input
-                value={broadcastTitle}
-                onChange={(e) => setBroadcastTitle(e.target.value)}
-                placeholder="Title"
-                style={{
-                  ...GLASS_NATIVE_FIELD,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  color: COLORS.white,
-                  fontSize: 13,
-                  ...FONT,
-                }}
-              />
-              <label style={{ fontSize: 12, color: COLORS.muted, ...TYPO.label }}>Message body</label>
-              <textarea
-                value={broadcastBody}
-                onChange={(e) => setBroadcastBody(e.target.value)}
-                placeholder="Write your message…"
-                rows={5}
-                style={{
-                  ...GLASS_NATIVE_FIELD,
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  color: COLORS.white,
-                  fontSize: 13,
-                  resize: 'vertical',
-                  ...FONT,
-                }}
-              />
-            </div>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 20 }}>
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => setBroadcastOpen(false)}
-                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 13, ...FONT }}
-              >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                variant="primary"
-                onClick={queueBroadcast}
-                style={{ padding: '9px 16px', borderRadius: 8, fontSize: 13, fontWeight: 700, ...FONT }}
-              >
-                Send
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <BroadcastModal open={broadcastOpen} onClose={() => setBroadcastOpen(false)} onSent={(msg, type) => showToast(msg, type)} />
 
       {panelUserId && panelUser && (
         <div
