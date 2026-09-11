@@ -113,7 +113,7 @@ export default function SettingsPage() {
     setEmailLoading(true)
     const { error } = await supabase.auth.updateUser({ email: newEmail })
     if (error) setEmailMsg({ text: error.message, error: true })
-    else { setEmailMsg({ text: 'Confirmation sent to your new email address. Click the link to confirm the change.', error: false }); setCurrentEmailInput(''); setNewEmail('') }
+    else { setEmailMsg({ text: 'We have sent a confirmation link to both your current and new email addresses. Click both links to finish the change.', error: false }); setCurrentEmailInput(''); setNewEmail('') }
     setEmailLoading(false)
   }
 
@@ -235,7 +235,7 @@ export default function SettingsPage() {
           <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div>
               <div className="ltset-h">Update email</div>
-              <div className="ltset-sub" style={{ marginTop: 4 }}>A confirmation link will be sent to your new email address.</div>
+              <div className="ltset-sub" style={{ marginTop: 4 }}>For security, we send a confirmation link to both your current and new email addresses.</div>
             </div>
             {emailMsg && (
               <div style={{ fontSize: 13, padding: '10px 14px', borderRadius: 10, background: emailMsg.error ? 'rgba(239,68,68,0.12)' : 'rgba(29,185,84,0.12)', color: emailMsg.error ? RED : GREEN, lineHeight: 1.5 }}>{emailMsg.text}</div>
