@@ -68,6 +68,23 @@ function SocialIcon({ type, size = 20, color = 'currentColor' }) {
   }
 }
 
+// Photo or video tile. Videos get a play badge and open in the lightbox with sound
+// and controls.
+function MediaThumb({ item, style }) {
+  const url = item.file_url || item.image_url
+  if (item.file_type === 'video') {
+    return (
+      <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+        <video src={`${url}#t=0.1`} muted playsInline preload="metadata" style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+        <span aria-hidden style={{ position: 'absolute', left: '50%', top: '50%', transform: 'translate(-50%,-50%)', width: 44, height: 44, borderRadius: '50%', background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff"><path d="M8 5v14l11-7z" /></svg>
+        </span>
+      </div>
+    )
+  }
+  return <img src={url} alt={item.alt_text || ''} style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+}
+
 // siteMode: the creative's public website link (/site/:slug). No sign-in wall, and
 // visitors can send an enquiry without an account.
 export default function PublicProfilePage({ previewMode = false, previewId = null, siteMode = false, siteId = null }) {
@@ -289,7 +306,6 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const tier = (profile?.subscription_tier ?? '').toLowerCase()
   const isPaid = tier === 'pro' || tier === 'expert' || tier === 'elite'
   const isFull = tier === 'expert' || tier === 'elite'
-  const showSocials = isPaid // Basic cannot show social links or external website
 
   const pageMap = useMemo(() => { const m = {}; (pages || []).forEach((p) => { if (p.visible !== false) m[p.page_type] = p }); return m }, [pages])
   const hiddenPages = useMemo(() => new Set((pages || []).filter((p) => p.visible === false).map((p) => p.page_type)), [pages])
@@ -354,23 +370,28 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     )
   }
 
+  const openMedia = (item) => setLightbox({ url: item.file_url || item.image_url, video: item.file_type === 'video' })
+
   const socialLinks = () => {
-    if (!showSocials) return null
     const items = []
     if (profile.website) items.push(['Website', profile.website])
-    if (profile.instagram_url) items.push(['Instagram', `https://instagram.com/${profile.instagram_url.replace('@', '')}`])
-    if (profile.tiktok_url) items.push(['TikTok', `https://tiktok.com/${profile.tiktok_url.replace('@', '')}`])
+    // Handles ("@studio") become profile links; full links are kept as entered.
+    const handle = (v, base, at = '') => (/instagram\.com|tiktok\.com|^https?:/i.test(v) ? v : `${base}/${at}${v.trim().replace(/^@/, '')}`)
+    if (profile.instagram_url) items.push(['Instagram', handle(profile.instagram_url, 'https://instagram.com')])
+    if (profile.tiktok_url) items.push(['TikTok', handle(profile.tiktok_url, 'https://tiktok.com', '@')])
     if (profile.linkedin_url) items.push(['LinkedIn', profile.linkedin_url])
     if (profile.facebook_url) items.push(['Facebook', profile.facebook_url])
     if (profile.twitter_url) items.push(['X', profile.twitter_url])
-    return items
+    // Always an absolute http(s) link, so "mystudio.com" doesn't become a relative path.
+    return items.map(([label, href]) => [label, /^https?:\/\//i.test(href.trim()) ? href.trim() : `https://${href.trim().replace(/^\/+/, '')}`])
   }
 
   // =====================================================================
-  //  BASIC (and any non-paid) — classic single-page profile, no socials.
+  //  BASIC (and any non-paid) — classic single-page profile.
   // =====================================================================
   if (!isPaid) {
     const styles = classicStyles(isMobile)
+    const basicSocials = socialLinks() || []
     return (
       <div style={styles.page} className="public-profile-page">
         {!isMobile && <TileField animated={false} opacity={0.22} />}
@@ -392,6 +413,16 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                     <div style={styles.ratingNum}>{avgRating}</div>
                     <StarRating value={Math.round(avgRating)} />
                     <div style={styles.ratingCount}>({reviews.length} review{reviews.length !== 1 ? 's' : ''})</div>
+                  </div>
+                )}
+                {basicSocials.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                    {basicSocials.map(([label, href]) => (
+                      <a key={label} href={href} target="_blank" rel="noopener noreferrer nofollow" aria-label={label}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', padding: '7px 13px', borderRadius: '999px', border: '1px solid var(--border-default)', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 600, textDecoration: 'none', fontFamily: 'var(--font-ui)' }}>
+                        <SocialIcon type={label} size={15} />{label}
+                      </a>
+                    ))}
                   </div>
                 )}
                 <div style={styles.heroActions} className={isMobile ? 'public-profile-mobile-actions' : ''}>
@@ -431,9 +462,9 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 <div style={styles.sectionTitle}>Portfolio</div>
                 <div style={styles.portfolioGrid}>
                   {portfolioItems.map((item) => (
-                    <div key={item.id} style={styles.portfolioItem} onClick={() => setLightbox(item.file_url || item.image_url)}
+                    <div key={item.id} style={styles.portfolioItem} onClick={() => openMedia(item)}
                       onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.02)')} onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}>
-                      {item.file_type === 'video' ? <video src={item.file_url} style={styles.portfolioImg} muted /> : <img src={item.file_url || item.image_url} alt={item.alt_text || ''} style={styles.portfolioImg} />}
+                      <MediaThumb item={item} style={styles.portfolioImg} />
                     </div>
                   ))}
                 </div>
@@ -489,7 +520,10 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const socials = socialLinks() || []
   const galleryCats = ['All', ...Array.from(new Set((portfolioItems || []).map((p) => p.category).filter(Boolean)))]
   const galleryShown = galleryTab === 'All' ? portfolioItems : portfolioItems.filter((p) => p.category === galleryTab)
-  const homePhotos = (portfolioItems || []).filter((p) => p.featured).concat((portfolioItems || []).filter((p) => !p.featured))
+  // Home photos and videos: the ones the creative ticked "Show on Home" in the
+  // website builder. If they haven't picked any yet, their latest portfolio work.
+  const featuredMedia = (portfolioItems || []).filter((p) => p.featured)
+  const homePhotos = featuredMedia.length ? featuredMedia : (portfolioItems || [])
   const homePhotosCapped = isFull ? homePhotos.slice(0, 12) : homePhotos.slice(0, PRO_HOME_PHOTO_CAP)
 
   function actionRow(align = 'flex-start') {
@@ -583,8 +617,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <section style={{ ...wrap, padding: '20px 24px 48px' }}>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(4,1fr)', gap: 12 }}>
               {homePhotosCapped.map((item) => (
-                <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '1', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
-                  {item.file_type === 'video' ? <video src={item.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={item.file_url || item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                <div key={item.id} onClick={() => openMedia(item)} style={{ aspectRatio: '1', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
+                  <MediaThumb item={item} />
                 </div>
               ))}
             </div>
@@ -673,8 +707,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {galleryShown.length === 0 ? <p style={{ fontFamily: bodyFont, color: soft }}>No photos yet.</p> : (
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2,1fr)' : 'repeat(3,1fr)', gap: 12 }}>
             {galleryShown.map((item) => (
-              <div key={item.id} onClick={() => setLightbox(item.file_url || item.image_url)} style={{ aspectRatio: '4/3', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
-                {item.file_type === 'video' ? <video src={item.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={item.file_url || item.image_url} alt={item.alt_text || ''} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+              <div key={item.id} onClick={() => openMedia(item)} style={{ aspectRatio: '4/3', borderRadius: photoRadius, overflow: 'hidden', cursor: 'pointer' }}>
+                <MediaThumb item={item} />
               </div>
             ))}
           </div>
@@ -993,7 +1027,9 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
         {lightbox && (
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '40px' }} onClick={() => setLightbox(null)}>
-            <img src={lightbox} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' }} />
+            {lightbox.video
+              ? <video src={lightbox.url} controls autoPlay playsInline onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 'var(--radius-lg)', background: '#000', cursor: 'default' }} />
+              : <img src={lightbox.url} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' }} />}
           </div>
         )}
 

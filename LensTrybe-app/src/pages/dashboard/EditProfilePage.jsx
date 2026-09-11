@@ -559,7 +559,7 @@ export default function EditProfilePage() {
         {activeTab === 'social' && (
           <div style={card}>
             <div style={sectionTitle}>Social links</div>
-            <div style={sectionSub}>{profileTier === 'basic' ? 'Your social links and website show on your LensTrybe website, which comes with the Pro, Expert and Elite plans. They stay saved here if you upgrade later.' : 'Shown on your LensTrybe website (Contact page and footer).'}</div>
+            <div style={sectionSub}>{profileTier === 'basic' ? 'Shown as links on your LensTrybe profile.' : 'Shown on your LensTrybe website (Contact page and footer).'}</div>
             <TextField label="Website" placeholder="https://yourwebsite.com" value={form.website} onChange={e => update('website', e.target.value)} />
             <TextField label="Instagram" placeholder="@yourhandle" value={form.instagram} onChange={e => update('instagram', e.target.value)} />
             <TextField label="TikTok" placeholder="@yourhandle" value={form.tiktok} onChange={e => update('tiktok', e.target.value)} />
@@ -631,7 +631,11 @@ export default function EditProfilePage() {
         {activeTab === 'portfolio' && (
           <div style={card}>
             <div style={sectionTitle}>Portfolio</div>
-            <p style={{ fontSize: 13, color: 'var(--lt-muted)', margin: '-8px 0 0', lineHeight: 1.6 }}>Photos and videos uploaded here appear on your public profile.</p>
+            <p style={{ fontSize: 13, color: 'var(--lt-muted)', margin: '-8px 0 0', lineHeight: 1.6 }}>{profileTier === 'basic'
+                ? 'Photos and videos uploaded here appear on your public profile.'
+                : profileTier === 'pro'
+                  ? 'Photos and videos uploaded here appear on your profile. Choose which ones show on your website Home page (up to 8) in Website > Home.'
+                  : 'Photos and videos uploaded here appear in your website Gallery. Choose which ones show on your Home page in Website > Home or Gallery.'}</p>
             <div className="ltep-drop" onClick={() => document.getElementById('portfolio-upload').click()}>
               {uploadingPortfolio
                 ? portfolioUploadPhase === 'checking' ? 'Checking photos…' : 'Uploading…'

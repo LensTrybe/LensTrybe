@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE, partitionFilesByPortfolioImageModeration } from '../../lib/moderateContent'
 import { FONT_OPTIONS, PALETTES, STYLES, DEFAULT_THEME, normalizeTheme, mergeTheme, resolveTheme } from '../../lib/siteTheme'
 
 // Website builder — edits the creative's PROFILE-as-website. Content pages
@@ -209,7 +210,7 @@ function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload,
   }, [items])
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-      <p style={{ margin: 0, fontSize: 13, color: 'var(--lt-faint)', fontFamily: 'inherit', lineHeight: 1.6 }}>Create albums for different parts of your work (e.g. Weddings, Portraits, Commercial). Each album becomes a tab on your Gallery, and visitors also get an "All" tab showing every photo. Tick "Feature on Home" to show a photo on your landing page.</p>
+      <p style={{ margin: 0, fontSize: 13, color: 'var(--lt-faint)', fontFamily: 'inherit', lineHeight: 1.6 }}>Create albums for different parts of your work (e.g. Weddings, Portraits, Commercial). Each album becomes a tab on your Gallery, and visitors also get an "All" tab showing every photo. Tick "Feature on Home" to show a photo on your landing page (up to 12).</p>
       <div style={{ border: '1px dashed var(--lt-border)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={label}>Add to album</div>
         <input value={albumInput} onChange={(e) => setAlbumInput(e.target.value)} placeholder="Album name (e.g. Weddings) — leave blank for Unsorted" style={inputStyle} />
@@ -237,6 +238,68 @@ function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload,
           </div>
         </div>
       ))}
+    </div>
+  )
+}
+
+// How many photos/videos show on the website's Home page.
+const HOME_MEDIA_CAP = { pro: 8, expert: 12, elite: 12 }
+
+// Home page photos and videos. Every plan with a website picks what shows on Home
+// from their portfolio (the `featured` flag); Pro has no Gallery page, so this is
+// where their work goes.
+function HomeMediaManager({ items, cap, fullBuilder, uploading, notice, onUpload, onToggle, onDelete, onOpenGallery }) {
+  const fileRef = useRef(null)
+  const shownCount = items.filter((it) => it.featured).length
+  const autoPick = shownCount === 0
+  const atCap = shownCount >= cap
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, paddingTop: 20, borderTop: '1px solid var(--lt-hairline)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ minWidth: 0, flex: '1 1 260px' }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Photos and videos on your Home page</div>
+          <p style={{ margin: '6px 0 0', fontSize: 13, color: 'var(--lt-faint)', lineHeight: 1.6 }}>
+            Show off your best work, up to {cap} photos or videos. Tick "Show on Home" to choose which ones appear.
+            {autoPick ? ` Until you pick, your first ${cap} portfolio items show.` : ''}
+            {fullBuilder ? ' Everything you upload also appears in your Gallery.' : ' These also appear on your LensTrybe profile.'}
+          </p>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+          <span style={{ fontSize: 12.5, fontWeight: 700, padding: '5px 11px', borderRadius: 999, background: atCap ? 'rgba(255,45,120,0.1)' : 'rgba(29,185,84,0.12)', color: atCap ? PINK : GREEN }}>{shownCount} of {cap} chosen</span>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple style={{ display: 'none' }} onChange={(e) => { const fl = e.target.files; if (fl?.length) onUpload(Array.from(fl)); if (fileRef.current) fileRef.current.value = '' }} />
+          <Btn variant="primary" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading === 'checking' ? 'Checking photos…' : uploading ? 'Uploading…' : '+ Add photos or videos'}</Btn>
+        </div>
+      </div>
+      {notice ? <div style={{ whiteSpace: 'pre-line', fontSize: 13, lineHeight: 1.55, padding: '10px 12px', borderRadius: 10, border: '1px solid rgba(255,45,120,0.35)', background: 'rgba(255,45,120,0.08)', color: 'var(--lt-text)' }}>{notice}</div> : null}
+      {items.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '28px 16px', borderRadius: 12, border: '1px dashed var(--lt-border)', color: 'var(--lt-faint)', fontSize: 13 }}>No photos or videos yet. Add some to bring your Home page to life.</div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: 12 }}>
+          {items.map((it, idx) => {
+            const on = !!it.featured
+            const showing = on || (autoPick && idx < cap)
+            const blocked = !on && atCap
+            const url = it.file_url || it.image_url
+            return (
+              <div key={it.id} style={{ border: on ? '2px solid #1DB954' : '2px solid var(--lt-hairline)', borderRadius: 12, overflow: 'hidden', background: 'var(--lt-surface)', display: 'flex', flexDirection: 'column' }}>
+                <div style={{ position: 'relative', aspectRatio: '1', background: 'var(--lt-surface-2)', overflow: 'hidden' }}>
+                  {it.file_type === 'video'
+                    ? <video src={`${url}#t=0.1`} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                    : <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                  {it.file_type === 'video' ? <span style={{ position: 'absolute', left: 8, bottom: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.6)', color: '#fff' }}>▶ Video</span> : null}
+                  {showing && !on ? <span style={{ position: 'absolute', left: 8, top: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.6)', color: '#fff' }}>Showing</span> : null}
+                  <button type="button" onClick={() => onDelete(it)} aria-label="Delete" style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 26, height: 26, color: '#fff', fontSize: 12, cursor: 'pointer' }}>✕</button>
+                </div>
+                <label title={blocked ? `You've chosen ${cap}. Untick one to swap it.` : ''} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '9px 10px', fontSize: 12.5, color: blocked ? 'var(--lt-faint)' : 'var(--lt-text)', cursor: blocked ? 'not-allowed' : 'pointer' }}>
+                  <input type="checkbox" checked={on} disabled={blocked} onChange={(e) => onToggle(it, e.target.checked)} style={{ width: 16, height: 16, accentColor: '#1DB954' }} /> Show on Home
+                </label>
+              </div>
+            )
+          })}
+        </div>
+      )}
+      {atCap ? <p style={{ margin: 0, fontSize: 12.5, color: 'var(--lt-faint)' }}>You've chosen {cap}. Untick one to swap in another.</p> : null}
+      {fullBuilder ? <div><Btn variant="ghost" size="sm" type="button" onClick={onOpenGallery}>Organise albums in Gallery</Btn></div> : null}
     </div>
   )
 }
@@ -512,6 +575,9 @@ export default function WebsiteBuilderPage() {
   const [gallery, setGallery] = useState([])
   const [galleryUploading, setGalleryUploading] = useState(false)
   const [albumInput, setAlbumInput] = useState('')
+  const [homeUploading, setHomeUploading] = useState(false)
+  const [homeNotice, setHomeNotice] = useState('')
+  const homeCap = HOME_MEDIA_CAP[tier] || 8
 
   const [services, setServices] = useState([])
   const [servicesSaved, setServicesSaved] = useState(false)
@@ -621,6 +687,54 @@ export default function WebsiteBuilderPage() {
         setGallery((prev) => [...prev, data])
       }
     } catch (e) { window.alert(e.message || 'Upload failed') } finally { setGalleryUploading(false) }
+  }
+  // Upload from the Home tab: moderated like the portfolio, and chosen for Home
+  // straight away while there's room.
+  async function homeMediaUpload(files) {
+    if (!user?.id || !supabase) return
+    setHomeNotice('')
+    setHomeUploading('checking')
+    const notes = []
+    try {
+      const { filesToUpload, blockedFileNames, moderationFailedFileNames } = await partitionFilesByPortfolioImageModeration(files)
+      if (blockedFileNames.length) notes.push(`${PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE}\nRejected: ${blockedFileNames.join(', ')}`)
+      if (moderationFailedFileNames.length) notes.push(`We couldn't check these photos, so they weren't added. Please try again: ${moderationFailedFileNames.join(', ')}`)
+      setHomeUploading('uploading')
+      let chosen = gallery.filter((g) => g.featured).length
+      let order = gallery.length
+      const failed = []
+      for (const file of filesToUpload) {
+        const isVideo = (file.type || '').startsWith('video/')
+        const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
+        const path = `${user.id}/${Date.now()}_${safe}`
+        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file)
+        if (upErr) { failed.push(file.name); continue }
+        const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path)
+        const featured = chosen < homeCap
+        const { data, error } = await supabase.from('portfolio_items').insert({ user_id: user.id, creative_id: user.id, file_url: pub.publicUrl, image_url: pub.publicUrl, file_type: isVideo ? 'video' : 'image', featured, sort_order: order }).select().single()
+        if (error) { failed.push(file.name); continue }
+        if (featured) chosen += 1
+        order += 1
+        setGallery((prev) => [...prev, data])
+      }
+      if (failed.length) notes.push(`These didn't upload (large videos can be too big, try a shorter clip): ${failed.join(', ')}`)
+      if (filesToUpload.length - failed.length > 0 && chosen >= homeCap) notes.push(`Your Home page is full (${homeCap}). New uploads are saved to your portfolio; tick "Show on Home" after unticking another to swap them in.`)
+    } catch (e) {
+      notes.push(e.message || 'Upload failed. Please try again.')
+    } finally {
+      setHomeUploading(false)
+      setHomeNotice(notes.join('\n\n'))
+    }
+  }
+  async function homeMediaToggle(item, on) {
+    if (on && gallery.filter((g) => g.featured).length >= homeCap) { window.alert(`Your Home page can show up to ${homeCap} photos or videos. Untick one first to swap it.`); return }
+    await galleryToggleFeatured(item, on)
+  }
+  async function homeMediaDelete(item) {
+    if (!window.confirm(item.file_type === 'video' ? 'Delete this video from your portfolio?' : 'Delete this photo from your portfolio?')) return
+    await supabase.from('portfolio_items').delete().eq('id', item.id)
+    setGallery((prev) => prev.filter((g) => g.id !== item.id))
   }
   async function gallerySetCategory(item, category) { setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, category } : g))); await supabase.from('portfolio_items').update({ category: category || null }).eq('id', item.id) }
   async function galleryToggleFeatured(item, featured) { setGallery((prev) => prev.map((g) => (g.id === item.id ? { ...g, featured } : g))); await supabase.from('portfolio_items').update({ featured }).eq('id', item.id) }
@@ -809,7 +923,7 @@ export default function WebsiteBuilderPage() {
         <div>
           <h1 style={{ fontFamily: 'inherit', fontSize: 'clamp(24px, 4vw, 28px)', color: 'var(--lt-text)', fontWeight: 800, margin: 0, letterSpacing: '-0.01em' }}>Website</h1>
           <p style={{ fontSize: 13, color: 'var(--lt-faint)', fontFamily: 'inherit', marginTop: 8, lineHeight: 1.6 }}>
-            {proOnePage ? "You're on Pro: a Home and Contact page. Upgrade to Expert for About, Gallery and Services." : 'Your profile is your website. Edit each page below; it updates your public profile live.'}
+            {proOnePage ? "You're on Pro: a Home page (with up to 8 photos or videos) and a Contact page. Upgrade to Expert for About, Gallery and Services." : 'Your profile is your website. Edit each page below; it updates your public profile live.'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -873,11 +987,16 @@ export default function WebsiteBuilderPage() {
         ) : !activeEditable ? (
           <LockedPanel pageLabel={PAGE_LABEL[activeTab]} />
         ) : activeTab === 'gallery' ? (
-          <GalleryManager items={gallery} uploading={galleryUploading} albumInput={albumInput} setAlbumInput={setAlbumInput} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={galleryToggleFeatured} onDelete={galleryDelete} styles={editorStyles} />
+          <GalleryManager items={gallery} uploading={galleryUploading} albumInput={albumInput} setAlbumInput={setAlbumInput} onUpload={galleryUpload} onSetCategory={gallerySetCategory} onToggleFeatured={homeMediaToggle} onDelete={galleryDelete} styles={editorStyles} />
         ) : activeTab === 'services' ? (
           <ServicesManager services={services} template={pages.services?.template || 't1'} onTemplate={saveServicesTemplate} onChangeLocal={serviceChangeLocal} onAddRow={serviceAddRow} onSaveRow={serviceSaveRow} onDeleteRow={serviceDeleteRow} onUploadImage={serviceUploadImage} uploadingIdx={uploadingServiceIdx} savedFlash={servicesSaved} styles={editorStyles} isMobile={isMobile} />
         ) : isContentPage ? (
-          <PageEditor key={activeTab} pageType={activeTab} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activeTab, k, v)} onTemplate={(t) => setTemplate(activeTab, t)} onVisible={(v) => setVisible(activeTab, v)} onUploadImage={(field, file) => uploadImage(activeTab, field, file)} uploadingField={uploadingField} onSave={() => savePage(activeTab)} saving={savingPage === activeTab} saved={savedPage === activeTab} styles={editorStyles} />
+          <>
+            <PageEditor key={activeTab} pageType={activeTab} content={activeData.content || {}} template={activeData.template || 't1'} visible={activeData.visible !== false} onField={(k, v) => setField(activeTab, k, v)} onTemplate={(t) => setTemplate(activeTab, t)} onVisible={(v) => setVisible(activeTab, v)} onUploadImage={(field, file) => uploadImage(activeTab, field, file)} uploadingField={uploadingField} onSave={() => savePage(activeTab)} saving={savingPage === activeTab} saved={savedPage === activeTab} styles={editorStyles} />
+            {activeTab === 'home' ? (
+              <HomeMediaManager items={gallery} cap={homeCap} fullBuilder={fullBuilder} uploading={homeUploading} notice={homeNotice} onUpload={homeMediaUpload} onToggle={homeMediaToggle} onDelete={homeMediaDelete} onOpenGallery={() => { setActiveTab('gallery'); window.scrollTo(0, 0) }} />
+            ) : null}
+          </>
         ) : null}
       </section>
     </div>
