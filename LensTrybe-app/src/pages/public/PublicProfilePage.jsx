@@ -24,6 +24,8 @@ import {
 } from '../../lib/glassTokensLight'
 import TileField from '../../components/ui/TileField'
 import { resolveTheme, FONTS_HREF } from '../../lib/siteTheme'
+import BookingRequestModal from '../../components/bookings/BookingRequestModal'
+import { fmtTime as fmtBookTime } from '../../lib/bookings'
 
 // The creative's PROFILE is their website. Basic keeps the classic single-page
 // profile (no socials/website). Pro/Expert/Elite render a brand-styled,
@@ -104,6 +106,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [galleryTab, setGalleryTab] = useState('All')
   const [showEnquire, setShowEnquire] = useState(false)
   const [showAuthGate, setShowAuthGate] = useState(false)
+  const [authGateFor, setAuthGateFor] = useState('enquire')
+  const [showBook, setShowBook] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [enquiry, setEnquiry] = useState({ subject: '', message: '', name: '', phone: '', email: '', website: '' })
@@ -159,7 +163,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
       supabase.from('reviews').select('*').eq('creative_id', id).or('hidden.is.null,hidden.eq.false').order('created_at', { ascending: false }),
-      supabase.rpc('creative_unavailable_dates', { p_creative: id }),
+      supabase.rpc('creative_busy_times', { p_creative: id }),
       supabase.from('brand_kit').select('*').eq('creative_id', id).maybeSingle(),
       supabase.from('site_pages').select('*').eq('creative_id', id),
       supabase.from('portfolio_services').select('*').eq('creative_id', id).order('sort_order', { ascending: true }),
@@ -298,10 +302,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     if (user) { setEnquiryError(''); setSent(false); setShowEnquire(true); return }
     // On the public website, send visitors to the Contact page form.
     if (siteMode && navPages.includes('contact')) { setEnquiryError(''); setSent(false); setActivePage('contact'); window.scrollTo(0, 0); return }
-    setShowAuthGate(true)
+    setAuthGateFor('enquire'); setShowAuthGate(true)
   }
-  const openCall = () => { if (user) { setCallError(''); setCallSent(false); setCallForm({ date: '', time: '', phone: clientAccount?.phone || '', message: '' }); setShowCall(true) } else setShowAuthGate(true) }
-  const openReview = () => { if (user) setShowReview(true); else setShowAuthGate(true) }
+  const openBook = () => {
+    if (user) { setShowBook(true); return }
+    setAuthGateFor('book'); setShowAuthGate(true)
+  }
+  const openCall = () => { if (user) { setCallError(''); setCallSent(false); setCallForm({ date: '', time: '', phone: clientAccount?.phone || '', message: '' }); setShowCall(true) } else { setAuthGateFor('enquire'); setShowAuthGate(true) } }
+  const openReview = () => { if (user) setShowReview(true); else { setAuthGateFor('enquire'); setShowAuthGate(true) } }
 
   const tier = (profile?.subscription_tier ?? '').toLowerCase()
   const isPaid = tier === 'pro' || tier === 'expert' || tier === 'elite'
@@ -351,7 +359,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const serviceAreas = Array.isArray(profile.site_service_areas) ? profile.site_service_areas.filter(Boolean) : []
   const publicPhone = isFull && profile.show_phone && profile.public_phone ? profile.public_phone : null
   const fmtDay = (d) => { try { return new Date(`${d}T00:00:00`).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }) } catch { return d } }
-  const unavailable = (blockedDates || []).slice(0, 14)
+  // Busy dates (blocked time + confirmed bookings), grouped per day with their times.
+  const unavailable = (() => {
+    const byDay = new Map()
+    for (const r of blockedDates || []) {
+      const d = byDay.get(r.date) || { date: r.date, allDay: false, times: [] }
+      if (r.all_day || !r.start_time) d.allDay = true
+      else d.times.push(`${fmtBookTime(r.start_time)} to ${fmtBookTime(r.end_time)}`)
+      byDay.set(r.date, d)
+    }
+    return [...byDay.values()].slice(0, 14).map((d) => ({ date: d.date, label: d.allDay ? fmtDay(d.date) : `${fmtDay(d.date)}, ${d.times.join(', ')}` }))
+  })()
 
   // ---- Shared bits (reviews + modals) reused by both layouts ----
   const credentialBadges = (extraStyle = {}) => {
@@ -427,6 +445,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                 )}
                 <div style={styles.heroActions} className={isMobile ? 'public-profile-mobile-actions' : ''}>
                   {!previewMode && <Button variant="primary" size="lg" onClick={openEnquire}>Enquire Now</Button>}
+                  {!previewMode && user?.id !== id && <Button variant="secondary" size="lg" type="button" style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }} onClick={openBook}>Request a Booking</Button>}
                   {!previewMode && user?.id !== id && <Button variant="secondary" size="lg" type="button" style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }} onClick={openCall}>Request a Call</Button>}
                   {user?.id !== id && <Button variant="secondary" size="lg" type="button" onClick={openReview} style={{ minHeight: '44px', width: isMobile ? '100%' : 'auto' }}>Leave a Review</Button>}
                 </div>
@@ -444,8 +463,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {unavailable.length > 0 && (
               <div style={styles.section}>
                 <div style={styles.sectionTitle}>Availability</div>
-                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Already booked on these dates. Enquire to check anything else.</div>
-                <div style={styles.specialtySection}>{unavailable.map((d) => <Badge key={d.date} variant="default">{fmtDay(d.date)}</Badge>)}</div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Already booked at these times. Everything else is open to request.</div>
+                <div style={styles.specialtySection}>{unavailable.map((d) => <Badge key={d.date} variant="default">{d.label}</Badge>)}</div>
               </div>
             )}
             <div style={styles.section}>
@@ -530,6 +549,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: align }}>
         {!previewMode && <button style={btn} onClick={openEnquire}>{home.cta_text || 'Enquire Now'}</button>}
+        {!previewMode && user?.id !== id && <button style={btnGhost} onClick={openBook}>Request a booking</button>}
         {!previewMode && user?.id !== id && (user || !siteMode) && <button style={btnGhost} onClick={openCall}>Request a Call</button>}
       </div>
     )
@@ -819,9 +839,9 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <div style={{ marginTop: 16 }}>
             <div style={{ color: ink, fontSize: 15, fontWeight: 700, marginBottom: 8 }}>Already booked</div>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {unavailable.map((d) => <span key={d.date} style={{ fontSize: 12.5, color: soft, border: `1px solid ${line}`, borderRadius: PILL, padding: '4px 10px' }}>{fmtDay(d.date)}</span>)}
+              {unavailable.map((d) => <span key={d.date} style={{ fontSize: 12.5, color: soft, border: `1px solid ${line}`, borderRadius: PILL, padding: '4px 10px' }}>{d.label}</span>)}
             </div>
-            <div style={{ color: soft, fontSize: 13, marginTop: 8 }}>Other dates are open. Send an enquiry to check.</div>
+            <div style={{ color: soft, fontSize: 13, marginTop: 8 }}>Everything else is open. Request a booking to lock in a time.</div>
           </div>
         )}
       </div>
@@ -1094,11 +1114,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           </div>
         </Modal>
 
-        <Modal isOpen={showAuthGate} onClose={() => setShowAuthGate(false)} title="Sign in to enquire" size="sm">
+        <BookingRequestModal open={showBook} onClose={() => setShowBook(false)} creativeId={id} creativeName={displayName} services={services} defaultName={formatClientAccountDisplayName(clientAccount) || ''} defaultPhone={clientAccount?.phone || ''} />
+
+        <Modal isOpen={showAuthGate} onClose={() => setShowAuthGate(false)} title={authGateFor === 'book' ? 'Sign in to book' : 'Sign in to enquire'} size="sm">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>You need a free client account to send an enquiry to {displayName}.</div>
+            <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>{authGateFor === 'book' ? `You need a free client account to request a booking with ${displayName}. It only takes a minute.` : `You need a free client account to send an enquiry to ${displayName}.`}</div>
             <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-              <Button variant="ghost" onClick={() => { setShowAuthGate(false); navigate('/login') }}>Sign In</Button>
+              <Button variant="ghost" onClick={() => { setShowAuthGate(false); navigate('/login', { state: { next: `${window.location.pathname}${window.location.search}` } }) }}>Sign In</Button>
               <Button variant="primary" onClick={() => { setShowAuthGate(false); navigate('/join/client') }}>Create Free Account</Button>
             </div>
           </div>

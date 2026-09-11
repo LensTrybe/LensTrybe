@@ -88,19 +88,19 @@ export default function NotificationBell() {
   return (
     <>
       <style>{`
-        .ltn-bell { position: fixed; right: 24px; bottom: 88px; z-index: 950; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--lt-text); background: var(--lt-glass-bg); border: var(--lt-glass-border); box-shadow: var(--lt-glass-shadow); backdrop-filter: var(--lt-glass-blur); -webkit-backdrop-filter: var(--lt-glass-blur); transition: transform .12s ease; }
+        .ltn-bell { position: fixed; right: 24px; bottom: 88px; z-index: 950; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--lt-text, #14111a); background: var(--lt-glass-bg, rgba(255,255,255,0.9)); border: var(--lt-glass-border, 1px solid rgba(20,17,26,0.1)); box-shadow: var(--lt-glass-shadow, 0 10px 30px -12px rgba(40,30,60,0.35)); backdrop-filter: var(--lt-glass-blur, blur(16px)); -webkit-backdrop-filter: var(--lt-glass-blur, blur(16px)); transition: transform .12s ease; }
         .ltn-bell:hover { transform: translateY(-2px); }
         .ltn-badge { position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: ${PINK}; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
-        .ltn-panel { position: fixed; right: 24px; bottom: 146px; z-index: 951; width: 340px; max-width: calc(100vw - 32px); max-height: 62vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--lt-modal-bg); border: var(--lt-modal-border); box-shadow: var(--lt-modal-shadow); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); }
-        .ltn-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--lt-hairline); flex-shrink: 0; }
-        .ltn-title { font-size: 14px; font-weight: 800; color: var(--lt-text); }
+        .ltn-panel { position: fixed; right: 24px; bottom: 146px; z-index: 951; width: 340px; max-width: calc(100vw - 32px); max-height: 62vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--lt-modal-bg, rgba(255,255,255,0.97)); border: var(--lt-modal-border, 1px solid rgba(20,17,26,0.1)); box-shadow: var(--lt-modal-shadow, 0 24px 60px -20px rgba(40,30,60,0.35)); backdrop-filter: var(--lt-modal-blur, blur(20px)); -webkit-backdrop-filter: var(--lt-modal-blur, blur(20px)); }
+        .ltn-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--lt-hairline, rgba(20,17,26,0.08)); flex-shrink: 0; }
+        .ltn-title { font-size: 14px; font-weight: 800; color: var(--lt-text, #14111a); }
         .ltn-markall { background: none; border: none; color: ${GREEN}; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0; }
         .ltn-list { overflow-y: auto; }
-        .ltn-item { display: flex; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--lt-hairline); cursor: pointer; transition: background .12s ease; }
-        .ltn-item:hover { background: var(--lt-surface-2); }
+        .ltn-item { display: flex; gap: 10px; padding: 13px 16px; border-bottom: 1px solid var(--lt-hairline, rgba(20,17,26,0.08)); cursor: pointer; transition: background .12s ease; }
+        .ltn-item:hover { background: var(--lt-surface-2, rgba(20,17,26,0.04)); }
         .ltn-dot { width: 8px; height: 8px; border-radius: 50%; background: ${GREEN}; flex-shrink: 0; margin-top: 5px; }
         .ltn-dot.read { background: transparent; }
-        .ltn-empty { padding: 32px 16px; text-align: center; color: var(--lt-muted); font-size: 13px; }
+        .ltn-empty { padding: 32px 16px; text-align: center; color: var(--lt-muted, #6b6a75); font-size: 13px; }
         @media (max-width: 767px) {
           .ltn-bell { right: 16px; bottom: 84px; }
           .ltn-panel { right: 16px; bottom: 142px; }
@@ -126,9 +126,9 @@ export default function NotificationBell() {
                 <div key={n.id} className="ltn-item" onClick={() => openItem(n)}>
                   <span className={`ltn-dot${n.read ? ' read' : ''}`} />
                   <div style={{ minWidth: 0, flex: 1 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lt-text)', lineHeight: 1.35 }}>{n.title}</div>
-                    {n.body && <div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}
-                    <div style={{ fontSize: 11, color: 'var(--lt-faint)', marginTop: 4 }}>{timeAgo(n.created_at)}</div>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--lt-text, #14111a)', lineHeight: 1.35 }}>{n.title}</div>
+                    {n.body && <div style={{ fontSize: 12.5, color: 'var(--lt-muted, #6b6a75)', marginTop: 2, lineHeight: 1.4 }}>{n.body}</div>}
+                    <div style={{ fontSize: 11, color: 'var(--lt-faint, #8a8995)', marginTop: 4 }}>{timeAgo(n.created_at)}</div>
                   </div>
                 </div>
               ))

@@ -436,7 +436,7 @@ export default function DashboardHome() {
       title: 'Quick actions',
       content: (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[['New invoice', '/dashboard/finance/invoicing'], ['New quote', '/dashboard/finance/quotes'], ['Send delivery', '/dashboard/portfolio-design/deliver'], ['Add client', '/dashboard/clients/crm'], ['New booking', '/dashboard/my-work/my-bookings']].map(([l, to]) => (
+          {[['New invoice', '/dashboard/finance/invoicing'], ['New quote', '/dashboard/finance/quotes'], ['Send delivery', '/dashboard/portfolio-design/deliver'], ['Add client', '/dashboard/clients/crm'], ['New booking', '/dashboard/my-work/my-bookings?new=1']].map(([l, to]) => (
             <button key={l} type="button" onClick={() => navigate(to)} style={{ padding: '8px 14px', borderRadius: 999, border: t.pillBorder, background: t.pillBg, color: t.pillText, fontSize: 13, fontFamily: FONT, cursor: 'pointer', whiteSpace: 'nowrap' }}>{l}</button>
           ))}
         </div>

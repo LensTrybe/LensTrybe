@@ -15,8 +15,8 @@ const LIVE = ['active', 'trialing', 'past_due']
 
 const TIER_COLOR = { basic: '#8a8a9a', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
 const TIER_FEATURES = {
-  basic: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', 'Browse gear marketplace', 'Basic search placement'],
-  pro: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Bookings & scheduling', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'],
+  basic: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', '3 confirmed bookings / month', 'Browse gear marketplace', 'Basic search placement'],
+  pro: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Unlimited bookings', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'],
   expert: ['Everything in Pro', '40 photos + 5 videos', 'Unlimited messages', 'Contracts & e-signatures', 'CRM (500 records)', 'Client portals', 'Brand kit', 'Portfolio website', 'LensTrybe Deliver (50GB)', 'Business insights'],
   elite: ['Everything in Expert', 'Unlimited photos & videos', 'Team (up to 5 members)', 'CRM (unlimited)', 'LensTrybe Deliver (200GB)', 'Multi-page website + custom domain', 'Elite spotlight', 'Studio profile page'],
 }

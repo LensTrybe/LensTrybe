@@ -10,9 +10,9 @@ const GREEN_TEXT = '#04120a'
 
 const PLANS = [
   { id: 'basic', name: 'Basic', monthlyPrice: 0, annualPrice: 0, color: '#8a8a9a',
-    features: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', 'Browse gear marketplace', 'Basic search placement'] },
+    features: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', '3 confirmed bookings / month', 'Browse gear marketplace', 'Basic search placement'] },
   { id: 'pro', name: 'Pro', monthlyPrice: 24.99, annualPrice: 249.90, color: GREEN,
-    features: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Bookings & scheduling', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'] },
+    features: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Unlimited bookings', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'] },
   { id: 'expert', name: 'Expert', monthlyPrice: 74.99, annualPrice: 749.90, color: '#a855f7',
     features: ['Everything in Pro', '40 photos + 5 videos', 'Unlimited messages', 'Contracts & e-signatures', 'CRM (500 records)', 'Client portals', 'Brand kit', 'Portfolio website', 'LensTrybe Deliver (50GB)', 'Business insights'] },
   { id: 'elite', name: 'Elite', monthlyPrice: 149.99, annualPrice: 1499.90, color: '#EAB308',

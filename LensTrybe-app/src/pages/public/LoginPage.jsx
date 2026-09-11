@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useLocation } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../../context/AuthContext'
 import Input from '../../components/ui/Input'
@@ -23,6 +23,11 @@ export default function LoginPage() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+
+  // Where to go after signing in (e.g. back to the profile they were booking from).
+  const location = useLocation()
+  const rawNext = location.state?.next
+  const next = typeof rawNext === 'string' && rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : ''
 
   async function handleLogin(e) {
     e.preventDefault()
@@ -55,7 +60,7 @@ export default function LoginPage() {
       .maybeSingle()
 
     if (profile) {
-      navigate('/dashboard', { replace: true })
+      navigate(next || '/dashboard', { replace: true })
       return
     }
 
@@ -66,7 +71,7 @@ export default function LoginPage() {
       .maybeSingle()
 
     if (client) {
-      navigate('/client-dashboard', { replace: true })
+      navigate(next || '/client-dashboard', { replace: true })
       return
     }
 

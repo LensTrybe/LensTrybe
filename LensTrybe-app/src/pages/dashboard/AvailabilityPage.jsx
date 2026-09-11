@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { timeText } from '../../lib/bookings'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 
@@ -60,6 +62,8 @@ export default function AvailabilityPage() {
   const [showTimeModal, setShowTimeModal] = useState(false)
   const [timeForm, setTimeForm] = useState({ all_day: true, start_time: '09:00', end_time: '17:00', notes: '' })
   const [toast, setToast] = useState(null)
+  const [bookings, setBookings] = useState([])
+  const navigate = useNavigate()
 
   useEffect(() => { loadAvailability() }, [user])
   useEffect(() => {
@@ -75,8 +79,12 @@ export default function AvailabilityPage() {
 
   async function loadAvailability() {
     if (!user) return
-    const { data } = await supabase.from('availability').select('*').eq('creative_id', user.id)
+    const [{ data }, { data: bk }] = await Promise.all([
+      supabase.from('availability').select('*').eq('creative_id', user.id),
+      supabase.from('bookings').select('id, booking_date, all_day, start_time, end_time, client_name, service').eq('creative_id', user.id).eq('status', 'confirmed').not('booking_date', 'is', null),
+    ])
     setBlockedDates(data ?? [])
+    setBookings(bk ?? [])
     setLoading(false)
   }
 
@@ -138,6 +146,12 @@ export default function AvailabilityPage() {
   const firstDay = getFirstDayOfMonth(year, month)
   const today = new Date().toISOString().split('T')[0]
   const upcomingBlocked = blockedDates.filter(d => d.date >= today).sort((a, b) => a.date.localeCompare(b.date))
+  const bookingsByDate = useMemo(() => {
+    const m = {}
+    for (const b of bookings) (m[b.booking_date] = m[b.booking_date] || []).push(b)
+    return m
+  }, [bookings])
+  const upcomingBookings = bookings.filter(b => b.booking_date >= today).sort((a, b) => a.booking_date.localeCompare(b.booking_date))
 
   const stats = useMemo(() => {
     const monthPrefix = `${year}-${String(month + 1).padStart(2, '0')}`
@@ -175,7 +189,7 @@ export default function AvailabilityPage() {
 
         <div>
           <h1 style={{ margin: '0 0 4px', fontSize: isMobile ? 24 : 27, fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--lt-text)' }}>Availability</h1>
-          <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Block the dates or time slots you're unavailable. Clients won't see you in search results for blocked dates.</p>
+          <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Block the dates or time slots you're unavailable. Confirmed bookings show here automatically, and clients can't request times that are blocked or booked.</p>
         </div>
 
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -203,15 +217,17 @@ export default function AvailabilityPage() {
                 const isBlocked = !!block
                 const isToday = dateStr === today
                 const isPast = dateStr < today
+                const dayBookings = bookingsByDate[dateStr] || []
                 return (
                   <div
                     key={day}
                     className="ltav-day"
                     style={dayStyle(isBlocked, isToday, isPast, false)}
                     onClick={() => handleDayClick(dateStr, isPast)}
-                    title={block ? (block.all_day ? 'Blocked all day' : `Blocked ${block.start_time} – ${block.end_time}`) : ''}
+                    title={[block ? (block.all_day ? 'Blocked all day' : `Blocked ${block.start_time} to ${block.end_time}`) : '', ...dayBookings.map(b => `Booked: ${b.client_name || 'Client'}, ${timeText(b)}`)].filter(Boolean).join('\n')}
                   >
                     {day}
+                    {dayBookings.length > 0 && <div style={{ position: 'absolute', top: 4, right: 4, width: 7, height: 7, borderRadius: '50%', background: GREEN, boxShadow: '0 0 0 2px var(--lt-surface-2)' }} />}
                     {isBlocked && !block.all_day && <div style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', width: 4, height: 4, borderRadius: '50%', background: PINK }} />}
                   </div>
                 )
@@ -229,13 +245,35 @@ export default function AvailabilityPage() {
               {[
                 { border: 'rgba(29,185,84,0.4)', bg: 'rgba(29,185,84,0.12)', label: 'Today' },
                 { border: 'rgba(255,45,120,0.4)', bg: 'rgba(255,45,120,0.14)', label: 'Blocked' },
+                { dot: true, label: 'Has a confirmed booking' },
                 { border: 'var(--lt-hairline)', bg: 'var(--lt-surface-2)', label: 'Available' },
-              ].map(({ border, bg, label }) => (
+              ].map(({ border, bg, label, dot }) => (
                 <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 13, color: 'var(--lt-muted)', marginBottom: 9 }}>
-                  <div style={{ width: 16, height: 16, borderRadius: 5, background: bg, border: `1px solid ${border}`, flexShrink: 0 }} />
+                  {dot
+                    ? <div style={{ width: 16, height: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><div style={{ width: 8, height: 8, borderRadius: '50%', background: GREEN }} /></div>
+                    : <div style={{ width: 16, height: 16, borderRadius: 5, background: bg, border: `1px solid ${border}`, flexShrink: 0 }} />}
                   {label}
                 </div>
               ))}
+            </div>
+
+            <div style={card}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, gap: 8 }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--lt-text)' }}>Booked ({upcomingBookings.length})</span>
+                <button type="button" onClick={() => navigate('/dashboard/my-work/my-bookings')} style={{ background: 'none', border: 'none', color: GREEN, fontSize: 12.5, fontWeight: 700, cursor: 'pointer', padding: 0, fontFamily: 'inherit' }}>All bookings</button>
+              </div>
+              {upcomingBookings.length === 0 ? (
+                <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>No upcoming bookings.</div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto' }}>
+                  {upcomingBookings.slice(0, 20).map(b => (
+                    <div key={b.id} onClick={() => navigate(`/dashboard/my-work/my-bookings?booking=${b.id}`)} style={{ padding: '9px 12px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.25)', borderRadius: 10, cursor: 'pointer' }}>
+                      <div style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--lt-text)' }}>{new Date(b.booking_date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })} · {timeText(b)}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--lt-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.client_name || 'Client'}{b.service ? `, ${b.service}` : ''}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div style={card}>

@@ -20,6 +20,7 @@ const tiers = [
       '5 portfolio photos',
       'Public profile listing',
       '5 message replies/month',
+      '3 confirmed bookings/month',
       'Gear marketplace access',
       'Basic search placement',
     ],
@@ -35,7 +36,7 @@ const tiers = [
     features: [
       '20 portfolio photos, 1 video',
       '20 message replies/month',
-      'Booking & scheduling',
+      'Unlimited bookings',
       'Quotes & invoicing',
       'Review requests',
       'Gear marketplace listings (5)',
