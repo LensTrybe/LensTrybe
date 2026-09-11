@@ -78,6 +78,15 @@ function skillTypeLimitHint(tierId) {
   return `Your plan includes up to ${max} skill types.`
 }
 
+// Friendly message for a founding code the founding-code function turned down.
+function foundingCodeMessage(reason) {
+  if (reason === 'expired') return 'This invite code has expired. Reply to your invite email and we can send you a fresh one.'
+  if (reason === 'redeemed' || reason === 'already_redeemed') return 'This code has already been used to create an account. Try logging in instead.'
+  if (reason === 'cancelled') return 'This invite code is no longer active. Reply to your invite email if you think that is a mistake.'
+  if (reason === 'rate_limited') return 'Too many tries. Please wait a few minutes and try again.'
+  return "We couldn't find that code. Check it matches the one in your invite email."
+}
+
 export default function SignupPage() {
   const navigate = useNavigate()
   const location = useLocation()
@@ -106,6 +115,8 @@ export default function SignupPage() {
   const [codeInput, setCodeInput] = useState('')
   const [codeChecking, setCodeChecking] = useState(false)
   const [codeError, setCodeError] = useState('')
+  // True when they arrived from their invite link, so the code box leads the gate.
+  const [codeFromLink, setCodeFromLink] = useState(false)
   // Founding invite code (from the waitlist ?code= link or sessionStorage). When present,
   // the account is granted free Expert until 1 Oct 2027 by the database trigger on signup.
   const [foundingCode, setFoundingCode] = useState('')
@@ -203,7 +214,7 @@ export default function SignupPage() {
         setForm(prev => ({ ...prev, tier: 'expert' }))
         setZoneChosen(true)
       } else {
-        setCodeError('That code is not valid or has already been used.')
+        setCodeError(foundingCodeMessage(data?.reason))
       }
     } catch {
       setCodeError('Could not check that code. Please try again.')
@@ -237,8 +248,18 @@ export default function SignupPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
 
-  // Founding codes are single-use and entered by hand on the gate (see applyFoundingCode).
-  // There is deliberately no ?code= link auto-apply, so a code can't be forwarded around.
+  // Founding invite links (/join/creative?code=...) pre-fill the code on the gate. It is
+  // never applied automatically: the creative taps Apply, which checks it is still valid.
+  useEffect(() => {
+    let fromLink = (searchParams.get('code') || '').trim().toUpperCase()
+    if (!fromLink) {
+      try { fromLink = (sessionStorage.getItem('lt_founding_code') || '').trim().toUpperCase() } catch { /* ignore */ }
+    }
+    if (fromLink && fromLink.length <= 64) {
+      setCodeInput((prev) => prev || fromLink)
+      setCodeFromLink(true)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     const plan = searchParams.get('plan')
@@ -650,6 +671,25 @@ export default function SignupPage() {
 
   // Launch-zone gate. Shown first for everyone except invited creatives (a valid founding
   // code bypasses it). In-zone regions continue to signup; out-of-zone joins the waitlist.
+  // Founding invite code entry. Leads the gate when they came from their invite link.
+  const foundingCodeBox = (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <label style={{ fontSize: '13px', ...TYPO.label }}>{codeFromLink ? 'Your founding invite code' : 'Have a founding invite code?'}</label>
+      <div style={{ display: 'flex', gap: '8px' }}>
+        <input
+          style={{ ...LIQUID_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
+          placeholder="Enter your code"
+          value={codeInput}
+          onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError('') }}
+        />
+        <LiquidPill primary type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px', opacity: codeChecking ? 0.6 : 1 }} disabled={codeChecking} onClick={applyFoundingCode}>
+          {codeChecking ? 'Checking…' : 'Apply'}
+        </LiquidPill>
+      </div>
+      {codeError && <div style={{ fontSize: '12px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>{codeError}</div>}
+    </div>
+  )
+
   if (!zoneChosen) {
     return (
       <div style={styles.page} className="signup-page">
@@ -658,14 +698,26 @@ export default function SignupPage() {
         <div style={{ ...styles.container, maxWidth: '480px' }}>
           <div style={styles.header}>
             <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
-            <h1 style={styles.title}>Where are you based?</h1>
-            <p style={styles.subtitle}>LensTrybe is launching across South East Queensland first, from the Sunshine Coast to the Gold Coast. Choose your area to get started, and we are rolling out across Australia city by city.</p>
+            <h1 style={styles.title}>{codeFromLink ? 'Claim your founding place' : 'Where are you based?'}</h1>
+            <p style={styles.subtitle}>{codeFromLink
+              ? 'You have been invited to join LensTrybe as a founding creative. Tap Apply to use your code and set up your account.'
+              : 'LensTrybe is launching across South East Queensland first, from the Sunshine Coast to the Gold Coast. Choose your area to get started, and we are rolling out across Australia city by city.'}</p>
           </div>
 
           {error && <div style={styles.errorBox}>{error}</div>}
 
           {!wlDone ? (
             <div style={styles.content}>
+              {codeFromLink && (
+                <>
+                  <div style={{ ...GLASS_CARD_GREEN, padding: '18px' }}>{foundingCodeBox}</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0' }}>
+                    <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+                    <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or join without a code</span>
+                    <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
+                  </div>
+                </>
+              )}
               <div style={styles.skillGrid}>
                 {LAUNCH_REGIONS.map((r) => (
                   <div
@@ -703,28 +755,14 @@ export default function SignupPage() {
                 </div>
               )}
 
-              {region !== '__other__' && (
+              {region !== '__other__' && !codeFromLink && (
                 <>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', margin: '4px 0' }}>
                     <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
                     <span style={{ fontSize: '12px', color: 'var(--text-muted)', ...TYPO.body }}>or</span>
                     <div style={{ flex: 1, ...DIVIDER_GRADIENT_STYLE }} />
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    <label style={{ fontSize: '13px', ...TYPO.label }}>Have a founding invite code?</label>
-                    <div style={{ display: 'flex', gap: '8px' }}>
-                      <input
-                        style={{ ...LIQUID_FIELD, flex: 1, padding: '10px 14px', fontSize: '14px', textTransform: 'uppercase' }}
-                        placeholder="Enter your code"
-                        value={codeInput}
-                        onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError('') }}
-                      />
-                      <LiquidPill primary type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px', opacity: codeChecking ? 0.6 : 1 }} disabled={codeChecking} onClick={applyFoundingCode}>
-                        {codeChecking ? 'Checking…' : 'Apply'}
-                      </LiquidPill>
-                    </div>
-                    {codeError && <div style={{ fontSize: '12px', color: '#ef4444', fontFamily: 'var(--font-ui)' }}>{codeError}</div>}
-                  </div>
+                  {foundingCodeBox}
                 </>
               )}
             </div>

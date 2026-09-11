@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import FoundingAdminPanel from '../../components/dashboard/FoundingAdminPanel';
+import FoundingInvitesPanel from '../../components/dashboard/FoundingInvitesPanel';
 import SupportAdminPanel from '../../components/dashboard/SupportAdminPanel';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
@@ -1368,6 +1369,8 @@ export default function AdminPage() {
           </div>
         ))}
       </div>
+
+      <FoundingInvitesPanel />
 
       <FoundingAdminPanel />
 

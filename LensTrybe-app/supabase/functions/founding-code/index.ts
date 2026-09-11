@@ -54,13 +54,17 @@ Deno.serve(async (req) => {
 
     const { data: invite, error } = await admin
       .from("founding_invites")
-      .select("status, region")
+      .select("status, region, expires_at")
       .eq("code", normalisedCode)
       .maybeSingle();
 
     if (error) return json({ valid: false, reason: "lookup_error" }, 500);
     if (!invite) return json({ valid: false, reason: "not_found" });
     if (invite.status !== "unused") return json({ valid: false, reason: invite.status });
+    // Invites expire 14 days after they're sent (drafts have no expiry yet).
+    if (invite.expires_at && new Date(invite.expires_at).getTime() <= Date.now()) {
+      return json({ valid: false, reason: "expired" });
+    }
 
     // Just checking a code (user not signed in yet).
     if (action === "validate") {
@@ -83,6 +87,7 @@ Deno.serve(async (req) => {
         .update({ status: "redeemed", redeemed_by: userId, redeemed_at: new Date().toISOString() })
         .eq("code", normalisedCode)
         .eq("status", "unused")
+        .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
         .select()
         .maybeSingle();
 
