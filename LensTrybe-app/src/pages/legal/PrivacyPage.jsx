@@ -141,7 +141,9 @@ Under its commercial terms, our AI provider doesn't use this data to train its m
     title: 'Emails and marketing',
     body: `We send service emails that you need to use LensTrybe, such as sign-in and security emails, billing emails, and notifications about messages, bookings and documents. You can't opt out of essential service emails while you have an account.
 
-We only send marketing emails, such as our newsletter, if you've agreed to receive them. Every marketing email has an unsubscribe link, and you can also unsubscribe by emailing [privacy@lenstrybe.com](mailto:privacy@lenstrybe.com).`,
+We only send marketing emails, such as our newsletter The Trybe Edit, if you've agreed to receive them: for example by ticking the box when you sign up, turning the newsletter on in your settings, or joining our waitlist. We keep a record of when and how you agreed.
+
+Every marketing email has an unsubscribe link that works straight away, with no sign-in needed. You can also turn the newsletter off in Settings (Creatives) or Account & Data (Clients), or email [privacy@lenstrybe.com](mailto:privacy@lenstrybe.com).`,
   },
   {
     id: 'security',

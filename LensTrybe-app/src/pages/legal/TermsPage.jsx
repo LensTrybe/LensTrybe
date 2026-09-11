@@ -51,10 +51,10 @@ Elite Creatives can invite team members. The account owner is responsible for th
 Creatives can use the free Basic plan or subscribe to a paid plan (currently Pro, Expert and Elite). The features, limits and prices of each plan are shown on our pricing page and in your dashboard at the time you subscribe. Prices are in Australian dollars and include GST where applicable.
 
 ### Free trials
-New paid subscriptions may include a free trial. You add a card when you start the trial, and we charge it automatically when the trial ends unless you cancel before then. The trial length and first charge date are shown before you confirm, and in Settings > Subscription.
+New paid subscriptions may include a free trial. You add a card when you start the trial, and we charge it automatically when the trial ends unless you cancel before then. The trial length and first charge date are shown before you confirm, and in Settings > Subscription. We'll email you a reminder about 7 days before your trial ends.
 
 ### Automatic renewal
-Paid plans are billed monthly or annually in advance and renew automatically at the end of each billing period until you cancel. By subscribing, you authorise us (through our payment provider, Revolut) to charge your saved payment method for each renewal.
+Paid plans are billed monthly or annually in advance and renew automatically at the end of each billing period until you cancel. For annual plans, we'll email you a reminder about 7 days before each renewal. By subscribing, you authorise us (through our payment provider, Revolut) to charge your saved payment method for each renewal.
 
 ### Changing plans
 Upgrades take effect straight away. We charge the difference for the rest of your current billing period, and the new price applies from your next renewal. Switching from monthly to annual starts a new annual period straight away, with credit for the unused part of your current month. Changes made during a free trial cost nothing until the trial ends. Downgrades take effect at your next renewal, and you keep your current features until then.
@@ -69,7 +69,7 @@ If a renewal payment fails, we'll tell you by email and try again each day. If p
 We may change our prices. We will give you at least 30 days' notice by email before a new price applies to your subscription. If you don't want to continue at the new price, you can cancel before it takes effect and you won't be charged the new price.
 
 ### Founding Creatives, referrals and promotions
-If you joined through the Founding Creative programme, the Founding Creative Agreement you accepted also applies. If it conflicts with these Terms, the Founding Creative Agreement applies to the extent of the conflict. Referral rewards, discounts and other promotions apply as described when they are offered, have no cash value and can't be transferred.`,
+If you joined through the Founding Creative programme, the [Founding Creative Agreement](/founding-agreement) you accepted also applies. If it conflicts with these Terms, the Founding Creative Agreement applies to the extent of the conflict. Referral rewards, discounts and other promotions apply as described when they are offered, have no cash value and can't be transferred.`,
   },
   {
     id: 'clients',

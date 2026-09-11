@@ -11,7 +11,8 @@
 // Responsibilities (windows are constants below, easy to tune once terms are final):
 //   - Listing 100% complete within 7 days of joining
 //   - 3 real jobs (accepted quote + paid invoice) within 180 days
-//   - One piece of feedback every ~35 days
+//   - One piece of feedback a month: a light-touch nudge only (a friendly reminder email,
+//     at most once per window). It never puts the deal at risk on its own.
 //
 // Auth: header x-cron-secret == CRON_SECRET (fails closed if CRON_SECRET is not set).
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET, FOUNDING_AUTO_REVERT
@@ -64,6 +65,22 @@ function warnEmail(name: string, outstanding: string[], graceEnds: string) {
   </table></td></tr></table></body></html>`
 }
 
+function nudgeEmail(name: string) {
+  return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
+  <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
+  <table role="presentation" width="100%" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
+  <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
+  <tr><td style="padding:22px 36px 8px;">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${GREEN};margin-bottom:10px;">Founding creatives</div>
+  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(name)}, got a minute?</h1>
+  <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">We'd love this month's feedback. What's working, what's annoying, what's missing? A sentence or two is plenty, and it goes straight into what we build next.</p>
+  <p style="margin:0 0 4px;color:#9a9aa8;font-size:14px;line-height:1.6;">This is just a friendly nudge. It doesn't affect your founding deal.</p>
+  </td></tr>
+  <tr><td style="padding:22px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="https://lenstrybe.com/dashboard/founding" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Share feedback</a></td></tr></table></td></tr>
+  <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Questions? Just reply to this email. Connect. Capture. Create.</div></td></tr>
+  </table></td></tr></table></body></html>`
+}
+
 async function sendEmail(to: string, subject: string, html: string) {
   const key = Deno.env.get('RESEND_API_KEY')
   if (!key) return
@@ -94,7 +111,7 @@ Deno.serve(async (req) => {
 
   const { data: founders, error } = await sb
     .from('profiles')
-    .select('id, business_name, business_email, founding_member_since, founding_deal_status, founding_warned_at')
+    .select('id, business_name, business_email, founding_member_since, founding_deal_status, founding_warned_at, founding_feedback_nudged_at')
     .eq('founding_member', true)
     .neq('founding_deal_status', 'reverted')
   if (error) {
@@ -119,10 +136,18 @@ Deno.serve(async (req) => {
       const outstanding: string[] = []
       if (age > LISTING_DAYS && !listingOk) outstanding.push('Complete your profile to 100%')
       if (age > JOBS_WINDOW_DAYS && jobs < 3) outstanding.push(`Run your first 3 jobs through LensTrybe (${jobs} of 3 done)`)
-      if (age > FEEDBACK_WINDOW_DAYS && daysSince(lastFb) > FEEDBACK_WINDOW_DAYS) outstanding.push('Share a piece of feedback')
+      // Feedback is light-touch: a friendly reminder, never a deal condition.
+      const feedbackDue = age > FEEDBACK_WINDOW_DAYS && (!lastFb || daysSince(lastFb) > FEEDBACK_WINDOW_DAYS)
+      const nudgedRecently = f.founding_feedback_nudged_at && daysSince(f.founding_feedback_nudged_at) <= FEEDBACK_WINDOW_DAYS
 
       const status = String(f.founding_deal_status || 'active')
       const updates: Record<string, unknown> = {}
+
+      if (feedbackDue && !nudgedRecently && f.business_email) {
+        await sendEmail(f.business_email, "Got a minute? We'd love your feedback", nudgeEmail(f.business_name || 'there'))
+        updates.founding_feedback_nudged_at = new Date().toISOString()
+        counts.feedback_nudged = (counts.feedback_nudged || 0) + 1
+      }
 
       if (outstanding.length === 0) {
         if (status !== 'active' || f.founding_warned_at) { updates.founding_deal_status = 'active'; updates.founding_warned_at = null }

@@ -101,6 +101,7 @@ export default function SignupPage() {
   const [wlDone, setWlDone] = useState(false)
   const [wlError, setWlError] = useState('')
   const [agreedFounding, setAgreedFounding] = useState(false)
+  const [marketingOptIn, setMarketingOptIn] = useState(false)
   // Manual founding-code entry on the gate (for creatives who did not arrive via their link).
   const [codeInput, setCodeInput] = useState('')
   const [codeChecking, setCodeChecking] = useState(false)
@@ -362,6 +363,7 @@ export default function SignupPage() {
             emailRedirectTo: `${window.location.origin}/dashboard`,
             data: {
               account_type: 'creative',
+              marketing_opt_in: marketingOptIn ? 'true' : 'false',
               business_name: form.businessName,
               first_name: form.firstName,
               last_name: form.lastName,
@@ -959,7 +961,7 @@ export default function SignupPage() {
               {foundingValid && (
                 <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer' }}>
                   <input type="checkbox" checked={agreedFounding} onChange={(e) => setAgreedFounding(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
-                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/terms#plans" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the terms</a>.</span>
+                  <span>I agree to the LensTrybe Founding Creative Agreement: a complete profile within 7 days, my next 3 real client jobs run through LensTrybe, and one piece of feedback a month, in exchange for 12 months free Expert then $49/mo locked in for life. <a href="/founding-agreement" target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontWeight: 600 }}>Read the Founding Creative Agreement</a>.</span>
                 </label>
               )}
               {form.tier !== 'basic' && !foundingValid && (
@@ -1138,6 +1140,13 @@ export default function SignupPage() {
           )}
 
         </div>
+
+        {step === STEPS.length - 1 && (
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', ...TYPO.body, cursor: 'pointer', margin: '4px 0 12px' }}>
+            <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
+            <span>Send me The Trybe Edit newsletter and occasional LensTrybe news (optional). Unsubscribe any time.</span>
+          </label>
+        )}
 
         <div style={styles.actions}>
           {step > 0

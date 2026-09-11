@@ -12,6 +12,7 @@ import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../lib/moderateCo
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 import DeleteAccountModal from '../components/account/DeleteAccountModal'
 import DownloadDataCard from '../components/account/DownloadDataCard'
+import NewsletterPreferenceCard from '../components/account/NewsletterPreferenceCard'
 
 export default function ClientDashboardPage() {
   const { user, clientAccount, profile } = useAuth()
@@ -386,6 +387,7 @@ export default function ClientDashboardPage() {
               <h2 style={{ fontSize: '18px', fontWeight: 600, marginBottom: '20px' }}>Account &amp; Data</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', maxWidth: '640px' }}>
                 <DownloadDataCard kind="client" />
+                <NewsletterPreferenceCard />
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '24px', borderRadius: '18px', background: 'var(--bg-elevated)', border: '1px solid rgba(239,68,68,0.3)' }}>
                   <div style={{ fontSize: '15px', fontWeight: 800, color: '#ef4444' }}>Delete account</div>
                   <div style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--text-muted)' }}>Close your LensTrybe account. Your account, messages and saved creatives are permanently deleted after 30 days, and you can reactivate any time before then by signing in. We'll email you a code to confirm it's you.</div>

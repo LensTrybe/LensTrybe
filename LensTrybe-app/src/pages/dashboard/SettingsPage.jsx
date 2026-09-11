@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import DeleteAccountModal from '../../components/account/DeleteAccountModal'
 import DownloadDataCard from '../../components/account/DownloadDataCard'
+import NewsletterPreferenceCard from '../../components/account/NewsletterPreferenceCard'
 
 const GREEN = '#1DB954'
 const GREEN_TEXT = '#04120a'
@@ -253,6 +254,7 @@ export default function SettingsPage() {
               <button type="button" className="ltset-btn ltset-btn-ghost" onClick={async () => { await supabase.auth.resetPasswordForEmail(user.email); showToast('Password reset email sent. Check your inbox.') }}>Send reset email</button>
             </div>
           </div>
+          <NewsletterPreferenceCard />
         </div>
       )}
 

@@ -273,7 +273,7 @@ export default function TrybeEditIssue01() {
             <a href="https://lenstrybe.com">lenstrybe.com</a>
             <a href="/the-trybe-edit">Archive</a>
             <a href="mailto:connect@lenstrybe.com">connect@lenstrybe.com</a>
-            <a href="#">Unsubscribe</a>
+            <a href="/unsubscribe">Unsubscribe</a>
           </div>
         </div>
       </div>

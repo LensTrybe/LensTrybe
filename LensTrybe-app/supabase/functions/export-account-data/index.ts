@@ -40,10 +40,12 @@ const CREATIVE_TABLES: Array<[string, string]> = [
   ['referrals', 'referrer_id'], ['founding_feedback', 'creative_id'],
   ['saved_creatives', 'user_id'], ['saved_listings', 'user_id'], ['notifications', 'user_id'],
   ['support_tickets', 'user_id'], ['lumi_conversations', 'user_id'], ['lumi_usage', 'user_id'],
+  ['email_subscribers', 'user_id'],
 ];
 const CLIENT_TABLES: Array<[string, string]> = [
   ['client_accounts', 'id'], ['job_listings', 'posted_by'], ['saved_creatives', 'user_id'],
   ['saved_listings', 'user_id'], ['notifications', 'user_id'], ['support_tickets', 'user_id'],
+  ['email_subscribers', 'user_id'],
 ];
 
 // Secrets and internal ids never leave the database, even to the owner.

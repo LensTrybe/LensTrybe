@@ -98,7 +98,7 @@ export default function FoundingHubPage() {
     {
       key: 'jobs',
       title: 'Run your first 3 real jobs through LensTrybe',
-      detail: 'Send a quote, have the client accept it, then invoice and mark it paid.',
+      detail: 'Within your first 6 months. Send a quote, have the client accept it, then invoice and mark it paid.',
       done: jobsDone >= 3,
       status: `${Math.min(jobsDone, 3)} of 3 done`,
       action: jobsDone >= 3 ? null : { label: 'Create a quote', to: '/dashboard/finance/quotes' },
@@ -106,7 +106,7 @@ export default function FoundingHubPage() {
     {
       key: 'feedback',
       title: 'Share one piece of feedback a month',
-      detail: 'It shapes what we build next. Use the form below.',
+      detail: "It shapes what we build next. Use the form below. Miss a month and we'll just send a friendly reminder.",
       done: feedbackThisMonth(lastFeedbackAt),
       status: feedbackThisMonth(lastFeedbackAt) ? 'Done this month' : 'Due this month',
       action: null,
@@ -138,7 +138,7 @@ export default function FoundingHubPage() {
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', color: 'var(--lt-text)', margin: 0 }}>Founding creative hub</h1>
           <p style={{ color: 'var(--lt-muted)', fontSize: 15, lineHeight: 1.6, margin: '6px 0 0', maxWidth: 560 }}>
-            Thanks for being one of the first. Here is what keeps your founding deal (12 months free Expert, then $49/mo for life).
+            Thanks for being one of the first. Here is what keeps your founding deal (12 months free Expert, then $49/mo for life). <a href="/founding-agreement" target="_blank" rel="noreferrer" style={{ color: GREEN, fontWeight: 600 }}>Read your agreement</a>.
           </p>
         </div>
         <span style={{ background: statusChip.bg, color: statusChip.color, fontSize: 12.5, fontWeight: 700, padding: '7px 12px', borderRadius: 999, whiteSpace: 'nowrap' }}>{statusChip.label}</span>

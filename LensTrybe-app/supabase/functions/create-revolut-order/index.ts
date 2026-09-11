@@ -168,8 +168,9 @@ Deno.serve(async (req) => {
 
   const isFounding = !!prof?.founding_member
 
-  // Amount: founding locks $49/mo ($588/yr); everyone else pays the standard plan price.
-  const amount = isFounding
+  // Amount: founding locks Expert at $49/mo ($588/yr); other plans and everyone else pay
+  // the standard plan price.
+  const amount = isFounding && tier === 'expert'
     ? (billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY)
     : PLANS[tier][billing]
 

@@ -368,7 +368,7 @@ export default function ComingSoon() {
                         : <>{audience === 'creative' ? 'Claim my spot' : 'Join the list'} <IconArrow /></>}
                     </LiquidPill>
 
-                    <p style={{ fontSize: 11.5, color: TEXT_MUTED, textAlign: 'center', margin: '14px 0 0' }}>No spam. Unsubscribe anytime.</p>
+                    <p style={{ fontSize: 11.5, color: TEXT_MUTED, textAlign: 'center', margin: '14px 0 0', lineHeight: 1.55 }}>By joining, you agree to receive launch updates and The Trybe Edit by email. No spam, and you can unsubscribe any time. See our <a href="/privacy" style={{ color: TEXT_MUTED, textDecoration: 'underline' }}>Privacy Policy</a>.</p>
                   </form>
                 )}
               </div>

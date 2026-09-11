@@ -64,6 +64,8 @@ import TermsPage from './pages/legal/TermsPage'
 import PrivacyPage from './pages/legal/PrivacyPage'
 import CookiesPage from './pages/legal/CookiesPage'
 import RefundPolicyPage from './pages/legal/RefundPolicyPage'
+import FoundingAgreementPage from './pages/legal/FoundingAgreementPage'
+import UnsubscribePage from './pages/public/UnsubscribePage'
 import TrybeEditPage from './pages/public/TrybeEditPage'
 import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
@@ -146,6 +148,9 @@ export default function App() {
         <Route path="/cookies" element={<CookiesPage />} />
         <Route path="/refunds" element={<RefundPolicyPage />} />
         <Route path="/refund-policy" element={<Navigate to="/refunds" replace />} />
+        <Route path="/founding-agreement" element={<FoundingAgreementPage />} />
+        <Route path="/unsubscribe" element={<UnsubscribePage />} />
+        <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
         <Route path="/the-trybe-edit" element={<TrybeEditPage />} />
         <Route path="/the-trybe-edit/issue-01" element={<TrybeEditIssue01 />} />
         <Route path="/trybe-edit" element={<Navigate to="/the-trybe-edit" replace />} />

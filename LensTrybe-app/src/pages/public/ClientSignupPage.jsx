@@ -14,6 +14,7 @@ export default function ClientSignupPage() {
   const [error, setError] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
+  const [marketingOptIn, setMarketingOptIn] = useState(false)
   const [form, setForm] = useState({
     firstName: '',
     lastName: '',
@@ -56,6 +57,7 @@ export default function ClientSignupPage() {
             first_name: form.firstName,
             last_name: form.lastName,
             account_type: 'client',
+            marketing_opt_in: marketingOptIn ? 'true' : 'false',
           }
         }
       })
@@ -166,6 +168,11 @@ export default function ClientSignupPage() {
               {''}
             </button>
           </div>
+
+          <label style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.55, cursor: 'pointer' }}>
+            <input type="checkbox" checked={marketingOptIn} onChange={(e) => setMarketingOptIn(e.target.checked)} style={{ marginTop: '3px', width: '16px', height: '16px', flexShrink: 0, accentColor: 'var(--green)' }} />
+            <span>Send me The Trybe Edit newsletter and occasional LensTrybe news (optional). Unsubscribe any time.</span>
+          </label>
 
           <LiquidPill primary type="submit" disabled={loading || !canSubmit} style={{ width: '100%', display: 'inline-flex', padding: '15px 22px', opacity: loading || !canSubmit ? 0.6 : 1 }} onClick={handleSubmit}>
             {loading ? 'Creating account…' : 'Create Free Account'}

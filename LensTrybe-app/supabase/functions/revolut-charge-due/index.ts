@@ -57,7 +57,8 @@ const INFLIGHT_STALE_MS = 48 * 60 * 60 * 1000
 const PAY_DECLINED = ['declined', 'soft_declined', 'failed', 'cancelled']
 
 function priceFor(tier: string, billing: string, founding: boolean): number | null {
-  if (founding) return billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY
+  // The founding rate is for the Expert plan only; other plans are standard price.
+  if (founding && tier === 'expert') return billing === 'annual' ? FOUNDING_ANNUAL : FOUNDING_MONTHLY
   return PLANS?.[tier]?.[billing] ?? null
 }
 

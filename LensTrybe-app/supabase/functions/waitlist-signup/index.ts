@@ -26,8 +26,8 @@ function makeRefCode() {
   return out
 }
 
-function confirmationHtml(opts: { audience: string; refLink: string }) {
-  const { audience, refLink } = opts
+function confirmationHtml(opts: { audience: string; refLink: string; unsubscribeUrl: string | null }) {
+  const { audience, refLink, unsubscribeUrl } = opts
   const green = '#1DB954'
   const heading = "You're on the list."
   const body = audience === 'client'
@@ -36,7 +36,7 @@ function confirmationHtml(opts: { audience: string; refLink: string }) {
   const shareBlock = audience === 'creative'
     ? `\n      <div style=\"background:#f6f8f6;border:1px solid #e5efe8;border-radius:12px;padding:20px 22px;margin:8px 0 4px\">\n        <div style=\"font-size:13px;color:#4b5a50;margin-bottom:10px\">Want to help bring LensTrybe to your city sooner? Share your link.</div>\n        <a href=\"${refLink}\" style=\"font-size:14px;color:${green};font-weight:600;text-decoration:none;word-break:break-all\">${refLink}</a>\n      </div>`
     : ''
-  return `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n<body style=\"margin:0;background:#f4f5f4;font-family:Arial,Helvetica,sans-serif;color:#14111a\">\n  <div style=\"max-width:520px;margin:0 auto;padding:40px 24px\">\n    <div style=\"font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:28px\">Lens<span style=\"color:${green}\">Trybe</span></div>\n    <div style=\"background:#ffffff;border:1px solid #ececec;border-radius:16px;padding:32px 28px\">\n      <div style=\"display:inline-block;font-size:12px;font-weight:600;color:${green};background:rgba(29,185,84,0.1);border-radius:100px;padding:5px 12px;margin-bottom:18px\">Now live in Brisbane · South East Queensland</div>\n      <h1 style=\"font-size:24px;line-height:1.25;margin:0 0 14px;font-weight:800;color:#14111a\">${heading}</h1>\n      <p style=\"font-size:15px;line-height:1.65;color:#4b4a57;margin:0 0 20px\">${body}</p>\n      ${shareBlock}\n    </div>\n    <p style=\"font-size:13px;color:#4b4a57;text-align:center;margin:22px 0 6px\">Follow <a href=\"${IG}\" style=\"color:${green};font-weight:600;text-decoration:none\">@lenstrybe</a> to keep up with our progress.</p>\n    <p style=\"font-size:12px;color:#9a99a5;text-align:center;margin:8px 0 6px\">No spam. Unsubscribe anytime.</p>\n    <p style=\"font-size:12px;color:#b7b6c0;text-align:center;margin:0\">The LensTrybe Team</p>\n  </div>\n</body></html>`
+  return `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n<body style=\"margin:0;background:#f4f5f4;font-family:Arial,Helvetica,sans-serif;color:#14111a\">\n  <div style=\"max-width:520px;margin:0 auto;padding:40px 24px\">\n    <div style=\"font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:28px\">Lens<span style=\"color:${green}\">Trybe</span></div>\n    <div style=\"background:#ffffff;border:1px solid #ececec;border-radius:16px;padding:32px 28px\">\n      <div style=\"display:inline-block;font-size:12px;font-weight:600;color:${green};background:rgba(29,185,84,0.1);border-radius:100px;padding:5px 12px;margin-bottom:18px\">Now live in Brisbane · South East Queensland</div>\n      <h1 style=\"font-size:24px;line-height:1.25;margin:0 0 14px;font-weight:800;color:#14111a\">${heading}</h1>\n      <p style=\"font-size:15px;line-height:1.65;color:#4b4a57;margin:0 0 20px\">${body}</p>\n      ${shareBlock}\n    </div>\n    <p style=\"font-size:13px;color:#4b4a57;text-align:center;margin:22px 0 6px\">Follow <a href=\"${IG}\" style=\"color:${green};font-weight:600;text-decoration:none\">@lenstrybe</a> to keep up with our progress.</p>\n    <p style=\"font-size:12px;color:#9a99a5;text-align:center;margin:8px 0 6px\">No spam. ${unsubscribeUrl ? `<a href=\"${unsubscribeUrl}\" style=\"color:#9a99a5;text-decoration:underline\">Unsubscribe</a> any time.` : 'Unsubscribe any time.'}</p>\n    <p style=\"font-size:12px;color:#b7b6c0;text-align:center;margin:0\">The LensTrybe Team</p>\n  </div>\n</body></html>`
 }
 
 function notifyHtml(opts: { email: string; audience: string; creativeType: string | null; city: string | null; state: string | null; referredBy: string | null }) {
@@ -112,6 +112,21 @@ serve(async (req) => {
     const position = await positionFor(audience)
     const refLink = `${SITE}/?ref=${referralCode}`
 
+    // Joining the waitlist includes consent to launch updates and The Trybe Edit (stated on the form).
+    let unsubscribeUrl: string | null = null
+    try {
+      const nowIso = new Date().toISOString()
+      const { data: existingSub } = await supabase.from('email_subscribers').select('token, status').eq('email', email).maybeSingle()
+      if (existingSub) {
+        if (existingSub.status === 'subscribed') unsubscribeUrl = `${SITE}/unsubscribe/${existingSub.token}`
+      } else {
+        const { data: sub } = await supabase.from('email_subscribers')
+          .insert({ email, status: 'subscribed', source: 'waitlist', consented_at: nowIso })
+          .select('token').single()
+        if (sub?.token) unsubscribeUrl = `${SITE}/unsubscribe/${sub.token}`
+      }
+    } catch (e) { console.error('waitlist: subscriber save failed', e instanceof Error ? e.message : String(e)) }
+
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (RESEND_API_KEY) {
       try {
@@ -122,7 +137,8 @@ serve(async (req) => {
             from: 'LensTrybe <noreply@mail.lenstrybe.com>',
             to: email,
             subject: "You're on the LensTrybe list",
-            html: confirmationHtml({ audience, refLink }),
+            html: confirmationHtml({ audience, refLink, unsubscribeUrl }),
+            ...(unsubscribeUrl ? { headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } } : {}),
           }),
         })
       } catch (_e) { /* ignore */ }

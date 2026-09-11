@@ -23,7 +23,7 @@ When you cancel:
   {
     id: 'trials',
     title: 'Free trials',
-    body: `If your plan starts with a free trial, you won't be charged if you cancel before the trial ends. Your first charge date is shown before you confirm your plan and in Settings > Subscription.`,
+    body: `If your plan starts with a free trial, you won't be charged if you cancel before the trial ends. Your first charge date is shown before you confirm your plan and in Settings > Subscription, and we'll email you a reminder about 7 days before it.`,
   },
   {
     id: 'monthly',
@@ -37,7 +37,7 @@ When you cancel:
 
 After 14 days, annual payments aren't refunded for the rest of the year, except where the Australian Consumer Law requires it. If you cancel, you keep your paid features until the end of the year you've paid for, and your plan won't renew.
 
-The 14-day refund applies to your first annual payment only, not to later yearly renewals. We'll always tell you the renewal date in Settings > Subscription so there are no surprises.`,
+The 14-day refund applies to your first annual payment only, not to later yearly renewals. We'll email you a reminder about 7 days before each annual renewal, and the date is always shown in Settings > Subscription, so there are no surprises.`,
   },
   {
     id: 'consumer-law',
@@ -62,7 +62,7 @@ We'll give you at least 30 days' notice of any price increase, so you can cancel
     title: 'Upgrades, founding plans and discounts',
     body: `• **Upgrades:** when you upgrade, you pay the difference for the rest of your billing period (switching from monthly to annual starts a new annual period, with credit for the unused part of your month). If you then cancel, you keep the upgraded features until the period ends.
 • **Downgrades:** a downgrade takes effect at your next renewal, and the lower price applies from then. Downgrading doesn't create a refund for the current period.
-• **Founding Creatives:** your free period and locked-in price are set out in the Founding Creative Agreement. This policy applies once you start paying.
+• **Founding Creatives:** your free period and locked-in price are set out in the [Founding Creative Agreement](/founding-agreement). This policy applies once you start paying.
 • **Referral rewards and discounts** reduce what you pay. They have no cash value and can't be refunded or exchanged for cash.`,
   },
   {

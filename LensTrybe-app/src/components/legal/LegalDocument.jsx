@@ -13,6 +13,7 @@ export const LEGAL_DOCS = [
   { path: '/privacy', label: 'Privacy Policy' },
   { path: '/cookies', label: 'Cookies Policy' },
   { path: '/refunds', label: 'Refund Policy' },
+  { path: '/founding-agreement', label: 'Founding Creative Agreement' },
 ]
 
 const GREEN_DARK = '#0f7a37'
