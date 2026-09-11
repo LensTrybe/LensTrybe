@@ -3,6 +3,7 @@ import FoundingAdminPanel from '../../components/dashboard/FoundingAdminPanel';
 import FoundingInvitesPanel from '../../components/dashboard/FoundingInvitesPanel';
 import BroadcastModal from '../../components/dashboard/BroadcastModal';
 import SupportAdminPanel from '../../components/dashboard/SupportAdminPanel';
+import AdminSection from '../../components/dashboard/AdminSection';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 // Local theme-aware shims. These replace the light-only glassTokens, the ui/Button
@@ -507,39 +508,28 @@ function ConfirmModal({
   );
 }
 
-function CollapsibleHeader({ title, open, onToggle }) {
+const ADMIN_SECTIONS_KEY = 'lt_admin_sections_v1';
+const ADMIN_SECTION_IDS = ['support', 'moderation', 'invites', 'founding', 'users', 'analytics'];
+
+function readOpenSections() {
+  try {
+    const raw = localStorage.getItem(ADMIN_SECTIONS_KEY);
+    const parsed = raw ? JSON.parse(raw) : null;
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveOpenSections(map) {
+  try { localStorage.setItem(ADMIN_SECTIONS_KEY, JSON.stringify(map)); } catch { /* private mode */ }
+}
+
+function SubHeading({ children, first = false }) {
   return (
-    <button
-      type="button"
-      onClick={onToggle}
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        width: '100%',
-        background: COLORS.panelAlt,
-        border: `1px solid ${COLORS.border}`,
-        borderRadius: 10,
-        padding: '12px 16px',
-        cursor: 'pointer',
-        marginBottom: open ? 12 : 10,
-        ...FONT,
-      }}
-    >
-      <span
-        style={{
-          ...TYPO.heading,
-          fontSize: 13,
-          fontWeight: 700,
-          color: COLORS.muted,
-          letterSpacing: '0.06em',
-          textTransform: 'uppercase',
-        }}
-      >
-        {title}
-      </span>
-      <span style={{ fontSize: 12, color: COLORS.green, fontWeight: 700 }}>{open ? 'Hide' : 'Show'}</span>
-    </button>
+    <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--lt-muted)', letterSpacing: '0.08em', textTransform: 'uppercase', margin: first ? '0 0 10px' : '22px 0 10px' }}>
+      {children}
+    </div>
   );
 }
 
@@ -559,11 +549,12 @@ export default function AdminPage() {
   const [actionLoading, setActionLoading] = useState(null);
   const [toast, setToast] = useState(null);
   const [dismissedFlagIds, setDismissedFlagIds] = useState(() => readDismissedAdminFlags());
-  const [analyticsOpen, setAnalyticsOpen] = useState(true);
-  const [flagsOpen, setFlagsOpen] = useState(true);
-  const [reportsOpen, setReportsOpen] = useState(true);
   const [panelUserId, setPanelUserId] = useState(null);
-  const [usersListOpen, setUsersListOpen] = useState(false);
+  // Which expandable cards are open (remembered per browser). All closed by default.
+  const [openSections, setOpenSections] = useState(() => readOpenSections());
+  const [supportSummary, setSupportSummary] = useState(null);
+  const [invitesSummary, setInvitesSummary] = useState(null);
+  const [foundingSummary, setFoundingSummary] = useState(null);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [flaggedReviews, setFlaggedReviews] = useState([]);
   const [flagActionId, setFlagActionId] = useState(null);
@@ -585,6 +576,21 @@ export default function AdminPage() {
       return next;
     });
   }, []);
+
+  const toggleSection = useCallback((id) => {
+    setOpenSections((prev) => {
+      const next = { ...prev, [id]: !prev[id] };
+      saveOpenSections(next);
+      return next;
+    });
+  }, []);
+  const setAllSections = (value) => {
+    const next = {};
+    ADMIN_SECTION_IDS.forEach((id) => { next[id] = value; });
+    saveOpenSections(next);
+    setOpenSections(next);
+  };
+  const anySectionOpen = ADMIN_SECTION_IDS.some((id) => openSections[id]);
 
   const showToast = (msg, type = 'success') => {
     setToast({ msg, type });
@@ -1197,235 +1203,52 @@ export default function AdminPage() {
         </div>
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
-          gap: 12,
-          marginBottom: 24,
-        }}
-      >
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, minmax(0, 1fr))', gap: 12, marginBottom: 12 }}>
         {[
-          { label: 'Total users', value: stats.total, color: COLORS.white },
-          { label: 'Creatives', value: stats.creatives, color: COLORS.blue },
-          { label: 'Clients', value: stats.clients, color: COLORS.muted },
-          { label: 'Elite', value: stats.elite, color: COLORS.green },
-          { label: 'Expert', value: stats.expert, color: COLORS.yellow },
-          { label: 'Pro', value: stats.pro, color: COLORS.blue },
-          { label: 'Basic', value: stats.basic, color: COLORS.muted },
-          {
-            label: 'Estimated MRR',
-            value: `$${stats.mrr.toFixed(2)}`,
-            color: COLORS.green,
-            greenCard: true,
-            valueFontSize: 20,
-          },
-          {
-            label: 'Avg Revenue Per User',
-            value: `$${stats.arpu.toFixed(2)}`,
-            color: COLORS.green,
-            greenCard: true,
-            valueFontSize: 20,
-          },
-          { label: 'Paying Users', value: stats.payingUsers, color: COLORS.yellow },
-          {
-            label: 'Conversion Rate',
-            value: `${stats.conversionRate.toFixed(1)}%`,
-            color: COLORS.blue,
-            valueFontSize: 22,
-          },
-          { label: 'Free Tier', value: stats.basic, color: COLORS.muted },
+          { label: 'Users', value: stats.total, sub: `${stats.creatives} creative${stats.creatives === 1 ? '' : 's'} · ${stats.clients} client${stats.clients === 1 ? '' : 's'}`, color: COLORS.white },
+          { label: 'Paying creatives', value: stats.payingUsers, sub: `${stats.conversionRate.toFixed(0)}% of creatives`, color: COLORS.white },
+          { label: 'Estimated MRR', value: `$${stats.mrr.toFixed(2)}`, sub: `$${stats.arpu.toFixed(2)} per paying creative`, color: COLORS.green, greenCard: true },
+          { label: 'Sign-ups', value: platformAnalytics.signupsMonth, sub: `this month · ${platformAnalytics.signupsWeek} this week`, color: COLORS.white },
         ].map((s) => (
-          <div
-            key={s.label}
-            style={{
-              ...(s.greenCard ? GLASS_CARD_GREEN : GLASS_CARD),
-              borderRadius: 10,
-              padding: '14px 16px',
-              minWidth: 0,
-            }}
-          >
-            <div
-              style={{
-                ...TYPO.stat,
-                fontSize: s.valueFontSize ?? 24,
-                fontWeight: 800,
-                color: s.color,
-                lineHeight: 1.1,
-              }}
-            >
-              {s.value}
-            </div>
-            <div style={{ ...TYPO.label, fontSize: 11, color: COLORS.muted, marginTop: 4, lineHeight: 1.25 }}>{s.label}</div>
+          <div key={s.label} style={{ ...(s.greenCard ? GLASS_CARD_GREEN : GLASS_CARD), borderRadius: 14, padding: '14px 16px', minWidth: 0 }}>
+            <div style={{ ...TYPO.label, fontSize: 10.5, color: COLORS.muted, lineHeight: 1.3 }}>{s.label}</div>
+            <div style={{ ...TYPO.stat, fontSize: 24, fontWeight: 800, color: s.color, lineHeight: 1.2, marginTop: 4 }}>{s.value}</div>
+            <div style={{ fontSize: 12, color: COLORS.muted, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.sub}</div>
           </div>
         ))}
       </div>
 
-      <FoundingInvitesPanel />
-
-      <FoundingAdminPanel />
-
-      <SupportAdminPanel />
-
-      <div style={{ marginBottom: 20 }}>
-        <CollapsibleHeader title="Analytics" open={analyticsOpen} onToggle={() => setAnalyticsOpen((o) => !o)} />
-        {analyticsOpen && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-            <div
-              style={{
-                ...GLASS_CARD,
-                borderRadius: 12,
-                padding: '16px 18px',
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 12, letterSpacing: '0.05em' }}>
-                SIGN-UPS (LAST 6 MONTHS)
-              </div>
-              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, minHeight: 140 }}>
-                {signupBuckets.map((b) => {
-                  const hPct = (b.count / maxSignupCount) * 100;
-                  return (
-                    <div key={b.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.white }}>{b.count}</div>
-                      <div
-                        style={{
-                          width: '100%',
-                          maxWidth: 48,
-                          margin: '0 auto',
-                          height: 100,
-                          background: COLORS.panelAlt,
-                          borderRadius: 6,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'flex-end',
-                          overflow: 'hidden',
-                          border: `1px solid ${COLORS.border}`,
-                        }}
-                      >
-                        <div
-                          style={{
-                            height: `${hPct}%`,
-                            minHeight: b.count > 0 ? 4 : 0,
-                            background: COLORS.green,
-                            borderRadius: '0 0 4px 4px',
-                          }}
-                        />
-                      </div>
-                      <div style={{ fontSize: 10, color: COLORS.muted, textAlign: 'center', lineHeight: 1.2 }}>{b.label}</div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div
-              style={{
-                ...GLASS_CARD,
-                borderRadius: 12,
-                padding: '16px 18px',
-              }}
-            >
-              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 12, letterSpacing: '0.05em' }}>
-                TIER BREAKDOWN (CREATIVES WITH PROFILE)
-              </div>
-              {tierBarTotal === 0 ? (
-                <div style={{ fontSize: 13, color: COLORS.dim }}>No tier data yet.</div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: 'flex',
-                      height: 28,
-                      borderRadius: 8,
-                      overflow: 'hidden',
-                      border: `1px solid ${COLORS.border}`,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {(['basic', 'pro', 'expert', 'elite']).map((key) => {
-                      const n = tierBar[key];
-                      const pct = (n / tierBarTotal) * 100;
-                      if (pct <= 0) return null;
-                      return (
-                        <div
-                          key={key}
-                          title={`${key}: ${n}`}
-                          style={{
-                            width: `${pct}%`,
-                            background: TIER_COLORS[key]?.bar || COLORS.muted,
-                            minWidth: n > 0 ? 2 : 0,
-                          }}
-                        />
-                      );
-                    })}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', fontSize: 12 }}>
-                    {(['basic', 'pro', 'expert', 'elite']).map((key) => {
-                      const n = tierBar[key];
-                      const pct = tierBarTotal ? ((n / tierBarTotal) * 100).toFixed(1) : '0';
-                      return (
-                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span
-                            style={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: 2,
-                              background: TIER_COLORS[key]?.bar,
-                              flexShrink: 0,
-                            }}
-                          />
-                          <span style={{ color: COLORS.white, fontWeight: 600, textTransform: 'capitalize' }}>{key}</span>
-                          <span style={{ color: COLORS.muted }}>
-                            {n} ({pct}%)
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </>
-              )}
-            </div>
-
-            <div
-              style={{
-                ...GLASS_CARD,
-                borderRadius: 12,
-                padding: '16px 18px',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
-                gap: 16,
-              }}
-            >
-              <div>
-                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>TOTAL MRR ESTIMATE</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.green }}>
-                  ${platformAnalytics.mrrEstimate.toFixed(2)}
-                </div>
-                <div style={{ fontSize: 11, color: COLORS.dim, marginTop: 4 }}>
-                  Basic ${MRR_BASIC}, Pro ${MRR_PRO}, Expert ${MRR_EXPERT}, Elite ${MRR_ELITE} per user
-                </div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>ACTIVE USERS (LAST 30 DAYS)</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.blue }}>{platformAnalytics.active30}</div>
-                <div style={{ fontSize: 11, color: COLORS.dim, marginTop: 4 }}>Based on last sign in time</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>NEW SIGN-UPS THIS WEEK</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.white }}>{platformAnalytics.signupsWeek}</div>
-              </div>
-              <div>
-                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>NEW SIGN-UPS THIS MONTH</div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.white }}>{platformAnalytics.signupsMonth}</div>
-              </div>
-            </div>
-          </div>
-        )}
+      <div style={{ ...GLASS_CARD, borderRadius: 14, padding: '12px 16px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <span style={{ ...TYPO.label, fontSize: 10.5, color: COLORS.muted }}>Plans</span>
+        {[
+          { label: 'Elite', value: stats.elite, color: COLORS.green },
+          { label: 'Expert', value: stats.expert, color: COLORS.yellow },
+          { label: 'Pro', value: stats.pro, color: COLORS.blue },
+          { label: 'Basic', value: stats.basic, color: COLORS.muted },
+        ].map((t) => (
+          <span key={t.label} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, color: COLORS.white }}>
+            <span style={{ width: 8, height: 8, borderRadius: '50%', background: t.color }} />
+            <strong style={{ fontWeight: 800 }}>{t.value}</strong> <span style={{ color: COLORS.muted }}>{t.label}</span>
+          </span>
+        ))}
+        <span style={{ flex: 1 }} />
+        <button type="button" onClick={() => setAllSections(!anySectionOpen)} style={{ background: 'none', border: 'none', padding: 0, color: COLORS.green, fontWeight: 700, fontSize: 12.5, cursor: 'pointer', ...FONT }}>
+          {anySectionOpen ? 'Collapse all' : 'Expand all'}
+        </button>
       </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <CollapsibleHeader title="Flags" open={flagsOpen} onToggle={() => setFlagsOpen((o) => !o)} />
-        {flagsOpen && (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <AdminSection id="support" icon="support" title="Support inbox" summary={supportSummary?.summary || 'Loading…'} badge={supportSummary?.badge}
+        open={!!openSections.support} onToggle={() => toggleSection('support')}>
+        <SupportAdminPanel embedded onSummary={setSupportSummary} />
+      </AdminSection>
+
+
+      <AdminSection id="moderation" icon="shield" title="Moderation"
+        summary={`${investigationFlags.length} account flag${investigationFlags.length === 1 ? '' : 's'} · ${flaggedReviews.length} flagged review${flaggedReviews.length === 1 ? '' : 's'} · 0 reports`}
+        badge={investigationFlags.length + flaggedReviews.length ? { text: `${investigationFlags.length + flaggedReviews.length} to review`, tone: 'attention' } : null}
+        open={!!openSections.moderation} onToggle={() => toggleSection('moderation')}>
+        <SubHeading first>Account flags</SubHeading>
           <div
             style={{
               ...GLASS_CARD,
@@ -1504,12 +1327,7 @@ export default function AdminPage() {
               </div>
             )}
           </div>
-        )}
-      </div>
-
-      <div style={{ marginBottom: 20 }}>
-        <CollapsibleHeader title="Reports" open={reportsOpen} onToggle={() => setReportsOpen((o) => !o)} />
-        {reportsOpen && (
+        <SubHeading>Reports</SubHeading>
           <div
             style={{
               ...GLASS_CARD,
@@ -1522,16 +1340,113 @@ export default function AdminPage() {
               No reports yet. When users report profiles or messages, they will appear here for review.
             </div>
           </div>
+      <div>
+        <SubHeading>Flagged reviews</SubHeading>
+        {flaggedReviews.length === 0 ? (
+          <div
+            style={{
+              ...GLASS_CARD,
+              borderRadius: 12,
+              padding: '20px 18px',
+              fontSize: 13,
+              color: COLORS.muted,
+              textAlign: 'center',
+              lineHeight: 1.5,
+            }}
+          >
+            No flagged reviews in the queue.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            {flaggedReviews.map((r) => {
+              const busy = flagActionId === r.id;
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    ...GLASS_CARD,
+                    borderRadius: 12,
+                    padding: '16px 18px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.white }}>{r.business_name}</div>
+                  <div style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>
+                    <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.reviewer_name || '—'}</span>
+                    {' · '}
+                    <span>{r.reviewer_email?.trim() ? r.reviewer_email : '—'}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: COLORS.muted }}>
+                    Rating: <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.rating ?? '—'} / 5</span>
+                  </div>
+                  {r.body ? (
+                    <div style={{ fontSize: 13, color: COLORS.white, lineHeight: 1.55, fontStyle: 'italic' }}>&ldquo;{r.body}&rdquo;</div>
+                  ) : null}
+                  <div style={{ fontSize: 12, color: COLORS.yellow, lineHeight: 1.5 }}>
+                    <span style={{ fontWeight: 700, color: COLORS.muted }}>Flag reason: </span>
+                    {r.flag_reason || '—'}
+                  </div>
+                  <div style={{ fontSize: 11, color: COLORS.dim }}>Flagged: {formatAuDateTime(r.flagged_at)}</div>
+                  <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleKeepFlaggedReview(r.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        border: `1px solid ${COLORS.border}`,
+                        background: COLORS.panelAlt,
+                        color: COLORS.muted,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: busy ? 'wait' : 'pointer',
+                        ...FONT,
+                      }}
+                    >
+                      Keep Review
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => void handleRemoveFlaggedReview(r.id)}
+                      style={{
+                        padding: '8px 16px',
+                        borderRadius: 8,
+                        border: `1px solid ${COLORS.pink}`,
+                        background: COLORS.pinkDim,
+                        color: COLORS.pink,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: busy ? 'wait' : 'pointer',
+                        ...FONT,
+                      }}
+                    >
+                      Remove Review
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         )}
       </div>
+      </AdminSection>
 
-      <div style={{ marginBottom: 16 }}>
-        <CollapsibleHeader
-          title={`Users (${filtered.length} shown)`}
-          open={usersListOpen}
-          onToggle={() => setUsersListOpen((o) => !o)}
-        />
-        {usersListOpen && (
+      <AdminSection id="invites" icon="invite" title="Founding invites" summary={invitesSummary?.summary || 'Loading…'} badge={invitesSummary?.badge}
+        open={!!openSections.invites} onToggle={() => toggleSection('invites')}>
+        <FoundingInvitesPanel embedded onSummary={setInvitesSummary} />
+      </AdminSection>
+
+      <AdminSection id="founding" icon="star" title="Founding creatives" summary={foundingSummary?.summary || 'Loading…'} badge={foundingSummary?.badge}
+        open={!!openSections.founding} onToggle={() => toggleSection('founding')}>
+        <FoundingAdminPanel embedded onSummary={setFoundingSummary} />
+      </AdminSection>
+
+      <AdminSection id="users" icon="users" title="Users" summary={`${stats.total} total · ${platformAnalytics.active30} active in the last 30 days`}
+        open={!!openSections.users} onToggle={() => toggleSection('users')}>
           <>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
         <input
@@ -1828,113 +1743,162 @@ export default function AdminPage() {
         {filtered.length} of {users.length} users shown
       </div>
           </>
-        )}
-      </div>
+      </AdminSection>
 
-      <div style={{ marginTop: 40 }}>
-        <div
-          style={{
-            ...TYPO.heading,
-            fontSize: 13,
-            fontWeight: 700,
-            color: COLORS.muted,
-            letterSpacing: '0.06em',
-            textTransform: 'uppercase',
-            marginBottom: 14,
-          }}
-        >
-          Flagged Reviews
-        </div>
-        {flaggedReviews.length === 0 ? (
-          <div
-            style={{
-              ...GLASS_CARD,
-              borderRadius: 12,
-              padding: '20px 18px',
-              fontSize: 13,
-              color: COLORS.muted,
-              textAlign: 'center',
-              lineHeight: 1.5,
-            }}
-          >
-            No flagged reviews in the queue.
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {flaggedReviews.map((r) => {
-              const busy = flagActionId === r.id;
-              return (
-                <div
-                  key={r.id}
-                  style={{
-                    ...GLASS_CARD,
-                    borderRadius: 12,
-                    padding: '16px 18px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 10,
-                  }}
-                >
-                  <div style={{ fontSize: 14, fontWeight: 700, color: COLORS.white }}>{r.business_name}</div>
-                  <div style={{ fontSize: 12, color: COLORS.muted, lineHeight: 1.5 }}>
-                    <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.reviewer_name || '—'}</span>
-                    {' · '}
-                    <span>{r.reviewer_email?.trim() ? r.reviewer_email : '—'}</span>
+      <AdminSection id="analytics" icon="chart" title="Analytics" summary={`${platformAnalytics.active30} active in the last 30 days · ${platformAnalytics.signupsMonth} sign-ups this month`}
+        open={!!openSections.analytics} onToggle={() => toggleSection('analytics')}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div
+              style={{
+                ...GLASS_CARD,
+                borderRadius: 12,
+                padding: '16px 18px',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 12, letterSpacing: '0.05em' }}>
+                SIGN-UPS (LAST 6 MONTHS)
+              </div>
+              <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 8, minHeight: 140 }}>
+                {signupBuckets.map((b) => {
+                  const hPct = (b.count / maxSignupCount) * 100;
+                  return (
+                    <div key={b.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.white }}>{b.count}</div>
+                      <div
+                        style={{
+                          width: '100%',
+                          maxWidth: 48,
+                          margin: '0 auto',
+                          height: 100,
+                          background: COLORS.panelAlt,
+                          borderRadius: 6,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'flex-end',
+                          overflow: 'hidden',
+                          border: `1px solid ${COLORS.border}`,
+                        }}
+                      >
+                        <div
+                          style={{
+                            height: `${hPct}%`,
+                            minHeight: b.count > 0 ? 4 : 0,
+                            background: COLORS.green,
+                            borderRadius: '0 0 4px 4px',
+                          }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 10, color: COLORS.muted, textAlign: 'center', lineHeight: 1.2 }}>{b.label}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div
+              style={{
+                ...GLASS_CARD,
+                borderRadius: 12,
+                padding: '16px 18px',
+              }}
+            >
+              <div style={{ fontSize: 12, fontWeight: 700, color: COLORS.muted, marginBottom: 12, letterSpacing: '0.05em' }}>
+                TIER BREAKDOWN (CREATIVES WITH PROFILE)
+              </div>
+              {tierBarTotal === 0 ? (
+                <div style={{ fontSize: 13, color: COLORS.dim }}>No tier data yet.</div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      display: 'flex',
+                      height: 28,
+                      borderRadius: 8,
+                      overflow: 'hidden',
+                      border: `1px solid ${COLORS.border}`,
+                      marginBottom: 12,
+                    }}
+                  >
+                    {(['basic', 'pro', 'expert', 'elite']).map((key) => {
+                      const n = tierBar[key];
+                      const pct = (n / tierBarTotal) * 100;
+                      if (pct <= 0) return null;
+                      return (
+                        <div
+                          key={key}
+                          title={`${key}: ${n}`}
+                          style={{
+                            width: `${pct}%`,
+                            background: TIER_COLORS[key]?.bar || COLORS.muted,
+                            minWidth: n > 0 ? 2 : 0,
+                          }}
+                        />
+                      );
+                    })}
                   </div>
-                  <div style={{ fontSize: 12, color: COLORS.muted }}>
-                    Rating: <span style={{ color: COLORS.white, fontWeight: 600 }}>{r.rating ?? '—'} / 5</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px 16px', fontSize: 12 }}>
+                    {(['basic', 'pro', 'expert', 'elite']).map((key) => {
+                      const n = tierBar[key];
+                      const pct = tierBarTotal ? ((n / tierBarTotal) * 100).toFixed(1) : '0';
+                      return (
+                        <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span
+                            style={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: 2,
+                              background: TIER_COLORS[key]?.bar,
+                              flexShrink: 0,
+                            }}
+                          />
+                          <span style={{ color: COLORS.white, fontWeight: 600, textTransform: 'capitalize' }}>{key}</span>
+                          <span style={{ color: COLORS.muted }}>
+                            {n} ({pct}%)
+                          </span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {r.body ? (
-                    <div style={{ fontSize: 13, color: COLORS.white, lineHeight: 1.55, fontStyle: 'italic' }}>&ldquo;{r.body}&rdquo;</div>
-                  ) : null}
-                  <div style={{ fontSize: 12, color: COLORS.yellow, lineHeight: 1.5 }}>
-                    <span style={{ fontWeight: 700, color: COLORS.muted }}>Flag reason: </span>
-                    {r.flag_reason || '—'}
-                  </div>
-                  <div style={{ fontSize: 11, color: COLORS.dim }}>Flagged: {formatAuDateTime(r.flagged_at)}</div>
-                  <div style={{ display: 'flex', gap: 10, marginTop: 6, flexWrap: 'wrap' }}>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void handleKeepFlaggedReview(r.id)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: 8,
-                        border: `1px solid ${COLORS.border}`,
-                        background: COLORS.panelAlt,
-                        color: COLORS.muted,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: busy ? 'wait' : 'pointer',
-                        ...FONT,
-                      }}
-                    >
-                      Keep Review
-                    </button>
-                    <button
-                      type="button"
-                      disabled={busy}
-                      onClick={() => void handleRemoveFlaggedReview(r.id)}
-                      style={{
-                        padding: '8px 16px',
-                        borderRadius: 8,
-                        border: `1px solid ${COLORS.pink}`,
-                        background: COLORS.pinkDim,
-                        color: COLORS.pink,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        cursor: busy ? 'wait' : 'pointer',
-                        ...FONT,
-                      }}
-                    >
-                      Remove Review
-                    </button>
-                  </div>
+                </>
+              )}
+            </div>
+
+            <div
+              style={{
+                ...GLASS_CARD,
+                borderRadius: 12,
+                padding: '16px 18px',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+                gap: 16,
+              }}
+            >
+              <div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>TOTAL MRR ESTIMATE</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.green }}>
+                  ${platformAnalytics.mrrEstimate.toFixed(2)}
                 </div>
-              );
-            })}
+                <div style={{ fontSize: 11, color: COLORS.dim, marginTop: 4 }}>
+                  Basic ${MRR_BASIC}, Pro ${MRR_PRO}, Expert ${MRR_EXPERT}, Elite ${MRR_ELITE} per user
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>ACTIVE USERS (LAST 30 DAYS)</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.blue }}>{platformAnalytics.active30}</div>
+                <div style={{ fontSize: 11, color: COLORS.dim, marginTop: 4 }}>Based on last sign in time</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>NEW SIGN-UPS THIS WEEK</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.white }}>{platformAnalytics.signupsWeek}</div>
+              </div>
+              <div>
+                <div style={{ fontSize: 11, color: COLORS.muted, marginBottom: 4 }}>NEW SIGN-UPS THIS MONTH</div>
+                <div style={{ fontSize: 22, fontWeight: 800, color: COLORS.white }}>{platformAnalytics.signupsMonth}</div>
+              </div>
+            </div>
           </div>
-        )}
+      </AdminSection>
+
       </div>
     </div>
   );

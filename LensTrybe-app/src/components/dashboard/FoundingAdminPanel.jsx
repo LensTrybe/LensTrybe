@@ -21,7 +21,7 @@ function statusColor(s) {
 }
 
 // Founding cohort tracker + feedback inbox. Rendered inside AdminPage (admin-gated).
-export default function FoundingAdminPanel() {
+export default function FoundingAdminPanel({ embedded = false, onSummary } = {}) {
   const [open, setOpen] = useState(true)
   const [rows, setRows] = useState([])
   const [feedback, setFeedback] = useState([])
@@ -67,8 +67,18 @@ export default function FoundingAdminPanel() {
   const td = { fontSize: 13, color: 'var(--lt-text)', padding: '9px 10px', borderTop: '1px solid var(--lt-hairline)', whiteSpace: 'nowrap' }
   const stat = { flex: '1 1 120px', background: 'var(--lt-surface-2)', border: '1px solid var(--lt-border)', borderRadius: 12, padding: '12px 14px' }
 
+  // Header summary for the Admin page card.
+  useEffect(() => {
+    if (!onSummary || loading) return
+    onSummary({
+      summary: `${stats.total} founding creative${stats.total === 1 ? '' : 's'} · ${stats.listings} listings complete · ${feedback.length} feedback`,
+      badge: stats.atRisk ? { text: `${stats.atRisk} at risk`, tone: 'warning' } : null,
+    })
+  }, [onSummary, loading, stats, feedback.length])
+
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: embedded ? 0 : 20 }}>
+      {!embedded && (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -77,8 +87,9 @@ export default function FoundingAdminPanel() {
         <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Founding creatives {rows.length ? `(${rows.length})` : ''}</span>
         <span style={{ color: 'var(--lt-muted)', fontSize: 13 }}>{open ? 'Hide' : 'Show'}</span>
       </button>
+      )}
 
-      {open && (
+      {(open || embedded) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={stat}><div style={{ fontSize: 22, fontWeight: 700, color: 'var(--lt-text)' }}>{stats.total}</div><div style={{ fontSize: 12, color: 'var(--lt-muted)' }}>Founding creatives</div></div>

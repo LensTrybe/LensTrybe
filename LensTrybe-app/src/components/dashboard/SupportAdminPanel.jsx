@@ -21,7 +21,7 @@ function statusColor(s) {
 }
 
 // Support ticket inbox. Rendered inside AdminPage (admin-gated).
-export default function SupportAdminPanel() {
+export default function SupportAdminPanel({ embedded = false, onSummary } = {}) {
   const [open, setOpen] = useState(true)
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
@@ -91,8 +91,18 @@ export default function SupportAdminPanel() {
     { key: 'all', label: 'All' },
   ]
 
+  // Header summary for the Admin page card.
+  useEffect(() => {
+    if (!onSummary || loading) return
+    onSummary({
+      summary: `${stats.open} open · ${stats.inProgress} in progress · ${stats.resolved} resolved`,
+      badge: stats.open ? { text: `${stats.open} open`, tone: 'attention' } : null,
+    })
+  }, [onSummary, loading, stats])
+
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: embedded ? 0 : 20 }}>
+      {!embedded && (
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -101,8 +111,9 @@ export default function SupportAdminPanel() {
         <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Support inbox {stats.open ? `(${stats.open} open)` : ''}</span>
         <span style={{ color: 'var(--lt-muted)', fontSize: 13 }}>{open ? 'Hide' : 'Show'}</span>
       </button>
+      )}
 
-      {open && (
+      {(open || embedded) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <div style={stat}><div style={{ fontSize: 22, fontWeight: 700, color: 'var(--lt-text)' }}>{stats.total}</div><div style={{ fontSize: 12, color: 'var(--lt-muted)' }}>Total tickets</div></div>

@@ -345,7 +345,7 @@ const FILTERS = [
   { key: 'all', label: 'All', match: () => true },
 ]
 
-export default function FoundingInvitesPanel() {
+export default function FoundingInvitesPanel({ embedded = false, onSummary } = {}) {
   const [open, setOpen] = useState(true)
   const [invites, setInvites] = useState([])
   const [founders, setFounders] = useState([])
@@ -472,18 +472,29 @@ export default function FoundingInvitesPanel() {
     <button type="button" onClick={() => setMode(key)} style={{ ...btn, border: 'none', borderBottom: `2px solid ${mode === key ? GREEN : 'transparent'}`, borderRadius: 0, color: mode === key ? 'var(--lt-text)' : 'var(--lt-muted)', padding: '8px 4px', marginRight: 14 }}>{text}</button>
   )
 
+  // Header summary for the Admin page card.
+  useEffect(() => {
+    if (!onSummary || !places) return
+    onSummary({
+      summary: `${places.used} of ${places.cap} places taken · ${counts.live} waiting · ${counts.drafts} draft${counts.drafts === 1 ? '' : 's'}`,
+      badge: places.available === 0 ? { text: 'Full', tone: 'attention' } : { text: `${places.available} free`, tone: 'good' },
+    })
+  }, [onSummary, places, counts])
+
   return (
-    <div style={{ marginBottom: 20 }}>
+    <div style={{ marginBottom: embedded ? 0 : 20 }}>
       <datalist id="fi-types">{CREATIVE_TYPES.map((t) => <option key={t} value={t} />)}</datalist>
       <datalist id="fi-regions">{REGIONS.map((r) => <option key={r} value={r} />)}</datalist>
 
+      {!embedded && (
       <button type="button" onClick={() => setOpen((o) => !o)}
         style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'none', border: 'none', cursor: 'pointer', padding: '10px 0', fontFamily: 'inherit' }}>
         <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Founding invites {places ? `(${places.used} of ${places.cap})` : ''}</span>
         <span style={{ color: 'var(--lt-muted)', fontSize: 13 }}>{open ? 'Hide' : 'Show'}</span>
       </button>
+      )}
 
-      {open && (
+      {(open || embedded) && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {loadError ? (
             <div style={{ ...card, color: PINK, fontSize: 13.5 }}>Couldn't load invites: {loadError} <button type="button" style={{ ...btn, marginLeft: 8 }} onClick={() => { setLoading(true); void load() }}>Try again</button></div>
