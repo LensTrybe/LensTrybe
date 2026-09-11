@@ -321,8 +321,8 @@ Deno.serve(async (req) => {
     const [{ data: prof }, { data: priv }, { data: bk }] = await Promise.all([
       admin.from('profiles').select('business_name, business_email, phone, website, city, state, abn').eq('id', doc.creative_id).maybeSingle(),
       type === 'contract'
-        ? Promise.resolve({ data: null })
-        : admin.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account').eq('id', doc.creative_id).maybeSingle(),
+        ? admin.from('profile_private').select('phone').eq('id', doc.creative_id).maybeSingle()
+        : admin.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account, phone').eq('id', doc.creative_id).maybeSingle(),
       admin.from('brand_kit').select('*').eq('creative_id', doc.creative_id).maybeSingle(),
     ])
     const profile: any = { ...(prof || {}), ...(priv || {}) }

@@ -15,7 +15,7 @@ function esc(s: unknown) { return String(s || '').replace(/&/g, '&amp;').replace
 function str(v: unknown, max: number) { return typeof v === 'string' ? v.trim().slice(0, max) : '' }
 function plain(s: unknown, max: number) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').trim().slice(0, max) }
 
-// Public enquiry form on a creative's LensTrybe website (PublicSitePage). Anonymous.
+// Public enquiry form on a creative's LensTrybe website (/site/:slug). Anonymous.
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -41,9 +41,11 @@ Deno.serve(async (req) => {
     }
 
     // Look up the creative (name + email for notification). Only published websites accept enquiries.
-    const { data: prof } = await sb.from('profiles').select('business_name, business_email')
-      .eq('id', creativeId).eq('portfolio_website_active', true).maybeSingle()
-    if (!prof) return json({ error: 'site not found' }, 404)
+    const [{ data: prof }, { data: live }] = await Promise.all([
+      sb.from('profiles').select('business_name, business_email').eq('id', creativeId).maybeSingle(),
+      sb.rpc('website_is_live', { p_creative: creativeId }),
+    ])
+    if (!prof || live !== true) return json({ error: 'site not found' }, 404)
 
     // CRM lead: only ever INSERT a new contact. Anonymous input never edits an existing contact.
     try {

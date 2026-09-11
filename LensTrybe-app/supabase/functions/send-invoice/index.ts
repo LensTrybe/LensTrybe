@@ -130,7 +130,7 @@ serve(async (req) => {
     // Bank details live in the owner-only profile_private table.
     const [{ data: prof }, { data: priv }, { data: bk }] = await Promise.all([
       supabase.from('profiles').select('business_name, business_email, phone, website, city, state, abn').eq('id', user.id).maybeSingle(),
-      supabase.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account').eq('id', user.id).maybeSingle(),
+      supabase.from('profile_private').select('bank_name, bank_account_name, bank_bsb, bank_account, phone').eq('id', user.id).maybeSingle(),
       supabase.from('brand_kit').select('*').eq('creative_id', user.id).maybeSingle(),
     ])
     const profile: any = { ...(prof || {}), ...(priv || {}) }

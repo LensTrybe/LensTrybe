@@ -126,6 +126,9 @@ function TextField({ label, value, onChange, placeholder, type = 'text', error }
 
 export default function EditProfilePage() {
   const { user, profile, fetchUserData, loading: authLoading } = useAuth()
+  const profileTier = String(profile?.subscription_tier || 'basic').toLowerCase()
+  // Contact details are an Expert/Elite feature (same rule as sharing them in messages).
+  const canShowPhone = profileTier === 'expert' || profileTier === 'elite'
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -160,7 +163,7 @@ export default function EditProfilePage() {
     business_name: '', bio: '', tagline: '', phone: '', website: '',
     instagram: '', tiktok: '', linkedin: '', facebook: '', twitter: '',
     city: '', state: '', country: 'Australia',
-    skill_types: [], specialties: [], avatar_url: null,
+    skill_types: [], specialties: [], avatar_url: null, show_phone: false,
   })
 
   useEffect(() => {
@@ -183,6 +186,7 @@ export default function EditProfilePage() {
         skill_types: profile.skill_types ?? [],
         specialties: profile.specialties ?? [],
         avatar_url: profile.avatar_url ?? null,
+        show_phone: !!profile.show_phone,
       })
       setCredentials({
         abn: profile.abn ?? '',
@@ -362,6 +366,7 @@ export default function EditProfilePage() {
       bio: form.bio,
       tagline: form.tagline,
       phone: form.phone,
+      show_phone: canShowPhone ? !!form.show_phone : false,
       website: form.website,
       instagram_url: form.instagram,
       tiktok_url: form.tiktok,
@@ -554,7 +559,7 @@ export default function EditProfilePage() {
         {activeTab === 'social' && (
           <div style={card}>
             <div style={sectionTitle}>Social links</div>
-            <div style={sectionSub}>Displayed on your public profile.</div>
+            <div style={sectionSub}>{profileTier === 'basic' ? 'Your social links and website show on your LensTrybe website, which comes with the Pro, Expert and Elite plans. They stay saved here if you upgrade later.' : 'Shown on your LensTrybe website (Contact page and footer).'}</div>
             <TextField label="Website" placeholder="https://yourwebsite.com" value={form.website} onChange={e => update('website', e.target.value)} />
             <TextField label="Instagram" placeholder="@yourhandle" value={form.instagram} onChange={e => update('instagram', e.target.value)} />
             <TextField label="TikTok" placeholder="@yourhandle" value={form.tiktok} onChange={e => update('tiktok', e.target.value)} />
@@ -562,6 +567,17 @@ export default function EditProfilePage() {
             <TextField label="Facebook" placeholder="facebook.com/yourpage" value={form.facebook} onChange={e => update('facebook', e.target.value)} />
             <TextField label="X / Twitter" value={form.twitter} onChange={e => update('twitter', e.target.value)} placeholder="https://x.com/yourusername" />
             <TextField label="Phone (optional)" placeholder="0400 000 000" value={form.phone} onChange={e => update('phone', e.target.value)} />
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: 13.5, lineHeight: 1.55, color: canShowPhone ? 'var(--lt-text)' : 'var(--lt-muted)', cursor: canShowPhone ? 'pointer' : 'not-allowed' }}>
+              <input type="checkbox" checked={canShowPhone && !!form.show_phone} disabled={!canShowPhone} onChange={e => update('show_phone', e.target.checked)} style={{ marginTop: 3, width: 16, height: 16, accentColor: '#1DB954', flexShrink: 0 }} />
+              <span>
+                Show my phone number on my website
+                <span style={{ display: 'block', fontSize: 12.5, color: 'var(--lt-muted)' }}>
+                  {canShowPhone
+                    ? 'Off by default. Your number is always kept private unless you tick this. It also appears on your invoices and quotes.'
+                    : 'Available on the Expert and Elite plans. Your number stays private and still appears on your invoices and quotes.'}
+                </span>
+              </span>
+            </label>
           </div>
         )}
 

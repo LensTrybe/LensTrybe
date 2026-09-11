@@ -796,6 +796,9 @@ export default function WebsiteBuilderPage() {
   const activeEditable = activeTab === 'settings' || activeTab === 'design' || editablePages.includes(activeTab)
   const activeData = pages[activeTab] || { template: 't1', content: {}, visible: true }
   const profileHref = `/creatives/${user.id}`
+  // Public website link: open to everyone, no LensTrybe sign-in needed.
+  const siteHref = `/site/${profile?.custom_domain || user.id}`
+  const siteUrl = `${typeof window !== 'undefined' ? window.location.origin : 'https://lenstrybe.com'}${siteHref}`
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, padding: isMobile ? 16 : '28px 24px 48px', maxWidth: 860, margin: '0 auto', width: '100%', boxSizing: 'border-box', overflowX: 'hidden', color: 'var(--lt-text)', background: 'transparent', ...FONT }} className="website-builder-page">
@@ -809,7 +812,10 @@ export default function WebsiteBuilderPage() {
             {proOnePage ? "You're on Pro: a Home and Contact page. Upgrade to Expert for About, Gallery and Services." : 'Your profile is your website. Edit each page below; it updates your public profile live.'}
           </p>
         </div>
-        <a href={profileHref} target="_blank" rel="noopener noreferrer"><Btn variant="secondary" size="sm" type="button">View my profile</Btn></a>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <a href={proOnePage || editablePages.length ? siteHref : profileHref} target="_blank" rel="noopener noreferrer"><Btn variant="secondary" size="sm" type="button">View my website</Btn></a>
+          <Btn variant="secondary" size="sm" type="button" onClick={(e) => { const b = e.currentTarget; try { navigator.clipboard.writeText(siteUrl); b.textContent = 'Link copied'; setTimeout(() => { b.textContent = 'Copy website link' }, 2000) } catch { /* ignore */ } }}>Copy website link</Btn>
+        </div>
       </header>
 
       <section style={card}>

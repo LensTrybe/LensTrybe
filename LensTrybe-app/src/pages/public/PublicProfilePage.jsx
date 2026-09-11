@@ -68,9 +68,11 @@ function SocialIcon({ type, size = 20, color = 'currentColor' }) {
   }
 }
 
-export default function PublicProfilePage({ previewMode = false, previewId = null }) {
+// siteMode: the creative's public website link (/site/:slug). No sign-in wall, and
+// visitors can send an enquiry without an account.
+export default function PublicProfilePage({ previewMode = false, previewId = null, siteMode = false, siteId = null }) {
   const params = useParams()
-  const id = previewId ?? params.id
+  const id = previewId ?? siteId ?? params.id
   const navigate = useNavigate()
   const { user, clientAccount, loading: authLoading } = useAuth()
   const [profile, setProfile] = useState(null)
@@ -87,7 +89,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [showAuthGate, setShowAuthGate] = useState(false)
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
-  const [enquiry, setEnquiry] = useState({ subject: '', message: '', name: '', phone: '' })
+  const [enquiry, setEnquiry] = useState({ subject: '', message: '', name: '', phone: '', email: '', website: '' })
   const [enquiryError, setEnquiryError] = useState('')
   const [showCall, setShowCall] = useState(false)
   const [callForm, setCallForm] = useState({ date: '', time: '', phone: '', message: '' })
@@ -118,11 +120,17 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // Viewing a creative profile requires an account. Anonymous visitors are sent
   // to sign in / create an account, then returned here.
   useEffect(() => {
-    if (!previewMode && !authLoading && !user) {
+    if (!previewMode && !siteMode && !authLoading && !user) {
       navigate('/login', { replace: true, state: { next: `/creatives/${id}` } })
     }
-  }, [previewMode, authLoading, user, id])
+  }, [previewMode, siteMode, authLoading, user, id])
   useEffect(() => { setProfileFlagSuccessId(null) }, [id])
+  // Public website tab title (SEO title from the builder, else the business name).
+  useEffect(() => {
+    if (!siteMode || !profile) return undefined
+    document.title = profile.site_seo_title || profile.business_name || 'LensTrybe'
+    return () => { document.title = 'LensTrybe' }
+  }, [siteMode, profile])
   useEffect(() => {
     function handleResize() { setIsMobile(window.innerWidth < 768) }
     window.addEventListener('resize', handleResize)
@@ -134,9 +142,9 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       supabase.from('profiles').select('*').eq('id', id).maybeSingle(),
       supabase.from('portfolio_items').select('*').eq('user_id', id).order('sort_order', { ascending: true }),
       supabase.from('reviews').select('*').eq('creative_id', id).or('hidden.is.null,hidden.eq.false').order('created_at', { ascending: false }),
-      supabase.from('availability').select('date, all_day, start_time, end_time').eq('creative_id', id).gte('date', new Date().toISOString().split('T')[0]),
+      supabase.rpc('creative_unavailable_dates', { p_creative: id }),
       supabase.from('brand_kit').select('*').eq('creative_id', id).maybeSingle(),
-      supabase.from('site_pages').select('*').eq('creative_id', id).eq('visible', true),
+      supabase.from('site_pages').select('*').eq('creative_id', id),
       supabase.from('portfolio_services').select('*').eq('creative_id', id).order('sort_order', { ascending: true }),
     ])
     // Admin profiles are hidden from the marketplace, but a creative can always
@@ -203,8 +211,30 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     setProfileFlagReason('')
   }
 
+  // Website visitors without an account enquire through the public form.
+  async function sendSiteEnquiry() {
+    setEnquiryError('')
+    const name = enquiry.name.trim()
+    const email = enquiry.email.trim()
+    if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { setEnquiryError('Please add your name and a valid email address.'); return }
+    const mod = await moderateText(`${enquiry.subject}\n${enquiry.message}`)
+    if (mod?.blocked) { setEnquiryError(MODERATION_BLOCKED_USER_MESSAGE); return }
+    setSending(true)
+    const message = [enquiry.subject.trim() && `Subject: ${enquiry.subject.trim()}`, enquiry.message.trim()].filter(Boolean).join('\n\n')
+    const { data, error } = await supabase.functions.invoke('site-enquiry', {
+      body: { creativeId: id, name, email, phone: enquiry.phone.trim() || null, message: message || null, website: enquiry.website },
+    })
+    setSending(false)
+    if (error || data?.error) { setEnquiryError('Something went wrong. Please try again.'); return }
+    setSent(true)
+    setEnquiry({ subject: '', message: '', name: '', phone: '', email: '', website: '' })
+  }
+
   async function sendEnquiry() {
-    if (!user) { setShowEnquire(false); setShowAuthGate(true); return }
+    if (!user) {
+      if (siteMode) { await sendSiteEnquiry(); return }
+      setShowEnquire(false); setShowAuthGate(true); return
+    }
     setEnquiryError('')
     const combinedEnquiryText = `${enquiry.subject}\n${enquiry.message}`
     const mod = await moderateText(combinedEnquiryText)
@@ -226,7 +256,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     }
     setSending(false)
     setSent(true)
-    setEnquiry({ subject: '', message: '', name: '', phone: '' })
+    setEnquiry({ subject: '', message: '', name: '', phone: '', email: '', website: '' })
     setTimeout(() => { setShowEnquire(false); setSent(false) }, 2400)
   }
 
@@ -247,7 +277,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     setTimeout(() => { setShowCall(false); setCallSent(false) }, 2400)
   }
 
-  const openEnquire = () => { if (user) { setEnquiryError(''); setSent(false); setShowEnquire(true) } else setShowAuthGate(true) }
+  const openEnquire = () => {
+    if (user) { setEnquiryError(''); setSent(false); setShowEnquire(true); return }
+    // On the public website, send visitors to the Contact page form.
+    if (siteMode && navPages.includes('contact')) { setEnquiryError(''); setSent(false); setActivePage('contact'); window.scrollTo(0, 0); return }
+    setShowAuthGate(true)
+  }
   const openCall = () => { if (user) { setCallError(''); setCallSent(false); setCallForm({ date: '', time: '', phone: clientAccount?.phone || '', message: '' }); setShowCall(true) } else setShowAuthGate(true) }
   const openReview = () => { if (user) setShowReview(true); else setShowAuthGate(true) }
 
@@ -256,23 +291,27 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const isFull = tier === 'expert' || tier === 'elite'
   const showSocials = isPaid // Basic cannot show social links or external website
 
-  const pageMap = useMemo(() => { const m = {}; (pages || []).forEach((p) => { m[p.page_type] = p }); return m }, [pages])
+  const pageMap = useMemo(() => { const m = {}; (pages || []).forEach((p) => { if (p.visible !== false) m[p.page_type] = p }); return m }, [pages])
+  const hiddenPages = useMemo(() => new Set((pages || []).filter((p) => p.visible === false).map((p) => p.page_type)), [pages])
   const isOwnerView = previewMode || (user?.id && user.id === id)
   const navPages = useMemo(() => {
     const allowed = isFull ? FULL_PAGES : isPaid ? PRO_PAGES : []
     return allowed.filter((pt) => {
-      if (pt === 'home' || pt === 'about' || pt === 'contact') return true
+      if (pt === 'home') return true
+      // Pages switched off in the website builder stay out of the menu.
+      if (hiddenPages.has(pt)) return false
+      if (pt === 'about' || pt === 'contact') return true
       // Gallery/Services show once they have content; the owner always sees them
       // so they can preview and populate.
       if (pt === 'gallery') return (portfolioItems || []).length > 0 || isOwnerView
       if (pt === 'services') return (services || []).length > 0 || isOwnerView
       return false
     })
-  }, [isFull, isPaid, portfolioItems, services, isOwnerView])
+  }, [isFull, isPaid, portfolioItems, services, isOwnerView, hiddenPages])
 
   useEffect(() => { if (navPages.length && !navPages.includes(activePage)) setActivePage(navPages[0]) }, [navPages]) // eslint-disable-line
 
-  if (!previewMode && (authLoading || !user)) return (
+  if (!previewMode && !siteMode && (authLoading || !user)) return (
     <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
       {authLoading ? 'Loading…' : 'Redirecting to sign in…'}
     </div>
@@ -289,12 +328,21 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   const displayName = profile.business_name ?? 'Creative'
   const avgRating = reviews.length > 0 ? (reviews.reduce((s, r) => s + (r.rating ?? 0), 0) / reviews.length).toFixed(1) : null
+  const isTrue = (v) => v === true || v === 'true' || v === 1 || v === '1' || v === 't'
+  const showFounding = isTrue(profile.founding_member) && !(profile.show_founding_badge === false || profile.show_founding_badge === 'false')
+  const hasCredentials = !!(profile.abn || profile.has_insurance || profile.has_blue_card || profile.has_police_check || profile.has_wwvp || profile.has_drone_licence || profile.has_other || showFounding)
+  const locationText = [profile.city, profile.state, profile.country].filter(Boolean).join(', ')
+  const serviceAreas = Array.isArray(profile.site_service_areas) ? profile.site_service_areas.filter(Boolean) : []
+  const publicPhone = isFull && profile.show_phone && profile.public_phone ? profile.public_phone : null
+  const fmtDay = (d) => { try { return new Date(`${d}T00:00:00`).toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }) } catch { return d } }
+  const unavailable = (blockedDates || []).slice(0, 14)
 
   // ---- Shared bits (reviews + modals) reused by both layouts ----
   const credentialBadges = (extraStyle = {}) => {
     const chip = { padding: '3px 10px', background: 'rgba(29,185,84,0.08)', border: '1px solid rgba(29,185,84,0.2)', borderRadius: '999px', fontSize: '11px', fontWeight: 700, color: '#1DB954', fontFamily: 'var(--font-ui)', ...extraStyle }
     return (
       <>
+        {showFounding && <span style={{ ...chip, background: 'rgba(234,179,8,0.12)', border: '1px solid rgba(234,179,8,0.35)', color: '#b8860b' }}>★ Founding Creative</span>}
         {profile.abn && <span style={chip}>✓ ABN</span>}
         {profile.has_insurance && <span style={chip}>✓ Insured</span>}
         {profile.has_blue_card && <span style={chip}>✓ Blue Card</span>}
@@ -332,7 +380,8 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               {profile.avatar_url ? <img src={profile.avatar_url} alt={displayName} style={styles.avatar} /> : <div style={styles.avatar}>📷</div>}
               <div style={styles.heroContent}>
                 <div style={styles.nameRow}><h1 style={styles.name}>{displayName}</h1></div>
-                {(profile.city || profile.state) && <div style={styles.location}>{[profile.city, profile.state, profile.country].filter(Boolean).join(', ')}</div>}
+                {profile.tagline && <div style={{ ...styles.location, fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{profile.tagline}</div>}
+                {locationText && <div style={styles.location}>{locationText}</div>}
                 <div style={styles.skillRow}>
                   {(profile.skill_types ?? []).map((s, i) => <Badge key={i} variant="green" size="sm">{s}</Badge>)}
                   {credentialBadges()}
@@ -359,6 +408,13 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               <div style={styles.section}>
                 <div style={styles.sectionTitle}>Specialties</div>
                 <div style={styles.specialtySection}>{profile.specialties.map((s, i) => <Badge key={i} variant="default">{s}</Badge>)}</div>
+              </div>
+            )}
+            {unavailable.length > 0 && (
+              <div style={styles.section}>
+                <div style={styles.sectionTitle}>Availability</div>
+                <div style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Already booked on these dates. Enquire to check anything else.</div>
+                <div style={styles.specialtySection}>{unavailable.map((d) => <Badge key={d.date} variant="default">{fmtDay(d.date)}</Badge>)}</div>
               </div>
             )}
             <div style={styles.section}>
@@ -440,7 +496,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', justifyContent: align }}>
         {!previewMode && <button style={btn} onClick={openEnquire}>{home.cta_text || 'Enquire Now'}</button>}
-        {!previewMode && user?.id !== id && <button style={btnGhost} onClick={openCall}>Request a Call</button>}
+        {!previewMode && user?.id !== id && (user || !siteMode) && <button style={btnGhost} onClick={openCall}>Request a Call</button>}
       </div>
     )
   }
@@ -489,16 +545,37 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     return (
       <>
         {hero}
-        {(home.intro || profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
+        {(home.intro || profile.skill_types?.length || hasCredentials || serviceAreas.length) ? (
           <section style={{ ...wrap, padding: '40px 24px' }}>
             <div style={{ ...glassCard, padding: isMobile ? '28px 22px' : '36px 44px', maxWidth: 880, margin: '0 auto', textAlign: 'center' }}>
               {home.intro && <p style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize + 2, lineHeight: 1.75, margin: 0, overflowWrap: 'anywhere' }}>{home.intro}</p>}
-              {(profile.skill_types?.length || profile.abn || profile.has_insurance) ? (
+              {(profile.skill_types?.length || hasCredentials) ? (
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'center', marginTop: home.intro ? 24 : 0 }}>
                   {(profile.skill_types ?? []).map((s, i) => <span key={i} style={{ ...chipGlass, fontFamily: bodyFont, fontSize: 13, color: ink, padding: '6px 14px' }}>{s}</span>)}
                   {credentialBadges()}
                 </div>
               ) : null}
+              {serviceAreas.length > 0 && (
+                <p style={{ fontFamily: bodyFont, color: soft, fontSize: 14, lineHeight: 1.6, margin: '18px 0 0' }}>
+                  <strong style={{ color: ink }}>Areas covered:</strong> {serviceAreas.join(', ')}
+                </p>
+              )}
+            </div>
+          </section>
+        ) : null}
+        {!isFull && (profile.bio || profile.avatar_url || profile.specialties?.length) ? (
+          <section style={{ ...wrap, padding: '8px 24px 40px' }}>
+            <div style={{ ...glassCard, padding: isMobile ? '26px 22px' : '34px 40px', maxWidth: 880, margin: '0 auto', display: 'grid', gridTemplateColumns: profile.avatar_url && !isMobile ? '150px minmax(0,1fr)' : '1fr', gap: 28, alignItems: 'center' }}>
+              {profile.avatar_url && <img src={profile.avatar_url} alt={displayName} style={{ width: isMobile ? 120 : 150, height: isMobile ? 120 : 150, borderRadius: '50%', objectFit: 'cover', margin: isMobile ? '0 auto' : 0, border: `4px solid ${accent}22` }} />}
+              <div style={{ minWidth: 0, textAlign: isMobile ? 'center' : 'left' }}>
+                <h2 style={{ ...H('26px'), marginBottom: 12 }}>About {displayName}</h2>
+                {(profile.bio || '').split('\n').filter(Boolean).map((para, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.8, margin: '0 0 12px' }}>{para}</p>)}
+                {profile.specialties?.length ? (
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 8, justifyContent: isMobile ? 'center' : 'flex-start' }}>
+                    {profile.specialties.map((s, i) => <span key={i} style={{ fontFamily: bodyFont, fontSize: 13, color: ink, background: accent + '14', border: `1px solid ${accent}33`, borderRadius: PILL, padding: '5px 13px' }}>{s}</span>)}
+                  </div>
+                ) : null}
+              </div>
             </div>
           </section>
         ) : null}
@@ -516,9 +593,14 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {reviews.length > 0 && (
           <section style={{ background: accent + '0e', padding: '52px 0' }}>
             <div style={wrap}>
-              <h2 style={{ ...H('28px'), textAlign: 'center', marginBottom: 26 }}>Kind words</h2>
+              <h2 style={{ ...H('28px'), textAlign: 'center', marginBottom: 8 }}>Kind words</h2>
+              {avgRating && (
+                <div style={{ textAlign: 'center', fontFamily: bodyFont, color: soft, fontSize: 14.5, marginBottom: 24 }}>
+                  <span style={{ color: accent, fontWeight: 700 }}>★ {avgRating}</span> from {reviews.length} review{reviews.length !== 1 ? 's' : ''}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(260px,1fr))', gap: 16 }}>
-                {reviews.slice(0, 3).map((r) => (
+                {(showAllReviews ? reviews : reviews.slice(0, 3)).map((r) => (
                   <div key={r.id} style={{ ...glassCard, padding: '20px 22px' }}>
                     <div style={{ color: accent, fontSize: 15, marginBottom: 8 }}>{'★'.repeat(r.rating || 5)}</div>
                     <p style={{ fontFamily: bodyFont, color: ink, fontSize: 14.5, lineHeight: 1.6, fontStyle: 'italic', margin: '0 0 10px' }}>"{r.body || r.comment}"</p>
@@ -526,6 +608,11 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
                   </div>
                 ))}
               </div>
+              {reviews.length > 3 && (
+                <div style={{ textAlign: 'center', marginTop: 20 }}>
+                  <button style={btnGhost} onClick={() => setShowAllReviews((v) => !v)}>{showAllReviews ? 'Show fewer reviews' : `Read all ${reviews.length} reviews`}</button>
+                </div>
+              )}
             </div>
           </section>
         )}
@@ -555,7 +642,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
           </section>
         )}
-        {((profile.specialties?.length) || (profile.abn || profile.has_insurance)) ? (
+        {((profile.specialties?.length) || hasCredentials) ? (
           <section style={{ ...wrap, padding: '0 24px 56px' }}>
             {profile.specialties?.length ? (
               <>
@@ -671,19 +758,44 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           </div>
         ) : (
           <>
+            {!user && siteMode && (
+              <>
+                <input style={field} placeholder="Your name" value={enquiry.name} onChange={(e) => { setEnquiryError(''); setEnquiry((f) => ({ ...f, name: e.target.value })) }} autoComplete="name" />
+                <input style={field} type="email" placeholder="Your email" value={enquiry.email} onChange={(e) => { setEnquiryError(''); setEnquiry((f) => ({ ...f, email: e.target.value })) }} autoComplete="email" />
+                <input style={field} type="tel" placeholder="Phone (optional)" value={enquiry.phone} onChange={(e) => setEnquiry((f) => ({ ...f, phone: e.target.value }))} autoComplete="tel" />
+                <input tabIndex={-1} autoComplete="off" aria-hidden value={enquiry.website} onChange={(e) => setEnquiry((f) => ({ ...f, website: e.target.value }))} style={{ position: 'absolute', left: '-9999px', width: 1, height: 1, opacity: 0 }} />
+              </>
+            )}
             <input style={field} placeholder="Subject (e.g. Wedding, June 2026)" value={enquiry.subject} onChange={(e) => { setEnquiryError(''); setEnquiry((f) => ({ ...f, subject: e.target.value })) }} />
             <textarea style={{ ...field, minHeight: 120, resize: 'vertical' }} placeholder="Tell them about your project, date, location and what you need…" value={enquiry.message} onChange={(e) => { setEnquiryError(''); setEnquiry((f) => ({ ...f, message: e.target.value })) }} />
             {enquiryError && <div style={{ color: '#c0392b', fontSize: 13, marginBottom: 10, fontFamily: bodyFont }}>{enquiryError}</div>}
             <button style={{ ...btn, width: '100%', opacity: sending ? 0.6 : 1 }} disabled={sending} onClick={sendEnquiry}>{sending ? 'Sending…' : 'Send enquiry'}</button>
-            {user?.id !== id && <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={openCall}>Request a call instead</button>}
+            {user?.id !== id && (user || !siteMode) && <button style={{ ...btnGhost, width: '100%', marginTop: 10 }} onClick={openCall}>Request a call instead</button>}
           </>
         )}
       </div>
     )
+    const hasDetails = !!(locationText || serviceAreas.length || publicPhone || unavailable.length)
+    const details = hasDetails ? (
+      <div style={{ fontFamily: bodyFont }}>
+        {locationText && <div style={{ color: ink, fontSize: 15, marginBottom: 10 }}><strong>Based in:</strong> {locationText}</div>}
+        {serviceAreas.length > 0 && <div style={{ color: ink, fontSize: 15, marginBottom: 10 }}><strong>Areas covered:</strong> {serviceAreas.join(', ')}</div>}
+        {publicPhone && <div style={{ color: ink, fontSize: 15, marginBottom: 10 }}><strong>Phone:</strong> <a href={`tel:${publicPhone.replace(/[^\d+]/g, '')}`} style={{ color: accent, textDecoration: 'none', fontWeight: 600 }}>{publicPhone}</a></div>}
+        {unavailable.length > 0 && (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ color: ink, fontSize: 15, fontWeight: 700, marginBottom: 8 }}>Already booked</div>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {unavailable.map((d) => <span key={d.date} style={{ fontSize: 12.5, color: soft, border: `1px solid ${line}`, borderRadius: PILL, padding: '4px 10px' }}>{fmtDay(d.date)}</span>)}
+            </div>
+            <div style={{ color: soft, fontSize: 13, marginTop: 8 }}>Other dates are open. Send an enquiry to check.</div>
+          </div>
+        )}
+      </div>
+    ) : null
     const aside = (
       <div style={{ fontFamily: bodyFont }}>
         {contact.blurb && <p style={{ color: soft, fontSize: 17, lineHeight: 1.7, marginTop: 0 }}>{contact.blurb}</p>}
-        {(profile.city || profile.state) && <div style={{ color: ink, fontSize: 15, marginBottom: 10 }}><strong>Based in:</strong> {[profile.city, profile.state].filter(Boolean).join(', ')}</div>}
+        {details}
         {socials.length > 0 && (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 14 }}>
             {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
@@ -708,6 +820,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 14 }}>{heading}</h2>
           {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: baseSize, lineHeight: 1.7, marginBottom: 22 }}>{contact.blurb}</p>}
           {formCard}
+          {details && <div style={{ marginTop: 22 }}>{details}</div>}
           {socials.length > 0 && (
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18 }}>
               {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
@@ -721,6 +834,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 14, textAlign: 'center' }}>{heading}</h2>
         {contact.blurb && <p style={{ fontFamily: bodyFont, color: soft, fontSize: baseSize, lineHeight: 1.7, marginBottom: 22, textAlign: 'center' }}>{contact.blurb}</p>}
         {formCard}
+        {details && <div style={{ ...glassCard, marginTop: 20, padding: '18px 22px' }}>{details}</div>}
         {socials.length > 0 && (
           <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 18, justifyContent: 'center' }}>
             {socials.map(([label, href]) => <a key={label} href={href} target="_blank" rel="noreferrer" title={label} style={{ color: accent, fontSize: 14.5, fontWeight: 600, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 7 }}><SocialIcon type={label} size={18} color={accent} />{label}</a>)}
