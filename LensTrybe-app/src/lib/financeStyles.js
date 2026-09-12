@@ -271,5 +271,22 @@ export const FINANCE_CSS = `
   .ltf .kpis{grid-template-columns:1fr 1fr}
   .ltf .fgrid2{grid-template-columns:1fr}
   .ltf .hide-m{display:none}
+  /* flex-shrink:0 keeps this row at its max-content width, so on a phone it never
+     wraps and Log expense falls off the right edge. Let it shrink and wrap. */
+  .ltf .hactions{flex-shrink:1;min-width:0;width:100%}
+  .ltf .hactions .btn{flex:1 1 auto;justify-content:center}
+  .ltf .fypick{flex:1 1 100%}
+  /* The expense rows set six fixed tracks inline. On a phone two of the cells are
+     hidden but their tracks stay, which squeezed the expense name track to 0px and
+     pushed the receipt icon off the edge, so the list showed a date and an amount
+     and no clue what the expense was. Override the inline value here. */
+  .ltf .lrow-exp{grid-template-columns:66px minmax(0,1fr) auto 34px!important;gap:9px;padding:12px 14px}
+  /* Twelve months of bars cannot shrink past their content, so the chart ran off the
+     screen. Narrower bars and gaps make the same twelve months fit. */
+  .ltf .chart{gap:3px}
+  .ltf .cbarwrap{min-width:0}
+  .ltf .cbars{gap:2px}
+  .ltf .cbar{width:7px}
+  .ltf .clbl{font-size:9px}
 }
 `

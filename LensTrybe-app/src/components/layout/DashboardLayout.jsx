@@ -196,7 +196,9 @@ export default function DashboardLayout() {
         }} className="dashboard-main-content">
           <div style={{
             flex: 1,
-            padding: isMobile ? '72px 16px 24px' : '32px 40px',
+            // Extra bottom room on a phone so the last row of any page clears the
+            // floating Lumi and quick-note buttons instead of sitting under them.
+            padding: isMobile ? '72px 16px 108px' : '32px 40px',
             maxWidth: '1280px',
             width: '100%',
             margin: '0 auto',

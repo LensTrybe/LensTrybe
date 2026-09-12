@@ -6,6 +6,11 @@ import { TILE_SIZE } from './widgetKit'
 // edit mode tiles wobble, lift and follow the cursor while the rest reflow, and
 // each shows a remove (−) badge. Clicking a tile (when not editing) expands the
 // widget into its centered modal — handled inside each widget.
+//
+// The wide analytics tiles carry maxWidth:100% of their own, but that resolved against
+// this wrapper, which shrink-wraps to the tile, so a 500px tile stayed 500px on a phone
+// and ran off the screen. Clamping the wrapper is what makes the tile's maxWidth mean
+// something. Do not remove maxWidth/minWidth below.
 export default function DashboardBoard({ items, editing, onReorder, onRemove }) {
   const [drag, setDrag] = useState(null) // { id, offX, offY, x, y }
   const tileRefs = useRef({})
@@ -60,7 +65,7 @@ export default function DashboardBoard({ items, editing, onReorder, onRemove }) 
               onPointerDown={(e) => onPointerDown(e, item.id)}
               style={lifted
                 ? { position: 'fixed', left: drag.x, top: drag.y, width: drag.w || TILE_SIZE, height: drag.h || TILE_SIZE, zIndex: 1000, filter: 'drop-shadow(0 20px 40px rgba(0,0,0,0.6))' }
-                : { position: 'relative', animationDelay: `${(index % 5) * 0.06}s` }}
+                : { position: 'relative', maxWidth: '100%', minWidth: 0, animationDelay: `${(index % 5) * 0.06}s` }}
             >
               {editing && !lifted ? (
                 <button

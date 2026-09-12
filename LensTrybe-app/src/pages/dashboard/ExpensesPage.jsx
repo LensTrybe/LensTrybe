@@ -216,13 +216,13 @@ export default function ExpensesPage() {
               <div className="card"><div className="empty"><div className="big">No expenses{inFy.length ? ' match your filters' : ' yet'}</div>{inFy.length ? 'Try clearing the filters.' : 'Add your first expense to start tracking deductions.'}</div></div>
             ) : (
               <div className="list">
-                <div className="lrow head" style={{ gridTemplateColumns: '92px 1fr 150px 96px 92px 40px' }}>
+                <div className="lrow lrow-exp head" style={{ gridTemplateColumns: '92px 1fr 150px 96px 92px 40px' }}>
                   <span>Date</span><span>Expense</span><span className="hide-m">Category</span><span className="hide-m" style={{ textAlign: 'right' }}>GST</span><span style={{ textAlign: 'right' }}>Amount</span><span></span>
                 </div>
                 {filtered.map(r => {
                   const gst = r.gst_amount != null ? Number(r.gst_amount) || 0 : (r.has_gst ? gstComponent(r.amount) : 0)
                   return (
-                    <div key={r.id} className="lrow click" style={{ gridTemplateColumns: '92px 1fr 150px 96px 92px 40px' }} onClick={() => openEdit(r)}>
+                    <div key={r.id} className="lrow lrow-exp click" style={{ gridTemplateColumns: '92px 1fr 150px 96px 92px 40px' }} onClick={() => openEdit(r)}>
                       <span className="faint" style={{ fontSize: 12.5 }}>{shortDate(r.expense_date)}</span>
                       <span style={{ minWidth: 0 }}>
                         <span style={{ fontSize: 13.5, fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{r.merchant || r.description || 'Expense'}</span>

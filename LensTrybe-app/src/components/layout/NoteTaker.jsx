@@ -35,7 +35,11 @@ export default function NoteTaker() {
     let p = null
     try { p = JSON.parse(localStorage.getItem('lt_notetaker_pos') || 'null') } catch { p = null }
     if (p && typeof p.x === 'number') setPos(clampToView(p.x, p.y))
-    else setPos({ x: window.innerWidth - 84, y: window.innerHeight - 104 })
+    // On a phone it starts above Lumi rather than on top of it. Still draggable, so a
+    // creative can put it wherever suits them and we remember that.
+    else if (window.innerWidth < 768) setPos({ x: window.innerWidth - 68, y: window.innerHeight - 140 })
+    // On desktop it sits under the bell rather than half on top of it.
+    else setPos({ x: window.innerWidth - 76, y: window.innerHeight - 80 })
   }, [])
 
   useEffect(() => {

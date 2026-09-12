@@ -101,9 +101,12 @@ export default function NotificationBell() {
         .ltn-dot { width: 8px; height: 8px; border-radius: 50%; background: ${GREEN}; flex-shrink: 0; margin-top: 5px; }
         .ltn-dot.read { background: transparent; }
         .ltn-empty { padding: 32px 16px; text-align: center; color: var(--lt-muted, #6b6a75); font-size: 13px; }
+        /* On a phone the bell sits in the top bar opposite the menu button, not in the
+           bottom-right corner where it stacked on top of Lumi, the quick-note button and
+           whatever row of the page happened to be under them. */
         @media (max-width: 767px) {
-          .ltn-bell { right: 16px; bottom: 84px; }
-          .ltn-panel { right: 16px; bottom: 142px; }
+          .ltn-bell { top: 12px; right: 12px; bottom: auto; width: 44px; height: 44px; border-radius: 10px; }
+          .ltn-panel { top: 64px; right: 12px; bottom: auto; width: auto; left: 12px; max-width: none; max-height: 70vh; }
         }
       `}</style>
 

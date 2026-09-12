@@ -195,6 +195,9 @@ export default function LumiWidget() {
         @keyframes lumiSlideIn { from { transform: translateX(24px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
         .lumi-launch { position: fixed; right: 24px; bottom: 148px; z-index: 952; width: 52px; height: 52px; border-radius: 50%; border: none; cursor: pointer; background: ${LUMI_GRAD}; box-shadow: 0 10px 26px -8px rgba(255,45,120,0.5), 0 4px 12px -4px rgba(29,185,84,0.5); display: flex; align-items: center; justify-content: center; transition: transform .14s ease; }
         .lumi-launch:hover { transform: translateY(-2px) scale(1.04); }
+        /* With the bell moved to the top bar on a phone, Lumi is the only button in the
+           bottom-right, so it sits properly in the corner instead of floating up the edge. */
+        @media (max-width: 767px) { .lumi-launch { right: 16px; bottom: 16px; } }
         .lumi-overlay { position: fixed; inset: 0; z-index: 1490; background: rgba(8,7,13,0.32); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
         .lumi-drawer { position: fixed; top: 0; right: 0; height: 100dvh; z-index: 1491; display: flex; flex-direction: column; background: var(--lt-modal-bg); border-left: var(--lt-modal-border); box-shadow: var(--lt-modal-shadow); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); animation: lumiSlideIn .22s ease; }
         .lumi-icon-btn { background: none; border: none; color: var(--lt-muted); cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background .12s ease, color .12s ease; }
