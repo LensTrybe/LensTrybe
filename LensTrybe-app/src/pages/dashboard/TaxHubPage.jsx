@@ -120,7 +120,7 @@ export default function TaxHubPage() {
     if (gstReg) lines.push(['Net GST ' + (calc.gstNet >= 0 ? 'payable' : 'refund'), Math.abs(calc.gstNet).toFixed(2)])
     lines.push([], ['Deductions by category', ''])
     Object.entries(calc.byCat).sort((a, b) => b[1] - a[1]).forEach(([k, v]) => lines.push([categoryLabel(k), v.toFixed(2)]))
-    lines.push([], ['Estimate only — not tax advice.'])
+    lines.push([], ['Estimate only, not tax advice.'])
 
     const csv = lines.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })

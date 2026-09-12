@@ -267,7 +267,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     // If the client chose to share contact details, add them to the message so
     // they land in the creative's inbox and CRM.
     const contactLine = [enquiry.name.trim() && `Name: ${enquiry.name.trim()}`, enquiry.phone.trim() && `Phone: ${enquiry.phone.trim()}`].filter(Boolean).join('\n')
-    const fullMessage = contactLine ? `${enquiry.message}\n\n— My contact details —\n${contactLine}` : enquiry.message
+    const fullMessage = contactLine ? `${enquiry.message}\n\nMy contact details:\n${contactLine}` : enquiry.message
     const { data: thread } = await supabase.from('message_threads').insert({
       creative_id: id, client_user_id: user.id, client_name: clientLabel, client_email: user.email, subject: enquiry.subject,
     }).select().single()

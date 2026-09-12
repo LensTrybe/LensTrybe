@@ -198,7 +198,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="support" element={<SupportPage />} />
         <Route path="referrals" element={<ReferralsPage />} />
-        <Route path="lumi" element={<LumiPage />} />
+        <Route path="lumi" element={<TierGate feature="lumi"><LumiPage /></TierGate>} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
 

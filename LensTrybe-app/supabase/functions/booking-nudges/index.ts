@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       const ok = await sendEmail(
         String(b.client_email),
         `No reply yet from ${businessName}`,
-        nudgeEmail(String(b.client_name || ''), businessName, dateLabel, `${SITE}/explore`),
+        nudgeEmail(String(b.client_name || ''), businessName, dateLabel, `${SITE}/creatives`),
       )
       // Marked either way, so a delivery problem never turns into a daily repeat.
       await sb.from('bookings').update({ client_nudge_sent_at: new Date().toISOString() }).eq('id', b.id)

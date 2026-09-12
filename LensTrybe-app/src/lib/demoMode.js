@@ -90,10 +90,10 @@ export function demoThreadsAll() {
 }
 export function demoThreadsUnread() {
   return [
-    { id: 'u1', client_name: 'Sunday Lane', nickname: null, subject: 'Wedding in November — availability?', unread_count: 2, last_message_at: iso(0.1) },
+    { id: 'u1', client_name: 'Sunday Lane', nickname: null, subject: 'Wedding in November, availability?', unread_count: 2, last_message_at: iso(0.1) },
     { id: 'u2', client_name: 'Atlas Media', nickname: null, subject: 'Corporate headshots for 12 staff', unread_count: 1, last_message_at: iso(0.3) },
     { id: 'u3', client_name: 'Fox & Fern', nickname: null, subject: 'Brand shoot quote', unread_count: 3, last_message_at: iso(1.2) },
-    { id: 'u4', client_name: 'Nova Group', nickname: null, subject: 'Event coverage — Dec 6', unread_count: 1, last_message_at: iso(2.1) },
+    { id: 'u4', client_name: 'Nova Group', nickname: null, subject: 'Event coverage, Dec 6', unread_count: 1, last_message_at: iso(2.1) },
   ]
 }
 export function demoReplyUsage() { return { used: 0, maxAllowed: 0, unlimited: true, rpcMissing: false } }
@@ -107,9 +107,9 @@ export function demoReviews() {
 // ---- Deliverables ----
 export function demoDeliverables() {
   return [
-    { id: 'd1', client_name: 'Harper & Jack', title: 'Wedding gallery — full edit', due_date: dstr(-2), status: 'editing', created_at: iso(6), delivered_at: null },
+    { id: 'd1', client_name: 'Harper & Jack', title: 'Wedding gallery, full edit', due_date: dstr(-2), status: 'editing', created_at: iso(6), delivered_at: null },
     { id: 'd2', client_name: 'Coastal Realty', title: '24 Marine Pde listing photos', due_date: dstr(1), status: 'editing', created_at: iso(3), delivered_at: null },
-    { id: 'd3', client_name: 'Atlas Media', title: 'Corporate headshots — retouched', due_date: dstr(3), status: 'ready', created_at: iso(4), delivered_at: null },
+    { id: 'd3', client_name: 'Atlas Media', title: 'Corporate headshots, retouched', due_date: dstr(3), status: 'ready', created_at: iso(4), delivered_at: null },
     { id: 'd4', client_name: 'The Bloom Co', title: 'Brand shoot selects', due_date: dstr(5), status: 'ready', created_at: iso(5), delivered_at: null },
     { id: 'd5', client_name: 'Nova Group', title: 'Event highlights reel', due_date: dstr(9), status: 'delivered', created_at: iso(20), delivered_at: iso(8) },
     { id: 'd6', client_name: 'Meridian Co', title: 'Portrait session gallery', due_date: dstr(14), status: 'delivered', created_at: iso(24), delivered_at: iso(13) },
@@ -169,7 +169,7 @@ export function demoEvents() {
     { id: 'e2', title: 'Coastal Realty shoot', event_date: dstr(-2), start_time: '09:00', end_time: '11:00', all_day: false, location: '24 Marine Pde', color: c3, notes: '', invitees: [] },
     { id: 'e3', title: 'Atlas Media headshots', event_date: dstr(-3), start_time: '10:00', end_time: '13:00', all_day: false, location: 'Studio', color: c1, notes: '', invitees: [] },
     { id: 'e4', title: 'The Bloom Co brand shoot', event_date: dstr(-4), start_time: '08:30', end_time: '12:30', all_day: false, location: 'West End', color: c4, notes: '', invitees: [] },
-    { id: 'e5', title: 'Consult — Sunday Lane', event_date: dstr(-5), start_time: '15:00', end_time: '15:45', all_day: false, location: 'Zoom', color: c3, notes: '', invitees: [] },
+    { id: 'e5', title: 'Consult, Sunday Lane', event_date: dstr(-5), start_time: '15:00', end_time: '15:45', all_day: false, location: 'Zoom', color: c3, notes: '', invitees: [] },
     { id: 'e6', title: 'Portrait session', event_date: dstr(-6), start_time: '16:30', end_time: '18:00', all_day: false, location: 'New Farm Park', color: c2, notes: '', invitees: [] },
   ]
 }

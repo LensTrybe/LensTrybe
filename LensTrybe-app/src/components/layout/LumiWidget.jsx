@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { tierHas } from '../../lib/tierFeatures'
 import { useAuth } from '../../context/AuthContext'
 
 // Global Lumi launcher: a floating circle on every dashboard page (stacked above
@@ -105,7 +106,7 @@ export default function LumiWidget() {
 
   // Load history the first time the drawer opens for a paid user.
   useEffect(() => {
-    if (open && user?.id && tier && tier !== 'basic') loadConversations()
+    if (open && user?.id && tier && tierHas(tier, 'lumi')) loadConversations()
   }, [open, user?.id, tier, loadConversations])
 
   useEffect(() => {
@@ -113,7 +114,7 @@ export default function LumiWidget() {
   }, [messages, open, sending])
 
   useEffect(() => {
-    if (open && tier && tier !== 'basic') setTimeout(() => inputRef.current?.focus(), 120)
+    if (open && tier && tierHas(tier, 'lumi')) setTimeout(() => inputRef.current?.focus(), 120)
   }, [open, tier])
 
   function openConversation(convo) {
@@ -131,7 +132,7 @@ export default function LumiWidget() {
 
   async function sendMessage(text) {
     const msg = (text || input).trim()
-    if (!msg || sending || tier === 'basic') return
+    if (!msg || sending || !tierHas(tier, 'lumi')) return
     setInput('')
     setSending(true)
     const optimisticUser = { role: 'user', content: msg }
@@ -177,7 +178,9 @@ export default function LumiWidget() {
   if (!user) return null
 
   const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.basic
-  const isLocked = tier === 'basic'
+  // Lumi is an Expert and Elite feature. Reading it from tierFeatures keeps this in
+  // step with the pricing pages and the sidebar rather than hardcoding the plan.
+  const isLocked = !tierHas(tier, 'lumi')
   const monthlyLimit = tierConfig.monthly
   const usedMonthly = usage?.monthly || 0
   const hasMessages = messages.length > 0

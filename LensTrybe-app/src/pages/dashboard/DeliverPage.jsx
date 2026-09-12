@@ -172,7 +172,7 @@ export default function DeliverPage() {
   }
 
   async function createDelivery() {
-    if (!user?.id) { showToast('Your session expired — please sign in again to save.', 'error'); return }
+    if (!user?.id) { showToast('Your session expired. Please sign in again to save.', 'error'); return }
     setSaving(true)
     const download_token = crypto.randomUUID()
     const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()

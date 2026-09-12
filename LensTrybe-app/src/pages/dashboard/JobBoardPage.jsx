@@ -268,7 +268,7 @@ export default function JobBoardPage() {
 
   async function postJob() {
     setJobPostModerationError('')
-    if (!user?.id) { setJobPostModerationError('Your session expired — please sign in again to post.'); return }
+    if (!user?.id) { setJobPostModerationError('Your session expired. Please sign in again to post.'); return }
     const jobText = [form.title, form.description, form.location, form.budget].filter(Boolean).join('\n')
     const jobMod = await moderateText(jobText)
     if (jobMod?.blocked) { setJobPostModerationError(MODERATION_BLOCKED_USER_MESSAGE); return }

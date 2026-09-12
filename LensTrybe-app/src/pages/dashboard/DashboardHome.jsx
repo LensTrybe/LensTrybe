@@ -366,7 +366,7 @@ export default function DashboardHome() {
     job_matches: {
       title: 'New jobs for you',
       content: (!m?.jobMatches || m.jobMatches.length === 0)
-        ? <div style={emptyS}>No new jobs right now — check back soon.</div>
+        ? <div style={emptyS}>No new jobs right now. Check back soon.</div>
         : m.jobMatches.map((j) => <JumpRow key={j.id} t={t} left={j.title} sub={j.location || 'Australia'} right={timeAgo(j.created_at)} onClick={() => navigate('/dashboard/my-work/jobs')} />),
     },
     visibility: {
@@ -390,7 +390,7 @@ export default function DashboardHome() {
       title: 'Reviews',
       content: m?.reviewCount
         ? <div><div style={{ ...bigNum, fontSize: 30, color: t.dark ? '#ffd54a' : t.text }}>★ {m.reviewsAvg.toFixed(1)}</div><div style={muted}>{m.reviewCount} review{m.reviewCount > 1 ? 's' : ''}</div><button type="button" onClick={() => navigate('/dashboard/business/reviews')} style={linkBtn}>View reviews →</button></div>
-        : <div style={emptyS}>No reviews yet — they&apos;ll appear here.</div>,
+        : <div style={emptyS}>No reviews yet. They&apos;ll appear here.</div>,
     },
     leads: {
       title: 'Leads',

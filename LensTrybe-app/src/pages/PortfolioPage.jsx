@@ -104,7 +104,7 @@ export default function PortfolioPage() {
         <PublicNavbar />
         <div style={{ ...maxWrap, padding: '100px 24px 40px', boxSizing: 'border-box' }}>
           <div style={{ color: '#f87171', fontWeight: 800 }}>{error || 'Profile not found.'}</div>
-          <Link to="/explore" style={{ display: 'inline-block', marginTop: 16, color: BRAND.pink, fontWeight: 700 }}>
+          <Link to="/creatives" style={{ display: 'inline-block', marginTop: 16, color: BRAND.pink, fontWeight: 700 }}>
             ← Back to explore
           </Link>
         </div>

@@ -99,7 +99,7 @@ export async function acceptJobApplication({
   await reloadPostedJobs?.()
   await reloadBrowseJobs?.()
   await reloadThreads?.()
-  showToast('Application accepted — message thread created')
+  showToast('Application accepted, message thread created')
 }
 
 export async function declineJobApplication({ app, showToast, reloadPostedJobs }) {

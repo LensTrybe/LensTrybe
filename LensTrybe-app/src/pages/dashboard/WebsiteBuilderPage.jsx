@@ -213,7 +213,7 @@ function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload,
       <p style={{ margin: 0, fontSize: 13, color: 'var(--lt-faint)', fontFamily: 'inherit', lineHeight: 1.6 }}>Create albums for different parts of your work (e.g. Weddings, Portraits, Commercial). Each album becomes a tab on your Gallery, and visitors also get an "All" tab showing every photo. Tick "Feature on Home" to show a photo on your landing page (up to 12).</p>
       <div style={{ border: '1px dashed var(--lt-border)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
         <div style={label}>Add to album</div>
-        <input value={albumInput} onChange={(e) => setAlbumInput(e.target.value)} placeholder="Album name (e.g. Weddings) — leave blank for Unsorted" style={inputStyle} />
+        <input value={albumInput} onChange={(e) => setAlbumInput(e.target.value)} placeholder="Album name (e.g. Weddings), leave blank for Unsorted" style={inputStyle} />
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,video/mp4" multiple style={{ display: 'none' }} onChange={(e) => { const fl = e.target.files; if (fl?.length) onUpload(Array.from(fl)); if (fileRef.current) fileRef.current.value = '' }} />
         <div><Btn variant="primary" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : albumInput.trim() ? `Upload to "${albumInput.trim()}"` : 'Upload photos'}</Btn></div>
       </div>

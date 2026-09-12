@@ -49,8 +49,8 @@ export default function ReviewsWidget({ userId, hostName }) {
 
   function requestReview(c) {
     const who = hostName || 'us'
-    const subject = encodeURIComponent(`Quick favour — a review for ${who}?`)
-    const body = encodeURIComponent(`Hi ${c.name},\n\nThank you so much for working with ${who}! If you have a spare minute, I'd really appreciate a short review about your experience — it makes a big difference.\n\nThank you!\n${who}`)
+    const subject = encodeURIComponent(`Quick favour, a review for ${who}?`)
+    const body = encodeURIComponent(`Hi ${c.name},\n\nThank you so much for working with ${who}! If you have a spare minute, I'd really appreciate a short review about your experience. It makes a big difference.\n\nThank you!\n${who}`)
     window.open(`mailto:${c.email}?subject=${subject}&body=${body}`, '_blank')
   }
 
@@ -76,7 +76,7 @@ export default function ReviewsWidget({ userId, hostName }) {
           <div style={{ marginTop: 22 }}>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: FAINT, fontFamily: FONT, marginBottom: 8 }}>Clients who haven&apos;t reviewed yet</div>
             {awaiting.length === 0 ? (
-              <div style={{ fontSize: 13.5, color: MUTED, fontFamily: FONT }}>Nobody waiting — everyone with an email on file has reviewed. Nice.</div>
+              <div style={{ fontSize: 13.5, color: MUTED, fontFamily: FONT }}>Nobody waiting. Everyone with an email on file has reviewed.</div>
             ) : awaiting.map((c) => (
               <div key={c.email} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '9px 0', borderBottom: '1px solid var(--lt-surface-2)' }}>
                 <span style={{ minWidth: 0 }}>
