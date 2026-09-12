@@ -1,32 +1,51 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useMemo } from 'react'
 import { useAuth } from './AuthContext'
+import {
+  getFeatures,
+  normalizeSubscriptionTier,
+  meetsTier,
+  tierHas,
+  lowestTierWith,
+  TIER_ORDER,
+  TIER_META,
+} from '../lib/tierFeatures'
 
-const tierOrder = { basic: 0, pro: 1, expert: 2, elite: 3 }
-
-const features = {
-  basic:  { messages: 5, portfolioPhotos: 5, portfolioVideos: 0, marketplace: false, invoicing: false, contracts: false, crm: false, brandKit: false, deliver: false, insights: false, team: false },
-  pro:    { messages: 20, portfolioPhotos: 20, portfolioVideos: 1, marketplace: true, invoicing: true, contracts: false, crm: false, brandKit: false, deliver: false, insights: false, team: false },
-  expert: { messages: 999, portfolioPhotos: 40, portfolioVideos: 5, marketplace: true, invoicing: true, contracts: true, crm: true, brandKit: true, deliver: true, insights: true, team: false },
-  elite:  { messages: 999, portfolioPhotos: 999, portfolioVideos: 999, marketplace: true, invoicing: true, contracts: true, crm: true, brandKit: true, deliver: true, insights: true, team: true },
-}
+// Plan access for the whole dashboard. Every value comes from src/lib/tierFeatures.js,
+// which is the one place plan contents are defined. This file used to carry a second,
+// slightly different copy of that table, which is how the pricing pages and the sidebar
+// drifted apart. Do not put feature values back in here.
 
 const SubscriptionContext = createContext(null)
 
 export function SubscriptionProvider({ children }) {
   const { tier } = useAuth()
-  const currentTier = tier?.toLowerCase() ?? 'basic'
-  const currentFeatures = features[currentTier] ?? features.basic
+  const currentTier = normalizeSubscriptionTier(tier)
 
-  function hasFeature(feature) {
-    return !!currentFeatures[feature]
-  }
+  const value = useMemo(() => {
+    const features = getFeatures(currentTier)
+    return {
+      tier: currentTier,
+      meta: TIER_META[currentTier],
+      features,
 
-  function meetsMinTier(minTier) {
-    return (tierOrder[currentTier] ?? 0) >= (tierOrder[minTier] ?? 0)
-  }
+      /** Does this plan include the feature at all? */
+      hasFeature: (key) => tierHas(currentTier, key),
+
+      /** The numeric or levelled value, for limits and depths. */
+      limit: (key) => features[key],
+
+      /** Is the creative on at least this plan? */
+      meetsMinTier: (minTier) => meetsTier(currentTier, minTier),
+
+      /** Cheapest plan that includes the feature, for upgrade wording. */
+      tierNeededFor: (key) => lowestTierWith(key),
+
+      tierOrder: TIER_ORDER,
+    }
+  }, [currentTier])
 
   return (
-    <SubscriptionContext.Provider value={{ tier: currentTier, features: currentFeatures, hasFeature, meetsMinTier }}>
+    <SubscriptionContext.Provider value={value}>
       {children}
     </SubscriptionContext.Provider>
   )

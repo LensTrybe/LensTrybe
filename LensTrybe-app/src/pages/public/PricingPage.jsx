@@ -4,93 +4,42 @@ import { supabase } from '../../lib/supabaseClient'
 import { LIQUID_GLASS_CARD } from '../../lib/glassTokensLight'
 import TileField from '../../components/ui/TileField'
 import { payWithRevolut } from '../../lib/revolut.js'
+import { TIER_ORDER, TIER_META, planCardLines } from '../../lib/tierFeatures'
 
 const FOUNDING_CAP = 500
 const OFFER_END = new Date('2026-12-31T23:59:59+11:00')
 
-const tiers = [
-  {
-    name: 'Basic',
-    monthly: 0,
-    annual: 0,
-    description: 'Get discovered. Build your presence.',
-    badge: null,
-    borderColor: 'rgba(20,17,26,0.1)',
-    features: [
-      '5 portfolio photos',
-      'Public profile listing',
-      '5 message replies/month',
-      '3 confirmed bookings/month',
-      'Gear marketplace access',
-      'Basic search placement',
-    ],
-    cta: 'Get Started Free',
-  },
-  {
-    name: 'Pro',
-    monthly: 24.99,
-    annual: 249.90,
-    description: 'Start booking clients professionally.',
-    badge: null,
-    borderColor: 'rgba(29,185,84,0.5)',
-    features: [
-      '20 portfolio photos, 1 video',
-      '20 message replies/month',
-      'Unlimited bookings',
-      'Quotes & invoicing',
-      'Review requests',
-      'Gear marketplace listings (5)',
-      'Pro badge on profile',
-    ],
-    cta: 'Start with Pro',
-  },
-  {
-    name: 'Expert',
-    monthly: 74.99,
-    annual: 749.90,
-    description: 'Full business tools for serious creatives.',
+// Plan contents come from src/lib/tierFeatures.js, the one place they are defined. Only the
+// presentation lives here: the badge, the border colour and the button wording. If a number
+// on this page looks wrong, change it in tierFeatures, not here.
+const PRESENTATION = {
+  basic: { badge: null, borderColor: 'rgba(20,17,26,0.1)', cta: 'Get Started Free' },
+  pro: { badge: null, borderColor: 'rgba(29,185,84,0.5)', cta: 'Start with Pro' },
+  expert: {
     badge: { label: 'Most Popular', variant: 'green' },
     borderColor: 'rgba(192,200,216,0.5)',
-    features: [
-      '40 photos, 5 videos',
-      'Unlimited message replies',
-      'Custom contracts & e-signatures',
-      'CRM: 500 client records',
-      'Client portals',
-      'Brand kit',
-      'Portfolio website',
-      'LensTrybe Deliver: 50GB',
-      'Business insights',
-      'Homepage rotation',
-      'Gear marketplace listings (15)',
-    ],
     cta: 'Start with Expert',
     foundingCta: 'Claim your spot',
   },
-  {
-    name: 'Elite',
-    monthly: 149.99,
-    annual: 1499.90,
-    description: 'Studio-level power for teams.',
-    badge: { label: 'Best Value', variant: 'default' },
-    borderColor: 'rgba(234,179,8,0.5)',
-    features: [
-      'Unlimited photos & videos',
-      'Unlimited message replies',
-      'Everything in Expert',
-      'CRM: unlimited records',
-      'LensTrybe Deliver: 200GB',
-      'Multi-page portfolio website',
-      'Custom domain',
-      'Team: up to 5 members',
-      'Studio profile page',
-      'Team performance insights',
-      'Elite spotlight on homepage',
-      'Unlimited marketplace listings',
-    ],
-    cta: 'Start with Elite',
-  },
-]
+  elite: { badge: { label: 'Best Value', variant: 'default' }, borderColor: 'rgba(234,179,8,0.5)', cta: 'Start with Elite' },
+}
+
+const tiers = TIER_ORDER.map((key) => {
+  const meta = TIER_META[key]
+  const below = TIER_ORDER[TIER_ORDER.indexOf(key) - 1]
+  return {
+    key,
+    name: meta.name,
+    monthly: meta.monthly,
+    annual: meta.annual,
+    description: meta.tagline,
+    // Paid plans lead with what they add, so the cards read as a ladder.
+    features: below
+      ? [`Everything in ${TIER_META[below].name}`, ...planCardLines(key)]
+      : planCardLines(key),
+    ...PRESENTATION[key],
+  }
+})
 
 export default function PricingPage() {
   const navigate = useNavigate()

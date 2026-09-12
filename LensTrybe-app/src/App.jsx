@@ -46,6 +46,7 @@ import PublicSupportPage from './pages/public/SupportPage'
 import FoundingHubPage from './pages/dashboard/FoundingHubPage'
 import PublicLayout from './components/layout/PublicLayout'
 import DashboardLayout from './components/layout/DashboardLayout'
+import TierGate from './components/dashboard/TierGate'
 import SignContract from './pages/SignContract'
 import MeetingRespondPage from './pages/MeetingRespondPage'
 import PublicPortfolioPage from './pages/PortfolioPage'
@@ -172,22 +173,22 @@ export default function App() {
         <Route path="clients/messages" element={<MessagesPage />} />
         <Route path="clients/meetings" element={<MeetingsPage />} />
         <Route path="clients/contacts" element={<ContactsPage />} />
-        <Route path="clients/crm" element={<CRMPage />} />
+        <Route path="clients/crm" element={<TierGate feature="crmRecords"><CRMPage /></TierGate>} />
         <Route path="finance/overview" element={<FinanceOverviewPage />} />
-        <Route path="finance/invoicing" element={<InvoicingPage />} />
-        <Route path="finance/quotes" element={<QuotesPage />} />
-        <Route path="finance/contracts" element={<ContractsPage />} />
+        <Route path="finance/invoicing" element={<TierGate feature="invoicing"><InvoicingPage /></TierGate>} />
+        <Route path="finance/quotes" element={<TierGate feature="quotes"><QuotesPage /></TierGate>} />
+        <Route path="finance/contracts" element={<TierGate feature="contracts"><ContractsPage /></TierGate>} />
         <Route path="finance/expenses" element={<ExpensesPage />} />
         <Route path="finance/tax" element={<TaxHubPage />} />
-        <Route path="portfolio-design/brand-kit" element={<BrandKitPage />} />
-        <Route path="portfolio-design/deliver" element={<DeliverPage />} />
-        <Route path="portfolio-design/portfolio-website" element={<WebsiteBuilderPage />} />
+        <Route path="portfolio-design/brand-kit" element={<TierGate feature="brandKit"><BrandKitPage /></TierGate>} />
+        <Route path="portfolio-design/deliver" element={<TierGate feature="deliverGb"><DeliverPage /></TierGate>} />
+        <Route path="portfolio-design/portfolio-website" element={<TierGate feature="website"><WebsiteBuilderPage /></TierGate>} />
         <Route path="business/insights" element={<Navigate to="/dashboard" replace />} />
         <Route path="business/reviews" element={<ReviewsPage />} />
         <Route path="business/marketplace" element={<MarketplacePage />} />
         <Route path="collaborate" element={<CollaboratePage />} />
         <Route path="founding" element={<FoundingHubPage />} />
-        <Route path="business/team" element={<TeamPage />} />
+        <Route path="business/team" element={<TierGate feature="teamSeats"><TeamPage /></TierGate>} />
         <Route path="my-work/my-bookings" element={<MyBookingsPage />} />
         <Route path="my-work/availability" element={<AvailabilityPage />} />
         <Route path="my-work/jobs" element={<JobBoardPage />} />

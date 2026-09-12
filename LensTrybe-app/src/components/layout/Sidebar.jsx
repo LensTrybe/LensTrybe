@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { lowestTierWith } from '../../lib/tierFeatures'
 import { supabase } from '../../lib/supabaseClient'
 import BrandLogo from '../ui/BrandLogo'
 import NavIcon from './navIcons'
@@ -18,7 +19,6 @@ const SPACER = MARGIN + RAIL + 14
 
 // Which plan a gated feature unlocks — drives the badge on locked nav items so
 // lower-tier creatives can see what they're missing and tap through to upgrade.
-const FEATURE_TIER = { invoicing: 'pro', crm: 'expert', contracts: 'expert', brandKit: 'expert', deliver: 'expert', team: 'elite' }
 const TIER_LABEL = { pro: 'Pro', expert: 'Expert', elite: 'Elite' }
 
 function LockGlyph({ color = 'currentColor', size = 10 }) {
@@ -98,18 +98,18 @@ const BASE_SECTIONS = [
     { label: 'Messages', path: '/dashboard/clients/messages', icon: 'message' },
     { label: 'Meetings', path: '/dashboard/clients/meetings', icon: 'calendar' },
     { label: 'Contacts', path: '/dashboard/clients/contacts', icon: 'addressBook' },
-    { label: 'CRM', path: '/dashboard/clients/crm', icon: 'contact', feature: 'crm' },
+    { label: 'CRM', path: '/dashboard/clients/crm', icon: 'contact', feature: 'crmRecords' },
   ] },
   { label: 'Finance', icon: 'receipt', items: [
     { label: 'Finance Hub', path: '/dashboard/finance/overview', icon: 'chart' },
     { label: 'Invoicing', path: '/dashboard/finance/invoicing', icon: 'dollar', feature: 'invoicing' },
-    { label: 'Quotes', path: '/dashboard/finance/quotes', icon: 'file', feature: 'invoicing' },
+    { label: 'Quotes', path: '/dashboard/finance/quotes', icon: 'file', feature: 'quotes' },
     { label: 'Contracts', path: '/dashboard/finance/contracts', icon: 'fileCheck', feature: 'contracts' },
   ] },
   { label: 'Portfolio', icon: 'image', items: [
     { label: 'Brand Kit', path: '/dashboard/portfolio-design/brand-kit', icon: 'palette', feature: 'brandKit' },
-    { label: 'Website', path: '/dashboard/portfolio-design/portfolio-website', icon: 'globe' },
-    { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: 'upload', feature: 'deliver' },
+    { label: 'Website', path: '/dashboard/portfolio-design/portfolio-website', icon: 'globe', feature: 'website' },
+    { label: 'Deliver', path: '/dashboard/portfolio-design/deliver', icon: 'upload', feature: 'deliverGb' },
   ] },
   { label: 'Content', icon: 'pen', items: [
     { label: 'Content Calendar', path: '/dashboard/content/calendar', icon: 'calendar' },
@@ -119,8 +119,8 @@ const BASE_SECTIONS = [
     { label: 'Reviews', path: '/dashboard/business/reviews', icon: 'star' },
     { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: 'bag' },
     { label: 'Collaborate', path: '/dashboard/collaborate', icon: 'users' },
-    { label: 'Team', path: '/dashboard/business/team', icon: 'users', feature: 'team' },
-    { label: 'Lumi AI', path: '/dashboard/lumi', icon: 'sparkle' },
+    { label: 'Team', path: '/dashboard/business/team', icon: 'users', feature: 'teamSeats' },
+    { label: 'Lumi AI', path: '/dashboard/lumi', icon: 'sparkle', feature: 'lumi' },
   ] },
   { label: 'Work', icon: 'calendar', items: [
     { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: 'calendar' },
@@ -247,7 +247,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   function flyItem(item) {
     const active = itemActive(item.path)
     const locked = item.feature ? !hasFeature(item.feature) : false
-    const reqTier = locked && item.feature ? (FEATURE_TIER[item.feature] || null) : null
+    const reqTier = locked && item.feature ? lowestTierWith(item.feature) : null
     const badgeColor = reqTier === 'elite' ? t.gold : reqTier === 'expert' ? t.green : t.pink
     const inner = (
       <>
@@ -274,12 +274,11 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         </button>
       )
     }
-    if (locked) {
-      return (
-        <Link key={item.path} to="/dashboard/subscription" title={`${TIER_LABEL[reqTier] || 'Paid'} plan feature — tap to upgrade`} style={style} {...hoverBg(false)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
-      )
-    }
-    return <Link key={item.path} to={item.path} title={item.label} style={style} {...hoverBg(active)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
+    // A locked item still goes to its own page. The page renders itself blurred behind an
+    // upgrade panel, so the creative sees exactly what the plan would give them rather
+    // than being bounced to a price list.
+    const title = locked ? `${TIER_LABEL[reqTier] || 'Paid'} plan feature, tap to see it` : item.label
+    return <Link key={item.path} to={item.path} title={title} style={style} {...hoverBg(active && !locked)} onClick={() => { closeAll(); onCloseMobile?.() }}>{inner}</Link>
   }
 
   const avatar = (

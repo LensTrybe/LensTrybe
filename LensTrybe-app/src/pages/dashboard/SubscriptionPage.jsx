@@ -4,19 +4,28 @@ import { supabase } from '../../lib/supabaseClient'
 import { payWithRevolut, getSavedCard, updateSavedCard } from '../../lib/revolut.js'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { TIER_ORDER, TIER_META, planCardLines } from '../../lib/tierFeatures'
 
 const GREEN = '#1DB954'
 const GREEN_TEXT = '#04120a'
 
 const PLANS = [
-  { id: 'basic', name: 'Basic', monthlyPrice: 0, annualPrice: 0, color: '#8a8a9a',
-    features: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', '3 confirmed bookings / month', 'Browse gear marketplace', 'Basic search placement'] },
-  { id: 'pro', name: 'Pro', monthlyPrice: 24.99, annualPrice: 249.90, color: GREEN,
-    features: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Unlimited bookings', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'] },
-  { id: 'expert', name: 'Expert', monthlyPrice: 74.99, annualPrice: 749.90, color: '#a855f7',
-    features: ['Everything in Pro', '40 photos + 5 videos', 'Unlimited messages', 'Contracts & e-signatures', 'CRM (500 records)', 'Client portals', 'Brand kit', 'Portfolio website', 'LensTrybe Deliver (50GB)', 'Business insights'] },
-  { id: 'elite', name: 'Elite', monthlyPrice: 149.99, annualPrice: 1499.90, color: '#EAB308',
-    features: ['Everything in Expert', 'Unlimited photos & videos', 'Team (up to 5 members)', 'CRM (unlimited)', 'LensTrybe Deliver (200GB)', 'Multi-page website + custom domain', 'Elite spotlight', 'Studio profile page'] },
+  // Built from src/lib/tierFeatures.js so this page and the public pricing page can never
+  // say different things. Nothing about what a plan includes belongs in this file.
+  ...TIER_ORDER.map((key) => {
+    const meta = TIER_META[key]
+    const below = TIER_ORDER[TIER_ORDER.indexOf(key) - 1]
+    return {
+      id: key,
+      name: meta.name,
+      monthlyPrice: meta.monthly,
+      annualPrice: meta.annual,
+      color: key === 'pro' ? GREEN : meta.colour,
+      features: below
+        ? [`Everything in ${TIER_META[below].name}`, ...planCardLines(key)]
+        : planCardLines(key),
+    }
+  }),
 ]
 const RANK = { basic: 0, pro: 1, expert: 2, elite: 3 }
 const LIVE = ['active', 'trialing', 'past_due']

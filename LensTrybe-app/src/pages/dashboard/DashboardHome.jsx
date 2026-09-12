@@ -3,6 +3,8 @@ import { useNavigate, useOutletContext } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { INSIGHT_WIDGETS, TIER_ORDER, getFeatures } from '../../lib/tierFeatures'
+import TierGate from '../../components/dashboard/TierGate'
 import DashboardTasks from '../../components/dashboard/DashboardTasks'
 import WidgetGrid, { nextSize } from '../../components/dashboard/WidgetGrid'
 import TodoWidget from '../../components/dashboard/TodoWidget'
@@ -54,18 +56,8 @@ const ALL_WIDGET_IDS = ALL_WIDGETS.map((w) => w.id)
 // row lines up exactly with the start and end of the tile grid.
 const BOARD_MAX = 156 * 6 + 16 * 5 // 1016
 
-// Minimum tier that can see each widget. Anything not listed is visible to all.
-// Widgets with graduated depth (revenue/leads full analytics, search visibility)
-// stay visible but lock their deeper view inside the widget itself.
-const WIDGET_ACCESS = {
-  reviews: 'pro',
-  bookings: 'pro',
-  revenue: 'pro',
-  leads: 'pro',
-  quotes: 'expert',
-  deliverables: 'expert',
-  cashflow: 'pro',
-}
+// Which widgets each plan unlocks now lives in src/lib/tierFeatures.js (INSIGHT_WIDGETS),
+// so the dashboard, the pricing pages and the sidebar all read the same decision.
 
 // Default widget order on the packing grid.
 const DEFAULT_ORDER = [...ALL_WIDGET_IDS]
@@ -123,9 +115,11 @@ function mergeLayout(saved, ids) {
 
 export default function DashboardHome() {
   const { user, profile } = useAuth()
-  const { tier, meetsMinTier } = useSubscription()
-  const isPro = meetsMinTier('pro')
+  const { tier, meetsMinTier, limit } = useSubscription()
   const isExpert = meetsMinTier('expert')
+  // 'none', 'basic' or 'full'. Pro gets the presence and enquiry widgets plus a revenue
+  // total; the deeper analytics stay blurred until Expert.
+  const insightLevel = limit('insights')
   const navigate = useNavigate()
   const outlet = useOutletContext() || {}
   const dark = !!outlet.dark
@@ -467,14 +461,23 @@ export default function DashboardHome() {
     search_visibility: <SearchVisibilityWidget userId={user?.id} tier={tier} />,
     cashflow: <CashflowWidget userId={user?.id} />,
   }
-  const canSeeWidget = (id) => {
-    const req = WIDGET_ACCESS[id]
-    if (req === 'pro') return isPro
-    if (req === 'expert') return isExpert
-    return true
-  }
-  const boardItems = widgetOrder.filter((id) => widgetNodes[id] && canSeeWidget(id) && !hiddenWidgets.includes(id)).map((id) => ({ id, node: widgetNodes[id] }))
-  const hiddenList = ALL_WIDGETS.filter((w) => hiddenWidgets.includes(w.id) && canSeeWidget(w.id))
+  // Insight widgets are never taken off the board. A creative whose plan does not include
+  // one still sees it, blurred, with the plan that unlocks it named on the face. Widgets
+  // that are not insights at all (to-dos, calendar, upcoming) are open to everyone.
+  const allowedWidgets = INSIGHT_WIDGETS[insightLevel] || INSIGHT_WIDGETS.none
+  const widgetTier = (id) => TIER_ORDER.find((t) => (INSIGHT_WIDGETS[getFeatures(t).insights] || []).includes(id))
+  const isGated = (id) => INSIGHT_WIDGETS.full.includes(id) && !allowedWidgets.includes(id)
+
+  const gated = (id, node) => (
+    isGated(id)
+      ? <TierGate compact locked tier={widgetTier(id) || 'expert'}>{node}</TierGate>
+      : node
+  )
+
+  const boardItems = widgetOrder
+    .filter((id) => widgetNodes[id] && !hiddenWidgets.includes(id))
+    .map((id) => ({ id, node: gated(id, widgetNodes[id]) }))
+  const hiddenList = ALL_WIDGETS.filter((w) => hiddenWidgets.includes(w.id))
   const quickItems = quickOrder.filter((id) => ALL_QUICK_LINK_IDS.includes(id) && !quickHidden.includes(id)).map((id) => ALL_QUICK_LINKS.find((l) => l.id === id))
   const quickHiddenList = ALL_QUICK_LINKS.filter((l) => quickHidden.includes(l.id))
 
