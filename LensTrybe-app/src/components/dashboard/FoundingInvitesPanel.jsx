@@ -338,6 +338,7 @@ function InviteRow({ inv, founder, busy, confirming, onAction, onConfirm, onEdit
 }
 
 const FILTERS = [
+  { key: 'attention', label: 'Needs you', match: () => true, attention: true },
   { key: 'waiting', label: 'Waiting', match: (k) => k === 'draft' || k === 'sent' || k === 'reminded' },
   { key: 'signed_up', label: 'Signed up', match: (k) => k === 'signed_up' },
   { key: 'expired', label: 'Expired', match: (k) => k === 'expired' },
@@ -349,6 +350,7 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
   const [open, setOpen] = useState(true)
   const [invites, setInvites] = useState([])
   const [founders, setFounders] = useState([])
+  const [founderStatus, setFounderStatus] = useState({})
   const [places, setPlaces] = useState(null)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -370,6 +372,14 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
     setPlaces(res.places || null)
     setLoadError('')
     setLoading(false)
+    // Whether each founding creative has actually finished their profile. Admin only,
+    // and a nice-to-have, so a failure here never blocks the invite list.
+    try {
+      const { data } = await supabase.rpc('founding_status_all')
+      const m = {}
+      ;(data || []).forEach((r) => { m[r.id] = r })
+      setFounderStatus(m)
+    } catch { /* leave it empty */ }
   }, [])
   useEffect(() => { void load() }, [load])
 
@@ -390,18 +400,47 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
     return { drafts, live, founders: activeFounders }
   }, [invites, founders])
 
+  // The whole point of this panel before launch: what needs chasing today. A draft that
+  // was never sent, a code about to expire, and a creative who took a place but never
+  // finished their profile are all silent failures otherwise.
+  const attention = useMemo(() => {
+    const unsent = []; const expiring = []; const notLive = []
+    invites.forEach((i) => {
+      const k = inviteState(i).key
+      if (k === 'draft') unsent.push(i)
+      else if ((k === 'sent' || k === 'reminded') && (daysLeft(i.expires_at) ?? 99) <= 3) expiring.push(i)
+      else if (k === 'signed_up' && i.redeemed_by) {
+        const st = founderStatus[i.redeemed_by]
+        if (st && st.listing_complete === false && st.deal_status !== 'reverted') notLive.push(i)
+      }
+    })
+    return { unsent, expiring, notLive, total: unsent.length + expiring.length + notLive.length }
+  }, [invites, founderStatus])
+
+  const attentionIds = useMemo(
+    () => new Set([...attention.unsent, ...attention.expiring, ...attention.notLive].map((i) => i.id)),
+    [attention],
+  )
+
   const filterCounts = useMemo(() => {
     const c = {}
-    FILTERS.forEach((f) => { c[f.key] = invites.filter((i) => f.match(inviteState(i).key)).length })
+    FILTERS.forEach((f) => {
+      c[f.key] = f.attention ? attentionIds.size : invites.filter((i) => f.match(inviteState(i).key)).length
+    })
     return c
-  }, [invites])
+  }, [invites, attentionIds])
 
   const shown = useMemo(() => {
     const f = FILTERS.find((x) => x.key === filter) || FILTERS[0]
+    if (f.attention) {
+      const q = search.trim().toLowerCase()
+      return invites.filter((i) => attentionIds.has(i.id))
+        .filter((i) => !q || [i.full_name, i.email, i.code, i.region, i.skill_type].some((v) => String(v || '').toLowerCase().includes(q)))
+    }
     const q = search.trim().toLowerCase()
     return invites.filter((i) => f.match(inviteState(i).key))
       .filter((i) => !q || [i.full_name, i.email, i.code, i.region, i.skill_type].some((v) => String(v || '').toLowerCase().includes(q)))
-  }, [invites, filter, search])
+  }, [invites, filter, search, attentionIds])
 
   function flash(text, tone = 'ok') {
     setNotice({ text, tone })
@@ -500,6 +539,35 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
             <div style={{ ...card, color: PINK, fontSize: 13.5 }}>Couldn't load invites: {loadError} <button type="button" style={{ ...btn, marginLeft: 8 }} onClick={() => { setLoading(true); void load() }}>Try again</button></div>
           ) : (
             <PlacesMeter places={places} counts={counts} />
+          )}
+
+          {attention.total > 0 && (
+            <div style={{ ...card, padding: '14px 16px' }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--lt-text)', marginBottom: 10 }}>
+                Needs you today
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {[
+                  [attention.unsent.length, 'not sent yet', PINK],
+                  [attention.expiring.length, 'expiring within 3 days', AMBER],
+                  [attention.notLive.length, 'signed up, profile not live', AMBER],
+                ].filter(([n]) => n > 0).map(([n, label, colour]) => (
+                  <button
+                    key={label}
+                    type="button"
+                    onClick={() => setFilter('attention')}
+                    style={{
+                      ...btn, display: 'inline-flex', alignItems: 'baseline', gap: 7,
+                      background: 'var(--lt-surface-2)', border: `1px solid ${colour}55`,
+                      color: 'var(--lt-text)', padding: '7px 13px',
+                    }}
+                  >
+                    <span style={{ fontWeight: 800, color: colour, fontSize: 15 }}>{n}</span>
+                    <span style={{ fontSize: 12.5 }}>{label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           )}
 
           <div style={card}>

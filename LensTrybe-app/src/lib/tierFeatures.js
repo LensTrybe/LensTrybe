@@ -57,7 +57,8 @@ export const TIER_FEATURES = {
     deliverGb: 0,
     brandKit: false,
     insights: 'none',
-    lumi: false,
+    lumiPerMonth: 0,
+    lumiPerDay: 0,
 
     // Community, team and work
     reviewRequests: false,
@@ -97,7 +98,8 @@ export const TIER_FEATURES = {
     deliverGb: 1,
     brandKit: false,
     insights: 'basic',
-    lumi: false,
+    lumiPerMonth: 5,
+    lumiPerDay: 3,
 
     reviewRequests: true,
     importedReviews: 0,
@@ -136,7 +138,8 @@ export const TIER_FEATURES = {
     deliverGb: 50,
     brandKit: true,
     insights: 'full',
-    lumi: true,
+    lumiPerMonth: 100,
+    lumiPerDay: 25,
 
     reviewRequests: true,
     importedReviews: 5,
@@ -175,7 +178,8 @@ export const TIER_FEATURES = {
     deliverGb: 200,
     brandKit: true,
     insights: 'full',
-    lumi: true,
+    lumiPerMonth: UNLIMITED,
+    lumiPerDay: 50,
 
     reviewRequests: true,
     importedReviews: 10,
@@ -281,7 +285,7 @@ export const FEATURE_CATALOG = [
   { id: 'deliverGb', label: 'Deliver storage', say: (v) => (v ? `LensTrybe Deliver: ${gb(v)}` : null) },
   { id: 'brandKit', label: 'Brand kit', say: (v) => (v ? 'Brand kit across your documents and site' : null) },
   { id: 'insights', label: 'Business insights', say: (v) => ({ none: null, basic: 'Profile and enquiry insights', full: 'Full business insights and cash flow' }[v]) },
-  { id: 'lumi', label: 'Lumi AI', say: (v) => (v ? 'Lumi, your AI assistant' : null) },
+  { id: 'lumiPerMonth', label: 'Lumi AI', say: (v) => (!v ? null : v <= 5 ? `Lumi, your AI assistant: ${v} messages a month` : 'Lumi, your AI assistant') },
   { id: 'reviewRequests', label: 'Review requests', say: (v) => (v ? 'Request reviews from past clients' : null) },
   { id: 'importedReviews', label: 'Imported reviews', say: (v) => (v ? `Import ${many(v, 'review', 'reviews')} from elsewhere` : null) },
   { id: 'marketplaceListings', label: 'Marketplace', say: (v) => (v ? `Gear marketplace: ${many(v, 'listing', 'listings')}` : 'Browse the gear marketplace') },
@@ -333,8 +337,8 @@ export function planUpgradeLines(tier) {
 // full list lives in the comparison table below the cards.
 export const PLAN_CARD_FEATURES = {
   basic: ['portfolioPhotos', 'publicListing', 'searchScope', 'bookingsPerMonth', 'repliesPerMonth', 'marketplaceListings'],
-  pro: ['portfolioPhotos', 'portfolioVideos', 'website', 'bookingsPerMonth', 'repliesPerMonth', 'crmRecords', 'insights', 'reviewRequests', 'searchScope'],
-  expert: ['portfolioPhotos', 'website', 'bookingsPerMonth', 'quotes', 'invoicing', 'contracts', 'crmRecords', 'clientPortals', 'deliverGb', 'brandKit', 'lumi', 'shareContactDetails'],
+  pro: ['portfolioPhotos', 'portfolioVideos', 'website', 'bookingsPerMonth', 'repliesPerMonth', 'crmRecords', 'insights', 'lumiPerMonth', 'reviewRequests', 'searchScope'],
+  expert: ['portfolioPhotos', 'website', 'bookingsPerMonth', 'quotes', 'invoicing', 'contracts', 'crmRecords', 'clientPortals', 'deliverGb', 'brandKit', 'lumiPerMonth', 'shareContactDetails'],
   elite: ['portfolioPhotos', 'crmRecords', 'deliverGb', 'teamSeats', 'studioProfile', 'customDomain', 'marketplaceListings', 'eliteSpotlight'],
 }
 

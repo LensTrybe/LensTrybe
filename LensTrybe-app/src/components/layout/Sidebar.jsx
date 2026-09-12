@@ -120,7 +120,7 @@ const BASE_SECTIONS = [
     { label: 'Marketplace', path: '/dashboard/business/marketplace', icon: 'bag' },
     { label: 'Collaborate', path: '/dashboard/collaborate', icon: 'users' },
     { label: 'Team', path: '/dashboard/business/team', icon: 'users', feature: 'teamSeats' },
-    { label: 'Lumi AI', path: '/dashboard/lumi', icon: 'sparkle', feature: 'lumi' },
+    { label: 'Lumi AI', path: '/dashboard/lumi', icon: 'sparkle', feature: 'lumiPerMonth' },
   ] },
   { label: 'Work', icon: 'calendar', items: [
     { label: 'Bookings', path: '/dashboard/my-work/my-bookings', icon: 'calendar' },

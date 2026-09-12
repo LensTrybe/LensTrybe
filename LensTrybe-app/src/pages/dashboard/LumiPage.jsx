@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { getFeatures, TIER_ORDER, UNLIMITED } from '../../lib/tierFeatures'
 
 // Full-page Lumi. Rebuilt on the theme-aware --lt-* tokens so it works in light
 // and dark (the old build was light-only: white sidebar + invisible heading in
@@ -18,12 +19,12 @@ const QUICK_PROMPTS = [
   'Tips to attract more clients',
 ]
 
-const TIER_CONFIG = {
-  basic: { monthly: 0, daily: 0 },
-  pro: { monthly: 5, daily: 3 },
-  expert: { monthly: 100, daily: 25 },
-  elite: { monthly: null, daily: 50 },
-}
+// Lumi's allowance per plan comes from tierFeatures like every other limit, so the
+// pricing card and the quota can't drift apart. null monthly means unlimited.
+const TIER_CONFIG = Object.fromEntries(TIER_ORDER.map((t) => {
+  const f = getFeatures(t)
+  return [t, { monthly: f.lumiPerMonth === UNLIMITED ? null : f.lumiPerMonth, daily: f.lumiPerDay }]
+}))
 
 function LumiMark({ size = 16 }) {
   return (

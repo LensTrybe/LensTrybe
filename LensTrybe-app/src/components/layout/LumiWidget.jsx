@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
-import { tierHas } from '../../lib/tierFeatures'
+import { tierHas, getFeatures, TIER_ORDER, UNLIMITED } from '../../lib/tierFeatures'
 import { useAuth } from '../../context/AuthContext'
 
 // Global Lumi launcher: a floating circle on every dashboard page (stacked above
@@ -13,12 +13,12 @@ const LUMI_GRAD = 'linear-gradient(135deg, #1DB954 0%, #FF2D78 100%)'
 const GREEN = '#1DB954'
 const PINK = '#FF2D78'
 
-const TIER_CONFIG = {
-  basic: { monthly: 0, daily: 0 },
-  pro: { monthly: 5, daily: 3 },
-  expert: { monthly: 100, daily: 25 },
-  elite: { monthly: null, daily: 50 },
-}
+// Lumi's allowance per plan comes from tierFeatures like every other limit, so the
+// pricing card and the quota can't drift apart. null monthly means unlimited.
+const TIER_CONFIG = Object.fromEntries(TIER_ORDER.map((t) => {
+  const f = getFeatures(t)
+  return [t, { monthly: f.lumiPerMonth === UNLIMITED ? null : f.lumiPerMonth, daily: f.lumiPerDay }]
+}))
 
 const QUICK_PROMPTS = [
   'Help me price a project',
@@ -106,7 +106,7 @@ export default function LumiWidget() {
 
   // Load history the first time the drawer opens for a paid user.
   useEffect(() => {
-    if (open && user?.id && tier && tierHas(tier, 'lumi')) loadConversations()
+    if (open && user?.id && tier && tierHas(tier, 'lumiPerMonth')) loadConversations()
   }, [open, user?.id, tier, loadConversations])
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function LumiWidget() {
   }, [messages, open, sending])
 
   useEffect(() => {
-    if (open && tier && tierHas(tier, 'lumi')) setTimeout(() => inputRef.current?.focus(), 120)
+    if (open && tier && tierHas(tier, 'lumiPerMonth')) setTimeout(() => inputRef.current?.focus(), 120)
   }, [open, tier])
 
   function openConversation(convo) {
@@ -132,7 +132,7 @@ export default function LumiWidget() {
 
   async function sendMessage(text) {
     const msg = (text || input).trim()
-    if (!msg || sending || !tierHas(tier, 'lumi')) return
+    if (!msg || sending || !tierHas(tier, 'lumiPerMonth')) return
     setInput('')
     setSending(true)
     const optimisticUser = { role: 'user', content: msg }
@@ -180,7 +180,7 @@ export default function LumiWidget() {
   const tierConfig = TIER_CONFIG[tier] || TIER_CONFIG.basic
   // Lumi is an Expert and Elite feature. Reading it from tierFeatures keeps this in
   // step with the pricing pages and the sidebar rather than hardcoding the plan.
-  const isLocked = !tierHas(tier, 'lumi')
+  const isLocked = !tierHas(tier, 'lumiPerMonth')
   const monthlyLimit = tierConfig.monthly
   const usedMonthly = usage?.monthly || 0
   const hasMessages = messages.length > 0

@@ -66,6 +66,7 @@ import PrivacyPage from './pages/legal/PrivacyPage'
 import CookiesPage from './pages/legal/CookiesPage'
 import RefundPolicyPage from './pages/legal/RefundPolicyPage'
 import FoundingAgreementPage from './pages/legal/FoundingAgreementPage'
+import FoundingOfferPage from './pages/public/FoundingOfferPage'
 import UnsubscribePage from './pages/public/UnsubscribePage'
 import TrybeEditPage from './pages/public/TrybeEditPage'
 import TrybeEditIssue01 from './pages/TrybeEditIssue01'
@@ -149,6 +150,7 @@ export default function App() {
         <Route path="/cookies" element={<CookiesPage />} />
         <Route path="/refunds" element={<RefundPolicyPage />} />
         <Route path="/refund-policy" element={<Navigate to="/refunds" replace />} />
+        <Route path="/founding" element={<FoundingOfferPage />} />
         <Route path="/founding-agreement" element={<FoundingAgreementPage />} />
         <Route path="/unsubscribe" element={<UnsubscribePage />} />
         <Route path="/unsubscribe/:token" element={<UnsubscribePage />} />
@@ -198,7 +200,7 @@ export default function App() {
         <Route path="settings" element={<SettingsPage />} />
         <Route path="support" element={<SupportPage />} />
         <Route path="referrals" element={<ReferralsPage />} />
-        <Route path="lumi" element={<TierGate feature="lumi"><LumiPage /></TierGate>} />
+        <Route path="lumi" element={<TierGate feature="lumiPerMonth"><LumiPage /></TierGate>} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
 

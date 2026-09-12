@@ -138,10 +138,12 @@ function inviteEmail(first: string, code: string, expiresIso: string, note: stri
 <tr><td style="padding:22px 36px 6px;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">Founding creative invite</div>
 <h1 style="margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:800;color:#fff;">Hi ${esc(name)}, I'd love you on board</h1>
-<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm building LensTrybe, a home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever.</p>
-<p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm hand-picking 100 creatives to be our founding members, and I'd really like you to be one of them.</p>
 </td></tr>
 ${noteBlock}
+<tr><td style="padding:4px 36px 6px;">
+<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm building LensTrybe: a home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever.</p>
+<p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm hand-picking 100 creatives to be the founding members, and I'd like you to be one of them.</p>
+</td></tr>
 <tr><td style="padding:12px 36px 0;">
 <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;">What you get</div>
 <ul style="color:#e6e6ee;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">
@@ -167,14 +169,18 @@ ${signOff}
   return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative. If it's not for you, no need to do anything. The code simply expires.")
 }
 
-function reminderEmail(first: string, code: string, expiresIso: string) {
+function reminderEmail(first: string, code: string, expiresIso: string, left: number | null) {
   const name = first || 'there'
+  const scarcity = left !== null && left <= 40
+    ? `<p style="margin:12px 0 0;color:#9a9aa8;font-size:15px;line-height:1.6;">For what it's worth, <strong style="color:#fff;">${left} of the 100 places are left</strong>.</p>`
+    : ''
   const inner = `
 <tr><td style="padding:22px 36px 6px;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">Your founding place</div>
 <h1 style="margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:800;color:#fff;">Hi ${esc(name)}, your place is still here</h1>
 <p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">Just a quick nudge in case my last email got buried. Your founding invite is still open: Expert free for 12 months, then $49 a month locked in for life, and no commission on your jobs, ever.</p>
 <p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.6;">Your code expires on <strong style="color:#fff;">${esc(fmtDate(expiresIso))}</strong>. After that the place goes to the next creative on my list.</p>
+${scarcity}
 </td></tr>
 ${codeBox(code, expiresIso)}
 ${button(inviteLink(code), 'Claim my founding place')}
@@ -186,10 +192,11 @@ ${signOff}
 }
 
 function inviteSubject(first: string) {
-  return first ? `${first}, you're invited to be a LensTrybe founding creative` : "You're invited to be a LensTrybe founding creative"
+  return first ? `${first}, I'd like you in LensTrybe's founding 100` : "An invitation to LensTrybe's founding 100"
 }
-function reminderSubject(first: string) {
-  return first ? `${first}, your LensTrybe founding place is still waiting` : 'Your LensTrybe founding place is still waiting'
+function reminderSubject(first: string, left: number | null) {
+  const scarce = left !== null && left <= 40 ? `, ${left} places left` : ''
+  return first ? `${first}, your founding place is still open${scarce}` : `Your founding place is still open${scarce}`
 }
 
 async function sendEmail(to: string, subject: string, html: string): Promise<string | null> {
@@ -302,10 +309,11 @@ async function runCron(sb: SupabaseClient) {
 
   let reminded = 0
   let failed = 0
+  const left = (await places(sb)).available
   for (const inv of due ?? []) {
     if (!inv.email) continue
     const first = inv.first_name || firstNameOf(inv.full_name || '')
-    const err = await sendEmail(inv.email, reminderSubject(first), reminderEmail(first, inv.code, inv.expires_at))
+    const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left))
     if (err) {
       failed++
       await sb.from('founding_invites').update({ email_error: err }).eq('id', inv.id)
@@ -361,9 +369,10 @@ Deno.serve(async (req) => {
       const code = clean(body.code, 40) || `${codeStem(first)}-${randomSuffix()}`
       const expires = addDays(VALID_DAYS)
       const kind = body.kind === 'reminder' ? 'reminder' : 'invite'
+      const left = (await places(sb)).available
       return json({
-        subject: kind === 'reminder' ? reminderSubject(first) : inviteSubject(first),
-        html: kind === 'reminder' ? reminderEmail(first, code, expires) : inviteEmail(first, code, expires, cleanNote(body.note)),
+        subject: kind === 'reminder' ? reminderSubject(first, left) : inviteSubject(first),
+        html: kind === 'reminder' ? reminderEmail(first, code, expires, left) : inviteEmail(first, code, expires, cleanNote(body.note)),
       })
     }
 
