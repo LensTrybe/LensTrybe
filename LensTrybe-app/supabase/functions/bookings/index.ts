@@ -14,8 +14,10 @@
 //   complete    (creative) { bookingId }
 //   cancel      (either)   { bookingId, reason }
 //
-// Basic creatives can confirm up to 3 bookings a month (enforced by the bookings_guard
-// trigger, surfaced here as { error, code: 'BOOKING_LIMIT_BASIC' }).
+// Each plan has a monthly confirm cap (Basic 3, Pro 5, Expert and Elite unlimited),
+// enforced by the bookings_guard trigger and surfaced here as
+// { error, code: 'BOOKING_LIMIT' }. Requests always arrive whatever the plan; the cap
+// only limits what the creative can confirm.
 //
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
 
@@ -66,7 +68,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const LIMIT_MSG = "You've confirmed 3 bookings this month, the most the Basic plan allows. Upgrade to Pro to confirm more."
+const LIMIT_MSG = "You've confirmed every booking your plan allows this month. Upgrade to confirm more."
 
 function plain(s: unknown, max: number) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/\s{2,}/g, ' ').trim().slice(0, max) }
 function multi(s: unknown, max: number) { return String(s ?? '').replace(/\r\n/g, '\n').replace(/\n{3,}/g, '\n\n').trim().slice(0, max) }
@@ -137,7 +139,7 @@ function forClient(b: Record<string, unknown> | null) {
   return rest
 }
 
-function isLimitError(e: { message?: string } | null) { return !!e && String(e.message || '').includes('BOOKING_LIMIT_BASIC') }
+function isLimitError(e: { message?: string } | null) { return !!e && String(e.message || '').includes('BOOKING_LIMIT') }
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
@@ -325,7 +327,7 @@ Deno.serve(async (req) => {
         status: 'confirmed',
         origin: 'creative',
       }).select('*').single()
-      if (isLimitError(error)) return json({ error: LIMIT_MSG, code: 'BOOKING_LIMIT_BASIC' }, 403)
+      if (isLimitError(error)) return json({ error: LIMIT_MSG, code: 'BOOKING_LIMIT' }, 403)
       if (error || !booking) { console.error('bookings: create failed', error?.message); return json({ error: 'Could not add the booking. Please try again.' }, 500) }
 
       if (body.notifyClient === true && clientEmail && resendKey) {
@@ -370,7 +372,7 @@ Deno.serve(async (req) => {
       }
       const { data: upd, error } = await sb.from('bookings').update({ status: accept ? 'confirmed' : 'declined', response_note: note || null })
         .eq('id', b.id).eq('status', 'pending').select('*').maybeSingle()
-      if (isLimitError(error)) return json({ error: LIMIT_MSG, code: 'BOOKING_LIMIT_BASIC' }, 403)
+      if (isLimitError(error)) return json({ error: LIMIT_MSG, code: 'BOOKING_LIMIT' }, 403)
       if (error) { console.error('bookings: respond failed', error.message); return json({ error: 'Could not update the booking. Please try again.' }, 500) }
       if (!upd) return json({ error: 'This request has already been answered.' }, 409)
 

@@ -4,10 +4,12 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import {
-  BOOKING_LIMIT_BASIC, TIME_OPTIONS, bookingAction, bookingStatus, confirmedThisMonth,
+  TIME_OPTIONS, bookingAction, bookingStatus, confirmedThisMonth,
   fmtDay, fmtDayLong, fmtTime, timeText, todayIso,
   bookingDocPrefill,
 } from '../../lib/bookings'
+import { getFeatures, TIER_META } from '../../lib/tierFeatures'
+import { UpgradePanel } from '../../components/dashboard/TierGate'
 
 // Creative bookings: requests from clients (accept / decline), bookings they add
 // themselves, rescheduling, completing and cancelling. Client-facing changes go through
@@ -154,7 +156,7 @@ function BookingForm({ mode, booking, services, onClose, onSaved, onUpgrade }) {
       : await bookingAction('create', { ...payload, clientName: form.clientName, clientEmail: form.clientEmail, clientPhone: form.clientPhone, notes: form.notes })
     setSaving(false)
     if (res.conflict) { setClashes(res.clashes || []); return }
-    if (res.code === 'BOOKING_LIMIT_BASIC') { setLimit(res.error); return }
+    if (res.code === 'BOOKING_LIMIT') { setLimit(res.error); return }
     if (!res.ok) { setError(res.error); return }
     onSaved(res.booking, editing ? 'Booking updated.' : 'Booking added.')
   }
@@ -232,7 +234,7 @@ function BookingDetail({ booking, onClose, onChanged, onEdit, onUpgrade }) {
     const res = await bookingAction(action, { bookingId: b.id, ...payload })
     setBusy('')
     if (res.conflict) { setClashes(res.clashes || []); return }
-    if (res.code === 'BOOKING_LIMIT_BASIC') { setLimit(res.error); return }
+    if (res.code === 'BOOKING_LIMIT') { setLimit(res.error); return }
     if (!res.ok) { setError(res.error); return }
     onChanged(res.booking, okMsg)
   }
@@ -328,7 +330,9 @@ export default function MyBookingsPage() {
   const [selectedId, setSelectedId] = useState(null)
   const [form, setForm] = useState(null) // { mode: 'new' | 'edit', booking? }
   const [toast, setToast] = useState(null)
-  const isBasic = !['pro', 'expert', 'elite'].includes(String(tier || 'basic').toLowerCase())
+  // The monthly confirm cap comes from the creative's plan. null means no cap.
+  const bookingCap = getFeatures(tier).bookingsPerMonth
+  const capped = Number.isFinite(bookingCap)
 
   const load = useCallback(async () => {
     if (!user?.id) { setLoading(false); return }
@@ -374,6 +378,8 @@ export default function MyBookingsPage() {
   useEffect(() => { if (!loading && groups.requests.length && tab === 'upcoming' && !groups.upcoming.length) setTab('requests') }, [loading]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const used = confirmedThisMonth(bookings)
+  // At the cap the creative can still see how much work is waiting, but not who it is from.
+  const overCap = capped && used >= bookingCap
   const selected = bookings.find((b) => b.id === selectedId) || null
   const list = groups[tab] || []
   const next = groups.upcoming[0]
@@ -416,15 +422,15 @@ export default function MyBookingsPage() {
           <button type="button" className="ltb-btn ltb-btn-primary" onClick={() => setForm({ mode: 'new' })}>+ New booking</button>
         </div>
 
-        {isBasic && (
+        {capped && (
           <div className="ltb-glass" style={{ padding: '14px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 13.5, color: 'var(--lt-text)', lineHeight: 1.5 }}>
-              <strong>Basic plan:</strong> {Math.min(used, BOOKING_LIMIT_BASIC)} of {BOOKING_LIMIT_BASIC} bookings confirmed this month.{used >= BOOKING_LIMIT_BASIC ? ' New requests will wait until next month or until you upgrade.' : ' Clients can always send requests.'}
+              <strong>{TIER_META[tier]?.name || 'Your'} plan:</strong> {Math.min(used, bookingCap)} of {bookingCap} bookings confirmed this month.{used >= bookingCap ? ' Requests still arrive, but you will need to upgrade to confirm any more this month.' : ' Clients can always send requests.'}
               <div style={{ height: 6, borderRadius: 999, background: 'var(--lt-surface-2)', marginTop: 8, maxWidth: 280, overflow: 'hidden' }}>
-                <div style={{ width: `${Math.min(100, (used / BOOKING_LIMIT_BASIC) * 100)}%`, height: '100%', background: used >= BOOKING_LIMIT_BASIC ? PINK : GREEN }} />
+                <div style={{ width: `${Math.min(100, (used / bookingCap) * 100)}%`, height: '100%', background: used >= bookingCap ? PINK : GREEN }} />
               </div>
             </div>
-            <button type="button" className="ltb-btn ltb-btn-ghost" onClick={() => navigate('/dashboard/settings/subscription')}>Unlimited bookings with Pro</button>
+            <button type="button" className="ltb-btn ltb-btn-ghost" onClick={() => navigate('/dashboard/settings/subscription')}>Unlimited bookings with Expert</button>
           </div>
         )}
 
@@ -449,7 +455,33 @@ export default function MyBookingsPage() {
           ))}
         </div>
 
-        <div className="ltb-glass" style={{ overflow: 'hidden' }}>
+        {/* Requests keep arriving once the monthly cap is reached, but their detail is
+            held back until the creative upgrades. They can see how much work is waiting,
+            which is the point, without being able to work it for free. */}
+        {overCap && tab === 'requests' && list.length > 0 && (
+          <div className="ltb-glass" style={{ position: 'relative', overflow: 'hidden', padding: 20 }}>
+            <div aria-hidden="true" inert="" style={{ filter: 'blur(7px)', opacity: 0.45, pointerEvents: 'none', userSelect: 'none' }}>
+              {list.slice(0, 3).map((b) => (
+                <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 4px' }}>
+                  <DateBlock date={b.booking_date} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--lt-text)' }}>{b.client_name || 'Client'}</div>
+                    <div style={{ fontSize: 13, color: 'var(--lt-muted)' }}>{timeText(b)}{b.service ? ` · ${b.service}` : ''}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+              <UpgradePanel
+                tier="expert"
+                title={list.length === 1 ? '1 request waiting' : `${list.length} requests waiting`}
+                body={`You have confirmed all ${bookingCap} bookings your plan allows this month. Upgrade to see these and confirm them.`}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="ltb-glass" style={{ overflow: 'hidden', display: overCap && tab === 'requests' ? 'none' : undefined }}>
           {loading ? (
             <div style={{ padding: '48px 18px', textAlign: 'center', color: 'var(--lt-muted)', fontSize: 14 }}>Loading bookings…</div>
           ) : list.length === 0 ? (
