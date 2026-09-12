@@ -900,11 +900,15 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   return (
     <div style={{ minHeight: '100vh', background: `${pageAurora}, ${bg}`, backgroundAttachment: 'fixed', fontFamily: bodyFont, overflowX: 'hidden', position: 'relative' }} className="public-profile-site">
-      <style>{`.lt-navlink:hover{opacity:1 !important}.public-profile-site p,.public-profile-site h1,.public-profile-site h2,.public-profile-site h3{overflow-wrap:anywhere}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-desknav{display:none !important}.lt-burger{display:flex !important}}`}</style>
+      {/* On a phone this header used to collapse to a burger, which landed directly under
+          the LensTrybe burger, so a client saw two identical menu buttons stacked. The page
+          links become a swipeable chip row on their own line instead: no second burger, and
+          Gallery or Services is one tap rather than three. */}
+      <style>{`.lt-navlink:hover{opacity:1 !important}.public-profile-site p,.public-profile-site h1,.public-profile-site h2,.public-profile-site h3{overflow-wrap:anywhere}@media(max-width:760px){.lt-2col{grid-template-columns:1fr !important}.lt-sitebar{height:auto !important;flex-wrap:wrap;row-gap:10px;padding-top:12px !important;padding-bottom:12px !important}.lt-desknav{flex:1 0 100%;order:2;gap:16px !important;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}.lt-desknav::-webkit-scrollbar{display:none}.lt-desknav>*{flex:0 0 auto;white-space:nowrap}.lt-burger{display:none !important}}`}</style>
 
       <div style={{ position: 'relative', zIndex: 1 }}>
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: dark ? 'rgba(16,16,22,0.55)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px) saturate(160%)', WebkitBackdropFilter: 'blur(18px) saturate(160%)', borderBottom: glassBorder }}>
-        <div style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
+        <div className="lt-sitebar" style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           <div onClick={() => setActivePage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
             {logo ? <img src={logo} alt={displayName} style={{ height: 32, objectFit: 'contain' }} /> : <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 21, color: ink, letterSpacing: '-0.02em' }}>{displayName}</span>}
           </div>

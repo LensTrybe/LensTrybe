@@ -396,7 +396,16 @@ function FanCarousel({ creatives, autoPlay = true }) {
     };
   };
 
-  const visibleCards = [-2, -1, 0, 1, 2].map(offset => {
+  // The fan shows five slots. With fewer than five creatives the offsets wrapped onto the
+  // same index, so the same studio appeared in several slots at once and React saw
+  // duplicate keys and reused the wrong cards mid-rotation. At launch there will be only a
+  // handful of Expert and Elite creatives, so this is the normal case, not the edge case.
+  // Show one slot per creative and key by slot, since the slot is what stays put.
+  const OFFSETS = [-2, -1, 0, 1, 2];
+  const offsets = creatives.length >= OFFSETS.length
+    ? OFFSETS
+    : OFFSETS.slice(2 - Math.floor((creatives.length - 1) / 2), 3 + Math.ceil((creatives.length - 1) / 2));
+  const visibleCards = offsets.map(offset => {
     const idx = ((activeIndex + offset) % creatives.length + creatives.length) % creatives.length;
     return { creative: creatives[idx], offset, idx };
   });
@@ -406,7 +415,7 @@ function FanCarousel({ creatives, autoPlay = true }) {
       <div ref={trackRef} onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} onPointerLeave={onPointerUp}
         style={{ position: 'relative', height: '360px', width: '100%', perspective: '1400px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', cursor: 'grab', userSelect: 'none', touchAction: 'pan-y', willChange: 'transform' }}>
         {visibleCards.map(({ creative, offset, idx }) => (
-          <div key={idx} onClick={() => handleCardClick(creative)} style={{ position: 'absolute', width: `${CARD_WIDTH}px`, cursor: creative?.id ? 'pointer' : 'default', ...getCardProps(offset) }}>
+          <div key={offset} onClick={() => handleCardClick(creative)} style={{ position: 'absolute', width: `${CARD_WIDTH}px`, cursor: creative?.id ? 'pointer' : 'default', ...getCardProps(offset) }}>
             <CreativeCard creative={creative} isCenter={offset === 0} />
           </div>
         ))}
