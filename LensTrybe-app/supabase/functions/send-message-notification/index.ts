@@ -72,6 +72,42 @@ async function creativeEmail(admin: Admin, creativeId: string) {
   return { email, name: prof?.business_name || null, isCreative: !!prof }
 }
 
+// ---- capped creative notification ----
+// A creative at their monthly reply cap still receives enquiries, they just cannot answer
+// until the month turns over. Telling them a named lead is sitting there is a far stronger
+// prompt than a counter on a dashboard they have not opened.
+
+// Replies are counted per UTC month, so the cap lifts at the start of the next UTC month.
+function replyResetLabel() {
+  const now = new Date()
+  const next = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1))
+  return next.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', timeZone: 'UTC' })
+}
+
+function tierLabel(t: unknown) {
+  const s = String(t ?? 'basic').toLowerCase()
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// Returns null when usage cannot be read or the creative is not capped, so every failure
+// path falls back to the ordinary notification rather than losing the email.
+async function cappedInfo(admin: Admin, creativeId: string) {
+  try {
+    const { data, error } = await admin.rpc('creative_reply_usage', { p_creative: creativeId })
+    if (error) { console.error('creative_reply_usage failed', error.message); return null }
+    const row = Array.isArray(data) ? data[0] : data
+    if (!row || row.unlimited) return null
+    const used = Number(row.used ?? 0)
+    const cap = Number(row.max_allowed ?? 0)
+    if (!cap || used < cap) return null
+    const { data: prof } = await admin.from('profiles').select('subscription_tier').eq('id', creativeId).maybeSingle()
+    return { used, cap, tier: tierLabel(prof?.subscription_tier) }
+  } catch (e) {
+    console.error('creative_reply_usage threw', (e as Error)?.message)
+    return null
+  }
+}
+
 async function handleJobApplication(admin: Admin, resendKey: string, user: { id: string; email?: string }, applicationId: string) {
   const { data: app } = await admin.from('job_applications')
     .select('id, job_id, creative_id, creative_name, price, includes, description, message, created_at')
@@ -227,23 +263,53 @@ Deno.serve(async (req) => {
     }
 
     const hi = toName ? `Hi ${esc(plain(toName, 60))},` : ''
-    const html = emailShell({
-      preheader: `${fromName} sent you a message on LensTrybe`,
-      kicker: 'New message',
-      heading: `${esc(fromName)} sent you a message`,
-      intro: threadSubject ? `Regarding <span style="color:${BRAND.text};">${esc(threadSubject)}</span>` : '',
-      panelHtml: panel(
-        `${hi ? `<p style="margin:0 0 12px;color:${BRAND.muted};font-size:14px;">${hi}</p>` : ''}` +
-        `<p style="margin:0;color:${BRAND.text};font-size:15px;line-height:1.7;">${nl2br(preview(msg.body, 2000))}</p>`
-      ),
-      ctaText: 'Reply on LensTrybe',
-      ctaUrl,
-      footNote: replyTo
-        ? `You can reply straight to this email to reach ${esc(fromName)}, or open LensTrybe to reply in the conversation.`
-        : `You're receiving this because you have an active conversation on LensTrybe.`,
-    })
 
-    const res = await sendEmail(RESEND_API_KEY, { to, subject: plain(`New message from ${fromName} on LensTrybe`, 150), html, replyTo })
+    // A capped creative gets the upgrade variant instead, but only once a week. Ten
+    // enquiries in a capped month should not mean ten emails telling them they cannot
+    // answer: that reads as nagging and it is the same news every time.
+    let capped = recipientIsCreative ? await cappedInfo(admin, thread.creative_id) : null
+    if (capped && await limited(admin, `msg-notify:capped:${thread.creative_id}`, 1, 7 * 86400)) capped = null
+
+    let subject: string
+    let html: string
+    if (capped) {
+      const subjectLine = threadSubject || 'a new project'
+      subject = plain(`New enquiry from ${fromName}, reply limit reached`, 150)
+      html = emailShell({
+        preheader: `${fromName} is waiting on a reply and your monthly limit is reached`,
+        kicker: 'Enquiry waiting',
+        heading: 'You have a new enquiry waiting',
+        intro: `From <span style="color:${BRAND.text};">${esc(fromName)}</span>${threadSubject ? ` about <span style="color:${BRAND.text};">${esc(threadSubject)}</span>` : ''}`,
+        panelHtml: panel(
+          `${hi ? `<p style="margin:0 0 12px;color:${BRAND.muted};font-size:14px;">${hi}</p>` : ''}` +
+          `<p style="margin:0 0 14px;color:${BRAND.text};font-size:15px;line-height:1.7;">${esc(fromName)} got in touch about ${esc(subjectLine)}.</p>` +
+          `<p style="margin:0 0 14px;color:${BRAND.muted};font-size:14px;line-height:1.7;">You have used all ${capped.cap} of your replies this month on the ${esc(capped.tier)} plan, so you cannot reply until your limit resets on <span style="color:${BRAND.text};">${esc(replyResetLabel())}</span>.</p>` +
+          `<p style="margin:0;color:${BRAND.muted};font-size:14px;line-height:1.7;">Expert gives you unlimited replies, contact sharing, client portals and a full website.</p>`
+        ),
+        ctaText: 'Upgrade to Expert',
+        ctaUrl: `${APP}/dashboard/settings/subscription`,
+        footNote: `Your enquiry is waiting in <a href="${ctaUrl}" style="color:${BRAND.green};text-decoration:none;">your messages</a>. You keep receiving enquiries while your limit is reached, and you will not be sent this reminder more than once a week.`,
+      })
+    } else {
+      subject = plain(`New message from ${fromName} on LensTrybe`, 150)
+      html = emailShell({
+        preheader: `${fromName} sent you a message on LensTrybe`,
+        kicker: 'New message',
+        heading: `${esc(fromName)} sent you a message`,
+        intro: threadSubject ? `Regarding <span style="color:${BRAND.text};">${esc(threadSubject)}</span>` : '',
+        panelHtml: panel(
+          `${hi ? `<p style="margin:0 0 12px;color:${BRAND.muted};font-size:14px;">${hi}</p>` : ''}` +
+          `<p style="margin:0;color:${BRAND.text};font-size:15px;line-height:1.7;">${nl2br(preview(msg.body, 2000))}</p>`
+        ),
+        ctaText: 'Reply on LensTrybe',
+        ctaUrl,
+        footNote: replyTo
+          ? `You can reply straight to this email to reach ${esc(fromName)}, or open LensTrybe to reply in the conversation.`
+          : `You're receiving this because you have an active conversation on LensTrybe.`,
+      })
+    }
+
+    const res = await sendEmail(RESEND_API_KEY, { to, subject, html, replyTo })
     if (!res.ok) console.error('resend failed', res.status, await res.text().catch(() => ''))
     return json({ success: true })
   } catch (err) {
