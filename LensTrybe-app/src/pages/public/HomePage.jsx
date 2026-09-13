@@ -484,10 +484,12 @@ export default function HomePage() {
     try {
       const { data, error } = await supabase
         .from('profiles').select('id, business_name, subscription_tier, skill_types, city, state, bio, avatar_url, tagline')
-        .in('subscription_tier', ['elite', 'expert']).eq('is_admin', false).not('avatar_url', 'is', null)
+        .in('subscription_tier', ['elite', 'expert']).eq('is_admin', false).eq('is_listed', true)
         .order('subscription_tier', { ascending: false });
       if (error) throw error;
-      const filteredProfiles = (data || []).filter((p) => String(p.avatar_url || '').trim() !== '');
+      // is_listed already guarantees a non-empty photo, tagline and skill type, so the old
+      // manual avatar check here is no longer needed.
+      const filteredProfiles = data || [];
       const ids = filteredProfiles.map(p => p.id);
       let reviewMap = {};
       if (ids.length > 0) {
@@ -520,7 +522,7 @@ export default function HomePage() {
 
   return (
     <div style={{ background: 'transparent', color: TEXT_PRIMARY, fontFamily: FONT, overflowX: 'hidden' }}>
-      {/* Liquid-glass refraction filter — lenses/distorts whatever sits behind any LIQUID_GLASS surface */}
+      {/* Liquid-glass refraction filter: lenses and distorts whatever sits behind any LIQUID_GLASS surface */}
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
         <filter id="liquidLens" x="-25%" y="-25%" width="150%" height="150%" colorInterpolationFilters="sRGB">
           <feTurbulence type="fractalNoise" baseFrequency="0.006 0.011" numOctaves="2" seed="7" result="turb" />
@@ -530,17 +532,17 @@ export default function HomePage() {
       </svg>
       {showEntrance && <CinematicEntrance onComplete={() => setShowEntrance(false)} />}
 
-      {/* CONTINUOUS TILE FIELD — one drifting field behind hero + mid sections */}
+      {/* CONTINUOUS TILE FIELD: one drifting field behind hero and mid sections */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
         {!isMobile && <DriftingTiles colCount={colCount} />}
-        {/* hero clearing — confined to the top so the headline stays readable */}
+        {/* hero clearing, confined to the top so the headline stays readable */}
         {!isMobile && (
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
             background: `radial-gradient(ellipse 760px 460px at 26% 300px, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 42%, rgba(${PAGE_TONE},0.32) 70%, rgba(${PAGE_TONE},0) 100%)`,
           }} />
         )}
-        {/* whole-field downward fade — dissolves the tiles to page colour toward the bottom */}
+        {/* whole-field downward fade, dissolves the tiles to page colour toward the bottom */}
         {!isMobile && (
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
@@ -563,7 +565,7 @@ export default function HomePage() {
           gap: 'clamp(24px, 4vw, 72px)',
           padding: isMobile ? '0' : 'clamp(72px, 6vw, 120px) clamp(40px, 4.5vw, 88px)',
         }}>
-          {/* LEFT — copy */}
+          {/* LEFT: copy */}
           <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : '620px', textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : '0' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '7px', fontSize: isMobile ? '11px' : 'clamp(11px, 0.85vw, 14px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: '22px' }}>
               <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: GREEN, display: 'inline-block', boxShadow: '0 0 6px rgba(29,185,84,0.6)' }} />
@@ -585,7 +587,7 @@ export default function HomePage() {
 
           </div>
 
-          {/* RIGHT — liquid glass search + pills, centred in the open space, top-aligned with the headline */}
+          {/* RIGHT: liquid glass search and pills, centred in the open space, top-aligned with the headline */}
           <div style={{ flex: isMobile ? '1 1 auto' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : 'auto', marginTop: isMobile ? '32px' : '42px', display: 'flex', flexDirection: 'column', alignItems: isMobile ? 'stretch' : 'center', gap: '14px' }}>
             <form onSubmit={handleHeroSearch} style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 5, padding: isMobile ? '16px' : '24px', width: '100%', maxWidth: '660px' }}>
               <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: TEXT_SECONDARY, marginBottom: '14px', textAlign: 'left' }}>Find a Creative</div>
@@ -625,7 +627,7 @@ export default function HomePage() {
 
       <div style={{ height: '1px', width: '100%', maxWidth: '1100px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
 
-      {/* FEATURED CREATIVES — only show if there are creatives */}
+      {/* FEATURED CREATIVES: only show if there are creatives */}
       {!loading && featuredCreatives.length > 0 && (
         <section style={{ padding: isMobile ? '56px 16px 72px' : '80px 24px 96px', position: 'relative' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
@@ -642,7 +644,7 @@ export default function HomePage() {
         <div style={{ height: '1px', width: '100%', maxWidth: '1100px', margin: '0 auto', background: DIVIDER_GRADIENT }} aria-hidden />
       )}
 
-      {/* ELITE CREATIVES — only show if there are elite creatives */}
+      {/* ELITE CREATIVES: only show if there are elite creatives */}
       {!loading && eliteCreatives.length > 0 && (
         <section style={{ padding: isMobile ? '56px 16px 72px' : '80px 24px 96px', position: 'relative' }}>
           <div style={{ maxWidth: '1100px', margin: '0 auto' }}>

@@ -57,7 +57,7 @@ function filterCreativesByLocationPreference(creatives, preference, f) {
   const pref = preference || 'australiaWide'
   return creatives.filter((p) => {
     if (pref === 'australiaWide') {
-      // Show all tiers — higher tiers are already sorted to the top via TIER_ORDER
+      // Show all tiers. Higher tiers are already sorted to the top via TIER_ORDER
       return true
     }
 
@@ -260,7 +260,11 @@ export default function ExplorePage() {
     setLoading(true)
     setSearched(true)
 
-    let query = supabase.from('profiles').select('*').eq('is_admin', false)
+    // is_listed is a generated column: a photo, a tagline and at least one skill type.
+    // Without it a creative appeared here the moment they signed up and rendered as a blank
+    // card. Their profile link still works while they are finishing it, they are just not
+    // in search, and their dashboard tells them so.
+    let query = supabase.from('profiles').select('*').eq('is_admin', false).eq('is_listed', true)
 
     if (types.length > 0) {
       query = query.overlaps('skill_types', types)

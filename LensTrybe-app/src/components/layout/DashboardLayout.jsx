@@ -61,6 +61,20 @@ export default function DashboardLayout() {
   // A failed subscription payment: nudge them to update their card on every page.
   const pastDue = String(profile?.subscription_status || '').toLowerCase() === 'past_due'
   const onSubPage = location.pathname.startsWith('/dashboard/settings/subscription')
+
+  // A profile below the listing bar is not in Find a Creative. Nobody should be invisible
+  // without knowing it, so say so on every page and name exactly what is missing.
+  const listingGaps = []
+  if (!String(profile?.avatar_url || '').trim()) listingGaps.push('a profile photo')
+  if (!String(profile?.tagline || '').trim()) listingGaps.push('a tagline')
+  if (!(Array.isArray(profile?.skill_types) && profile.skill_types.length)) listingGaps.push('at least one creative type')
+  // Clients have no profile row at all, so they never see this. Admins are excluded from
+  // search by design, and an account on its way out does not need chasing.
+  const notListed = !!profile && !profile.is_admin && !profile.pending_deletion && listingGaps.length > 0
+  const onEditProfile = location.pathname.startsWith('/dashboard/profile/edit-profile')
+  const gapsText = listingGaps.length === 1
+    ? listingGaps[0]
+    : `${listingGaps.slice(0, -1).join(', ')} and ${listingGaps[listingGaps.length - 1]}`
   function toggleTheme() {
     setTheme((p) => {
       const n = p === 'dark' ? 'light' : 'dark'
@@ -209,6 +223,15 @@ export default function DashboardLayout() {
               <div role="alert" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 16px', marginBottom: 20, borderRadius: 14, border: '1.5px solid rgba(255,45,120,0.55)', background: dark ? 'rgba(255,45,120,0.12)' : 'rgba(255,45,120,0.08)', color: 'var(--lt-text)', fontSize: 13.5, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
                 <span style={{ flex: '1 1 240px' }}><strong style={{ color: '#FF2D78' }}>Your last payment didn't go through.</strong> Update your card to keep your plan's features.</span>
                 <button type="button" onClick={() => navigate('/dashboard/settings/subscription?card=update')} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: '#1DB954', color: '#04120a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Update card</button>
+              </div>
+            )}
+            {notListed && !onEditProfile && (
+              <div role="status" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '12px 16px', marginBottom: 20, borderRadius: 14, border: '1.5px solid rgba(245,158,11,0.55)', background: dark ? 'rgba(245,158,11,0.12)' : 'rgba(245,158,11,0.1)', color: 'var(--lt-text)', fontSize: 13.5, lineHeight: 1.5, fontFamily: 'Inter, sans-serif' }}>
+                <span style={{ flex: '1 1 240px' }}>
+                  <strong style={{ color: '#f59e0b' }}>You are not showing in Find a Creative yet.</strong>{' '}
+                  Add {gapsText} so clients can find you. Your profile link works in the meantime.
+                </span>
+                <button type="button" onClick={() => navigate('/dashboard/profile/edit-profile')} style={{ padding: '8px 16px', borderRadius: 10, border: 'none', background: '#1DB954', color: '#04120a', fontWeight: 700, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>Finish my profile</button>
               </div>
             )}
             <Outlet context={{ theme, toggleTheme, dark }} />
