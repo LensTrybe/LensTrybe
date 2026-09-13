@@ -9,7 +9,7 @@ export const LT_GOOGLE_OAUTH_PENDING_KEY = 'lt_google_oauth'
 /** One-shot message for JoinHubPage after Google OAuth when the user has no app account yet. */
 export const LT_JOIN_FLASH_KEY = 'lt_join_flash'
 
-/** Post-OAuth / magic-link: optional `sessionStorage.returnTo` — never hijack portal or deliver links. */
+/** Post-OAuth / magic-link: optional `sessionStorage.returnTo`, never hijack portal or deliver links. */
 function consumeOAuthReturnRedirect() {
   if (typeof window === 'undefined') return
   const path = window.location.pathname
@@ -101,6 +101,16 @@ export function AuthProvider({ children }) {
 
     if (googleOAuthReturn && profileData && window.location.pathname === '/') {
       window.location.replace(`${window.location.origin}/dashboard`)
+      return
+    }
+
+    // Email and password signups get their profile built by the handle_new_user trigger,
+    // so the check above never fires for them and they used to skip setup entirely. Catch
+    // them on the way into the dashboard instead. Only the dashboard: bouncing someone off
+    // the pricing or support page because they have not finished setup would be rude, and
+    // the wizard itself has an escape hatch so nobody can be locked out.
+    if (profileData && !profileData.onboarded_at && window.location.pathname.startsWith('/dashboard')) {
+      window.location.replace(`${window.location.origin}/onboarding`)
     }
   }
 

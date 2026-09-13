@@ -32,6 +32,16 @@ function featureRow(emoji: string, title: string, sub: string) {
 }
 function subhead(t: string) { return `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:${BRAND.faint};margin:0 0 14px;">${esc(t)}</div>` }
 function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:20px 22px;">${innerHtml}</td></tr></table>` }
+
+// A creative is only returned by Find a Creative once profiles.is_listed is true, which
+// needs a photo, a tagline and at least one creative type. New creatives had no way of
+// knowing that from this email, so it goes at the top of the panel, above the tour.
+function listingCallout() {
+  return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(29,185,84,0.1);border:1px solid rgba(29,185,84,0.45);border-radius:10px;margin:0 0 18px;"><tr><td style="padding:14px 16px;">`
+    + `<div style="font-size:14px;font-weight:700;color:${BRAND.green};margin-bottom:4px;">First things first: you are not in Find a Creative yet</div>`
+    + `<div style="font-size:12.5px;color:${BRAND.muted};line-height:1.55;">Clients can only find you once your profile has a photo, a tagline and at least one creative type. That is the whole list, and it takes about two minutes. Your own profile link works in the meantime.</div>`
+    + `</td></tr></table>`
+}
 // ---- end shared ----
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -100,12 +110,13 @@ Deno.serve(async (req: Request) => {
         heading: `Welcome, ${esc(name)}. You're a founding creative.`,
         intro: "You've been hand-picked as one of the first creatives on LensTrybe. Here's what you get, and the three simple things we ask in return to keep your founding deal.",
         panelHtml: panel(
+          listingCallout() +
           subhead('What you get') +
           featureRow('&#127775;', '12 months free Expert', 'The full Expert plan free for 12 months, then $49/mo locked in for life.') +
           featureRow('&#128081;', 'A permanent founding badge', 'Shown on your profile so clients know you were one of the originals.') +
           featureRow('&#128176;', 'Zero commission, always', 'Keep 100% of what you earn.') +
           subhead('What we ask, to keep your deal') +
-          featureRow('&#9989;', 'Complete your profile in 7 days', 'Get your listing to 100% so clients see a finished, credible profile.') +
+          featureRow('&#9989;', 'A finished profile within 7 days', 'Beyond the photo, tagline and creative type above, fill out your bio, rates and portfolio so clients see a complete, credible profile.') +
           featureRow('&#128188;', 'Run your next 3 real jobs through LensTrybe', 'Send a quote, have the client accept it, then invoice and mark it paid.') +
           featureRow('&#128172;', 'Share one piece of feedback a month', 'Tell us what to build next, right from your Founding Hub.')
         ),
@@ -138,6 +149,7 @@ Deno.serve(async (req: Request) => {
         heading: `Welcome, ${esc(name)}!`,
         intro: 'You\'ve just joined LensTrybe, the platform built to help Australian creatives run their business, showcase their work, and connect with clients.',
         panelHtml: panel(
+          listingCallout() +
           subhead('Here\'s what you can do') +
           featureRow('&#128248;', 'Your portfolio website', 'Showcase your work with a stunning branded profile site') +
           featureRow('&#128176;', 'Invoicing and quotes', 'Send professional invoices and quotes to clients') +
@@ -145,8 +157,8 @@ Deno.serve(async (req: Request) => {
           featureRow('&#128172;', 'Client messaging', 'Two-way messaging with your clients and other creatives') +
           featureRow('&#128230;', 'File delivery', 'Deliver photos and files with secure download links')
         ),
-        ctaText: 'Go to your dashboard',
-        ctaUrl: 'https://lenstrybe.com/dashboard',
+        ctaText: 'Finish your profile',
+        ctaUrl: 'https://lenstrybe.com/dashboard/profile/edit-profile',
         footNote: 'Questions? Just reply to this email and we\'ll help.',
       })
     }

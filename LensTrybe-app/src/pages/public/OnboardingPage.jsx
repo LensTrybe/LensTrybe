@@ -28,6 +28,16 @@ const PLAN_OPTIONS = [
   { id: 'elite', label: 'Elite', price: '$149.99/mo' },
 ]
 
+const TAGLINE_MAX = 80
+
+// Two ways in:
+//   create   Google sign in, no profile row yet. The wizard builds it, then asks for a plan.
+//   complete Email and password signup. handle_new_user already built the profile and, for a
+//            founding code, already set Expert and the founding badge. The wizard only fills
+//            the gaps, and must never touch tier, founding status or the welcome email.
+const MODE_CREATE = 'create'
+const MODE_COMPLETE = 'complete'
+
 function firstNameFromUser(user) {
   const meta = user?.user_metadata || {}
   const full = meta.full_name || meta.name || ''
@@ -63,10 +73,12 @@ export default function OnboardingPage() {
   const fileRef = useRef(null)
   const [checking, setChecking] = useState(true)
   const [user, setUser] = useState(null)
+  const [mode, setMode] = useState(MODE_CREATE)
   const [step, setStep] = useState(0)
   const [stepEnter, setStepEnter] = useState(true)
 
   const [businessName, setBusinessName] = useState('')
+  const [tagline, setTagline] = useState('')
   const [skillTypes, setSkillTypes] = useState([])
   const [city, setCity] = useState('')
   const [state, setState] = useState('')
@@ -78,6 +90,10 @@ export default function OnboardingPage() {
 
   const [error, setError] = useState('')
   const [submitting, setSubmitting] = useState(false)
+
+  // create asks for a plan at the end, complete does not: their tier is already set.
+  const totalSteps = mode === MODE_CREATE ? 3 : 2
+  const lastStep = totalSteps - 1
 
   const bumpStep = useCallback((next) => {
     setStepEnter(false)
@@ -101,25 +117,41 @@ export default function OnboardingPage() {
       const u = session.user
       const { data: prof, error: profErr } = await supabase
         .from('profiles')
-        .select('id')
+        .select('id, business_name, tagline, skill_types, city, state, country, avatar_url, onboarded_at')
         .eq('id', u.id)
-        .single()
+        .maybeSingle()
 
       if (cancelled) return
-      if (prof?.id) {
-        navigate('/dashboard', { replace: true })
-        return
-      }
       if (profErr && profErr.code !== 'PGRST116') {
         console.warn('[OnboardingPage] profile lookup', profErr)
       }
 
+      // Already been through it. Nothing to do here.
+      if (prof?.onboarded_at) {
+        navigate('/dashboard', { replace: true })
+        return
+      }
+
+      if (prof?.id) {
+        // The trigger already built this profile, so keep whatever it put there and
+        // only ask for what is still missing.
+        setMode(MODE_COMPLETE)
+        setBusinessName(prof.business_name || '')
+        setTagline(prof.tagline || '')
+        setSkillTypes(Array.isArray(prof.skill_types) ? prof.skill_types : [])
+        setCity(prof.city || '')
+        setState(prof.state || '')
+        setCountry(prof.country || 'Australia')
+        if (prof.avatar_url) setAvatarPreview(prof.avatar_url)
+      } else {
+        setMode(MODE_CREATE)
+        setBusinessName(displayNameFromGoogle(u))
+        const av = googleAvatarUrl(u)
+        if (av) setAvatarPreview(av)
+        setSelectedTier(readStoredPlanTier())
+      }
+
       setUser(u)
-      const suggestion = displayNameFromGoogle(u)
-      setBusinessName(suggestion)
-      const av = googleAvatarUrl(u)
-      if (av) setAvatarPreview(av)
-      setSelectedTier(readStoredPlanTier())
       setChecking(false)
     })()
     return () => {
@@ -138,48 +170,103 @@ export default function OnboardingPage() {
     setAvatarPreview(URL.createObjectURL(file))
   }
 
-  const canStep1 = businessName.trim().length > 0
+  const canStep1 = businessName.trim().length > 0 && tagline.trim().length > 0
   const canStep2 = skillTypes.length > 0 && city.trim().length > 0 && state.length > 0
+
+  // Nobody gets locked out of their own dashboard by a setup screen. Skipping marks them
+  // onboarded so the redirect stops, and the dashboard banner takes over from there.
+  async function skipForNow() {
+    if (!user?.id || mode !== MODE_COMPLETE) return
+    setSubmitting(true)
+    setError('')
+    const { error: skipErr } = await supabase
+      .from('profiles')
+      .update({ onboarded_at: new Date().toISOString() })
+      .eq('id', user.id)
+    if (skipErr) {
+      setError(skipErr.message)
+      setSubmitting(false)
+      return
+    }
+    navigate('/dashboard', { replace: true })
+  }
+
+  async function uploadAvatar() {
+    if (!(avatarFile instanceof File)) return { url: null, ok: true }
+    try {
+      const imgMod = await moderateImage(avatarFile)
+      if (imgMod?.blocked) {
+        setError(PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE)
+        return { url: null, ok: false }
+      }
+      if (imgMod?.flagged) {
+        console.warn('[OnboardingPage] avatar flagged (upload allowed)', imgMod?.reason ?? '')
+      }
+    } catch (modErr) {
+      setError(modErr?.message || 'Could not verify your profile photo. Try again or skip changing the photo.')
+      return { url: null, ok: false }
+    }
+    const ext = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+    const path = `${user.id}/avatar.${ext}`
+    const { error: upErr } = await supabase.storage.from('portfolio').upload(path, avatarFile, { upsert: true })
+    if (upErr) {
+      setError(upErr.message)
+      return { url: null, ok: false }
+    }
+    const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path)
+    return { url: urlData?.publicUrl ?? null, ok: true }
+  }
 
   async function completeSetup() {
     if (!user?.id) return
     setSubmitting(true)
     setError('')
 
-    const mod = await moderateText(businessName.trim())
-    if (mod?.blocked) {
-      setError(mod.reason || MODERATION_BLOCKED_USER_MESSAGE)
+    const nameMod = await moderateText(businessName.trim())
+    if (nameMod?.blocked) {
+      setError(nameMod.reason || MODERATION_BLOCKED_USER_MESSAGE)
+      setSubmitting(false)
+      return
+    }
+    const tagMod = await moderateText(tagline.trim())
+    if (tagMod?.blocked) {
+      setError(tagMod.reason || MODERATION_BLOCKED_USER_MESSAGE)
       setSubmitting(false)
       return
     }
 
-    let publicUrl = null
-    if (avatarFile instanceof File) {
-      try {
-        const imgMod = await moderateImage(avatarFile)
-        if (imgMod?.blocked) {
-          setError(PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE)
-          setSubmitting(false)
-          return
-        }
-        if (imgMod?.flagged) {
-          console.warn('[OnboardingPage] avatar flagged (upload allowed)', imgMod?.reason ?? '')
-        }
-      } catch (modErr) {
-        setError(modErr?.message || 'Could not verify your profile photo. Try again or skip changing the photo.')
+    const { url: publicUrl, ok } = await uploadAvatar()
+    if (!ok) {
+      setSubmitting(false)
+      return
+    }
+
+    const now = new Date().toISOString()
+
+    if (mode === MODE_COMPLETE) {
+      // Only the fields the wizard actually asked for. No tier, no account_type, no
+      // founding columns: those belong to the trigger and the billing webhooks, and the
+      // a_guard_profile_privileged trigger would refuse them from here anyway.
+      const patch = {
+        business_name: businessName.trim(),
+        tagline: tagline.trim(),
+        skill_types: skillTypes,
+        city: city.trim(),
+        state,
+        country: country.trim() || 'Australia',
+        onboarded_at: now,
+      }
+      // Never blank an existing photo just because they did not pick a new one.
+      if (publicUrl) patch.avatar_url = publicUrl
+
+      const { error: updErr } = await supabase.from('profiles').update(patch).eq('id', user.id)
+      if (updErr) {
+        setError(updErr.message)
         setSubmitting(false)
         return
       }
-      const ext = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-      const path = `${user.id}/avatar.${ext}`
-      const { error: upErr } = await supabase.storage.from('portfolio').upload(path, avatarFile, { upsert: true })
-      if (upErr) {
-        setError(upErr.message)
-        setSubmitting(false)
-        return
-      }
-      const { data: urlData } = supabase.storage.from('portfolio').getPublicUrl(path)
-      publicUrl = urlData?.publicUrl ?? null
+      navigate('/dashboard', { replace: true })
+      return
     }
 
     const metaAv = googleAvatarUrl(user)
@@ -188,6 +275,7 @@ export default function OnboardingPage() {
     const row = {
       id: user.id,
       business_name: businessName.trim(),
+      tagline: tagline.trim(),
       skill_types: skillTypes,
       specialties: [],
       city: city.trim(),
@@ -200,6 +288,7 @@ export default function OnboardingPage() {
       account_type: 'creative',
       avatar_url: avatarUrl,
       display_name_preference: 'business_name',
+      onboarded_at: now,
     }
 
     const { error: insErr } = await supabase.from('profiles').insert(row)
@@ -215,6 +304,7 @@ export default function OnboardingPage() {
       /* ignore */
     }
 
+    // Only on the create path. An email signup was already welcomed when they confirmed.
     try {
       await supabase.functions.invoke('send-welcome-email', {
         body: {
@@ -253,29 +343,11 @@ export default function OnboardingPage() {
     fontSize: '15px',
   }
 
-  const btnPrimary = {
-    padding: '12px 22px',
-    borderRadius: '10px',
-    border: 'none',
-    background: GREEN,
-    color: '#000',
-    fontWeight: 700,
-    fontSize: '15px',
-    fontFamily: "'Inter', system-ui, sans-serif",
-    cursor: submitting ? 'wait' : 'pointer',
-    opacity: submitting ? 0.75 : 1,
-  }
-
-  const btnGhost = {
-    padding: '12px 22px',
-    borderRadius: '10px',
-    border: '1px solid rgba(20,17,26,0.2)',
-    background: 'transparent',
-    color: 'var(--text-primary)',
-    fontWeight: 600,
-    fontSize: '15px',
-    fontFamily: "'Inter', system-ui, sans-serif",
-    cursor: 'pointer',
+  const hintStyle = {
+    margin: '6px 0 0',
+    fontSize: '12px',
+    color: 'rgba(20,17,26,0.55)',
+    lineHeight: 1.45,
   }
 
   if (checking || !user) {
@@ -297,7 +369,26 @@ export default function OnboardingPage() {
   }
 
   const welcomeName = firstNameFromUser(user)
-  const progress = ((step + 1) / 3) * 100
+  const progress = ((step + 1) / totalSteps) * 100
+
+  // Shown on the last step, so the reason for every field above it is clear before they finish.
+  const listingNote = (
+    <div
+      style={{
+        padding: '12px 14px',
+        borderRadius: 10,
+        border: '1px solid rgba(29,185,84,0.4)',
+        background: 'rgba(29,185,84,0.08)',
+        fontSize: '13px',
+        lineHeight: 1.5,
+        color: 'rgba(20,17,26,0.8)',
+      }}
+    >
+      <strong style={{ color: '#0f7a37' }}>This is what gets you found.</strong> A photo, a tagline
+      and at least one creative type is all it takes to appear in Find a Creative. Finish here and
+      you are listed straight away.
+    </div>
+  )
 
   return (
     <div
@@ -337,7 +428,7 @@ export default function OnboardingPage() {
         <div style={{ marginBottom: '20px' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
             <span style={{ fontSize: '12px', fontWeight: 600, color: PINK, letterSpacing: '0.06em' }}>
-              STEP {step + 1} OF 3
+              STEP {step + 1} OF {totalSteps}
             </span>
             <span style={{ fontSize: '12px', color: 'rgba(20,17,26,0.5)' }}>LensTrybe</span>
           </div>
@@ -369,7 +460,7 @@ export default function OnboardingPage() {
               borderRadius: 10,
               background: 'rgba(239,68,68,0.12)',
               border: '1px solid rgba(239,68,68,0.35)',
-              color: '#fca5a5',
+              color: '#b91c1c',
               fontSize: '14px',
             }}
           >
@@ -413,7 +504,7 @@ export default function OnboardingPage() {
                     )}
                   </div>
                   <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '11px 20px', fontSize: '14px' }} onClick={() => fileRef.current?.click()}>
-                    Change photo
+                    {avatarPreview ? 'Change photo' : 'Add a photo'}
                   </LiquidPill>
                   <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={onPickPhoto} />
                 </div>
@@ -428,6 +519,21 @@ export default function OnboardingPage() {
                   placeholder="Your studio or brand name"
                   autoComplete="organization"
                 />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Tagline (required)</label>
+                <input
+                  style={inputStyle}
+                  value={tagline}
+                  maxLength={TAGLINE_MAX}
+                  onChange={(e) => setTagline(e.target.value)}
+                  placeholder="e.g. Brisbane wedding photographer"
+                />
+                <p style={hintStyle}>
+                  One line that says what you do and where. It is the first thing a client reads on
+                  your card in search. {TAGLINE_MAX - tagline.length} characters left.
+                </p>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '8px' }}>
@@ -497,18 +603,26 @@ export default function OnboardingPage() {
                 />
               </div>
 
+              {mode === MODE_COMPLETE ? listingNote : null}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
-                <LiquidPill type="button" style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '15px' }} onClick={() => bumpStep(0)}>
+                <LiquidPill type="button" disabled={submitting} style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '15px' }} onClick={() => bumpStep(0)}>
                   Back
                 </LiquidPill>
-                <LiquidPill primary type="button" disabled={!canStep2} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: !canStep2 ? 0.6 : 1 }} onClick={() => bumpStep(2)}>
-                  Next
-                </LiquidPill>
+                {mode === MODE_CREATE ? (
+                  <LiquidPill primary type="button" disabled={!canStep2} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: !canStep2 ? 0.6 : 1 }} onClick={() => bumpStep(2)}>
+                    Next
+                  </LiquidPill>
+                ) : (
+                  <LiquidPill primary type="button" disabled={submitting || !canStep2} style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '15px', opacity: submitting || !canStep2 ? 0.6 : 1 }} onClick={() => void completeSetup()}>
+                    {submitting ? 'Saving…' : 'Finish setup'}
+                  </LiquidPill>
+                )}
               </div>
             </div>
           )}
 
-          {step === 2 && (
+          {step === 2 && mode === MODE_CREATE && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
               <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: 'var(--text-primary)' }}>Choose your plan</h2>
               <p style={{ margin: 0, fontSize: '14px', color: 'rgba(20,17,26,0.65)' }}>
@@ -570,6 +684,8 @@ export default function OnboardingPage() {
                 </p>
               ) : null}
 
+              {listingNote}
+
               <div style={{ display: 'flex', justifyContent: 'space-between', gap: '12px', marginTop: '8px' }}>
                 <LiquidPill type="button" disabled={submitting} style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '15px' }} onClick={() => bumpStep(1)}>
                   Back
@@ -581,6 +697,28 @@ export default function OnboardingPage() {
             </div>
           )}
         </div>
+
+        {mode === MODE_COMPLETE && step === lastStep ? (
+          <div style={{ marginTop: '18px', textAlign: 'center' }}>
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={() => void skipForNow()}
+              style={{
+                background: 'none',
+                border: 'none',
+                padding: '6px 4px',
+                color: 'rgba(20,17,26,0.55)',
+                fontSize: '13px',
+                fontFamily: "'Inter', system-ui, sans-serif",
+                textDecoration: 'underline',
+                cursor: submitting ? 'wait' : 'pointer',
+              }}
+            >
+              I&apos;ll finish this later
+            </button>
+          </div>
+        ) : null}
       </div>
     </div>
   )
