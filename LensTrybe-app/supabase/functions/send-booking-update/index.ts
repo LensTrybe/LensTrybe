@@ -29,12 +29,91 @@ ${footNote ? `<tr><td style="padding:18px 36px 0;"><p style="margin:0;color:${BR
 <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid ${BRAND.border};padding-top:18px;"><div style="font-size:13px;font-weight:700;color:${BRAND.text};">LensTrybe</div><div style="font-size:12px;color:${BRAND.faint};margin-top:2px;">Connect. Capture. Create.</div><a href="https://lenstrybe.com" style="font-size:12px;color:${BRAND.green};text-decoration:none;">lenstrybe.com</a></div></td></tr>
 </table></td></tr></table></body></html>`
 }
-async function sendEmail(resendKey: string, args: { to: string; subject: string; html: string; replyTo?: string }) {
+type Attachment = { filename: string; content: string }
+async function sendEmail(resendKey: string, args: { to: string; subject: string; html: string; replyTo?: string; attachments?: Attachment[] }) {
   const body: Record<string, unknown> = { from: FROM, to: [args.to], subject: args.subject, html: args.html }
   if (args.replyTo) body.reply_to = args.replyTo
+  if (args.attachments?.length) body.attachments = args.attachments
   return fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
 }
 // ---- end shared ----
+
+// ---- Add to calendar ----
+//
+// A confirmed booking the client never puts in their calendar is a no show waiting to
+// happen. Attaching a calendar file means one tap in Gmail, Apple Mail or Outlook puts it
+// there. The creative's own copy comes from their LensTrybe feed instead, so this file is
+// only ever for the client.
+//
+// Times are floating, with no timezone, matching the calendar-feed function. A 2pm shoot is
+// 2pm where everyone is standing, and no daylight saving change can shift it.
+
+/** RFC 5545 escaping: backslash, semicolon, comma, and newlines become \n. */
+function icsEsc(value: unknown): string {
+  return String(value ?? '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n')
+}
+/** Lines over 75 octets must be folded or strict parsers reject the whole file. */
+function icsFold(line: string): string {
+  if (line.length <= 73) return line
+  const out: string[] = [line.slice(0, 73)]
+  let rest = line.slice(73)
+  while (rest.length > 72) { out.push(' ' + rest.slice(0, 72)); rest = rest.slice(72) }
+  if (rest.length) out.push(' ' + rest)
+  return out.join('\r\n')
+}
+function icsTime(t: unknown): string | null {
+  const m = /^(\d{2}):(\d{2})(?::(\d{2}))?/.exec(String(t ?? ''))
+  return m ? `${m[1]}${m[2]}${m[3] || '00'}` : null
+}
+function icsNextDay(yyyymmdd: string): string {
+  const dt = new Date(Date.UTC(Number(yyyymmdd.slice(0, 4)), Number(yyyymmdd.slice(4, 6)) - 1, Number(yyyymmdd.slice(6, 8))))
+  dt.setUTCDate(dt.getUTCDate() + 1)
+  return dt.toISOString().slice(0, 10).replace(/-/g, '')
+}
+/** UTF-8 safe base64, which plain btoa is not. */
+function b64(s: string): string {
+  const bytes = new TextEncoder().encode(s)
+  let bin = ''
+  for (const byte of bytes) bin += String.fromCharCode(byte)
+  return btoa(bin)
+}
+
+// deno-lint-ignore no-explicit-any
+function icsForBooking(booking: any, businessName: string, replyTo?: string): string | null {
+  const day = String(booking.booking_date ?? '').slice(0, 10).replace(/-/g, '')
+  if (day.length !== 8) return null
+
+  const lines = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//LensTrybe//Booking//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH', 'BEGIN:VEVENT']
+  // Same UID as the creative's feed, so re-sending replaces the event instead of doubling it.
+  lines.push(`UID:booking-${booking.id}@lenstrybe.com`)
+  lines.push(`DTSTAMP:${new Date().toISOString().replace(/[-:]/g, '').split('.')[0]}Z`)
+
+  // all_day and the times cannot disagree: bookings_guard nulls both times whenever all_day
+  // is set, and bookings_times_check demands both, end after start, whenever it is not.
+  const start = booking.all_day ? null : icsTime(booking.start_time)
+  if (start) {
+    lines.push(`DTSTART:${day}T${start}`)
+    lines.push(`DTEND:${day}T${icsTime(booking.end_time) || start}`)
+  } else {
+    lines.push(`DTSTART;VALUE=DATE:${day}`)
+    lines.push(`DTEND;VALUE=DATE:${icsNextDay(day)}`)
+  }
+
+  lines.push(`SUMMARY:${icsEsc(`${booking.service || 'Booking'} with ${businessName}`)}`)
+  if (booking.location) lines.push(`LOCATION:${icsEsc(booking.location)}`)
+  lines.push(`DESCRIPTION:${icsEsc(`Booked through LensTrybe.${replyTo ? `\nAny questions, reply to ${replyTo}.` : ''}`)}`)
+  lines.push('STATUS:CONFIRMED')
+  // A day's notice, which is the reminder a client actually wants for a shoot.
+  lines.push('BEGIN:VALARM', 'TRIGGER:-P1D', 'ACTION:DISPLAY', `DESCRIPTION:${icsEsc(`${booking.service || 'Booking'} with ${businessName} tomorrow`)}`, 'END:VALARM')
+  lines.push('END:VEVENT', 'END:VCALENDAR', '')
+
+  return lines.map(icsFold).join('\r\n')
+}
+// ---- end add to calendar ----
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
@@ -89,15 +168,27 @@ Deno.serve(async (req) => {
       : `${esc(businessName)} has updated the status of your booking.`
 
   const dateStr = booking.booking_date ? new Date(booking.booking_date).toLocaleDateString('en-AU', { dateStyle: 'full' }) : ''
+  const timeStr = booking.all_day
+    ? 'All day'
+    : [booking.start_time, booking.end_time].every(Boolean)
+      ? `${String(booking.start_time).slice(0, 5)} to ${String(booking.end_time).slice(0, 5)}`
+      : ''
   const panelHtml = panel(
     fieldRow('Service', esc(booking.service || 'Booking')) +
     (dateStr ? fieldRow('Date', esc(dateStr)) : '') +
+    (timeStr ? fieldRow('Time', esc(timeStr)) : '') +
+    (booking.location ? fieldRow('Location', esc(booking.location)) : '') +
     fieldRow('Status', `<span style="color:${confirmed ? BRAND.green : BRAND.text};text-transform:capitalize;">${esc(statusRaw || booking.status || 'updated')}</span>`)
   )
 
+  // Only a confirmed booking belongs in anyone's calendar. Sending one for a decline would
+  // put work in the client's diary that is not happening.
+  const replyTo = isEmail(profile?.business_email) ? profile.business_email : undefined
+  const ics = confirmed ? icsForBooking(booking, businessName, replyTo) : null
+
   const res = await sendEmail(resendKey, {
     to: booking.client_email,
-    replyTo: isEmail(profile?.business_email) ? profile.business_email : undefined,
+    replyTo,
     subject: confirmed ? `Your booking with ${businessName} is confirmed` : `An update on your booking with ${businessName}`,
     html: emailShell({
       preheader: intro.replace(/<[^>]+>/g, ''),
@@ -107,8 +198,11 @@ Deno.serve(async (req) => {
       panelHtml,
       ctaText: 'View on LensTrybe',
       ctaUrl: 'https://lenstrybe.com/client-dashboard',
-      footNote: 'You can reply straight to this email to reach your creative.',
+      footNote: ics
+        ? 'Open the attached file to add this to your calendar. You can reply straight to this email to reach your creative.'
+        : 'You can reply straight to this email to reach your creative.',
     }),
+    attachments: ics ? [{ filename: 'booking.ics', content: b64(ics) }] : undefined,
   })
   if (!res.ok) {
     console.error('send-booking-update resend error', res.status, await res.text().catch(() => ''))
