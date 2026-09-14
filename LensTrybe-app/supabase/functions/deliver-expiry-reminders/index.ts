@@ -1,6 +1,17 @@
 // Supabase Edge Function: deliver-expiry-reminders
-// Scheduled daily via pg_cron. Emails the client a reminder ~3 days before a
-// delivery gallery link expires, once per delivery.
+// Scheduled daily via pg_cron. Three jobs, in order:
+//   1. Tell the client a gallery link expires in about 3 days, once per delivery.
+//   2. Tell the creative, a week out, that an expired gallery's files are about to go.
+//   3. Remove those files 30 days after the gallery expired.
+//
+// Nothing used to do 2 or 3, so every gallery ever delivered kept its files forever. That
+// was a storage bill that grew with success, and worse, delivery_bytes_used counted those
+// files against the creative's allowance, so they filled up with galleries they could not
+// open and were asked to upgrade.
+//
+// The delivery row is never deleted. The client name, the title, the dates and the download
+// counts are the creative's business record. Only the files were ever the expensive part.
+//
 // Auth: header x-cron-secret == CRON_SECRET (fails closed if CRON_SECRET is not set).
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET
 
@@ -9,6 +20,11 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
 const GREEN = '#1DB954'
 const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
 const REMINDER_WINDOW_DAYS = 3
+// Long enough that a creative who meant to extend and forgot does not lose a client's
+// wedding photos over it. Matches the 30 day grace on account deletion.
+const PURGE_AFTER_EXPIRY_DAYS = 30
+const PURGE_WARNING_DAYS = 7
+const DELIVER_BUCKET = 'deliveries'
 
 function json(body, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } })
@@ -48,6 +64,23 @@ function reminderEmail(clientName, businessName, title, url, expiryLabel) {
   <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">Your gallery <strong style="color:#fff;">${esc(title || 'from ' + (businessName || 'your creative'))}</strong> will expire on <strong style="color:#fff;">${esc(expiryLabel)}</strong>. Please download anything you would like to keep before then.</p>
   </td></tr>
   <tr><td style="padding:14px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(url)}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">View &amp; download your files</a></td></tr></table></td></tr>
+  <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Delivered via LensTrybe. Connect. Capture. Create.</div></td></tr>
+  </table></td></tr></table></body></html>`
+}
+
+function purgeWarningEmail(businessName, title, clientName, purgeLabel) {
+  return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
+  <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
+  <table role="presentation" width="100%" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
+  <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
+  <tr><td style="padding:22px 36px 8px;">
+  <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">Gallery files being removed</div>
+  <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(businessName || 'there')}, one of your galleries is about to be cleared</h1>
+  <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">The files in <strong style="color:#fff;">${esc(title || 'your gallery')}</strong>${clientName ? ` for ${esc(clientName)}` : ''} will be removed on <strong style="color:#fff;">${esc(purgeLabel)}</strong>, 30 days after it expired.</p>
+  <p style="margin:0 0 14px;color:#9a9aa8;font-size:15px;line-height:1.6;">If your client still needs them, open Deliver and extend the gallery. That keeps the files and puts the link back up. If you have your own copies, there is nothing to do, and clearing them frees up your storage allowance.</p>
+  <p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.6;">The delivery itself stays in your account either way, so your record of the job is not going anywhere.</p>
+  </td></tr>
+  <tr><td style="padding:14px 36px 4px;"><table role="presentation"><tr><td style="border-radius:10px;background:${GREEN};"><a href="https://lenstrybe.com/dashboard/portfolio-design/deliver" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Open Deliver</a></td></tr></table></td></tr>
   <tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;color:#6a6a78;">Delivered via LensTrybe. Connect. Capture. Create.</div></td></tr>
   </table></td></tr></table></body></html>`
 }
@@ -100,5 +133,92 @@ Deno.serve(async (req) => {
     } catch (e) { console.error('deliver-expiry-reminders: send failed', d.id, e instanceof Error ? e.message : String(e)) }
   }
 
-  return json({ ran_at: now.toISOString(), candidates: (rows || []).length, sent })
+  // ---- 2. Warn the creative a week before an expired gallery's files go ----
+  const warnBy = new Date(now.getTime() - (PURGE_AFTER_EXPIRY_DAYS - PURGE_WARNING_DAYS) * 86400000)
+  const { data: warnRows } = await sb
+    .from('deliveries')
+    .select('id, title, client_name, expires_at, creative_id')
+    .eq('purge_warning_sent', false)
+    .is('files_purged_at', null)
+    .not('expires_at', 'is', null)
+    .lte('expires_at', warnBy.toISOString())
+    .limit(100)
+
+  let warned = 0
+  for (const d of warnRows || []) {
+    try {
+      let businessName = 'there'
+      let to = null
+      if (d.creative_id) {
+        const { data: prof } = await sb.from('profiles').select('business_name, business_email').eq('id', d.creative_id).maybeSingle()
+        if (prof?.business_name) businessName = prof.business_name
+        to = prof?.business_email || null
+        // Fall back to the login email, the same way the favourites email does, so a
+        // creative without a business email still hears about it.
+        if (!to) {
+          const { data: u } = await sb.auth.admin.getUserById(d.creative_id)
+          to = u?.user?.email || null
+        }
+      }
+      const purgeOn = new Date(new Date(d.expires_at).getTime() + PURGE_AFTER_EXPIRY_DAYS * 86400000)
+      const purgeLabel = purgeOn.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' })
+      if (to) {
+        await sendEmail(to, 'connect@lenstrybe.com', 'Your gallery files are about to be removed', purgeWarningEmail(businessName, d.title, d.client_name, purgeLabel))
+      }
+      // Stamped whether or not an address was found, so a creative with no reachable email
+      // does not get retried every single day forever.
+      await sb.from('deliveries').update({ purge_warning_sent: true }).eq('id', d.id)
+      warned += 1
+    } catch (e) { console.error('deliver-expiry-reminders: warn failed', d.id, e instanceof Error ? e.message : String(e)) }
+  }
+
+  // ---- 3. Remove the files of anything expired more than 30 days ----
+  const purgeBefore = new Date(now.getTime() - PURGE_AFTER_EXPIRY_DAYS * 86400000)
+  const { data: purgeRows } = await sb
+    .from('deliveries')
+    .select('id, files, cover_url, expires_at')
+    .is('files_purged_at', null)
+    .not('expires_at', 'is', null)
+    .lte('expires_at', purgeBefore.toISOString())
+    .limit(50)
+
+  let purged = 0
+  let filesRemoved = 0
+  for (const d of purgeRows || []) {
+    try {
+      const paths = (Array.isArray(d.files) ? d.files : [])
+        .map((f) => (f && typeof f.path === 'string' ? f.path : null))
+        .filter(Boolean)
+      // The cover is a path in its own right and is not always one of the files.
+      if (typeof d.cover_url === 'string' && d.cover_url && !d.cover_url.startsWith('http') && !paths.includes(d.cover_url)) {
+        paths.push(d.cover_url)
+      }
+
+      if (paths.length) {
+        for (let i = 0; i < paths.length; i += 100) {
+          const { error: rmErr } = await sb.storage.from(DELIVER_BUCKET).remove(paths.slice(i, i + 100))
+          // Leave the row untouched on failure so the next run tries again. Marking it
+          // purged here would strand the files with nothing left pointing at them.
+          if (rmErr) throw new Error(`storage remove failed: ${rmErr.message}`)
+        }
+        filesRemoved += paths.length
+      }
+
+      await sb.from('deliveries').update({
+        files: [],
+        cover_url: null,
+        files_purged_at: new Date().toISOString(),
+      }).eq('id', d.id)
+      purged += 1
+    } catch (e) { console.error('deliver-expiry-reminders: purge failed', d.id, e instanceof Error ? e.message : String(e)) }
+  }
+
+  return json({
+    ran_at: now.toISOString(),
+    candidates: (rows || []).length,
+    sent,
+    warned,
+    purged,
+    files_removed: filesRemoved,
+  })
 })
