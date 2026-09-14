@@ -9,8 +9,8 @@ const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
 function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
 function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
 function fieldRow(label: string, valueHtml: string) { return `<div style="margin:0 0 12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">${esc(label)}</div><div style="font-size:14px;color:${BRAND.text};line-height:1.55;">${valueHtml}</div></div>` }
-function emailShell(opts: { preheader?: string; kicker?: string; heading: string; intro?: string; panelHtml?: string; ctaText?: string; ctaUrl?: string; footNote?: string }) {
-  const { preheader = '', kicker = '', heading, intro = '', panelHtml = '', ctaText, ctaUrl, footNote = '' } = opts
+function emailShell(opts: { preheader?: string; kicker?: string; heading: string; intro?: string; panelHtml?: string; ctaText?: string; ctaUrl?: string; cta2Text?: string; cta2Url?: string; footNote?: string }) {
+  const { preheader = '', kicker = '', heading, intro = '', panelHtml = '', ctaText, ctaUrl, cta2Text, cta2Url, footNote = '' } = opts
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:${BRAND.pageBg};">
 <span style="display:none;max-height:0;overflow:hidden;opacity:0;color:${BRAND.pageBg};">${esc(preheader)}</span>
@@ -24,7 +24,7 @@ ${kicker ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;
 ${intro ? `<p style="margin:0;color:${BRAND.muted};font-size:15px;line-height:1.6;">${intro}</p>` : ''}
 </td></tr>
 ${panelHtml ? `<tr><td style="padding:18px 36px 0;">${panelHtml}</td></tr>` : ''}
-${ctaText && ctaUrl ? `<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${BRAND.green};"><a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:${BRAND.btnText};text-decoration:none;font-family:${BRAND.font};">${esc(ctaText)}</a></td></tr></table></td></tr>` : ''}
+${ctaText && ctaUrl ? `<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${BRAND.green};"><a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:${BRAND.btnText};text-decoration:none;font-family:${BRAND.font};">${esc(ctaText)}</a></td>${cta2Text && cta2Url ? `<td style="width:10px;"></td><td style="border-radius:10px;border:1px solid ${BRAND.green};"><a href="${cta2Url}" style="display:inline-block;padding:12px 24px;font-size:15px;font-weight:700;color:${BRAND.green};text-decoration:none;font-family:${BRAND.font};">${esc(cta2Text)}</a></td>` : ''}</tr></table></td></tr>` : ''}
 ${footNote ? `<tr><td style="padding:18px 36px 0;"><p style="margin:0;color:${BRAND.faint};font-size:12px;line-height:1.6;">${footNote}</p></td></tr>` : ''}
 <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid ${BRAND.border};padding-top:18px;"><div style="font-size:13px;font-weight:700;color:${BRAND.text};">LensTrybe</div><div style="font-size:12px;color:${BRAND.faint};margin-top:2px;">Connect. Capture. Create.</div><a href="https://lenstrybe.com" style="font-size:12px;color:${BRAND.green};text-decoration:none;">lenstrybe.com</a></div></td></tr>
 </table></td></tr></table></body></html>`
@@ -185,6 +185,12 @@ Deno.serve(async (req) => {
   // put work in the client's diary that is not happening.
   const replyTo = isEmail(profile?.business_email) ? profile.business_email : undefined
   const ics = confirmed ? icsForBooking(booking, businessName, replyTo) : null
+  // One tap on a phone hands the event to the calendar app, which is far more reliable than
+  // hoping the client's mail app does something sensible with an attachment. Zoho, for one,
+  // files it into its own calendar and looks like it did nothing.
+  const addUrl = confirmed && booking.view_token
+    ? `${supabaseUrl}/functions/v1/calendar-feed?booking=${booking.view_token}`
+    : undefined
 
   const res = await sendEmail(resendKey, {
     to: booking.client_email,
@@ -198,8 +204,10 @@ Deno.serve(async (req) => {
       panelHtml,
       ctaText: 'View on LensTrybe',
       ctaUrl: 'https://lenstrybe.com/client-dashboard',
-      footNote: ics
-        ? 'Open the attached file to add this to your calendar. You can reply straight to this email to reach your creative.'
+      cta2Text: addUrl ? 'Add to calendar' : undefined,
+      cta2Url: addUrl,
+      footNote: addUrl
+        ? 'Add to calendar puts this straight in your calendar. The attached file does the same if your email app prefers it. You can reply straight to this email to reach your creative.'
         : 'You can reply straight to this email to reach your creative.',
     }),
     attachments: ics ? [{ filename: 'booking.ics', content: b64(ics) }] : undefined,

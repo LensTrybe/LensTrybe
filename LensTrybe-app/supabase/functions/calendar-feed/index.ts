@@ -183,10 +183,67 @@ Deno.serve(async (req: Request) => {
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
   if (!supabaseUrl || !serviceKey) return icsResponse(emptyCalendar(), 500)
 
-  const token = new URL(req.url).searchParams.get('token') || ''
-  if (!UUID_RE.test(token)) return icsResponse(emptyCalendar())
+  const params = new URL(req.url).searchParams
+  const token = params.get('token') || ''
+  const bookingToken = params.get('booking') || ''
 
   const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } })
+
+  // One booking, for the Add to calendar link in the client's confirmation email. Tapping
+  // it on a phone hands the event straight to the calendar app, which is far more reliable
+  // than hoping their mail client does something sensible with an attachment.
+  if (bookingToken) {
+    if (!UUID_RE.test(bookingToken)) return icsResponse(emptyCalendar())
+
+    const { data: b } = await admin
+      .from('bookings')
+      .select('id, client_name, service, booking_date, start_time, end_time, location, status, all_day, creative_id')
+      .eq('view_token', bookingToken)
+      .maybeSingle()
+
+    // A cancelled booking should not still be addable.
+    if (!b || DEAD_BOOKING.has(String(b.status || '').toLowerCase())) return icsResponse(emptyCalendar())
+
+    const { data: p } = await admin.from('profiles').select('business_name').eq('id', b.creative_id).maybeSingle()
+    const withWhom = p?.business_name ? ` with ${p.business_name}` : ''
+    const stampOne = new Date().toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z'
+
+    const event = buildEvent({
+      uid: `booking-${b.id}@lenstrybe.com`,
+      date: b.booking_date,
+      start: b.start_time,
+      end: b.end_time,
+      allDay: b.all_day === true,
+      summary: `${b.service || 'Booking'}${withWhom}`,
+      description: 'Booked through LensTrybe.',
+      location: b.location || '',
+      status: String(b.status || '').toLowerCase() === 'pending' ? 'tentative' : 'confirmed',
+      stamp: stampOne,
+    })
+    if (!event) return icsResponse(emptyCalendar())
+
+    return new Response([
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//LensTrybe//Booking//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:PUBLISH',
+      event,
+      'END:VCALENDAR',
+      '',
+    ].join('\r\n'), {
+      headers: {
+        'Content-Type': 'text/calendar; charset=utf-8',
+        'Cache-Control': 'no-cache, max-age=0',
+        // attachment, not inline: this one is a download the phone hands to the calendar
+        // app, rather than a feed the calendar polls.
+        'Content-Disposition': 'attachment; filename="booking.ics"',
+        'Access-Control-Allow-Origin': '*',
+      },
+    })
+  }
+
+  if (!UUID_RE.test(token)) return icsResponse(emptyCalendar())
 
   const { data: profile } = await admin
     .from('profiles')
