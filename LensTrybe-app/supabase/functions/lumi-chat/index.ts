@@ -14,6 +14,56 @@ const TIER_LIMITS = {
   elite: { monthly: -1, daily: 50 },
 };
 
+// Where the creative is standing when they ask. Without this Lumi answers "how do I send
+// an invoice" with generic advice while they are looking at the invoicing screen.
+// The widget sends the path; matching it here against a fixed list means the client
+// cannot put arbitrary text into the system prompt.
+const PAGE_LABELS: [string, string][] = [
+  ["/dashboard/finance/invoicing", "Invoicing, where they create and send invoices"],
+  ["/dashboard/finance/quotes", "Quotes, where they create and send quotes"],
+  ["/dashboard/finance/contracts", "Contracts, where they write and send contracts for e-signature"],
+  ["/dashboard/finance/expenses", "Expenses, where they log business expenses"],
+  ["/dashboard/finance/tax", "the Tax hub"],
+  ["/dashboard/finance/overview", "Finance overview, their income and expenses at a glance"],
+  ["/dashboard/clients/messages", "Messages, their client conversations"],
+  ["/dashboard/clients/meetings", "Meetings, where they schedule calls with clients"],
+  ["/dashboard/clients/contacts", "Contacts, their client list"],
+  ["/dashboard/clients/crm", "the CRM, their client pipeline"],
+  ["/dashboard/portfolio-design/brand-kit", "the Brand kit, which sets the colours, fonts and logo on their documents"],
+  ["/dashboard/portfolio-design/deliver", "Deliver, where they send photo and video galleries to clients"],
+  ["/dashboard/portfolio-design/portfolio-website", "the Website builder, their public portfolio site"],
+  ["/dashboard/my-work/my-bookings", "Bookings, their confirmed and pending jobs"],
+  ["/dashboard/my-work/availability", "their Availability calendar"],
+  ["/dashboard/my-work/jobs", "the Job board, where they find work posted by others"],
+  ["/dashboard/profile/edit-profile", "Edit profile, where they fill in what clients see in search"],
+  ["/dashboard/profile/view-profile", "their public profile as a client sees it"],
+  ["/dashboard/business/reviews", "Reviews from their clients"],
+  ["/dashboard/business/marketplace", "the Marketplace, buying and selling second hand gear"],
+  ["/dashboard/business/team", "Team, where they invite people to their account"],
+  ["/dashboard/settings/subscription", "Subscription settings, their plan and payment card"],
+  ["/dashboard/projects", "Projects, where they track a job from enquiry to delivery"],
+  ["/dashboard/inventory", "Inventory, their gear list"],
+  ["/dashboard/content/calendar", "their Content calendar for social posts"],
+  ["/dashboard/content/ideas", "Content ideas"],
+  ["/dashboard/collaborate", "Collaborate, finding other creatives to work with"],
+  ["/dashboard/founding", "the Founding Hub, where they track their founding creative commitments"],
+  ["/dashboard/notes", "Notes"],
+  ["/dashboard/referrals", "Referrals"],
+  ["/dashboard/settings", "Settings"],
+  ["/dashboard/support", "Support"],
+];
+
+function pageLabel(path: unknown): string | null {
+  const p = typeof path === "string" ? path : "";
+  let best: [string, string] | null = null;
+  for (const row of PAGE_LABELS) {
+    if (p.startsWith(row[0]) && (!best || row[0].length > best[0].length)) best = row;
+  }
+  if (best) return best[1];
+  if (p === "/dashboard" || p === "/dashboard/") return "their dashboard home, the overview screen";
+  return null;
+}
+
 const MAX_MESSAGE_CHARS = 4000;
 const MAX_HISTORY_TURNS = 20;
 const MAX_HISTORY_MSG_CHARS = 8000;
@@ -65,6 +115,7 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const { conversationId, action, title, pinned } = body || {};
     const message = typeof body?.message === "string" ? body.message.trim() : "";
+    const whereTheyAre = pageLabel(body?.page);
 
     if (action === "load_conversations") {
       const { data: convos, error } = await supabase
@@ -212,7 +263,8 @@ serve(async (req) => {
 
 The user's business is ${profile?.business_name || "their creative business"} and their creative category is ${profile?.skill_types || "visual creative"}.
 
-You provide practical advice on pricing, client management, quotes, invoices, contracts, portfolio presentation, marketing, and growing a creative business in Australia. Be warm, direct, and specific. Use Australian English. Keep responses concise and actionable. Never use em dashes.`;
+You provide practical advice on pricing, client management, quotes, invoices, contracts, portfolio presentation, marketing, and growing a creative business in Australia. Be warm, direct, and specific. Use Australian English. Keep responses concise and actionable. Never use em dashes.
+${whereTheyAre ? `\nRight now they are looking at ${whereTheyAre}. If their question relates to that screen, answer about it specifically and refer to what is in front of them rather than giving general advice. If they ask about something else entirely, just answer that instead and do not mention the screen.` : ""}`;
 
     const anthropicRes = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
