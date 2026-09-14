@@ -2,10 +2,15 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { FLOAT_BOTTOM, FLOAT_ICON, FLOAT_RIGHT, FLOAT_SIZE, glassCircle } from '../../lib/floatingStack'
 
-// Floating quick-note button, draggable anywhere on the dashboard. Click to jot
-// a note from any page; drag to move it out of the way (position remembered).
-// A LensTrybe signature touch — HoneyBook has no global note-taker.
+// Floating quick-note button. Click to jot a note from any page.
+// A LensTrybe signature touch, HoneyBook has no global note-taker.
+//
+// It used to be draggable, with the position remembered. That sounded friendly and was not:
+// a button that moves is a button you have to look for, it could be parked on top of
+// something that mattered, and it made the panel's own position a moving target. It now
+// sits in one place, directly above Lumi, on every page and every visit.
 
 export const NOTE_COLORS = [
   { key: '', label: 'Default' },
@@ -28,18 +33,22 @@ export default function NoteTaker() {
   const [projects, setProjects] = useState([])
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
-  const drag = useRef({ active: false, moved: false, startX: 0, startY: 0, origX: 0, origY: 0 })
   const bodyRef = useRef(null)
 
+  // Anchored to the bottom right corner, above Lumi. Kept as an x and y because the note
+  // panel works out which way to open from where the button is.
   useEffect(() => {
-    let p = null
-    try { p = JSON.parse(localStorage.getItem('lt_notetaker_pos') || 'null') } catch { p = null }
-    if (p && typeof p.x === 'number') setPos(clampToView(p.x, p.y))
-    // On a phone it starts above Lumi rather than on top of it. Still draggable, so a
-    // creative can put it wherever suits them and we remember that.
-    else if (window.innerWidth < 768) setPos({ x: window.innerWidth - 68, y: window.innerHeight - 140 })
-    // On desktop it sits under the bell rather than half on top of it.
-    else setPos({ x: window.innerWidth - 76, y: window.innerHeight - 80 })
+    function place() {
+      const mobile = window.innerWidth < 768
+      const right = mobile ? FLOAT_RIGHT.mobile : FLOAT_RIGHT.desktop
+      const bottom = mobile ? FLOAT_BOTTOM.notes.mobile : FLOAT_BOTTOM.notes.desktop
+      setPos({ x: window.innerWidth - right - FLOAT_SIZE, y: window.innerHeight - bottom - FLOAT_SIZE })
+    }
+    place()
+    window.addEventListener('resize', place)
+    // An old dragged position is no longer honoured, so clear it rather than leave it behind.
+    try { localStorage.removeItem('lt_notetaker_pos') } catch { /* ignore */ }
+    return () => window.removeEventListener('resize', place)
   }, [])
 
   useEffect(() => {
@@ -49,28 +58,6 @@ export default function NoteTaker() {
     }
   }, [user, open])
 
-  function clampToView(x, y) {
-    const w = window.innerWidth, h = window.innerHeight
-    return { x: Math.max(8, Math.min(w - 60, x)), y: Math.max(8, Math.min(h - 60, y)) }
-  }
-  function onPointerDown(e) {
-    if (!pos) return
-    drag.current = { active: true, moved: false, startX: e.clientX, startY: e.clientY, origX: pos.x, origY: pos.y }
-    try { e.currentTarget.setPointerCapture(e.pointerId) } catch { /* ignore */ }
-  }
-  function onPointerMove(e) {
-    const d = drag.current
-    if (!d.active) return
-    if (Math.abs(e.clientX - d.startX) > 4 || Math.abs(e.clientY - d.startY) > 4) d.moved = true
-    setPos(clampToView(d.origX + (e.clientX - d.startX), d.origY + (e.clientY - d.startY)))
-  }
-  function onPointerUp() {
-    const d = drag.current
-    if (!d.active) return
-    d.active = false
-    if (d.moved) setPos(cur => { try { localStorage.setItem('lt_notetaker_pos', JSON.stringify(cur)) } catch { /* ignore */ } return cur })
-    else setOpen(o => !o)
-  }
 
   async function save() {
     if (!body.trim() && !title.trim()) return
@@ -133,20 +120,17 @@ export default function NoteTaker() {
           </div>
         </>
       )}
+      <style>{`
+        .lt-note-fab:hover { transform: translateY(-2px); border-color: #1DB954; }
+        .lt-note-fab:active { transform: translateY(0); }
+      `}</style>
       <button
+        className="lt-note-fab"
         aria-label="Quick note"
-        onPointerDown={onPointerDown}
-        onPointerMove={onPointerMove}
-        onPointerUp={onPointerUp}
-        style={{
-          position: 'fixed', left: pos.x, top: pos.y, width: 52, height: 52, borderRadius: '50%', zIndex: 1401,
-          border: 'none', cursor: 'grab', touchAction: 'none',
-          background: 'linear-gradient(135deg, #1DB954 0%, #FF2D78 100%)',
-          boxShadow: '0 10px 26px -8px rgba(29,185,84,0.6), 0 4px 12px -4px rgba(0,0,0,0.4)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-        }}
+        onClick={() => setOpen(o => !o)}
+        style={{ ...glassCircle(), position: 'fixed', left: pos.x, top: pos.y, zIndex: 1401, cursor: 'pointer' }}
       >
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={FLOAT_ICON} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M12 20h9" /><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4z" />
         </svg>
       </button>
