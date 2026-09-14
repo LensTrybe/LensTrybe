@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { timeText } from '../../lib/bookings'
 import { supabase } from '../../lib/supabaseClient'
+import CalendarSyncCard from '../../components/calendar/CalendarSyncCard'
 import { useAuth } from '../../context/AuthContext'
 
 const GREEN = '#1DB954'
@@ -192,6 +193,8 @@ export default function AvailabilityPage() {
           <p style={{ margin: 0, fontSize: 14, color: 'var(--lt-muted)' }}>Block the dates or time slots you're unavailable. Confirmed bookings show here automatically, and clients can't request times that are blocked or booked.</p>
         </div>
 
+        <CalendarSyncCard userId={user?.id} />
+
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: stats.upcoming ? PINK : 'var(--lt-text)' }}>{stats.upcoming}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Upcoming blocked</div></div>
           <div style={stat}><div style={{ fontSize: 22, fontWeight: 800, color: 'var(--lt-text)' }}>{stats.thisMonth}</div><div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 2 }}>Blocked in {MONTHS[month]}</div></div>
@@ -292,7 +295,7 @@ export default function AvailabilityPage() {
                             {new Date(block.date + 'T00:00:00').toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' })}
                           </div>
                           <div style={{ fontSize: 11.5, color: 'var(--lt-muted)' }}>
-                            {block.all_day ? 'All day' : `${block.start_time} – ${block.end_time}`}
+                            {block.all_day ? 'All day' : `${block.start_time} to ${block.end_time}`}
                           </div>
                           {block.notes && <div style={{ fontSize: 11.5, color: 'var(--lt-faint)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{block.notes}</div>}
                         </div>
