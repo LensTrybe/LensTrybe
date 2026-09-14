@@ -178,7 +178,9 @@ export const TIER_FEATURES = {
     deliverGb: 200,
     brandKit: true,
     insights: 'full',
-    lumiPerMonth: UNLIMITED,
+    // Capped rather than unlimited so one heavy user cannot run up an open ended model
+    // bill. 500 a month is far more than any creative uses in practice.
+    lumiPerMonth: 500,
     lumiPerDay: 50,
 
     reviewRequests: true,

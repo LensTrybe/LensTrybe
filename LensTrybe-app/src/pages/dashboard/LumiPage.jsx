@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { LumiAboutLink, LumiAboutPanel, LumiIntroCard } from '../../components/lumi/LumiCapabilities'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { getFeatures, TIER_ORDER, UNLIMITED } from '../../lib/tierFeatures'
@@ -99,6 +100,9 @@ export default function LumiPage() {
   const [openMenuId, setOpenMenuId] = useState(null)
   const [renamingId, setRenamingId] = useState(null)
   const [renameValue, setRenameValue] = useState('')
+  const [showAbout, setShowAbout] = useState(false)
+  // null until the profile loads, so the intro does not flash for someone who dismissed it.
+  const [introSeen, setIntroSeen] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
   const renameInputRef = useRef(null)
@@ -113,10 +117,11 @@ export default function LumiPage() {
 
   useEffect(() => {
     if (!user) return
-    supabase.from('profiles').select('subscription_tier, business_name').eq('id', user.id).maybeSingle()
+    supabase.from('profiles').select('subscription_tier, business_name, lumi_intro_seen_at').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
         if (data) { setProfile(data); setTier((data.subscription_tier || 'basic').toLowerCase()) }
         else setTier('basic')
+        setIntroSeen(!!data?.lumi_intro_seen_at)
       })
   }, [user])
 
@@ -190,6 +195,16 @@ export default function LumiPage() {
       return [...updated.filter(c => c.pinned), ...updated.filter(c => !c.pinned)]
     })
     try { await callEdge({ action: 'pin_conversation', conversationId: convo.id, pinned: newPinned }) } catch (e) { console.error(e) }
+  }
+
+  // Dismissed once, for good, on every device. Optimistic: the card should never come
+  // back because a write was slow, and a failed write is not worth interrupting them for.
+  async function dismissIntro() {
+    setIntroSeen(true)
+    if (!user?.id) return
+    try {
+      await supabase.from('profiles').update({ lumi_intro_seen_at: new Date().toISOString() }).eq('id', user.id)
+    } catch { /* best effort */ }
   }
 
   async function sendMessage(text) {
@@ -334,7 +349,13 @@ export default function LumiPage() {
       )}
 
       {/* Main */}
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--lt-glass-bg)', backdropFilter: 'var(--lt-glass-blur)', WebkitBackdropFilter: 'var(--lt-glass-blur)' }}>
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', background: 'var(--lt-glass-bg)', backdropFilter: 'var(--lt-glass-blur)', WebkitBackdropFilter: 'var(--lt-glass-blur)' }}>
+        {showAbout && !isLocked && (
+          <LumiAboutPanel
+            onClose={() => setShowAbout(false)}
+            onTryExample={(q) => { setShowAbout(false); sendMessage(q) }}
+          />
+        )}
         {/* Top bar */}
         <div style={{ padding: isMobile ? '12px 14px' : '14px 20px', borderBottom: '1px solid var(--lt-hairline)', display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
           <button type="button" onClick={() => setSidebarOpen(o => !o)} aria-label="Toggle conversations"
@@ -344,7 +365,9 @@ export default function LumiPage() {
           <div style={{ width: 32, height: 32, borderRadius: '50%', background: LUMI_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><LumiMark size={16} /></div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--lt-text)' }}>Lumi AI</div>
-            <div style={{ fontSize: 11, color: 'var(--lt-muted)' }}>Your LensTrybe business assistant</div>
+            <div style={{ fontSize: 11, color: 'var(--lt-muted)' }}>
+              {isLocked ? 'Your LensTrybe business assistant' : <LumiAboutLink onClick={() => setShowAbout(true)} />}
+            </div>
           </div>
           <div style={{ marginLeft: 'auto' }}>
             <span style={{ fontSize: 11, fontWeight: 800, padding: '3px 10px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', color: isLocked ? 'var(--lt-muted)' : GREEN, background: isLocked ? 'var(--lt-surface)' : 'rgba(29,185,84,0.14)', border: `1px solid ${isLocked ? 'var(--lt-border)' : GREEN + '66'}` }}>{tier || '…'}</span>
@@ -357,7 +380,7 @@ export default function LumiPage() {
               <div style={{ width: 60, height: 60, borderRadius: '50%', background: LUMI_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><LumiMark size={28} /></div>
               <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 8 }}>Meet Lumi</div>
               <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6, marginBottom: 24 }}>
-                Lumi is your AI business assistant. Get help with pricing, client proposals, contracts, and growing your creative business. Available on Pro and above.
+                Lumi is your AI business assistant. It knows your invoices, bookings, quotes and enquiries, so you can ask about your own numbers and get a straight answer, and it will draft the client reply too. Available on Pro and above.
               </div>
               <button type="button" onClick={() => navigate('/dashboard/settings/subscription')}
                 style={{ padding: '12px 28px', borderRadius: 10, background: GREEN, color: '#04120a', border: 'none', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
@@ -377,6 +400,9 @@ export default function LumiPage() {
                     <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 6 }}>Hi{firstName ? `, ${firstName}` : ''}. I am Lumi.</div>
                     <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Your AI business assistant. Ask me about your bookings, invoices, quotes or clients, or anything about running your creative business.</div>
                   </div>
+                  {introSeen === false && (
+                    <LumiIntroCard onDismiss={dismissIntro} onOpenAbout={() => { dismissIntro(); setShowAbout(true) }} />
+                  )}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {QUICK_PROMPTS.map(p => (
                       <button key={p} type="button" onClick={() => sendMessage(p)} className="ltl-quick"
@@ -426,7 +452,7 @@ export default function LumiPage() {
                 </button>
               </div>
               <div style={{ textAlign: 'center', marginTop: 8, fontSize: 11, color: 'var(--lt-faint)' }}>
-                {tier === 'elite' ? 'Unlimited messages. Elite tier.' : monthlyLimit !== null ? `${Math.max(0, monthlyLimit - usedMonthly)} messages remaining this month` : null}
+                {monthlyLimit !== null ? `${Math.max(0, monthlyLimit - usedMonthly)} messages remaining this month` : null}
               </div>
             </div>
           </>

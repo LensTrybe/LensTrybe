@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { tierHas, getFeatures, TIER_ORDER, UNLIMITED } from '../../lib/tierFeatures'
 import { useAuth } from '../../context/AuthContext'
+import { LumiAboutLink, LumiAboutPanel, LumiIntroCard } from '../lumi/LumiCapabilities'
 
 // Global Lumi launcher: a floating circle on every dashboard page (stacked above
 // the notification bell / Notes circle) that opens a slide-in glass chat drawer.
@@ -62,6 +63,9 @@ export default function LumiWidget() {
   const [input, setInput] = useState('')
   const [sending, setSending] = useState(false)
   const [usage, setUsage] = useState(null)
+  const [showAbout, setShowAbout] = useState(false)
+  // null until the profile loads, so the intro does not flash for someone who dismissed it.
+  const [introSeen, setIntroSeen] = useState(null)
   const messagesEndRef = useRef(null)
   const inputRef = useRef(null)
 
@@ -80,10 +84,11 @@ export default function LumiWidget() {
 
   useEffect(() => {
     if (!user?.id) return
-    supabase.from('profiles').select('subscription_tier, business_name').eq('id', user.id).maybeSingle()
+    supabase.from('profiles').select('subscription_tier, business_name, lumi_intro_seen_at').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
         setProfile(data || null)
         setTier((data?.subscription_tier || 'basic').toLowerCase())
+        setIntroSeen(!!data?.lumi_intro_seen_at)
       })
   }, [user?.id])
 
@@ -128,6 +133,16 @@ export default function LumiWidget() {
     setMessages([])
     setShowHistory(false)
     setTimeout(() => inputRef.current?.focus(), 60)
+  }
+
+  // Dismissed once, for good, on every device. Optimistic: the card should never come
+  // back because a write was slow, and a failed write is not worth interrupting them for.
+  async function dismissIntro() {
+    setIntroSeen(true)
+    if (!user?.id) return
+    try {
+      await supabase.from('profiles').update({ lumi_intro_seen_at: new Date().toISOString() }).eq('id', user.id)
+    } catch { /* best effort */ }
   }
 
   async function sendMessage(text) {
@@ -217,7 +232,13 @@ export default function LumiWidget() {
       {open && (
         <>
           <div className="lumi-overlay" onClick={() => setOpen(false)} />
-          <div className="lumi-drawer" style={{ width: drawerWidth, maxWidth: '100vw' }}>
+          <div className="lumi-drawer" style={{ width: drawerWidth, maxWidth: '100vw', position: 'fixed' }}>
+            {showAbout && !isLocked && (
+              <LumiAboutPanel
+                onClose={() => setShowAbout(false)}
+                onTryExample={(q) => { setShowAbout(false); sendMessage(q) }}
+              />
+            )}
 
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderBottom: '1px solid var(--lt-hairline)', flexShrink: 0 }}>
@@ -226,7 +247,9 @@ export default function LumiWidget() {
               </div>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--lt-text)', lineHeight: 1.1 }}>Lumi AI</div>
-                <div style={{ fontSize: 11.5, color: 'var(--lt-muted)', marginTop: 2 }}>Your LensTrybe business assistant</div>
+                <div style={{ fontSize: 11.5, color: 'var(--lt-muted)', marginTop: 2 }}>
+                  {isLocked ? 'Your LensTrybe business assistant' : <LumiAboutLink onClick={() => setShowAbout(true)} />}
+                </div>
               </div>
               {tier && (
                 <span style={{ fontSize: 10.5, fontWeight: 800, padding: '3px 9px', borderRadius: 20, textTransform: 'uppercase', letterSpacing: '0.05em', color: isLocked ? 'var(--lt-muted)' : GREEN, background: isLocked ? 'var(--lt-surface)' : 'rgba(29,185,84,0.14)', border: `1px solid ${isLocked ? 'var(--lt-border)' : GREEN + '66'}` }}>{tier}</span>
@@ -285,6 +308,9 @@ export default function LumiWidget() {
                         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 6 }}>Hi{firstName ? `, ${firstName}` : ''}. I am Lumi.</div>
                         <div style={{ fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Ask me about your bookings, invoices, quotes or clients, or anything about running your creative business.</div>
                       </div>
+                      {introSeen === false && (
+                        <LumiIntroCard onDismiss={dismissIntro} onOpenAbout={() => { dismissIntro(); setShowAbout(true) }} />
+                      )}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         {QUICK_PROMPTS.map(p => (
                           <button key={p} type="button" className="lumi-quick" onClick={() => sendMessage(p)}>{p}</button>
@@ -349,7 +375,7 @@ export default function LumiWidget() {
                     >↑</button>
                   </div>
                   <div style={{ textAlign: 'center', marginTop: 7, fontSize: 11, color: 'var(--lt-faint)' }}>
-                    {tier === 'elite' ? 'Unlimited messages, Elite tier.' : monthlyLimit != null ? `${Math.max(0, monthlyLimit - usedMonthly)} of ${monthlyLimit} messages left this month` : null}
+                    {monthlyLimit != null ? `${Math.max(0, monthlyLimit - usedMonthly)} of ${monthlyLimit} messages left this month` : null}
                   </div>
                 </div>
               </>
