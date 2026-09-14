@@ -77,6 +77,36 @@ function esc(s) {
 }
 function plain(s, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
 
+// ---- LensTrybe shared email template (inlined) ----
+// The same shell as every other send-* function. Inlined rather than imported because
+// Edge Functions are deployed one directory at a time and cannot share a local module.
+// If you change the shell here, change it in the others. The favourites email used to
+// have its own hand rolled layout, which is why it looked like a different product.
+const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
+function panel(innerHtml) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
+function fieldRow(label, valueHtml) { return `<div style="margin:0 0 12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">${esc(label)}</div><div style="font-size:14px;color:${BRAND.text};line-height:1.55;">${valueHtml}</div></div>` }
+function emailShell(opts) {
+  const { preheader = '', kicker = '', heading, intro = '', panelHtml = '', ctaText, ctaUrl, footNote = '' } = opts
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${BRAND.pageBg};">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:${BRAND.pageBg};">${esc(preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.pageBg};padding:40px 16px;font-family:${BRAND.font};">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.card};border:1px solid ${BRAND.border};border-radius:16px;overflow:hidden;">
+<tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${BRAND.green};letter-spacing:-0.02em;">LensTrybe</div></td></tr>
+<tr><td style="padding:22px 36px 8px;">
+${kicker ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${BRAND.green};margin-bottom:10px;">${esc(kicker)}</div>` : ''}
+<h1 style="margin:0 0 ${intro ? '10px' : '4px'};font-size:23px;line-height:1.25;font-weight:800;color:${BRAND.text};">${heading}</h1>
+${intro ? `<p style="margin:0;color:${BRAND.muted};font-size:15px;line-height:1.6;">${intro}</p>` : ''}
+</td></tr>
+${panelHtml ? `<tr><td style="padding:18px 36px 0;">${panelHtml}</td></tr>` : ''}
+${ctaText && ctaUrl ? `<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${BRAND.green};"><a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:${BRAND.btnText};text-decoration:none;font-family:${BRAND.font};">${esc(ctaText)}</a></td></tr></table></td></tr>` : ''}
+${footNote ? `<tr><td style="padding:18px 36px 0;"><p style="margin:0;color:${BRAND.faint};font-size:12px;line-height:1.6;">${footNote}</p></td></tr>` : ''}
+<tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid ${BRAND.border};padding-top:18px;"><div style="font-size:13px;font-weight:700;color:${BRAND.text};">LensTrybe</div><div style="font-size:12px;color:${BRAND.faint};margin-top:2px;">Connect. Capture. Create.</div><a href="https://lenstrybe.com" style="font-size:12px;color:${BRAND.green};text-decoration:none;">lenstrybe.com</a></div></td></tr>
+</table></td></tr></table></body></html>`
+}
+// ---- end shared ----
+
 const UNLOCK_MAX = 10
 const UNLOCK_WINDOW_SECONDS = 15 * 60
 
@@ -254,23 +284,21 @@ serve(async (req) => {
       }
       if (RESEND_API_KEY && to) {
         const dashUrl = 'https://lenstrybe.com/dashboard/portfolio-design/deliver'
-        const html = `
-          <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#fff;padding:40px 32px;border-radius:12px">
-            <div style="margin-bottom:24px"><span style="font-size:22px;font-weight:700;color:#1DB954">LensTrybe</span></div>
-            <h2 style="font-size:20px;font-weight:600;color:#fff;margin:0 0 8px">Your client sent their favourites</h2>
-            <p style="color:#888;font-size:14px;margin:0 0 24px">
-              <strong style="color:#fff">${esc(delivery.client_name ?? 'Your client')}</strong> selected
-              <strong style="color:#1DB954">${list.length}</strong> favourite${list.length === 1 ? '' : 's'} from
-              <strong style="color:#fff">${esc(delivery.title ?? 'your gallery')}</strong>.
-            </p>
-            <div style="text-align:center;margin:32px 0">
-              <a href="${dashUrl}" style="display:inline-block;background:#1DB954;color:#04120a;font-weight:700;font-size:15px;padding:14px 32px;border-radius:8px;text-decoration:none">
-                View their picks
-              </a>
-            </div>
-            <p style="color:#555;font-size:12px;margin-top:32px">Sent via LensTrybe &middot; <a href="https://lenstrybe.com" style="color:#1DB954">lenstrybe.com</a></p>
-          </div>
-        `
+        const count = `${list.length} favourite${list.length === 1 ? '' : 's'}`
+        const html = emailShell({
+          preheader: `${plain(delivery.client_name || 'Your client', 100)} picked ${count}.`,
+          kicker: 'Client favourites',
+          heading: 'Your client sent their favourites',
+          intro: `<strong style="color:${BRAND.text};">${esc(delivery.client_name ?? 'Your client')}</strong> picked <strong style="color:${BRAND.green};">${esc(count)}</strong> from <strong style="color:${BRAND.text};">${esc(delivery.title ?? 'your gallery')}</strong>.`,
+          panelHtml: panel(
+            fieldRow('Gallery', esc(delivery.title ?? 'Your gallery'))
+            + fieldRow('Client', esc(delivery.client_name ?? 'Your client'))
+            + fieldRow('Picked', esc(count)),
+          ),
+          ctaText: 'View their picks',
+          ctaUrl: dashUrl,
+          footNote: 'Their picks are marked in the gallery, so you know exactly what to edit or print.',
+        })
         try {
           await fetch('https://api.resend.com/emails', {
             method: 'POST',
