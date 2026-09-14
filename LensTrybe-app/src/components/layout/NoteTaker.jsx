@@ -39,10 +39,15 @@ export default function NoteTaker() {
   // panel works out which way to open from where the button is.
   useEffect(() => {
     function place() {
-      const mobile = window.innerWidth < 768
+      // clientWidth, not innerWidth. innerWidth counts the scrollbar and a CSS right offset
+      // does not, so measuring the wrong one pushed this button a scrollbar's width out of
+      // line with Lumi and the bell, which both position from the right.
+      const vw = document.documentElement.clientWidth
+      const vh = document.documentElement.clientHeight
+      const mobile = vw < 768
       const right = mobile ? FLOAT_RIGHT.mobile : FLOAT_RIGHT.desktop
       const bottom = mobile ? FLOAT_BOTTOM.notes.mobile : FLOAT_BOTTOM.notes.desktop
-      setPos({ x: window.innerWidth - right - FLOAT_SIZE, y: window.innerHeight - bottom - FLOAT_SIZE })
+      setPos({ x: vw - right - FLOAT_SIZE, y: vh - bottom - FLOAT_SIZE })
     }
     place()
     window.addEventListener('resize', place)
@@ -72,16 +77,20 @@ export default function NoteTaker() {
 
   if (!user || !pos) return null
 
-  const openLeft = pos.x > window.innerWidth / 2
-  const openUp = pos.y > window.innerHeight / 2
+  // Same measure as the button, so the panel lines up with it rather than with a viewport
+  // that includes the scrollbar.
+  const vw = document.documentElement.clientWidth
+  const vh = document.documentElement.clientHeight
+  const openLeft = pos.x > vw / 2
+  const openUp = pos.y > vh / 2
   const panelW = 300
   const panel = {
     position: 'fixed', width: panelW, zIndex: 1400,
-    left: Math.max(8, Math.min(window.innerWidth - panelW - 8, openLeft ? pos.x - panelW + 52 : pos.x)),
+    left: Math.max(8, Math.min(vw - panelW - 8, openLeft ? pos.x - panelW + FLOAT_SIZE : pos.x)),
     fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
   }
-  if (openUp) panel.bottom = window.innerHeight - pos.y + 10
-  else panel.top = pos.y + 62
+  if (openUp) panel.bottom = vh - pos.y + 10
+  else panel.top = pos.y + FLOAT_SIZE + 10
 
   const fieldStyle = { width: '100%', background: 'var(--lt-input-bg)', border: '1px solid var(--lt-input-border)', borderRadius: 9, padding: '9px 11px', color: 'var(--lt-text)', fontFamily: 'inherit', fontSize: 13.5, outline: 'none', boxSizing: 'border-box' }
 

@@ -15,15 +15,24 @@
 //
 // NotificationBell styles itself in its own scoped style block and matches these numbers.
 
+export const FLOAT_SIZE = 52
+
+// The right offset for a 52px button. Anything narrower has to be nudged out further so
+// every circle sits on the same centre line, otherwise a 48px button beside a 52px one
+// looks a couple of pixels off even though both are 24px from the edge.
 export const FLOAT_RIGHT = { desktop: 24, mobile: 16 }
+
+/** The right offset that puts a button of any width on the shared centre line. */
+export function rightFor(size, mobile = false) {
+  const base = mobile ? FLOAT_RIGHT.mobile : FLOAT_RIGHT.desktop
+  return base + (FLOAT_SIZE - size) / 2
+}
 
 export const FLOAT_BOTTOM = {
   bell: { desktop: 88 },
   lumi: { desktop: 148, mobile: 16 },
   notes: { desktop: 212, mobile: 80 },
 }
-
-export const FLOAT_SIZE = 52
 
 const GREEN = '#1DB954'
 
