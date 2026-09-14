@@ -13,10 +13,10 @@ const GREEN = '#1DB954'
 const PINK = '#FF2D78'
 
 const QUICK_PROMPTS = [
+  'How is my business tracking?',
+  'Who owes me money?',
+  'Who is waiting on a reply from me?',
   'Help me price a project',
-  'Write a client proposal',
-  'How do I follow up on overdue invoices?',
-  'Tips to attract more clients',
 ]
 
 // Lumi's allowance per plan comes from tierFeatures like every other limit, so the
@@ -375,7 +375,7 @@ export default function LumiPage() {
                   <div style={{ textAlign: 'center', marginBottom: 26 }}>
                     <div style={{ width: 56, height: 56, borderRadius: '50%', background: LUMI_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}><LumiMark size={26} /></div>
                     <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 6 }}>Hi{firstName ? `, ${firstName}` : ''}. I am Lumi.</div>
-                    <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Your AI business assistant. Ask me anything about running your creative business.</div>
+                    <div style={{ fontSize: 14, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Your AI business assistant. Ask me about your bookings, invoices, quotes or clients, or anything about running your creative business.</div>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                     {QUICK_PROMPTS.map(p => (

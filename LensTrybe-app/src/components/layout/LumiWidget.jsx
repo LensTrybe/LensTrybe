@@ -21,10 +21,10 @@ const TIER_CONFIG = Object.fromEntries(TIER_ORDER.map((t) => {
 }))
 
 const QUICK_PROMPTS = [
+  'How is my business tracking?',
+  'Who owes me money?',
+  'Who is waiting on a reply from me?',
   'Help me price a project',
-  'Write a client proposal',
-  'How do I follow up on overdue invoices?',
-  'Tips to attract more clients',
 ]
 
 function LumiMark({ size = 16 }) {
@@ -266,7 +266,7 @@ export default function LumiWidget() {
                   <div style={{ width: 56, height: 56, borderRadius: '50%', background: LUMI_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}><LumiMark size={26} /></div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 8 }}>Meet Lumi</div>
                   <div style={{ fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.6, marginBottom: 22 }}>
-                    Your AI business assistant for pricing, proposals, contracts and growing your creative business. Available on Pro and above.
+                    Your AI business assistant. Lumi knows your invoices, bookings, quotes and enquiries, so you can ask about your own numbers and get a straight answer. Available on Pro and above.
                   </div>
                   <button type="button" onClick={() => { setOpen(false); navigate('/dashboard/settings/subscription') }} style={{ padding: '11px 24px', borderRadius: 10, border: 'none', background: GREEN, color: '#04120a', fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
                     Upgrade to unlock Lumi
@@ -283,7 +283,7 @@ export default function LumiWidget() {
                       <div style={{ textAlign: 'center', marginBottom: 22 }}>
                         <div style={{ width: 52, height: 52, borderRadius: '50%', background: LUMI_GRAD, display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}><LumiMark size={24} /></div>
                         <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--lt-text)', marginBottom: 6 }}>Hi{firstName ? `, ${firstName}` : ''}. I am Lumi.</div>
-                        <div style={{ fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Ask me anything about running your creative business.</div>
+                        <div style={{ fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.6 }}>Ask me about your bookings, invoices, quotes or clients, or anything about running your creative business.</div>
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                         {QUICK_PROMPTS.map(p => (
