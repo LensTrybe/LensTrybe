@@ -140,18 +140,14 @@ serve(async (req) => {
     const html = renderDocumentHtml({ type: 'quote', doc: quote, profile, brand })
     const num = String(quote.id || '').slice(0, 8).toUpperCase()
 
-    const pdfKey = Deno.env.get('PDFSHIFT_API_KEY')
-    let attachment: { filename: string; content: string }
-    let isPdf = false
-    if (pdfKey) {
-      try { attachment = { filename: `Quote-${num}.pdf`, content: await htmlToPdfBase64(html, pdfKey) }; isPdf = true }
-      catch (e) { console.error('send-quote pdf conversion failed', e); attachment = { filename: `Quote-${num}.html`, content: htmlToBase64(html) } }
-    } else {
-      attachment = { filename: `Quote-${num}.html`, content: htmlToBase64(html) }
-    }
+    // Sent as a link, not an attachment. The branded document is rendered by
+    // document-pdf from this same markup, so it looks identical, and the send no
+    // longer depends on PDFShift being up or within its quota. The client can save
+    // a PDF from the page with their browser's print dialog.
+    const docUrl = `https://lenstrybe.com/doc/quote/` + String(record.view_token || '')
 
     const amount = money(quote.amount)
-    const openHint = isPdf ? 'Your quote is attached as a PDF.' : 'Your quote is attached. Open it in your browser and choose Print, then Save as PDF.'
+    const openHint = 'Open it any time with the button above. You can save a PDF copy from there.'
     const emailBody = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#0a0a0f;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;">
@@ -159,7 +155,8 @@ serve(async (req) => {
 <tr><td style="padding:22px 36px 8px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#1DB954;margin-bottom:10px;">New quote</div>
 <h1 style="margin:0 0 10px;font-size:23px;line-height:1.25;font-weight:800;color:#ffffff;">You have a new quote</h1>
 <p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.6;"><span style="color:#fff;font-weight:600;">${esc(profile.business_name || 'Your creative')}</span> has sent you a quote for <span style="color:#fff;font-weight:600;">${esc(amount)}</span>.</p></td></tr>
-<tr><td style="padding:18px 36px 0;"><p style="margin:0;color:#6a6a78;font-size:12.5px;line-height:1.6;">${openHint} You can accept or decline it from your client portal.</p></td></tr>
+<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:#1DB954;"><a href="${esc(docUrl)}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">View your quote</a></td></tr></table></td></tr>
+<tr><td style="padding:16px 36px 0;"><p style="margin:0;color:#6a6a78;font-size:12.5px;line-height:1.6;">${openHint} You can accept or decline it from your client portal.</p></td></tr>
 <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;"><div style="font-size:13px;font-weight:700;color:#ffffff;">LensTrybe</div><div style="font-size:12px;color:#6a6a78;margin-top:2px;">Connect. Capture. Create.</div></div></td></tr>
 </table></td></tr></table></body></html>`
 
@@ -172,7 +169,6 @@ serve(async (req) => {
         reply_to: isEmail(profile.business_email) ? profile.business_email : 'connect@lenstrybe.com',
         subject: `Quote from ${plain(profile.business_name || 'Your Creative', 120)} - ${amount}`,
         html: emailBody,
-        attachments: [attachment],
       }),
     })
     const data = await res.json().catch(() => ({}))
@@ -180,7 +176,7 @@ serve(async (req) => {
       console.error('send-quote resend error', res.status, data)
       return jsonRes({ error: 'Could not send the quote email. Please try again.' }, 502)
     }
-    return jsonRes({ success: true, id: (data as any)?.id ?? null, pdf: isPdf })
+    return jsonRes({ success: true, id: (data as any)?.id ?? null, url: docUrl })
   } catch (err) {
     console.error('send-quote failed', err)
     return jsonRes({ error: 'Could not send the quote. Please try again.' }, 500)

@@ -52,6 +52,7 @@ import MeetingRespondPage from './pages/MeetingRespondPage'
 import PublicPortfolioPage from './pages/PortfolioPage'
 import PublicPortalPage from './pages/public/PublicPortalPage'
 import DeliverDownloadPage from './pages/DeliverDownloadPage'
+import DocumentViewPage from './pages/DocumentViewPage'
 import TeamAcceptPage from './pages/TeamAcceptPage'
 import AvailabilityPage from './pages/dashboard/AvailabilityPage'
 import JobBoardPage from './pages/dashboard/JobBoardPage'
@@ -218,6 +219,8 @@ export default function App() {
       <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
       <Route path="/portal/:token" element={<PublicPortalPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
+      {/* Public link to one invoice or quote, sent in place of a PDF attachment. */}
+      <Route path="/doc/:type/:token" element={<DocumentViewPage />} />
       <Route path="/team/accept/:token" element={<TeamAcceptPage />} />
 
       {/* Public creative portfolio website (subdomain equivalent: /site/{custom_domain slug}) */}

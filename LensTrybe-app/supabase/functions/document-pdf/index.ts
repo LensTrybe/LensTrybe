@@ -274,8 +274,6 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return jsonRes({ error: 'Method not allowed' }, 405)
 
   try {
-    const pdfKey = Deno.env.get('PDFSHIFT_API_KEY')
-    if (!pdfKey) { console.error('document-pdf: PDFSHIFT_API_KEY missing'); return jsonRes({ error: 'PDF downloads are not available right now.' }, 500) }
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
 
     let body: any = {}
@@ -284,17 +282,35 @@ Deno.serve(async (req) => {
     const id = String(body?.id || '')
     const portalToken = body?.portal_token ? String(body.portal_token) : ''
     const signingToken = body?.signing_token ? String(body.signing_token) : ''
-    if (!TYPES.includes(type) || !UUID_RE.test(id)) return jsonRes({ error: 'Invalid request' }, 400)
+    // A per-document link: read only access to this one invoice or quote, no login.
+    const viewToken = body?.view_token ? String(body.view_token) : ''
+    // 'html' returns the rendered document instead of a PDF, and never touches PDFShift.
+    const wantHtml = String(body?.format || '') === 'html'
+    if (!TYPES.includes(type)) return jsonRes({ error: 'Invalid request' }, 400)
+    if (viewToken) {
+      if (!UUID_RE.test(viewToken)) return jsonRes({ error: 'Not found' }, 404)
+    } else if (!UUID_RE.test(id)) {
+      return jsonRes({ error: 'Invalid request' }, 400)
+    }
     if (portalToken && !UUID_RE.test(portalToken)) return jsonRes({ error: 'Not found' }, 404)
     if (signingToken && !UUID_RE.test(signingToken)) return jsonRes({ error: 'Not found' }, 404)
 
-    const { data: doc, error: docErr } = await admin.from(TABLE[type]).select('*').eq('id', id).maybeSingle()
+    const lookup = admin.from(TABLE[type]).select('*')
+    const { data: doc, error: docErr } = await (viewToken
+      ? lookup.eq('view_token', viewToken).maybeSingle()
+      : lookup.eq('id', id).maybeSingle())
     if (docErr) console.error('document-pdf load failed', docErr.message)
     if (!doc) return jsonRes({ error: 'Not found' }, 404)
 
     // ---- access check ----
     let rateKey = ''
-    if (signingToken) {
+    if (viewToken) {
+      // Contracts have their own signing link, so the view token is invoices and quotes
+      // only. A draft has not been sent to anyone and must stay invisible.
+      if (type === 'contract') return jsonRes({ error: 'Not found' }, 404)
+      if (String(doc.status || '').toLowerCase() === 'draft') return jsonRes({ error: 'Not found' }, 404)
+      rateKey = 'document-pdf:view:' + viewToken
+    } else if (signingToken) {
       if (type !== 'contract' || String(doc.signing_token || '') !== signingToken) return jsonRes({ error: 'Not found' }, 404)
       rateKey = 'document-pdf:sign:' + signingToken
     } else if (portalToken) {
@@ -331,6 +347,11 @@ Deno.serve(async (req) => {
       ? renderContract(doc, profile, bk)
       : renderFinancialDoc(type as 'invoice' | 'quote', doc, profile, bk)
     const label = type === 'invoice' ? 'Invoice' : type === 'quote' ? 'Quote' : 'Contract'
+    if (wantHtml) {
+      return jsonRes({ html: rendered.html, filename: `${label}-${rendered.num}`, number: rendered.num })
+    }
+    const pdfKey = Deno.env.get('PDFSHIFT_API_KEY')
+    if (!pdfKey) { console.error('document-pdf: PDFSHIFT_API_KEY missing'); return jsonRes({ error: 'PDF downloads are not available right now.' }, 500) }
     const content = await htmlToPdfBase64(rendered.html, pdfKey)
     return jsonRes({ filename: `${label}-${rendered.num}.pdf`, content_base64: content })
   } catch (err) {
