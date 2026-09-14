@@ -1,7 +1,7 @@
 import { useId } from 'react'
 
 /**
- * LensTrybe lens mark — pastel gradient camera barrel around a frosted glass lens.
+ * LensTrybe lens mark: pastel gradient camera barrel around a frosted glass lens.
  * Matches the light glassmorphic site theme.
  */
 export function LensMark({ size = 28, style }) {

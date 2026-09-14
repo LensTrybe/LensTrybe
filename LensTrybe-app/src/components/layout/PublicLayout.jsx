@@ -386,7 +386,7 @@ export default function PublicLayout() {
           <span style={styles.tagline}>Connect. Capture. Create.</span>
         </div>
 
-        {/* Centre: Nav links — always visible, no auth gate */}
+        {/* Centre: Nav links: always visible, no auth gate */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
           <button style={navLinkStyle} onClick={() => navigate('/the-trybe-edit')}>The Trybe Edit</button>
           <button style={navLinkStyle} onClick={() => navigate('/upcoming-features')}>Upcoming Features</button>
@@ -394,7 +394,7 @@ export default function PublicLayout() {
           <button style={navLinkStyle} onClick={() => navigate('/support')}>Support</button>
         </div>
 
-        {/* Right: Actions — show Log In/Join immediately; swap to user menu once auth resolves */}
+        {/* Right: Actions: show Log In/Join immediately; swap to user menu once auth resolves */}
         <div style={styles.actions}>
           {user ? (
               <div style={{ position: 'relative' }} ref={dropdownRef}>

@@ -7,7 +7,7 @@ import { isDemoMode, demoEvents } from '../../lib/demoMode'
 const FONT = "'Inter', sans-serif"
 const SERIF = "'Instrument Serif', Georgia, serif"
 
-// Matches the left sidebar's liquid glass — theme-aware via the shared --lt-* vars.
+// Matches the left sidebar's liquid glass, theme-aware via the shared --lt-* vars.
 const PANEL_GLASS = {
   background: 'var(--lt-modal-bg)',
   backdropFilter: 'var(--lt-modal-blur)',

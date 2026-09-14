@@ -79,7 +79,7 @@ export default function ClientDashboardPage() {
       .eq('client_user_id', user.id)
       .order('created_at', { ascending: false })
 
-    // Also get any threads matching email with null client_user_id (use account email when set — may differ from auth email)
+    // Also get any threads matching email with null client_user_id (use account email when set, may differ from auth email)
     const byEmail = []
 
     const all = [...(byId ?? []), ...byEmail]

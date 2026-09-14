@@ -1,3 +1,9 @@
 
 # Device-bridge temp files
 .fuse_hidden*
+
+# Scratch screenshots and working files from Claude sessions, not part of the app
+Claude outputs/
+
+# Supabase CLI scratch
+LensTrybe-app/supabase/.temp/

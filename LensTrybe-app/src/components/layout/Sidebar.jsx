@@ -17,7 +17,7 @@ const FLY_GAP = 10
 const FLY_W = 230
 const SPACER = MARGIN + RAIL + 14
 
-// Which plan a gated feature unlocks — drives the badge on locked nav items so
+// Which plan a gated feature unlocks, drives the badge on locked nav items so
 // lower-tier creatives can see what they're missing and tap through to upgrade.
 const TIER_LABEL = { pro: 'Pro', expert: 'Expert', elite: 'Elite' }
 
@@ -33,7 +33,7 @@ function LockGlyph({ color = 'currentColor', size = 10 }) {
 // Theme tokens. Light = "liquid glass" (frosted white, dark content), the
 // default. Dark = the deep HUD glass. Matches lib/dashboardTheme.js.
 function tokens(dark) {
-  // Dark frosted liquid glass (HUD) — dark mode only.
+  // Dark frosted liquid glass (HUD): dark mode only.
   if (dark) return {
     text: 'rgba(255,255,255,0.92)', icon: 'rgba(255,255,255,0.6)', muted: 'rgba(255,255,255,0.42)', green: '#1DB954', pink: '#FF2D78', gold: '#f6c552',
     glass: {
@@ -56,7 +56,7 @@ function tokens(dark) {
     avatarBg: 'rgba(255,45,120,0.18)', avatarBorder: '1px solid rgba(255,45,120,0.4)',
     textGlow: 'none', iconGlow: 'none',
   }
-  // Light frosted liquid glass — matches the tiles, chips and drawer.
+  // Light frosted liquid glass: matches the tiles, chips and drawer.
   return {
     text: '#14111a', icon: '#4b4a57', muted: '#8a8995', green: '#1DB954', pink: '#FF2D78', gold: '#c98a12',
     glass: {
@@ -197,7 +197,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     )
   }
 
-  // Bare icon, no box — sits directly on the glass.
+  // Bare icon, no box: sits directly on the glass.
   function chip(iconName, active, locked) {
     return (
       <span style={{

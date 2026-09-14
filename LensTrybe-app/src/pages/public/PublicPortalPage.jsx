@@ -8,7 +8,7 @@ import {
   threadOwnerTierContactSharingRestricted,
 } from '../../lib/messagingContactPolicy'
 
-/** Token-based client portal — no auth required; loads by `portal_token` only. */
+/** Token-based client portal: no auth required; loads by `portal_token` only. */
 export default function PublicPortalPage() {
   const { token } = useParams()
   const [portal, setPortal] = useState(null)

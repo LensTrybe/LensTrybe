@@ -7,7 +7,7 @@ const TEXT_MUTED = '#8a8995'
 const GREEN = '#1DB954'
 
 /* The #liquidLens SVG displacement filter. Render ONCE on any page that uses a
-   LIQUID_GLASS surface — it lenses/refracts whatever sits behind the glass. */
+   LIQUID_GLASS surface: it lenses/refracts whatever sits behind the glass. */
 export function LiquidLensFilter() {
   return (
     <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
@@ -20,7 +20,7 @@ export function LiquidLensFilter() {
   )
 }
 
-/* Custom dropdown — glass trigger, frosted-white readable menu. */
+/* Custom dropdown: glass trigger, frosted-white readable menu. */
 export function LiquidSelect({ value, onChange, options, placeholder, ariaLabel, disabled, style }) {
   const [open, setOpen] = useState(false)
   const ref = useRef(null)

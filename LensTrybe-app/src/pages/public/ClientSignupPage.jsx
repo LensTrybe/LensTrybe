@@ -78,7 +78,7 @@ export default function ClientSignupPage() {
         if (clientError) throw clientError
         navigate('/client-dashboard')
       } else {
-        // Email confirmation required — show message
+        // Email confirmation required: show message
         setError('Please check your email and click the confirmation link to complete signup.')
         setLoading(false)
       }

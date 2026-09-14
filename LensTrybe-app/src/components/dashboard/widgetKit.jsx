@@ -24,7 +24,7 @@ export const TRACK = 'var(--lt-track)'
 
 export const TILE_SIZE = 156
 
-// Liquid glass — light frosted white (hero) or deep HUD, via CSS variables.
+// Liquid glass: light frosted white (hero) or deep HUD, via CSS variables.
 export const GLASS = {
   background: 'var(--lt-glass-bg)',
   backdropFilter: 'var(--lt-glass-blur)',

@@ -18,7 +18,7 @@ export const GLASS_CARD_AURORA = {
   overflow: 'hidden',
 }
 
-/* LIQUID GLASS — the site-wide "Apple liquid glass" surface.
+/* LIQUID GLASS: the site-wide "Apple liquid glass" surface.
    Real liquid glass (not frost): the backdrop is refracted/lensed via the
    #liquidLens SVG displacement filter and left mostly CLEAR (very low blur) so
    the colour behind shows sharply, with a glossy specular corner sheen and a
@@ -109,7 +109,7 @@ export const TYPO = {
   body: { fontWeight: 400, lineHeight: 1.6, fontFamily: 'var(--font-ui)' },
 }
 
-/** Native inputs / selects — light rest state. */
+/** Native inputs / selects: light rest state. */
 export const GLASS_NATIVE_FIELD = {
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',

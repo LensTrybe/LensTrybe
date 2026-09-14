@@ -1,4 +1,4 @@
-// Dashboard theme tokens — light (clean glass) and dark ("Jarvis" HUD glass).
+// Dashboard theme tokens: light (clean glass) and dark ("Jarvis" HUD glass).
 export function themeTokens(dark) {
   if (dark) {
     return {

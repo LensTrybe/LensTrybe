@@ -262,7 +262,7 @@ export default function CRMPage() {
       outstanding,
     })
     setDetailLoading(false)
-    // Freshen last_contacted_at so the list ordering reflects recent activity — light touch.
+    // Freshen last_contacted_at so the list ordering reflects recent activity, light touch.
   }
 
   function closeDetail() { setSelected(null); setDetail(null) }

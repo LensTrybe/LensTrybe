@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-/* Full-bleed drifting pastel mosaic — the same field used on the hero.
+/* Full-bleed drifting pastel mosaic: the same field used on the hero.
    Drop it as an absolute background inside a position:relative; overflow:hidden
    container, then put page content above it (zIndex >= 2). */
 

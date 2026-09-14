@@ -151,6 +151,18 @@ function icsResponse(body: string, status = 200) {
   })
 }
 
+/**
+ * A client whose Add to calendar link has nothing behind it any more. Only ever used for the
+ * single booking link, never for the subscribed feed: a calendar client polling the feed
+ * wants an empty calendar, and would make a mess of a redirect to a web page.
+ */
+function bookingGone() {
+  return new Response(null, {
+    status: 302,
+    headers: { Location: 'https://lenstrybe.com/booking-unavailable', 'Cache-Control': 'no-store' },
+  })
+}
+
 /** An empty but valid calendar. Returned for a bad token too: a wrong URL should look like
  *  an empty calendar rather than confirm which tokens exist. */
 function emptyCalendar(): string {
@@ -193,7 +205,7 @@ Deno.serve(async (req: Request) => {
   // it on a phone hands the event straight to the calendar app, which is far more reliable
   // than hoping their mail client does something sensible with an attachment.
   if (bookingToken) {
-    if (!UUID_RE.test(bookingToken)) return icsResponse(emptyCalendar())
+    if (!UUID_RE.test(bookingToken)) return bookingGone()
 
     const { data: b } = await admin
       .from('bookings')
@@ -201,8 +213,10 @@ Deno.serve(async (req: Request) => {
       .eq('view_token', bookingToken)
       .maybeSingle()
 
-    // A cancelled booking should not still be addable.
-    if (!b || DEAD_BOOKING.has(String(b.status || '').toLowerCase())) return icsResponse(emptyCalendar())
+    // A cancelled or deleted booking should not still be addable. Send the client somewhere
+    // that explains itself rather than an empty calendar: their calendar app's own words for
+    // an empty file read like our file is broken rather than like the shoot is off.
+    if (!b || DEAD_BOOKING.has(String(b.status || '').toLowerCase())) return bookingGone()
 
     const { data: p } = await admin.from('profiles').select('business_name').eq('id', b.creative_id).maybeSingle()
     const withWhom = p?.business_name ? ` with ${p.business_name}` : ''
@@ -220,7 +234,7 @@ Deno.serve(async (req: Request) => {
       status: String(b.status || '').toLowerCase() === 'pending' ? 'tentative' : 'confirmed',
       stamp: stampOne,
     })
-    if (!event) return icsResponse(emptyCalendar())
+    if (!event) return bookingGone()
 
     return new Response([
       'BEGIN:VCALENDAR',

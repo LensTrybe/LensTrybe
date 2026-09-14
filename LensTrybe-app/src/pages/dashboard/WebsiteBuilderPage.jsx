@@ -6,7 +6,7 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import { PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE, partitionFilesByPortfolioImageModeration } from '../../lib/moderateContent'
 import { FONT_OPTIONS, PALETTES, STYLES, DEFAULT_THEME, normalizeTheme, mergeTheme, resolveTheme } from '../../lib/siteTheme'
 
-// Website builder — edits the creative's PROFILE-as-website. Content pages
+// Website builder: edits the creative's PROFILE-as-website. Content pages
 // (Home/About/Contact) live in site_pages; Gallery uses portfolio_items grouped
 // into albums by `category` (with `featured` showing on Home); Services uses
 // portfolio_services; social links + website live on the profile.
@@ -398,7 +398,7 @@ function DesignEditor({ scope, setScope, active, customised, onCustomised, onApp
   const autoText = !active.colors.text
   const editingPage = scope !== 'all'
   const disabled = editingPage && !customised
-  // Creative's OWN resolved site theme — this drives the live preview below and is
+  // Creative's OWN resolved site theme: this drives the live preview below and is
   // intentionally NOT converted to --lt-* tokens.
   const P = resolveTheme({ site_theme: active, site_logo_url: logo }, null)
   const paletteActiveId = (PALETTES.find((p) => p.primary === active.colors.primary && p.background === active.colors.background) || {}).id
@@ -527,7 +527,7 @@ function DesignEditor({ scope, setScope, active, customised, onCustomised, onApp
         </div>
       </div>
 
-      {/* Live preview (renders the creative's OWN site theme via P.* — left on brand colours, not --lt-*) */}
+      {/* Live preview (renders the creative's OWN site theme via P.*, left on brand colours, not --lt-*) */}
       <div style={{ position: isMobile ? 'static' : 'sticky', top: 12 }}>
         <div style={label}>Live preview{editingPage ? ` · ${scope}` : ''}</div>
         <div style={{ marginTop: 8, border: '1px solid var(--lt-border)', borderRadius: 14, overflow: 'hidden' }}>

@@ -872,7 +872,7 @@ export default function SignupPage() {
 
         <div style={styles.content}>
 
-          {/* Step 0 — Plan */}
+          {/* Step 0: Plan */}
           {step === 0 && (
             <>
               {foundingValid && (
@@ -945,7 +945,7 @@ export default function SignupPage() {
             </>
           )}
 
-          {/* Step 1 — Account */}
+          {/* Step 1: Account */}
           {step === 1 && (
             <>
               <LiquidPill
@@ -1059,7 +1059,7 @@ export default function SignupPage() {
             </>
           )}
 
-          {/* Step 2 — Skills */}
+          {/* Step 2: Skills */}
           {step === 2 && (() => {
             const maxSkills = maxSkillTypesForTier(form.tier)
             const unlimited = !Number.isFinite(maxSkills)
@@ -1089,7 +1089,7 @@ export default function SignupPage() {
             )
           })()}
 
-          {/* Step 3 — Specialties */}
+          {/* Step 3: Specialties */}
           {step === 3 && (
             <div style={styles.specialtyWrap}>
               {uniqueSpecialties.map(spec => (
@@ -1100,7 +1100,7 @@ export default function SignupPage() {
             </div>
           )}
 
-          {/* Step 4 — Location */}
+          {/* Step 4: Location */}
           {step === 4 && (
             <>
               <Input label="City or suburb" placeholder="Brisbane" value={form.city} onChange={e => update('city', e.target.value)} />
@@ -1111,7 +1111,7 @@ export default function SignupPage() {
             </>
           )}
 
-          {/* Step 5 — Credentials (optional) */}
+          {/* Step 5: Credentials (optional) */}
           {step === 5 && (
             <>
               <div style={{ ...LIQUID_GLASS_CARD, padding: '16px', fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>
@@ -1124,7 +1124,7 @@ export default function SignupPage() {
             </>
           )}
 
-          {/* Step 6 — Photo */}
+          {/* Step 6: Photo */}
           {step === 6 && (
             <>
               <div style={styles.avatarUpload} onClick={() => document.getElementById('avatar-upload').click()}>
@@ -1148,7 +1148,7 @@ export default function SignupPage() {
             </>
           )}
 
-          {/* Step 7 — Review */}
+          {/* Step 7: Review */}
           {step === 7 && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               {[

@@ -195,7 +195,7 @@ export default function ComingSoon() {
           } catch { /* ignore */ }
           window.location.assign(`/join/creative?code=${encodeURIComponent(code)}`)
         }
-      } catch { /* invalid or unreachable — stay on the waitlist */ }
+      } catch { /* invalid or unreachable, stay on the waitlist */ }
     })()
     return () => { live = false }
   }, [])
@@ -221,7 +221,7 @@ export default function ComingSoon() {
           window.location.assign(`/join/creative?code=${encodeURIComponent(codeAttempt)}`)
           return
         }
-      } catch { /* not a founding code — treat it as a normal referral below */ }
+      } catch { /* not a founding code, treat it as a normal referral below */ }
       setStatus('idle')
     }
 
@@ -250,7 +250,7 @@ export default function ComingSoon() {
 
   return (
     <div style={{ position: 'relative', minHeight: '100vh', width: '100%', overflowX: 'hidden', background: `rgb(${PAGE_TONE})`, color: TEXT_PRIMARY, fontFamily: FONT }}>
-      {/* liquid-glass refraction filter — required by LIQUID_GLASS */}
+      {/* liquid-glass refraction filter: required by LIQUID_GLASS */}
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
         <filter id="liquidLens" x="-25%" y="-25%" width="150%" height="150%" colorInterpolationFilters="sRGB">
           <feTurbulence type="fractalNoise" baseFrequency="0.006 0.011" numOctaves="2" seed="7" result="turb" />
@@ -295,7 +295,7 @@ export default function ComingSoon() {
         <section style={{ maxWidth: 1240, margin: '0 auto', padding: isMobile ? '18px 20px 64px' : 'clamp(32px,4vw,72px) clamp(28px,4.5vw,88px) 96px' }}>
           {/* two columns */}
           <div style={{ display: isMobile ? 'block' : 'flex', alignItems: 'flex-start', gap: 'clamp(24px,4vw,72px)', position: 'relative', zIndex: 2 }}>
-            {/* LEFT — copy */}
+            {/* LEFT: copy */}
             <div style={{ flex: '1 1 auto', maxWidth: isMobile ? '100%' : 620, textAlign: isMobile ? 'center' : 'left', margin: isMobile ? '0 auto' : 0 }}>
               <div style={{ display: 'inline-flex', alignItems: 'center', gap: 7, fontSize: isMobile ? 11 : 'clamp(11px,0.85vw,13px)', fontWeight: 600, letterSpacing: '0.14em', textTransform: 'uppercase', color: '#8a8478', marginBottom: 22 }}>
                 <span style={{ width: 6, height: 6, borderRadius: '50%', background: GREEN, boxShadow: '0 0 6px rgba(29,185,84,0.6)', animation: 'ltpulse 2s infinite' }} />
@@ -312,7 +312,7 @@ export default function ComingSoon() {
               </p>
             </div>
 
-            {/* RIGHT — liquid glass waitlist card + founding banner under it */}
+            {/* RIGHT: liquid glass waitlist card + founding banner under it */}
             <div style={{ flex: isMobile ? '1 1 auto' : '1 1 0', minWidth: 0, width: isMobile ? '100%' : 'auto', marginTop: isMobile ? 36 : 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
               <GlowBorder radius={24} style={{ width: '100%', maxWidth: 460 }}>
               <div style={{ ...LIQUID_GLASS, padding: isMobile ? 20 : 26, width: '100%' }}>
@@ -374,7 +374,7 @@ export default function ComingSoon() {
               </div>
               </GlowBorder>
 
-              {/* founding banner — under the sign-up form */}
+              {/* founding banner: under the sign-up form */}
               <div style={{ ...GLASS_CARD_GREEN, width: '100%', maxWidth: 460, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderRadius: 14, padding: '13px 16px' }}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY }}>First {FOUNDING_SPOTS} creatives get 3 months free</span>
                 {spotsLeft != null && (
@@ -386,7 +386,7 @@ export default function ComingSoon() {
             </div>
           </div>
 
-          {/* full-width countdown band — spans from the headline to the form edge */}
+          {/* full-width countdown band: spans from the headline to the form edge */}
           <GlowBorder radius={20} style={{ marginTop: isMobile ? 40 : 52, zIndex: 1 }}>
           <div style={{ ...LIQUID_GLASS, display: 'flex', alignItems: 'stretch', borderRadius: 20, padding: isMobile ? '14px 6px' : '20px 12px' }}>
             {units.map(([label, val], i) => (

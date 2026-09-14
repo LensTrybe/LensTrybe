@@ -141,10 +141,10 @@ export default function CinematicEntrance({ onComplete }) {
         overflow: 'hidden',
       }}
     >
-      {/* Liquid-lens displacement filter — powers the LIQUID_GLASS card */}
+      {/* Liquid-lens displacement filter: powers the LIQUID_GLASS card */}
       <LiquidLensFilter />
 
-      {/* Moving pastel tiles — same as the hero */}
+      {/* Moving pastel tiles: same as the hero */}
       <div
         aria-hidden
         style={{

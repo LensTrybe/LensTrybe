@@ -10,12 +10,12 @@ export function threadOwnerTierContactSharingRestricted(creativeSubscriptionTier
   return t === 'basic' || t === 'pro'
 }
 
-/** All whitespace removed — catches spaced-out emails, phones, handles. */
+/** All whitespace removed: catches spaced-out emails, phones, handles. */
 function collapseWhitespace(s) {
   return String(s ?? '').replace(/\s+/g, '')
 }
 
-/** Letters and digits only, lowercased — catches obfuscation with punctuation between chars. */
+/** Letters and digits only, lowercased: catches obfuscation with punctuation between chars. */
 function alnumOnlyLower(s) {
   return String(s ?? '')
     .replace(/[^a-zA-Z0-9]+/g, '')
@@ -137,7 +137,7 @@ function testLongDigitRun(s) {
   return digitsOnly(s).length >= 8
 }
 
-/** @handle — also on collapsed to catch "@ j o h n". */
+/** @handle: also on collapsed to catch "@ j o h n". */
 function testAtHandle(s) {
   return /@[A-Za-z0-9_][A-Za-z0-9_.]{1,31}/.test(s)
 }
