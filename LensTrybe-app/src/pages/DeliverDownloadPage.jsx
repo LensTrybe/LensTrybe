@@ -21,10 +21,10 @@ function onAccentText(hex) {
 }
 
 function isImage(f) {
-  return f?.type?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f?.url || '')
+  return f?.type?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f?.name || '')
 }
 function isVideo(f) {
-  return f?.type?.startsWith('video') || /\.(mp4|mov|avi|webm|m4v)$/i.test(f?.url || '')
+  return f?.type?.startsWith('video') || /\.(mp4|mov|avi|webm|m4v)$/i.test(f?.name || '')
 }
 
 let jszipPromise = null
@@ -75,7 +75,7 @@ function Lightbox({ items, index, onClose, onNav, favSet, onToggleFav, onDownloa
 
   const touch = useRef(null)
   if (!item) return null
-  const fav = favSet.has(item.url)
+  const fav = favSet.has(item.path)
 
   return (
     <div
@@ -239,8 +239,8 @@ export default function DeliverDownloadPage() {
   function toggleFav(f) {
     setFavSet((prev) => {
       const next = new Set(prev)
-      if (next.has(f.url)) next.delete(f.url)
-      else next.add(f.url)
+      if (next.has(f.path)) next.delete(f.path)
+      else next.add(f.path)
       return next
     })
     setFavDirty(true)
@@ -345,10 +345,10 @@ export default function DeliverDownloadPage() {
                     <div className="dgl-section-title">Photos ({photos.length})</div>
                     <div className="dgl-grid">
                       {photos.map((f) => {
-                        const fav = favSet.has(f.url)
+                        const fav = favSet.has(f.path)
                         const lbIndex = lightboxItems.indexOf(f)
                         return (
-                          <div key={f.url} className="dgl-tile" onClick={() => setLightbox(lbIndex)}>
+                          <div key={f.path} className="dgl-tile" onClick={() => setLightbox(lbIndex)}>
                             <img src={f.url} alt={f.name} loading="lazy" />
                             <button
                               type="button"
@@ -379,7 +379,7 @@ export default function DeliverDownloadPage() {
                       {videos.map((f) => {
                         const lbIndex = lightboxItems.indexOf(f)
                         return (
-                          <div key={f.url} className="dgl-vidcard">
+                          <div key={f.path} className="dgl-vidcard">
                             <video src={f.url} controls preload="metadata" onClick={() => setLightbox(lbIndex)} />
                             <div className="dgl-vidbar">
                               <span className="dgl-vidname">{f.name}</span>
@@ -398,7 +398,7 @@ export default function DeliverDownloadPage() {
                     <div className="dgl-section-title">Files ({others.length})</div>
                     <div className="dgl-filelist">
                       {others.map((f) => (
-                        <div key={f.url} className="dgl-filerow">
+                        <div key={f.path} className="dgl-filerow">
                           <span className="dgl-filename">{f.name}</span>
                           <button type="button" className="dgl-link" style={{ color: brandAccent }} onClick={() => downloadOne(f)}>Download</button>
                         </div>

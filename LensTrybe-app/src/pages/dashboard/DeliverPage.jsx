@@ -36,7 +36,33 @@ function mergeDeliverGalleryBrand(brandKit) {
 }
 
 function isImage(f) {
-  return f?.type?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f?.url || '')
+  return f?.type?.startsWith('image') || /\.(jpg|jpeg|png|gif|webp|avif)$/i.test(f?.name || f?.path || '')
+}
+
+// Delivery files live in a PRIVATE bucket. The stored file object holds the storage path,
+// never a URL: a signed URL expires, so it can't be an identity or be written into a row.
+// Everything that used to key off f.url now keys off f.path, and display URLs are minted
+// fresh on each load.
+const DELIVER_BUCKET = 'deliveries'
+const SIGNED_TTL_SECONDS = 60 * 60
+
+function deliveryFilePath(userId, deliveryId, fileName) {
+  return `${userId}/${deliveryId}/${Date.now()}-${fileName}`
+}
+
+/** Sign a batch of paths for display. Returns a { path: url } map; failures are simply absent. */
+async function signPaths(paths) {
+  const clean = [...new Set((paths || []).filter(Boolean))]
+  if (!clean.length) return {}
+  const { data, error } = await supabase.storage
+    .from(DELIVER_BUCKET)
+    .createSignedUrls(clean, SIGNED_TTL_SECONDS)
+  if (error || !Array.isArray(data)) return {}
+  const map = {}
+  for (const row of data) {
+    if (row?.path && row?.signedUrl) map[row.path] = row.signedUrl
+  }
+  return map
 }
 
 function deliveryStatus(d) {
@@ -117,6 +143,9 @@ export default function DeliverPage() {
   const [uploadingEditFiles, setUploadingEditFiles] = useState(false)
   const [brandKit, setBrandKit] = useState(null)
   const [favView, setFavView] = useState(null)
+  // path -> freshly signed URL, for anything shown in this page. Rebuilt whenever the
+  // set of visible files changes, because signed URLs expire.
+  const [signedUrls, setSignedUrls] = useState({})
 
   const storageLimit = tier === 'elite' ? 200 : 50
 
@@ -211,17 +240,19 @@ export default function DeliverPage() {
         setDeliveryFilesPhase('uploading')
         const uploadedFiles = []
         for (const file of filesToUpload) {
-          const path = `${user.id}/${delivery.id}/${Date.now()}-${file.name}`
-          const { error: uploadError } = await supabase.storage.from('portfolio').upload(path, file)
+          // Was writing client galleries into the public `portfolio` bucket, alongside
+          // public portfolio images. Deliveries now go to their own private bucket.
+          const path = deliveryFilePath(user.id, delivery.id, file.name)
+          const { error: uploadError } = await supabase.storage.from(DELIVER_BUCKET).upload(path, file)
           if (!uploadError) {
-            const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
-            uploadedFiles.push({ name: file.name, url: publicUrl, type: file.type, size: file.size })
+            uploadedFiles.push({ name: file.name, path, type: file.type, size: file.size })
           }
         }
         const firstImage = uploadedFiles.find(isImage)
         await supabase.from('deliveries').update({
           files: uploadedFiles,
-          cover_url: firstImage ? firstImage.url : null,
+          // cover_url holds the storage PATH now, signed for display like any other file.
+          cover_url: firstImage ? firstImage.path : null,
         }).eq('id', delivery.id)
       } finally {
         setDeliveryFilesPhase(null)
@@ -242,7 +273,21 @@ export default function DeliverPage() {
   }
 
   async function deleteDelivery(id) {
-    await supabase.from('deliveries').delete().eq('id', id)
+    // The row used to be deleted on its own, which orphaned every file in the bucket
+    // forever: nothing pointed at them any more, so nothing could ever find them again.
+    // Remove the objects first, then the row. If the storage call fails we keep the row,
+    // otherwise we would be back to orphaning files silently.
+    const d = deliveries.find(x => x.id === id)
+    const paths = (d?.files ?? []).map(f => f.path).filter(Boolean)
+    if (paths.length) {
+      const { error: rmErr } = await supabase.storage.from(DELIVER_BUCKET).remove(paths)
+      if (rmErr) {
+        showToast('Could not remove the files, so the delivery was kept. Try again.', 'error')
+        return
+      }
+    }
+    const { error } = await supabase.from('deliveries').delete().eq('id', id)
+    if (error) { showToast(error.message, 'error'); return }
     await loadDeliveries()
     setShowView(null)
   }
@@ -316,11 +361,12 @@ export default function DeliverPage() {
     try {
       const uploaded = []
       for (const file of newFiles) {
-        const path = `deliveries/${user.id}/${Date.now()}_${file.name}`
-        const { error } = await supabase.storage.from('deliveries').upload(path, file)
+        // Same bucket and same path shape as the create flow. These used to differ, which
+        // left delivery files scattered across two buckets under two naming schemes.
+        const path = deliveryFilePath(user.id, editingDelivery.id, file.name)
+        const { error } = await supabase.storage.from(DELIVER_BUCKET).upload(path, file)
         if (!error) {
-          const { data: { publicUrl } } = supabase.storage.from('deliveries').getPublicUrl(path)
-          uploaded.push({ name: file.name, url: publicUrl, type: file.type, size: file.size })
+          uploaded.push({ name: file.name, path, type: file.type, size: file.size })
         }
       }
       setEditFiles(prev => [...prev, ...uploaded])
@@ -372,7 +418,20 @@ export default function DeliverPage() {
     </div>
   ) : null
 
-  const favMatchedFiles = favView ? (favView.files ?? []).filter(f => (favView.favourites ?? []).includes(f.url)) : []
+  // Favourites are stored as storage paths, matching what the client page sends back.
+  const favMatchedFiles = favView ? (favView.files ?? []).filter(f => (favView.favourites ?? []).includes(f.path)) : []
+
+  // Sign only what is on screen: the favourites modal or the edit modal's file grid.
+  useEffect(() => {
+    let cancelled = false
+    const paths = [
+      ...(favView?.files ?? []).map(f => f.path),
+      ...(editFiles ?? []).map(f => f.path),
+    ].filter(Boolean)
+    if (!paths.length) { setSignedUrls({}); return }
+    signPaths(paths).then(map => { if (!cancelled) setSignedUrls(map) })
+    return () => { cancelled = true }
+  }, [favView, editFiles])
 
   return (
     <>
@@ -591,9 +650,9 @@ export default function DeliverPage() {
               ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(120px, 1fr))', gap: 8 }}>
                   {favMatchedFiles.map((f) => (
-                    <div key={f.url} style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: 1, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-hairline)' }}>
+                    <div key={f.path} style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: 1, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-hairline)' }}>
                       {isImage(f)
-                        ? <img src={f.url} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img src={signedUrls[f.path] || ''} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ padding: 10, fontSize: 11, color: 'var(--lt-muted)', wordBreak: 'break-word' }}>{f.name}</div>}
                     </div>
                   ))}
@@ -643,9 +702,9 @@ export default function DeliverPage() {
                   <label className="ltd-label">Cover image</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                     {editFiles.filter(isImage).map((f) => (
-                      <div key={f.url} className={`ltd-cover${editForm.cover_url === f.url ? ' on' : ''}`} onClick={() => setEditForm(p => ({ ...p, cover_url: p.cover_url === f.url ? '' : f.url }))}>
-                        <img src={f.url} alt={f.name} />
-                        {editForm.cover_url === f.url && <div style={{ position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%', background: GREEN, color: GREEN_DARK, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</div>}
+                      <div key={f.path} className={`ltd-cover${editForm.cover_url === f.path ? ' on' : ''}`} onClick={() => setEditForm(p => ({ ...p, cover_url: p.cover_url === f.path ? '' : f.path }))}>
+                        <img src={signedUrls[f.path] || ''} alt={f.name} />
+                        {editForm.cover_url === f.path && <div style={{ position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%', background: GREEN, color: GREEN_DARK, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</div>}
                       </div>
                     ))}
                   </div>

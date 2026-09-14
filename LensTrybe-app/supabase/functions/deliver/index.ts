@@ -14,7 +14,49 @@ function json(body, status = 200) {
   })
 }
 
-function publicDelivery(d, includeFiles) {
+const DELIVER_BUCKET = 'deliveries'
+// Long enough for a client to browse and download a large gallery in one sitting,
+// short enough that a forwarded link stops working. The bucket itself is private, so
+// this signature is the only way in.
+const SIGNED_TTL_SECONDS = 6 * 60 * 60
+
+/**
+ * Mint signed URLs for the gallery. Files are stored with a `path` and no URL: the
+ * bucket is private, so the only way a client can see a file is a signature we issue
+ * here, on this request. That is what makes expiry, the password and deleting a
+ * gallery actually revoke access rather than just hide the page.
+ */
+async function publicDelivery(admin, d, includeFiles) {
+  const files = Array.isArray(d.files) ? d.files : []
+  let signedFiles = []
+  let coverUrl = null
+
+  const wanted = []
+  if (includeFiles) for (const f of files) if (f?.path) wanted.push(f.path)
+  if (d.cover_url) wanted.push(d.cover_url)
+
+  const signed = {}
+  if (wanted.length) {
+    const { data } = await admin.storage
+      .from(DELIVER_BUCKET)
+      .createSignedUrls([...new Set(wanted)], SIGNED_TTL_SECONDS)
+    if (Array.isArray(data)) {
+      for (const row of data) if (row?.path && row?.signedUrl) signed[row.path] = row.signedUrl
+    }
+  }
+
+  if (includeFiles) {
+    // `path` stays in the payload: the client sends it back as its favourites selection.
+    signedFiles = files.map((f) => ({
+      name: f?.name ?? '',
+      path: f?.path ?? null,
+      type: f?.type ?? null,
+      size: f?.size ?? null,
+      url: f?.path ? (signed[f.path] ?? null) : null,
+    }))
+  }
+  if (d.cover_url) coverUrl = signed[d.cover_url] ?? null
+
   return {
     id: d.id,
     title: d.title,
@@ -22,10 +64,10 @@ function publicDelivery(d, includeFiles) {
     message: d.message,
     expires_at: d.expires_at,
     created_at: d.created_at,
-    cover_url: d.cover_url ?? null,
+    cover_url: coverUrl,
     download_token: d.download_token,
-    files: includeFiles ? (d.files ?? []) : [],
-    file_count: Array.isArray(d.files) ? d.files.length : 0,
+    files: signedFiles,
+    file_count: files.length,
     favourites: includeFiles ? (d.favourites ?? []) : [],
   }
 }
@@ -119,7 +161,7 @@ serve(async (req) => {
           expired: Boolean(expired),
           locked: true,
           creative,
-          delivery: publicDelivery(delivery, false),
+          delivery: await publicDelivery(admin, delivery, false),
         })
       }
       if (!expired) await logOpen()
@@ -127,13 +169,13 @@ serve(async (req) => {
         expired: Boolean(expired),
         locked: false,
         creative,
-        delivery: publicDelivery(delivery, !expired),
+        delivery: await publicDelivery(admin, delivery, !expired),
       })
     }
 
     if (action === 'unlock') {
       if (!locked) {
-        return json({ ok: true, expired: Boolean(expired), delivery: publicDelivery(delivery, !expired), creative })
+        return json({ ok: true, expired: Boolean(expired), delivery: await publicDelivery(admin, delivery, !expired), creative })
       }
       if (await unlockBlocked()) return json({ ok: false, error: 'too_many_attempts' })
       if (typeof password !== 'string' || password.length > 200 || password !== String(delivery.password)) {
@@ -141,7 +183,7 @@ serve(async (req) => {
         return json({ ok: false, error: 'wrong_password' })
       }
       if (!expired) await logOpen()
-      return json({ ok: true, expired: Boolean(expired), delivery: publicDelivery(delivery, !expired), creative })
+      return json({ ok: true, expired: Boolean(expired), delivery: await publicDelivery(admin, delivery, !expired), creative })
     }
 
     if (action === 'track') {
@@ -166,9 +208,10 @@ serve(async (req) => {
       const denied = await checkPassword()
       if (denied) return denied
       if (expired) return json({ ok: false, error: 'expired' }, 410)
-      // Only accept favourites that are files in this gallery.
-      const fileUrls = new Set((Array.isArray(delivery.files) ? delivery.files : []).map((f) => f && typeof f.url === 'string' ? f.url : null).filter(Boolean))
-      const list = Array.isArray(favourites) ? [...new Set(favourites.filter((x) => typeof x === 'string' && fileUrls.has(x)))].slice(0, 2000) : []
+      // Only accept favourites that are files in this gallery. Matched on storage path:
+      // the bucket is private now, so a signed URL is temporary and can never be an id.
+      const filePaths = new Set((Array.isArray(delivery.files) ? delivery.files : []).map((f) => f && typeof f.path === 'string' ? f.path : null).filter(Boolean))
+      const list = Array.isArray(favourites) ? [...new Set(favourites.filter((x) => typeof x === 'string' && filePaths.has(x)))].slice(0, 2000) : []
       const now = new Date().toISOString()
       await admin
         .from('deliveries')
