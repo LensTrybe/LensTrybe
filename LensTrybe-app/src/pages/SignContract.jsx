@@ -11,6 +11,8 @@ function SignContract() {
   const [errorMessage, setErrorMessage] = useState('')
 
   const [contract, setContract] = useState(null)
+  // Signed URL for the attached file, fetched separately because the bucket is private.
+  const [contractFileUrl, setContractFileUrl] = useState(null)
   const [businessName, setBusinessName] = useState('')
 
   const [agreed, setAgreed] = useState(false)
@@ -67,6 +69,16 @@ function SignContract() {
         setContract(contractRow)
         setBusinessName(String(signingData?.business_name ?? '').trim())
         setLoading(false)
+      }
+
+      // The contracts bucket is private, so the stored value is a storage path, not a
+      // URL. contract-file checks the signing token server side and hands back a short
+      // lived signature. Best effort: a contract written in the app has no file at all.
+      if (contractRow?.contract_file_url) {
+        try {
+          const { data: fileData } = await supabase.functions.invoke('contract-file', { body: { token } })
+          if (!cancelled && fileData?.url) setContractFileUrl(fileData.url)
+        } catch { /* the contract text still renders without the attachment */ }
       }
     }
 
@@ -136,20 +148,24 @@ function SignContract() {
             <div className="sign-contract-card__section">
               <p className="sign-contract-card__label">Contract Title</p>
               <p className="sign-contract-card__text sign-contract-card__text--strong">
-                {contract.title ?? '—'}
+                {contract.title ?? 'Untitled contract'}
               </p>
             </div>
 
             {contract.contract_file_url ? (
               <div className="sign-contract-card__section">
-                <a
-                  className="sign-contract-card__link"
-                  href={contract.contract_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  View Contract File
-                </a>
+                {contractFileUrl ? (
+                  <a
+                    className="sign-contract-card__link"
+                    href={contractFileUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    View Contract File
+                  </a>
+                ) : (
+                  <span className="sign-contract-card__link" aria-busy="true">Preparing the contract file…</span>
+                )}
               </div>
             ) : (
               <div className="sign-contract-card__section">
@@ -165,10 +181,10 @@ function SignContract() {
             <div className="sign-contract-card__section">
               <p className="sign-contract-card__label">Client</p>
               <p className="sign-contract-card__text">
-                {contract.client_name ?? '—'}
+                {contract.client_name ?? 'Not set'}
               </p>
               <p className="sign-contract-card__text sign-contract-card__text--muted">
-                {contract.client_email ?? '—'}
+                {contract.client_email ?? 'Not set'}
               </p>
             </div>
 

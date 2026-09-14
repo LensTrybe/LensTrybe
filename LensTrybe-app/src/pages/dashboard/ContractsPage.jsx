@@ -76,6 +76,8 @@ export default function ContractsPage() {
   const [tab, setTab] = useState('contracts')
   const [showCreate, setShowCreate] = useState(false)
   const [showView, setShowView] = useState(null)
+  // Signed URL for the file attached to the contract open in the view modal.
+  const [signedViewUrl, setSignedViewUrl] = useState(null)
   const [saving, setSaving] = useState(false)
   const [toast, setToast] = useState(null)
   const [savingTemplate, setSavingTemplate] = useState(false)
@@ -157,11 +159,24 @@ export default function ContractsPage() {
     catch { showToast(url) }
   }
 
-  function storagePathFromContractsPublicUrl(fileUrl) {
-    if (!fileUrl || typeof fileUrl !== 'string') return null
+  // The contracts bucket is private. New rows store a bare storage path; rows written
+  // before the change store a full public URL. Accept both so old contracts keep working.
+  function contractStoragePath(value) {
+    if (!value || typeof value !== 'string') return null
     const marker = '/object/public/contracts/'
-    const i = fileUrl.indexOf(marker)
-    return i >= 0 ? decodeURIComponent(fileUrl.slice(i + marker.length).split('?')[0]) : null
+    const i = value.indexOf(marker)
+    if (i >= 0) return decodeURIComponent(value.slice(i + marker.length).split('?')[0])
+    if (value.startsWith('http://') || value.startsWith('https://')) return null
+    return value
+  }
+
+  /** Mint a short lived signed URL to open a contract file. Null when there is no file. */
+  async function signContractFile(value) {
+    const path = contractStoragePath(value)
+    if (!path) return null
+    const { data, error } = await supabase.storage.from('contracts').createSignedUrl(path, 60 * 60)
+    if (error) { showToast('Could not open that file: ' + error.message, 'error'); return null }
+    return data?.signedUrl ?? null
   }
 
   function fileTypeFromName(name) {
@@ -181,10 +196,8 @@ export default function ContractsPage() {
       const path = `uploaded_contracts/${user.id}/${safeName}`
       const { error: uploadError } = await supabase.storage.from('contracts').upload(path, externalContractFile, { upsert: true })
       if (uploadError) throw uploadError
-      const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(path)
-      const publicUrl = urlData.publicUrl
       const { error } = await supabase.from('uploaded_contracts').insert({
-        creative_id: user.id, file_url: publicUrl, file_name: externalContractFile.name,
+        creative_id: user.id, file_url: path, file_name: externalContractFile.name,
         client_name: externalContractClientName.trim(), file_type: ft,
       })
       if (error) throw error
@@ -202,7 +215,7 @@ export default function ContractsPage() {
     const ok = window.confirm(`Remove "${row.file_name}" from your uploaded contracts? This cannot be undone.`)
     if (!ok) return
     try {
-      const storagePath = storagePathFromContractsPublicUrl(row.file_url)
+      const storagePath = contractStoragePath(row.file_url)
       if (storagePath) {
         const { error: rmErr } = await supabase.storage.from('contracts').remove([storagePath])
         if (rmErr) console.warn('Storage remove:', rmErr.message)
@@ -216,13 +229,15 @@ export default function ContractsPage() {
     }
   }
 
-  function downloadUploadedContract(row) {
+  async function downloadUploadedContract(row) {
+    const url = await signContractFile(row.file_url)
+    if (!url) return
     try {
       const a = document.createElement('a')
-      a.href = row.file_url; a.download = row.file_name || 'contract'; a.target = '_blank'; a.rel = 'noopener noreferrer'
+      a.href = url; a.download = row.file_name || 'contract'; a.target = '_blank'; a.rel = 'noopener noreferrer'
       document.body.appendChild(a); a.click(); document.body.removeChild(a)
     } catch {
-      window.open(row.file_url, '_blank', 'noopener,noreferrer')
+      window.open(url, '_blank', 'noopener,noreferrer')
     }
   }
 
@@ -281,15 +296,13 @@ export default function ContractsPage() {
       const path = `contracts/${user.id}/${Date.now()}_${uploadFile.name}`
       const { error: uploadError } = await supabase.storage.from('contracts').upload(path, uploadFile)
       if (uploadError) throw uploadError
-      const { data: urlData } = supabase.storage.from('contracts').getPublicUrl(path)
-      const publicUrl = urlData.publicUrl
       const { error } = await supabase.from('contracts').insert({
         creative_id: user.id,
         client_name: uploadForm.client_name,
         client_email: uploadForm.client_email,
         title: uploadForm.project_name || uploadFile.name,
         project_name: uploadForm.project_name || null,
-        contract_file_url: publicUrl,
+        contract_file_url: path,
         status: 'draft',
         download_token: crypto.randomUUID(),
         contract_type: 'uploaded',
@@ -357,7 +370,18 @@ export default function ContractsPage() {
   const contractBrandLogo = contractMerged.logo
   const contractHeaderTextColor = contractMerged.secondary
   const contractDocSurface = { padding: isMobile ? '16px' : '40px 48px', overflowY: 'auto', flex: 1, background: '#fff', color: '#111', fontFamily: contractBrandFontStack }
-  const viewContractUrl = showView ? (showView.file_url ?? showView.contract_file_url ?? showView.content) : null
+  // showView.content is the contract written in the app, which is plain text and needs
+  // no signing. A stored file does, so it is signed by the effect below.
+  const viewContractUrl = signedViewUrl ?? (showView ? (showView.content ?? null) : null)
+
+  useEffect(() => {
+    let cancelled = false
+    const stored = showView ? (showView.file_url ?? showView.contract_file_url ?? null) : null
+    if (!stored) { setSignedViewUrl(null); return }
+    signContractFile(stored).then((url) => { if (!cancelled) setSignedViewUrl(url) })
+    return () => { cancelled = true }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showView])
 
   const stats = useMemo(() => ({
     total: contracts.length,
