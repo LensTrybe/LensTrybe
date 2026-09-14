@@ -3,11 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { logProfileView } from '../../lib/visibility'
 import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
-import {
-  MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE,
-  messageBodyContainsContactDetails,
-  threadOwnerTierContactSharingRestricted,
-} from '../../lib/messagingContactPolicy'
+import { MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE } from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
@@ -143,13 +139,15 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     if (document.getElementById('lt-site-fonts')) return
     const l = document.createElement('link'); l.id = 'lt-site-fonts'; l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l)
   }, [])
-  // Viewing a creative profile requires an account. Anonymous visitors are sent
-  // to sign in / create an account, then returned here.
-  useEffect(() => {
-    if (!previewMode && !siteMode && !authLoading && !user) {
-      navigate('/login', { replace: true, state: { next: `/creatives/${id}` } })
-    }
-  }, [previewMode, siteMode, authLoading, user, id])
+  // Anyone can look at a creative's profile. An account is only needed to do something
+  // with the creative: enquire, request a booking or a call, or leave a review. Each of
+  // those already opens the sign in gate on its own.
+  //
+  // This used to redirect anonymous visitors to the login page, which cost more than it
+  // protected. The same work was already public at /site/<id>, so nothing was being kept
+  // back, and a client comparing three photographers will not make an account to look at
+  // three profiles. It also meant Google could never index a single creative, which is
+  // most of the long term value of running a directory at all.
   useEffect(() => { setProfileFlagSuccessId(null) }, [id])
 
   // The creative's promotional poster, if they have a live one. Everything that decides
@@ -393,9 +391,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 
   useEffect(() => { if (navPages.length && !navPages.includes(activePage)) setActivePage(navPages[0]) }, [navPages]) // eslint-disable-line
 
-  if (!previewMode && !siteMode && (authLoading || !user)) return (
+  // Wait for auth to settle before drawing, because who is looking changes what the page
+  // offers, but never block on being signed out. An anonymous visitor sees the whole
+  // profile and meets the sign in gate only when they try to do something.
+  if (!previewMode && !siteMode && authLoading) return (
     <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
-      {authLoading ? 'Loading…' : 'Redirecting to sign in…'}
+      Loading…
     </div>
   )
   if (loading) return (
