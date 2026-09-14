@@ -9,6 +9,7 @@ import {
 } from '../../lib/moderateContent'
 import { useAuth } from '../../context/AuthContext'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
+import ProfilePosterCard from '../../components/profile/ProfilePosterCard'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -445,6 +446,8 @@ export default function EditProfilePage() {
           </div>
           {saveBtn}
         </div>
+
+        <ProfilePosterCard userId={user?.id} tier={profileTier} />
 
         {/* Avatar */}
         <div style={{ ...card, flexDirection: 'row', alignItems: 'center', gap: 24 }}>

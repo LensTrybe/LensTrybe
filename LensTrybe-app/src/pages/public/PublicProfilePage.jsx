@@ -12,6 +12,7 @@ import { useAuth } from '../../context/AuthContext'
 import Button from '../../components/ui/Button'
 import Badge from '../../components/ui/Badge'
 import Modal from '../../components/ui/Modal'
+import ProfilePosterModal from '../../components/profile/ProfilePosterModal'
 import Input from '../../components/ui/Input'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import {
@@ -105,6 +106,10 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   const [menuOpen, setMenuOpen] = useState(false)
   const [galleryTab, setGalleryTab] = useState('All')
   const [showEnquire, setShowEnquire] = useState(false)
+  // The creative's promotional poster. Null until the server says this visitor should see
+  // one, so nothing renders for a profile without a live poster.
+  const [poster, setPoster] = useState(null)
+  const [posterOpen, setPosterOpen] = useState(false)
   const [showAuthGate, setShowAuthGate] = useState(false)
   const [authGateFor, setAuthGateFor] = useState('enquire')
   const [showBook, setShowBook] = useState(false)
@@ -146,6 +151,39 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     }
   }, [previewMode, siteMode, authLoading, user, id])
   useEffect(() => { setProfileFlagSuccessId(null) }, [id])
+
+  // The creative's promotional poster, if they have a live one. Everything that decides
+  // whether a poster counts as live, switched on, in date, and on a plan that includes it,
+  // is applied server side in profile_poster_public, so nothing leaks to a page that should
+  // not show it. Held back a beat so the profile draws first and the poster arrives as a
+  // considered card rather than a pop-up in their face.
+  useEffect(() => {
+    let cancelled = false
+    setPoster(null)
+    setPosterOpen(false)
+    if (!id) return undefined
+
+    supabase.rpc('profile_poster_public', { p_creative: id }).then(({ data }) => {
+      if (cancelled) return
+      const row = Array.isArray(data) ? data[0] : data
+      if (!row) return
+      const imageUrl = row.image_path
+        ? supabase.storage.from('posters').getPublicUrl(row.image_path).data?.publicUrl || ''
+        : ''
+      const key = `lt_poster_seen_${id}_${row.updated_at || ''}`
+      if (cancelled) return
+      setPoster({ ...row, imageUrl, key })
+      // The creative previewing their own profile should always see it, otherwise they
+      // cannot check their own work without clearing storage.
+      if (previewMode || !posterSeen(key)) {
+        const t = setTimeout(() => { if (!cancelled) setPosterOpen(true) }, 700)
+        return () => clearTimeout(t)
+      }
+      return undefined
+    })
+
+    return () => { cancelled = true }
+  }, [id, previewMode])
   // Public website tab title (SEO title from the builder, else the business name).
   useEffect(() => {
     if (!siteMode || !profile) return undefined
@@ -298,12 +336,32 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     setTimeout(() => { setShowCall(false); setCallSent(false) }, 2400)
   }
 
+  // Shown once per visitor. The key carries the poster's updated_at, so changing the poster
+  // makes it a new thing worth seeing while editing nothing brings it back uninvited.
+  // Wrapped because storage throws in a private window and a poster is never worth an error.
+  function posterSeen(key) {
+    try { return localStorage.getItem(key) === '1' } catch { return false }
+  }
+  function markPosterSeen(key) {
+    try { localStorage.setItem(key, '1') } catch { /* ignore */ }
+  }
+
+  const closePoster = () => {
+    setPosterOpen(false)
+    if (poster?.key) markPosterSeen(poster.key)
+  }
+
   const openEnquire = () => {
     if (user) { setEnquiryError(''); setSent(false); setShowEnquire(true); return }
     // On the public website, send visitors to the Contact page form.
     if (siteMode && navPages.includes('contact')) { setEnquiryError(''); setSent(false); setActivePage('contact'); window.scrollTo(0, 0); return }
     setAuthGateFor('enquire'); setShowAuthGate(true)
   }
+  const openPosterEnquiry = () => {
+    closePoster()
+    openEnquire()
+  }
+
   const openBook = () => {
     if (user) { setShowBook(true); return }
     setAuthGateFor('book'); setShowAuthGate(true)
@@ -405,7 +463,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   // =====================================================================
-  //  BASIC (and any non-paid) — classic single-page profile.
+  //  BASIC (and any non-paid): classic single-page profile.
   // =====================================================================
   if (!isPaid) {
     const styles = classicStyles(isMobile)
@@ -498,7 +556,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   // =====================================================================
-  //  PRO / EXPERT / ELITE — brand-styled multi-page website
+  //  PRO / EXPERT / ELITE: brand-styled multi-page website
   // =====================================================================
   // Resolve the website's "Site Styles" theme (colours, fonts, buttons, corners)
   // set in the builder; falls back to the Brand Kit, then defaults.
@@ -774,7 +832,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         </div>
       )
     } else {
-      // Cards (default) — fixed, tidy card size so a single service doesn't blow up
+      // Cards (default): fixed, tidy card size so a single service doesn't blow up
       body = (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))', gap: 18, justifyContent: 'center' }}>
           {services.map((s) => (
@@ -1055,6 +1113,16 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
               ? <video src={lightbox.url} controls autoPlay playsInline onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 'var(--radius-lg)', background: '#000', cursor: 'default' }} />
               : <img src={lightbox.url} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' }} />}
           </div>
+        )}
+
+        {posterOpen && poster && (
+          <ProfilePosterModal
+            poster={poster}
+            imageUrl={poster.imageUrl}
+            businessName={displayName}
+            onClose={closePoster}
+            onEnquire={openPosterEnquiry}
+          />
         )}
 
         <Modal isOpen={showEnquire} onClose={() => { setShowEnquire(false); setEnquiryError('') }} title={`Enquire with ${displayName}`} size="md">
