@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
   try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
 
   const userId = (body.user_id || body.userId) as string
-  const kind = String(body.kind || '').toLowerCase() // 'active' | 'failed' | 'cancelled' | 'downgraded' | 'founding_ended'
+  const kind = String(body.kind || '').toLowerCase() // 'active' | 'trial_plan_changed' | 'failed' | 'cancelled' | 'downgraded' | 'founding_ended'
   const tier = tierLabel(body.tier)
   const amountStr = money(body.amount_minor ?? body.amount, body.currency)
   if (!userId || !kind) return json({ error: 'user_id and kind required' }, 400)
@@ -117,6 +117,21 @@ Deno.serve(async (req) => {
     intro = `Hi ${esc(name)}, we tried a few times but could not collect your ${esc(tier)} payment, so your account is now on the free Basic plan. Your profile and work are safe.`
     ctaText = 'Choose a plan'
     footNote = 'You can pick a paid plan again any time to get your features back.'
+  } else if (kind === 'trial_plan_changed') {
+    // A plan change while still on trial. Nothing is charged today, so the only thing that
+    // matters to the creative is what they will be charged and when. Say both plainly: a
+    // change with no receipt and no date is exactly how a surprise charge starts.
+    firstCharge = fmtDate(body.first_charge_date)
+    subject = `Your plan is now ${tier}`
+    kicker = 'Plan changed'
+    heading = `Your plan is now ${esc(tier)}`
+    intro = `Hi ${esc(name)}, you have moved to ${esc(tier)} and your new features are available straight away.`
+      + (firstCharge
+        ? ` Nothing has been charged today. Your first payment will be taken on <strong style="color:${BRAND.text};">${esc(firstCharge)}</strong>.`
+        : ' Nothing has been charged today.')
+    footNote = firstCharge
+      ? `Changed your mind? Switch plans or cancel before ${esc(firstCharge)} and you will not be charged.`
+      : 'You can change plans any time from your dashboard.'
   } else if (kind === 'founding_ended') {
     // Sent when a founding deal ends (founding_end_deal): the $49 rate and the rest of the
     // free period go; the first standard payment is 7 days later (first_charge_date).
@@ -138,7 +153,7 @@ Deno.serve(async (req) => {
 
   const period = String(body.billing || '') === 'annual' ? ' a year' : String(body.billing || '') === 'monthly' ? ' a month' : ''
   const panelHtml = amountStr
-    ? panel(fieldRow('Plan', esc(tier)) + fieldRow('Amount', esc(amountStr + (kind === 'founding_ended' ? period : ''))) + (firstCharge ? fieldRow('First payment', esc(firstCharge)) : ''))
+    ? panel(fieldRow('Plan', esc(tier)) + fieldRow('Amount', esc(amountStr + (kind === 'founding_ended' || kind === 'trial_plan_changed' ? period : ''))) + (firstCharge ? fieldRow('First payment', esc(firstCharge)) : ''))
     : panel(fieldRow('Plan', esc(tier)))
 
   const billingFootNote = `${footNote} Questions about your subscription? Just reply to this email and the LensTrybe team will help.`

@@ -203,6 +203,27 @@ Deno.serve(async (req) => {
       updated_at: nowIso,
     }).eq('id', sub.id)
     await sb.from('profiles').update({ subscription_tier: newTier }).eq('id', userId)
+
+    // A trial plan change took no money and sent nothing, so the creative had no record of
+    // what they had signed up to or when it starts costing. That is how a surprise charge
+    // begins. Best effort: the plan change itself has already been applied and must not be
+    // rolled back over an email.
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/send-billing-email`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${serviceKey}`, apikey: serviceKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: userId,
+          kind: 'trial_plan_changed',
+          tier: newTier,
+          amount_minor: newAmount,
+          currency: sub.currency || CURRENCY,
+          billing: newBilling,
+          first_charge_date: sub.next_charge_date,
+        }),
+      })
+    } catch (_e) { /* best effort */ }
+
     return json({ ok: true, change, applied: 'immediate', chargeNow: 0, trialing: true })
   }
 
