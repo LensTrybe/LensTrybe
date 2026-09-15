@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '../lib/supabaseClient'
 import { LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD, GLASS_CARD_GREEN } from '../lib/glassTokensLight'
+import { LAUNCH_DATE } from '../lib/launch'
 
 // ── Launch config ───────────────────────────────────────────────
-const LAUNCH = new Date('2026-10-01T00:00:00+10:00')
+// The date is shared with the gate in App.jsx. See src/lib/launch.js.
 const SITE = 'https://lenstrybe.com'
 
 // Brand tokens (mirror the homepage hero)
@@ -142,7 +143,7 @@ function GlowBorder({ radius = 24, children, style }) {
 }
 
 function timeLeft() {
-  const diff = LAUNCH - new Date()
+  const diff = LAUNCH_DATE - new Date()
   if (diff <= 0) return { d: 0, h: 0, m: 0, s: 0 }
   return {
     d: Math.floor(diff / 86400000), h: Math.floor((diff / 3600000) % 24),

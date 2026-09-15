@@ -75,8 +75,7 @@ import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
-
-const LAUNCH_DATE = new Date('2026-10-01T00:00:00+10:00')
+import { hasLaunched } from './lib/launch'
 
 function PlaceholderPage({ page }) {
   return (
@@ -237,7 +236,7 @@ export default function App() {
     sessionStorage.setItem('lt_preview', 'true')
   }
   const isPreview = sessionStorage.getItem('lt_preview') === 'true'
-  const isLaunched = new Date() >= LAUNCH_DATE
+  const isLaunched = hasLaunched()
   // Signed-in users (verified creatives/clients) always get the real app, even before
   // launch, so the founding cohort can use their dashboard while the public sees the waitlist.
   const showWaitlist = !isLaunched && !isPreview && !user

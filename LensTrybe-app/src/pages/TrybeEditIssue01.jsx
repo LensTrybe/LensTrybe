@@ -207,7 +207,7 @@ export default function TrybeEditIssue01() {
           <div className="divider" />
 
           <p>
-            <strong>One note on timing.</strong> If you sign up before May 1, 2026, you qualify as a Founding Member. Your profile goes live immediately, your first payment is deferred to the official launch date, and you receive a permanent Founding Member badge that stays on your profile regardless of any future plan changes. It is a genuine early-adopter recognition, not a marketing trick.
+            <strong>One note on timing.</strong> LensTrybe opens on 1 October 2026, starting in South East Queensland and rolling out across Australia city by city. Join on a paid plan and your first three months are free. There are no commissions at any point, so what a client pays you is what you keep.
           </p>
         </div>
 
