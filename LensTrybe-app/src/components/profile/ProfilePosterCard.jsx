@@ -31,11 +31,22 @@ const EMPTY = {
   ends_at: '',
 }
 
-function publicUrl(path) {
+// The posters bucket is private, so there is no public URL to build. The owner can read
+// their own folder under the storage policies, so signing from here works for the editor
+// preview. Clients looking at the profile go through the poster-image function instead,
+// which checks the poster is actually live before it signs anything.
+const SIGNED_FOR_SECONDS = 3600
+
+async function signedUrl(path) {
   if (!path) return ''
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(path)
-  return data?.publicUrl || ''
+  const { data, error } = await supabase.storage.from(BUCKET).createSignedUrl(path, SIGNED_FOR_SECONDS)
+  if (error) return ''
+  return data?.signedUrl || ''
 }
+
+// Formats a browser will render, and that storage will accept. SVG is deliberately out:
+// it can carry script, and these are served from our own domain.
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif']
 
 /** yyyy-mm-dd for a date input, from a timestamp. */
 function toDateInput(ts) {
@@ -69,6 +80,9 @@ export default function ProfilePosterCard({ userId, tier }) {
   const [uploading, setUploading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
+  // Signing is a round trip, so the preview URL is state rather than something derived
+  // during render.
+  const [imageUrl, setImageUrl] = useState('')
   const fileRef = useRef(null)
 
   const locked = !tierHas(tier, 'profilePoster')
@@ -100,11 +114,23 @@ export default function ProfilePosterCard({ userId, tier }) {
     return () => { cancelled = true }
   }, [userId])
 
+  // Re-sign whenever the picture changes. A signed URL expires, so this also refreshes
+  // it if the card is left open for a long editing session.
+  useEffect(() => {
+    let cancelled = false
+    if (!form.image_path) { setImageUrl(''); return undefined }
+    signedUrl(form.image_path).then((url) => { if (!cancelled) setImageUrl(url) })
+    return () => { cancelled = true }
+  }, [form.image_path])
+
   async function pickImage(e) {
     const file = e.target.files?.[0]
     if (!file) return
     setError('')
-    if (!file.type.startsWith('image/')) { setError('That needs to be an image.'); return }
+    if (!IMAGE_TYPES.includes(file.type)) {
+      setError('That needs to be a JPG, PNG, WebP or GIF.')
+      return
+    }
     if (file.size > MAX_IMAGE_BYTES) { setError('That image is over 5MB. Try a smaller one.'); return }
 
     setUploading(true)
@@ -195,8 +221,6 @@ export default function ProfilePosterCard({ userId, tier }) {
     return <div style={cardStyle}><div style={{ fontSize: 13, color: 'var(--lt-faint)' }}>Loading your poster…</div></div>
   }
 
-  const imageUrl = publicUrl(form.image_path)
-
   return (
     <div style={cardStyle}>
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
@@ -239,7 +263,7 @@ export default function ProfilePosterCard({ userId, tier }) {
           </div>
         ) : (
           <>
-            <input ref={fileRef} type="file" accept="image/*" onChange={pickImage} disabled={uploading} style={{ fontSize: 13, color: 'var(--lt-muted)' }} />
+            <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={pickImage} disabled={uploading} style={{ fontSize: 13, color: 'var(--lt-muted)' }} />
             <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 5 }}>
               {uploading ? 'Uploading…' : 'Up to 5MB. A square or portrait picture sits best.'}
             </div>

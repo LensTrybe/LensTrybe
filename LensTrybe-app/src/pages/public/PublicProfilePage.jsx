@@ -165,8 +165,12 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       if (cancelled) return
       const row = Array.isArray(data) ? data[0] : data
       if (!row) return
+      // The posters bucket is private. poster-image asks profile_poster_public the same
+      // question we just asked, and only signs a URL when the poster is genuinely live,
+      // so a switched off or expired poster's picture is not reachable either. Keyed on
+      // updated_at so a replaced picture is not served from cache.
       const imageUrl = row.image_path
-        ? supabase.storage.from('posters').getPublicUrl(row.image_path).data?.publicUrl || ''
+        ? `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/poster-image?creative=${encodeURIComponent(id)}&v=${encodeURIComponent(row.updated_at || '')}`
         : ''
       const key = `lt_poster_seen_${id}_${row.updated_at || ''}`
       if (cancelled) return
