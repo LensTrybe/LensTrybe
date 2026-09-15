@@ -1,80 +1,107 @@
 import { useId } from 'react'
 
 /**
- * LensTrybe lens mark: pastel gradient camera barrel around a frosted glass lens.
- * Matches the light glassmorphic site theme.
+ * The LensTrybe lens mark.
+ *
+ * Same geometry as the master files in branding/logo/svg, so what the app draws and
+ * what a printer receives are the same drawing. The dark barrel behind the ring is
+ * part of the mark, not a background: it is what gives the lens its depth and what
+ * lets the pale ring hold its edge on a light page.
+ *
+ * No drop shadow. A baked in shadow stops a logo sitting cleanly on anything that is
+ * not the colour it was drawn against.
  */
 export function LensMark({ size = 28, style }) {
   const raw = useId()
   const uid = raw.replace(/[^a-zA-Z0-9]/g, '')
+  const ring = `lt-ring-${uid}`
   const glass = `lt-glass-${uid}`
-  const barrel = `lt-barrel-${uid}`
   return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden style={style}>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 412 412"
+      role="img"
+      aria-label="LensTrybe"
+      style={{ display: 'block', flex: 'none', ...style }}
+    >
       <defs>
-        <radialGradient id={glass} cx="35%" cy="30%" r="75%">
-          <stop offset="0" stopColor="#ffffff" />
-          <stop offset="0.3" stopColor="#c1e9d4" />
-          <stop offset="0.7" stopColor="#f4aecb" />
-          <stop offset="1" stopColor="#c1acf2" />
-        </radialGradient>
-        <linearGradient id={barrel} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#7f9fb8" />
-          <stop offset="0.5" stopColor="#a76d84" />
-          <stop offset="1" stopColor="#7f77dd" />
+        <linearGradient id={ring} x1="-64" y1="-92" x2="476" y2="504" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#9AC4C5" />
+          <stop offset="0.48" stopColor="#D996BA" />
+          <stop offset="1" stopColor="#C6A5E5" />
         </linearGradient>
+        <radialGradient id={glass} cx="37%" cy="31%" r="78%">
+          <stop offset="0" stopColor="#FFFDF4" />
+          <stop offset="0.36" stopColor="#C8EBDE" />
+          <stop offset="0.72" stopColor="#F5B0CD" />
+          <stop offset="1" stopColor="#C9ACE8" />
+        </radialGradient>
       </defs>
-      <circle cx="32" cy="32" r="29" fill="none" stroke={`url(#${barrel})`} strokeWidth="6" />
-      <circle cx="32" cy="32" r="19" fill={`url(#${glass})`} />
-      <ellipse cx="26" cy="25" rx="7" ry="4.5" fill="rgba(255,255,255,0.65)" />
+      <circle cx="206" cy="206" r="206" fill="#2A2C3A" />
+      <circle cx="206" cy="206" r="181" fill="none" stroke={`url(#${ring})`} strokeWidth="31" />
+      <circle cx="206" cy="206" r="132" fill={`url(#${glass})`} />
+      <circle cx="206" cy="206" r="132" fill="none" stroke="#DBE6E1" strokeOpacity="0.82" strokeWidth="9" />
+      <ellipse cx="160" cy="151" rx="54" ry="37" fill="#ffffff" opacity="0.31" />
     </svg>
   )
 }
 
+// The wordmark is Inter Light in caps at 0.30em tracking. The tracking is part of the
+// logo rather than a styling choice, so it is fixed here and not exposed as a prop.
+const TRACKING = 0.3
+
+// Cap height sits at 0.31 of the mark's diameter in the master lockups. Inter's caps
+// are 0.7275 of its em, so this is the font size that reproduces that proportion.
+// Derived rather than passed in, otherwise every call site gets to invent its own
+// version of the logo.
+const SIZE_FROM_MARK = 0.31 / 0.7275
+
 /**
- * Full brand lockup: lens mark + "LensTrybe" wordmark
- * (sans "Lens" + italic serif gradient "Trybe").
+ * The horizontal lockup: lens, then LENSTRYBE.
+ *
+ * `color` defaults to ink for light pages. Anything on a dark surface passes its own,
+ * usually the theme's text token.
  */
 export default function BrandLogo({
   markSize = 28,
-  fontSize = 19,
+  fontSize,
   showMark = true,
   showWordmark = true,
-  gap = 9,
+  gap,
+  color = '#16151c',
   style,
 }) {
+  const wordSize = fontSize ?? markSize * SIZE_FROM_MARK
+  const space = gap ?? markSize * 0.3
+
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap, lineHeight: 1, ...style }}>
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: showMark && showWordmark ? space : 0,
+        lineHeight: 1,
+        ...style,
+      }}
+    >
       {showMark && <LensMark size={markSize} />}
       {showWordmark && (
         <span
           style={{
-            fontFamily: "'Inter', sans-serif",
-            fontSize,
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            color: '#14111a',
+            fontFamily: "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+            fontWeight: 300,
+            fontSize: wordSize,
+            letterSpacing: `${TRACKING}em`,
+            // Letter spacing is added after the final letter too, which would leave a
+            // gap of dead space on the right and push the lockup off centre.
+            marginRight: `${-TRACKING}em`,
+            color,
             lineHeight: 1,
             whiteSpace: 'nowrap',
           }}
         >
-          Lens
-          <span
-            style={{
-              fontFamily: "'Instrument Serif', Georgia, serif",
-              fontStyle: 'italic',
-              fontWeight: 400,
-              display: 'inline-block',
-              paddingRight: '0.16em',
-              backgroundImage: 'linear-gradient(120deg, #1DB954, #d4537e 60%, #7f77dd)',
-              WebkitBackgroundClip: 'text',
-              backgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              color: 'transparent',
-            }}
-          >
-            Trybe
-          </span>
+          LENSTRYBE
         </span>
       )}
     </span>

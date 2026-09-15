@@ -305,7 +305,7 @@ export default function PublicLayout() {
         <div style={{ position: 'relative', zIndex: 1 }}>
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, ...GLASS_NAV, padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={styles.logo} onClick={() => navigate('/')}>
-            <BrandLogo markSize={24} fontSize={17} />
+            <BrandLogo markSize={24} />
           </div>
           <button type="button" style={styles.mobileMenuButton} onClick={() => setMobileMenuOpen(prev => !prev)} aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}>
             <HamburgerIcon open={mobileMenuOpen} />
@@ -382,7 +382,7 @@ export default function PublicLayout() {
       <nav style={styles.nav}>
         {/* Left: Logo */}
         <div style={styles.logo} onClick={() => navigate('/')}>
-          <BrandLogo markSize={26} fontSize={18} />
+          <BrandLogo markSize={26} />
           <span style={styles.tagline}>Connect. Capture. Create.</span>
         </div>
 

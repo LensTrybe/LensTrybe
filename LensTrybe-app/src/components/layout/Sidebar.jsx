@@ -290,8 +290,8 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   )
 
   const wordmark = (
-    <span style={{ fontSize: 19, fontWeight: 700, color: t.text, letterSpacing: '-0.3px', whiteSpace: 'nowrap' }}>
-      Lens<span style={{ fontFamily: SERIF, fontStyle: 'italic', fontWeight: 400, fontSize: '1.12em', color: t.green }}>Trybe</span>
+    <span style={{ fontSize: 11.1, fontWeight: 300, color: t.text, letterSpacing: '0.3em', marginRight: '-0.3em', whiteSpace: 'nowrap' }}>
+      LENSTRYBE
     </span>
   )
 
@@ -299,7 +299,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
       <div onClick={() => { navigate('/dashboard'); closeAll(); onCloseMobile?.() }} title="LensTrybe"
         style={{ minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: expanded ? 'flex-start' : 'center', gap: 10, padding: expanded ? '0 18px' : 0, cursor: 'pointer', flexShrink: 0 }}>
-        <BrandLogo markSize={26} fontSize={19} showWordmark={false} />
+        <BrandLogo markSize={26} showWordmark={false} />
         {expanded && wordmark}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2px 0' }}>
@@ -342,7 +342,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         {sheen('0 20px 20px 0')}
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
           <div onClick={() => { navigate('/dashboard'); onCloseMobile?.() }} style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}>
-            <BrandLogo markSize={26} fontSize={19} showWordmark={false} />{wordmark}
+            <BrandLogo markSize={26} showWordmark={false} />{wordmark}
           </div>
           <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 0 8px' }}>
             {TOP.map((it) => flyItem({ ...it }))}
