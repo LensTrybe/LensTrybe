@@ -21,6 +21,48 @@ const IconPhone = () => (<svg width="24" height="24" viewBox="0 0 24 24" fill="n
 // Creative types live at launch. The rest join LensTrybe later.
 const LAUNCH_SKILLS = ['photographer', 'videographer']
 
+// Four honest statuses instead of one blanket "Coming Soon".
+//
+// The old page put the same badge on things that already shipped and things that are
+// years away, which made the platform look emptier than it is and made every line read
+// as a promise. Anything marked live is in the product today. Anything marked exploring
+// is an idea, and the legend on the page says so in plain words.
+//
+// Text colours are darkened from the brand green and pink so small bold type stays
+// readable on the light background.
+const STATUS = {
+  live: { label: 'Available now', colour: '#0E7C3A', bg: 'rgba(29,185,84,0.12)', border: 'rgba(29,185,84,0.35)' },
+  building: { label: 'In development', colour: '#9A5B00', bg: 'rgba(234,179,8,0.14)', border: 'rgba(234,179,8,0.42)' },
+  planned: { label: 'Planned', colour: '#5B5766', bg: 'rgba(20,17,26,0.05)', border: 'rgba(20,17,26,0.14)' },
+  exploring: { label: 'Exploring', colour: '#c11f5a', bg: 'rgba(255,45,120,0.1)', border: 'rgba(255,45,120,0.32)' },
+}
+
+const STATUS_ORDER = ['live', 'building', 'planned', 'exploring']
+
+const LEGEND = [
+  { key: 'live', text: 'In the platform today.' },
+  { key: 'building', text: 'Being built right now.' },
+  { key: 'planned', text: 'We will build it. No date yet.' },
+  { key: 'exploring', text: 'An idea we are looking at. It may change, or it may not happen.' },
+]
+
+function StatusBadge({ status }) {
+  const s = STATUS[status] || STATUS.planned
+  return (
+    <span style={{ whiteSpace: 'nowrap', borderRadius: '999px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: s.colour, border: `1px solid ${s.border}`, background: s.bg }}>
+      {s.label}
+    </span>
+  )
+}
+
+// Things that land for every creative, whatever they shoot.
+const PLATFORM_FEATURES = [
+  { name: 'Mobile app for iPhone and Android', status: 'building', description: 'Your whole LensTrybe business in your pocket. Take bookings, reply to clients, send invoices and check payments from your phone. In build now.' },
+  { name: 'More creative disciplines', status: 'planned', description: 'LensTrybe opens with Photographers and Videographers. Drone Pilots, Video Editors, Photo Editors, Social Media Managers, Hair and Makeup Artists and UGC Creators follow after launch.' },
+  { name: 'Two-way calendar sync', status: 'planned', description: 'Connect Google Calendar or Apple Calendar so your LensTrybe availability and your own diary stay in step in both directions. Stop double booking yourself.' },
+  { name: 'Creative community feed', status: 'exploring', description: 'A place for creatives on LensTrybe to share work, ask questions and find people to collaborate with. We are still working out what it should be, so tell us.' },
+]
+
 const SKILLS = [
   { key: 'photographer', label: 'Photographer', icon: <IconCamera /> },
   { key: 'videographer', label: 'Videographer', icon: <IconVideo /> },
@@ -34,65 +76,74 @@ const SKILLS = [
 
 const SKILL_FEATURES = {
   photographer: [
-    { name: 'Culling Tool', description: 'Review your shoot in one workspace and mark each image as Keep, Maybe or Reject. Add quick notes per frame and export a selects list you can action immediately.' },
-    { name: 'Pass selects to a Photo Editor', description: 'Send your approved selects straight to a Photo Editor on LensTrybe with all notes attached. This removes back and forth file sharing and keeps the handoff in one thread.' },
-    { name: 'Shot list builder', description: 'Create detailed shot lists with required frames, priorities and client must haves. Share the list with clients before shoot day so everyone is aligned.' },
-    { name: 'Booking deposit and balance payment splits', description: 'Set automatic payment rules so clients pay a deposit at booking and the remaining balance later. LensTrybe tracks each stage and sends reminders at the right time.' },
-    { name: 'Location scouting notes', description: 'Save GPS pins, lighting windows, parking details and access instructions for every location. Reuse these notes across future shoots to speed up planning.' },
-    { name: 'Style questionnaire templates', description: 'Send branded pre shoot questionnaires to capture mood, styling and image references. Responses are stored against the booking so you can prepare with confidence.' },
+    { name: 'Shot list builder', status: 'live', description: 'Build a shot list on any job as a checklist, tick frames off as you get them, and keep prep lists and gear lists on the same project. Available in your project workspace today.' },
+    { name: 'Location scouting notes', status: 'planned', description: 'Save GPS pins, lighting windows, parking and access instructions for every location, then reuse them on future shoots at the same spot.' },
+    { name: 'Style questionnaire templates', status: 'planned', description: 'Send a branded pre shoot questionnaire to capture mood, styling and image references. Answers save against the booking so you arrive prepared.' },
+    { name: 'Pass selects to a Photo Editor', status: 'planned', description: 'Send your approved selects straight to a Photo Editor on LensTrybe with your notes attached. Arrives once Photo Editors join the platform.' },
+    { name: 'Culling tool', status: 'exploring', description: 'Review a full shoot in one workspace and mark each frame Keep, Maybe or Reject. Doing this properly in a browser is a serious piece of work, so we are looking at it rather than promising it.' },
+    { name: 'Deposit and balance payment splits', status: 'exploring', description: 'Take a deposit at booking and the balance later, with LensTrybe chasing the second payment. Anything touching payments has to be right first time, so this one is under review.' },
   ],
   videographer: [
-    { name: 'Shot list and run sheet builder', description: 'Build scene by scene shot lists with camera angles, timing and priorities. Publish them as a run sheet for the full crew on shoot day.' },
-    { name: 'Production brief builder', description: 'Prepare one shareable brief with call times, locations, contacts and logistics. Keep everyone working from the same source of truth before and during production.' },
-    { name: 'Revision round tracker', description: 'Track each revision cycle with timestamps and change notes so clients can see exactly what was updated. Enforce agreed revision limits without confusion.' },
-    { name: 'Music licensing log', description: 'Record every track used in a project, including licence type, source and expiry date. Get a clear compliance record before delivery.' },
-    { name: 'Project timeline tracker', description: 'Map pre production, production and post production stages with deadlines and owners. Monitor progress across projects and spot schedule risks early.' },
+    { name: 'Project timeline tracker', status: 'live', description: 'Move every job through stages you name yourself across pre production, production and post. See your whole slate and spot a schedule risk early. In your Projects board today.' },
+    { name: 'Shot list builder', status: 'live', description: 'Build scene by scene shot lists as checklists on the project, with whatever detail the job needs. Available in your project workspace today.' },
+    { name: 'Production brief and run sheet', status: 'planned', description: 'One shareable brief with call times, locations, contacts and logistics, published as a run sheet so the whole crew works from the same page on shoot day.' },
+    { name: 'Revision round tracker', status: 'planned', description: 'Track each revision cycle with timestamps and change notes, so clients can see what was updated and agreed revision limits hold without an argument.' },
+    { name: 'Music licensing log', status: 'planned', description: 'Record every track used on a project with licence type, source and expiry. A clear compliance record before anything is delivered.' },
   ],
   drone_pilot: [
-    { name: 'Flight log', description: 'Capture flight date, site, weather, altitude, aircraft and duration for every mission. Keep a complete operating history for reporting and audits.' },
-    { name: 'CASA compliance checklist', description: 'Run a pre flight checklist linked to each booking so no safety step is missed. Keep a saved compliance trail for every completed job.' },
-    { name: 'No-fly zone notes', description: 'Flag location restrictions against CASA no fly and controlled airspace zones during planning. Reduce on site surprises and avoid non compliant flights.' },
-    { name: 'Battery cycle tracker', description: 'Track charge cycles by battery and monitor pack health over time. Receive alerts when a battery is nearing replacement thresholds.' },
-    { name: 'Insurance expiry reminders', description: 'Store policy and registration expiries in your profile and receive reminders before they lapse. Stay job ready without last minute admin stress.' },
+    { name: 'Gear and battery register', status: 'live', description: 'Log every aircraft, controller and battery with serial numbers and values, track what the kit is worth for insurance, and check gear out to a job. In your Inventory today.' },
+    { name: 'Flight log', status: 'planned', description: 'Capture date, site, weather, altitude, aircraft and duration for every mission, and keep a complete operating history you can export.' },
+    { name: 'Pre flight checklist', status: 'planned', description: 'Run your own safety checklist against each booking so no step is missed, and keep the completed record attached to the job.' },
+    { name: 'Battery cycle tracker', status: 'planned', description: 'Count charge cycles per battery and watch pack health over time, with a nudge when one is due for replacement.' },
+    { name: 'Insurance and registration reminders', status: 'planned', description: 'Store policy and registration expiry dates and get reminded before they lapse, so you stay job ready without the last minute scramble.' },
+    { name: 'No-fly zone notes', status: 'exploring', description: 'Flag airspace restrictions during planning. Getting this wrong has real consequences for a pilot, so we will only build it if we can do it accurately. Always check CASA yourself.' },
   ],
   video_editor: [
-    { name: 'Timestamp feedback', description: 'Clients can leave comments directly on exact timecodes in your cut. You can jump to each note instantly and resolve feedback faster.' },
-    { name: 'Revision round tracker', description: 'Log every revision round and document what changed in each pass. Keep project scope clear and reduce disputes around extra edits.' },
-    { name: 'Edit status board', description: 'Move jobs through stages like rough cut, colour grade, sound mix, final and delivered. See workload and bottlenecks at a glance.' },
-    { name: 'Project file handover checklist', description: 'Run a final checklist for exports, project files, fonts and proxies before signoff. Ensure nothing is missed when handing over to clients or teams.' },
-    { name: 'Receive rough cut handoff from a Videographer', description: 'Accept rough cuts from Videographers on LensTrybe with source links and notes attached. Start editing immediately without chasing files across tools.' },
+    { name: 'Edit status board', status: 'live', description: 'Move jobs through stages you name yourself, rough cut to colour grade to sound mix to delivered, and see your workload and bottlenecks at a glance. In your Projects board today.' },
+    { name: 'Handover checklist', status: 'live', description: 'Keep a final checklist on the project for exports, project files, fonts and proxies, so nothing is missed at signoff. In your project workspace today.' },
+    { name: 'Revision round tracker', status: 'planned', description: 'Log every revision round and what changed in each pass, keeping scope clear and reducing arguments about extra edits.' },
+    { name: 'Receive rough cut handoff from a Videographer', status: 'planned', description: 'Accept rough cuts from Videographers on LensTrybe with source links and notes attached, so you can start editing without chasing files.' },
+    { name: 'Timestamp feedback', status: 'exploring', description: 'Clients leaving comments on exact timecodes in your cut. This needs proper video playback built into the platform, so it is an idea rather than a commitment.' },
   ],
   photo_editor: [
-    { name: 'Receive culled selects handoff from a Photographer', description: 'Receive curated selects from Photographers in one handoff with client instructions and references. Begin edits quickly with all required context in place.' },
-    { name: 'Batch job tracker', description: 'Track image counts, completion percentage and deadlines across active editing jobs. Prioritise work based on volume and due date.' },
-    { name: 'Turnaround time estimator', description: 'Estimate delivery dates automatically from image volume and your typical edit speed. Set realistic client expectations before work starts.' },
-    { name: 'Style reference board', description: 'Attach mood boards and visual references to each job for consistent results. Keep your look aligned with client direction throughout the edit.' },
-    { name: 'Retouching notes per image', description: 'Add precise retouching instructions to individual images instead of broad job level notes. Reduce ambiguity and avoid repeat revisions.' },
-    { name: 'Client approval workflow', description: 'Send edited sets for approval with a clear approve or request changes flow. Final delivery only proceeds once signoff is complete.' },
+    { name: 'Batch job tracker', status: 'live', description: 'Track every editing job through stages you name yourself, with deadlines and values, so you can prioritise by volume and due date. In your Projects board today.' },
+    { name: 'Receive culled selects from a Photographer', status: 'planned', description: 'Get curated selects in one handoff with client instructions and references attached, so you start with the context you need.' },
+    { name: 'Client approval workflow', status: 'planned', description: 'Send an edited set for approval with a clear approve or request changes flow, and only deliver once signoff is in.' },
+    { name: 'Turnaround time estimator', status: 'planned', description: 'Work out a delivery date from image volume and your usual edit speed, so you set an expectation you can actually meet.' },
+    { name: 'Style reference board', status: 'planned', description: 'Attach mood boards and visual references to a job so your look stays aligned with client direction the whole way through.' },
+    { name: 'Retouching notes per image', status: 'planned', description: 'Leave precise instructions on individual images instead of one note for the whole job, which cuts repeat revisions.' },
   ],
   social_media_manager: [
-    { name: 'Content calendar', description: 'Plan posts across channels in a single calendar view by client, platform and campaign. Keep scheduling organised across the entire month.' },
-    { name: 'Content approval workflow', description: 'Send draft content to clients for sign off before publishing. Track approvals and requested edits in one place.' },
-    { name: 'Platform performance dashboard', description: 'View follower growth, reach and engagement by client and platform. Spot trends quickly without switching between native apps.' },
-    { name: 'Caption library', description: 'Store high performing caption templates and reuse them across campaigns. Save time while keeping brand voice consistent.' },
-    { name: 'Monthly reporting card', description: 'Generate a clean monthly performance summary with key metrics and highlights. Share client ready updates without manual report building.' },
-    { name: 'Receive finished gallery handoff from a Photographer', description: 'Accept delivered galleries from Photographers directly on LensTrybe for content production. Move from shoot to posting without download and upload loops.' },
+    { name: 'Content calendar', status: 'live', description: 'Plan posts by client, platform and campaign in a board or month view, move them through Idea, Draft, Scheduled and Posted, and store captions and hashtags on each one. Assign posts to your team on Expert and Elite.' },
+    { name: 'Content ideas board', status: 'live', description: 'Park every idea as it comes to you with notes and platforms, then promote the good ones straight into the calendar. In your dashboard today.' },
+    { name: 'Caption library', status: 'planned', description: 'Save your best captions as reusable templates across clients and campaigns. Captions already save on each post, this makes them a library you can pull from.' },
+    { name: 'Content approval workflow', status: 'planned', description: 'Send drafts to the client for sign off before anything publishes, and track approvals and requested edits in one place.' },
+    { name: 'Monthly reporting card', status: 'planned', description: 'Generate a clean monthly summary with the metrics and highlights that matter, ready to send without building a report by hand.' },
+    { name: 'Receive finished gallery from a Photographer', status: 'planned', description: 'Accept delivered galleries from Photographers on LensTrybe and go straight to producing content, with no download and upload loop.' },
+    { name: 'Platform performance dashboard', status: 'exploring', description: 'Follower growth, reach and engagement by client and platform in one view. This depends on approval from Meta and TikTok, which is not ours to promise, so it stays an idea for now.' },
   ],
   hair_makeup_artist: [
-    { name: 'Look book builder', description: 'Build visual mood boards for each booking and share them with clients before the day. Confirm style expectations early and reduce last minute changes.' },
-    { name: 'Client skin and allergy profile', description: 'Save each client profile with skin type, sensitivities and product preferences. Reuse this information for future appointments and safer service.' },
-    { name: 'Product kit log', description: 'Record every product used to create each look, including shade and finish details. Recreate results accurately for follow up bookings.' },
-    { name: 'Trial vs day-of booking flow', description: 'Manage trial sessions and event day appointments as linked but separate workflows. Keep notes, timings and outcomes organised for both stages.' },
-    { name: 'Artist call time sheet', description: 'Coordinate multiple artists with clear call times and role assignments. Keep large weddings and productions running to schedule.' },
+    { name: 'Client records', status: 'live', description: 'Keep a record for every client with notes, contact details and booking history, so you walk into a repeat appointment knowing exactly what you did last time. In your CRM today.' },
+    { name: 'Look book builder', status: 'planned', description: 'Build a visual mood board for each booking and share it before the day, so the look is agreed early and nothing changes at the last minute.' },
+    { name: 'Skin and allergy profile', status: 'planned', description: 'Save skin type, sensitivities and product preferences against a client and carry them into every future appointment. Safer service, less asking twice.' },
+    { name: 'Product kit log', status: 'planned', description: 'Record every product used on a look, down to shade and finish, so you can recreate it exactly for a follow up booking.' },
+    { name: 'Trial and day-of booking flow', status: 'planned', description: 'Handle the trial and the event day as linked but separate appointments, keeping notes, timings and outcomes for both.' },
+    { name: 'Artist call time sheet', status: 'planned', description: 'Coordinate several artists with clear call times and roles, so a big wedding or production runs to schedule.' },
   ],
   ugc_creator: [
-    { name: 'Brand deal tracker', description: 'Track every active deal with deliverables, due dates and payment status. Keep your pipeline organised from brief to final invoice.' },
-    { name: 'Usage rights log', description: 'Record agreed usage windows, platforms and licensing terms for each brand deal. Check rights quickly before repurposing or reposting content.' },
-    { name: 'Rate card builder', description: 'Create a shareable rate card link with packages, inclusions and pricing tiers. Send professional quotes faster when brands enquire.' },
-    { name: 'Content brief builder', description: 'Capture campaign objectives, hooks, format requirements and CTAs in a structured brief. Generate a clear scope of work before production starts.' },
-    { name: 'Posting schedule tracker', description: 'Track whether each deliverable is live, scheduled or pending across ongoing deals. Stay on top of commitments and posting deadlines.' },
+    { name: 'Brand deal tracker', status: 'live', description: 'Track every deal through stages you name yourself, with the brand in your CRM, deliverable dates and deal value in one place. In your Projects board today.' },
+    { name: 'Rate card builder', status: 'planned', description: 'Build a shareable rate card link with packages, inclusions and pricing, so you answer a brand enquiry in one message.' },
+    { name: 'Usage rights log', status: 'planned', description: 'Record the agreed usage window, platforms and licensing for each deal, and check your rights before you repost or repurpose anything.' },
+    { name: 'Content brief builder', status: 'planned', description: 'Capture objectives, hooks, format requirements and calls to action in a structured brief, so scope is clear before you shoot.' },
+    { name: 'Posting schedule tracker', status: 'planned', description: 'See which deliverables are live, scheduled or still pending across every active deal, and stay on top of your commitments.' },
   ],
 }
+
+function sortByStatus(list) {
+  return [...list].sort((a, b) => STATUS_ORDER.indexOf(a.status) - STATUS_ORDER.indexOf(b.status))
+}
+
+const LIVE_COUNT = Object.values(SKILL_FEATURES).flat().filter((f) => f.status === 'live').length
 
 export default function UpcomingFeaturesPage() {
   const [selectedSkill, setSelectedSkill] = useState(null)
@@ -109,7 +160,7 @@ export default function UpcomingFeaturesPage() {
   }, [])
 
   const selectedSkillLabel = SKILLS.find((s) => s.key === selectedSkill)?.label
-  const selectedSkillFeatures = selectedSkill ? SKILL_FEATURES[selectedSkill] || [] : []
+  const selectedSkillFeatures = selectedSkill ? sortByStatus(SKILL_FEATURES[selectedSkill] || []) : []
 
   const set = (field, value) => setForm((prev) => ({ ...prev, [field]: value }))
 
@@ -123,8 +174,16 @@ export default function UpcomingFeaturesPage() {
     setError('')
     setLoading(true)
     try {
-      const { error: insertError } = await supabase.from('feature_requests').insert([form])
-      if (insertError) throw insertError
+      // Goes through submit_feature_request rather than a direct table insert, so the
+      // form is validated and rate limited server side. anon has no write access to
+      // feature_requests.
+      const { error: rpcError } = await supabase.rpc('submit_feature_request', {
+        p_business_name: form.business_name,
+        p_email: form.email,
+        p_skill: form.skill,
+        p_feature_request: form.feature_request,
+      })
+      if (rpcError) throw rpcError
       setSubmitted(true)
       setForm({ business_name: '', email: '', skill: '', feature_request: '' })
     } catch (err) {
@@ -134,6 +193,8 @@ export default function UpcomingFeaturesPage() {
     }
   }
 
+  const cardGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }
+
   return (
     <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
       <LiquidLensFilter />
@@ -142,10 +203,10 @@ export default function UpcomingFeaturesPage() {
         <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
       )}
       <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Upcoming Features</h1>
           <p style={{ margin: '14px auto 0', maxWidth: '720px', color: 'var(--text-secondary)', fontSize: '16px', ...TYPO.body }}>
-            See what is coming to LensTrybe and shape the future of the platform.
+            What is being built, what is planned, and what we are still thinking about. {LIVE_COUNT} of these are already in the platform today.
           </p>
           <LiquidPill
             primary
@@ -156,10 +217,35 @@ export default function UpcomingFeaturesPage() {
           </LiquidPill>
         </div>
 
+        <div style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: isMobile ? '16px' : '18px 20px', marginBottom: '40px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: isMobile ? '10px' : '12px 24px' }}>
+          {LEGEND.map((item) => (
+            <div key={item.key} style={{ display: 'flex', alignItems: 'baseline', gap: '10px' }}>
+              <StatusBadge status={item.key} />
+              <span style={{ color: 'var(--text-secondary)', fontSize: '13px', ...TYPO.body }}>{item.text}</span>
+            </div>
+          ))}
+        </div>
+
+        <section style={{ marginBottom: '56px' }}>
+          <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Coming to everyone</h2>
+          <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', ...TYPO.body }}>Whatever you shoot, these land for every creative on LensTrybe.</p>
+          <div style={cardGrid}>
+            {sortByStatus(PLATFORM_FEATURES).map((feature) => (
+              <div key={feature.name} style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '16px', ...TYPO.heading }}>{feature.name}</div>
+                  <StatusBadge status={feature.status} />
+                </div>
+                <div style={{ color: 'var(--text-secondary)', fontSize: '14px', ...TYPO.body }}>{feature.description}</div>
+              </div>
+            ))}
+          </div>
+        </section>
+
         {!selectedSkill ? (
           <section>
-            <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Browse by Skill</h2>
-            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Select your skill to see what is coming next.</p>
+            <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Browse by skill</h2>
+            <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Pick your skill to see what is coming for the way you work.</p>
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, minmax(0, 1fr))' : 'repeat(4, 1fr)', gap: '12px' }}>
               {SKILLS.map((skill) => (
                 <button
@@ -197,21 +283,19 @@ export default function UpcomingFeaturesPage() {
               ← Back
             </LiquidPill>
 
-            <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{selectedSkillLabel} upcoming features</h2>
+            <h2 style={{ fontSize: isMobile ? '28px' : '38px', margin: '0 0 10px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{selectedSkillLabel} tools</h2>
             <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>
               {LAUNCH_SKILLS.includes(selectedSkill)
-                ? 'Planned features for this skill category.'
-                : `${selectedSkillLabel}s join LensTrybe after launch. These are the tools we're planning for them.`}
+                ? 'What is in the platform today, and what comes next.'
+                : `${selectedSkillLabel}s join LensTrybe after launch. These are the tools being built for them, and some are already in the platform.`}
             </p>
 
-            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }}>
+            <div style={cardGrid}>
               {selectedSkillFeatures.map((feature) => (
                 <div key={feature.name} style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '20px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginBottom: '8px' }}>
                     <div style={{ fontSize: '16px', ...TYPO.heading }}>{feature.name}</div>
-                    <span style={{ borderRadius: '999px', padding: '4px 10px', fontSize: '11px', fontWeight: 700, color: '#1DB954', border: '1px solid rgba(29,185,84,0.35)', background: 'rgba(29,185,84,0.12)' }}>
-                      Coming Soon
-                    </span>
+                    <StatusBadge status={feature.status} />
                   </div>
                   <div style={{ color: 'var(--text-secondary)', fontSize: '14px', ...TYPO.body }}>
                     {feature.description}
@@ -224,12 +308,12 @@ export default function UpcomingFeaturesPage() {
 
         <section id="request-feature-form" style={{ margin: '64px auto 0', maxWidth: '640px' }}>
           <h2 style={{ margin: 0, fontSize: isMobile ? '28px' : '36px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>Request a Feature</h2>
-          <p style={{ margin: '10px 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Tell us what would help your workflow most.</p>
+          <p style={{ margin: '10px 0 24px', color: 'var(--text-secondary)', ...TYPO.body }}>Tell us what would help your workflow most. We read every one.</p>
 
           <form onSubmit={handleSubmit} style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
             {error ? <div style={{ color: '#c11f5a', marginBottom: '12px', fontSize: '13px', ...TYPO.body }}>{error}</div> : null}
             {submitted ? (
-              <div style={{ marginBottom: '12px', color: '#1DB954', fontSize: '13px', ...TYPO.body }}>Thanks. Your feature request has been submitted.</div>
+              <div style={{ marginBottom: '12px', color: '#0E7C3A', fontSize: '13px', ...TYPO.body }}>Thanks. Your feature request has been submitted.</div>
             ) : null}
 
             <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
@@ -238,6 +322,7 @@ export default function UpcomingFeaturesPage() {
                 placeholder="Business name"
                 value={form.business_name}
                 onChange={(e) => set('business_name', e.target.value)}
+                maxLength={200}
                 style={{ width: '100%', padding: '13px 14px', ...LIQUID_FIELD }}
               />
               <input
@@ -245,6 +330,7 @@ export default function UpcomingFeaturesPage() {
                 placeholder="Email"
                 value={form.email}
                 onChange={(e) => set('email', e.target.value)}
+                maxLength={320}
                 style={{ width: '100%', padding: '13px 14px', ...LIQUID_FIELD }}
               />
             </div>
@@ -266,6 +352,7 @@ export default function UpcomingFeaturesPage() {
                 value={form.feature_request}
                 onChange={(e) => set('feature_request', e.target.value)}
                 rows={5}
+                maxLength={3000}
                 style={{ width: '100%', padding: '13px 14px', resize: 'vertical', ...LIQUID_FIELD }}
               />
             </div>
