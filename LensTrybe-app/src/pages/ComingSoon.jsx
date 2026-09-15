@@ -4,7 +4,6 @@ import { LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD, GLASS_CARD_GREEN } from 
 
 // ── Launch config ───────────────────────────────────────────────
 const LAUNCH = new Date('2026-10-01T00:00:00+10:00')
-const FOUNDING_SPOTS = 250
 const SITE = 'https://lenstrybe.com'
 
 // Brand tokens (mirror the homepage hero)
@@ -201,7 +200,6 @@ export default function ComingSoon() {
   }, [])
 
   const creativesJoined = stats?.creatives ?? null
-  const spotsLeft = creativesJoined == null ? null : Math.max(0, FOUNDING_SPOTS - creativesJoined)
 
   async function submit(e) {
     if (e) e.preventDefault()
@@ -376,10 +374,10 @@ export default function ComingSoon() {
 
               {/* founding banner: under the sign-up form */}
               <div style={{ ...GLASS_CARD_GREEN, width: '100%', maxWidth: 460, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', borderRadius: 14, padding: '13px 16px' }}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY }}>First {FOUNDING_SPOTS} creatives get 3 months free</span>
-                {spotsLeft != null && (
+                <span style={{ fontSize: 14, fontWeight: 600, color: TEXT_PRIMARY }}>Three months free for every creative who joins</span>
+                {creativesJoined != null && creativesJoined > 0 && (
                   <span style={{ fontSize: 12.5, fontWeight: 700, color: '#0f7a37', background: 'rgba(29,185,84,0.16)', borderRadius: 100, padding: '5px 12px' }}>
-                    {spotsLeft > 0 ? `${spotsLeft} left` : 'Full'}
+                    {creativesJoined} joined
                   </span>
                 )}
               </div>
@@ -422,7 +420,7 @@ function SuccessView({ result }) {
     ? 'Three months free when we open on October 1st.'
     : isClient
       ? "We'll let you know the moment you can start booking Australian creatives."
-      : "You'll be first through the doors on October 1st."
+      : 'Three months free when we open on October 1st.'
 
   return (
     <div style={{ textAlign: 'center', padding: '8px 4px 6px' }}>
