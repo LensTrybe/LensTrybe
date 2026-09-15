@@ -139,8 +139,24 @@ function MosaicColumn({ index }) {
   const cells = Array.from({ length: 6 }).flatMap(() => rotated);   // repeat to fill tall fields
   let g = index * 2;
   return (
-    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', willChange: 'transform', animation: `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` }}>
+    // The clipper is promoted too. Safari clipping a MOVING composited child against a
+    // NON-composited ancestor is what makes bands of the column flash: it re-rasterises
+    // the clip as the layer travels, and a band not painted in time shows blank for a
+    // frame. Eight columns drifting at different speeds means those bands cross the
+    // viewport at unrelated moments, which reads as random rows flickering.
+    // translateZ(0) promotes it, contain:paint says nothing escapes this box.
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)', contain: 'paint' }}>
+      <div
+        className="lt-tile-drift"
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          willChange: 'transform',
+          // Classic Safari flicker mitigation on an animated composited layer.
+          backfaceVisibility: 'hidden',
+          animation: `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite`,
+        }}
+      >
         {cells.map((c, i) => {
           if (c === 's') {
             const bg = TILE_GRADS[g++ % TILE_GRADS.length];
@@ -839,6 +855,9 @@ export default function HomePage() {
         @keyframes ltHeroUp { from { transform: translateY(0); } to { transform: translateY(-${TILE_LOOP}px); } }
         @keyframes ltHeroDown { from { transform: translateY(-${TILE_LOOP}px); } to { transform: translateY(0); } }
         @keyframes spin { to { transform: rotate(360deg); } }
+        @media (prefers-reduced-motion: reduce) {
+          .lt-tile-drift { animation: none !important; will-change: auto !important; }
+        }
         * { box-sizing: border-box; }
       `}</style>
     </div>

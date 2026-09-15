@@ -2,7 +2,11 @@ import { useState, useEffect } from 'react'
 
 /* Full-bleed drifting pastel mosaic: the same field used on the hero.
    Drop it as an absolute background inside a position:relative; overflow:hidden
-   container, then put page content above it (zIndex >= 2). */
+   container, then put page content above it (zIndex >= 2).
+
+   NOTE: HomePage.jsx carries its own copy of this mosaic (MosaicColumn +
+   DriftingTiles). The two have drifted apart, so a change here needs the same
+   change there. Worth merging after launch, not before. */
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
@@ -24,7 +28,21 @@ const TILE_GAP = 10
 const TILE_SINGLE_H = 210
 const TILE_PAIR_H = 100
 const TILE_PATTERN = ['s', 'p', 's', 'p', 'p', 's']
-const TILE_REPEATS = 10
+
+// How many times the pattern repeats down a column, which decides how tall the
+// animated layer is.
+//
+// This was 10, giving a 9,900px column. Eight of those is about 19 megapixels of
+// compositing surface that Safari has to hold and repaint continuously, and when it
+// runs past its layer budget it drops bands and re-rasterises them, which shows up as
+// random horizontal rows flashing.
+//
+// Four is all that is needed. The pattern loops seamlessly every TILE_LOOP and the
+// animation only ever travels TILE_LOOP, so a column just has to be taller than its
+// container plus one loop. The animated field lives in a position:fixed wrapper, so its
+// container is never taller than the viewport: 4 repeats is 3,960px against a worst case
+// of roughly 1,600px of viewport plus 990px of loop. No visual change, 60% less layer.
+const TILE_REPEATS = 4
 const TILE_LOOP = TILE_PATTERN.reduce((sum, c) => sum + (c === 's' ? TILE_SINGLE_H : TILE_PAIR_H) + TILE_GAP, 0)
 
 function MosaicColumn({ index, animated, twinkle, grads }) {
@@ -42,9 +60,25 @@ function MosaicColumn({ index, animated, twinkle, grads }) {
       ? { animation: `ltTwinkle ${(2.6 + (n % 6) * 0.5).toFixed(2)}s ease-in-out ${((n * 0.47) % 4).toFixed(2)}s infinite`, willChange: 'opacity' }
       : null
   }
+  const moving = animated && !twinkle
   return (
-    <div style={{ position: 'relative', height: '100%', overflow: 'hidden' }}>
-      <div style={{ display: 'flex', flexDirection: 'column', willChange: animated && !twinkle ? 'transform' : 'auto', animation: animated && !twinkle ? `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` : 'none' }}>
+    // The clipper is promoted to its own layer as well. Safari clipping a MOVING
+    // composited child against a NON-composited ancestor is what makes bands of the
+    // column flash: it re-rasterises the clip as the layer travels, and a band that is
+    // not painted in time shows blank for a frame. translateZ(0) promotes it and
+    // contain:paint tells the engine nothing escapes this box, so the clip is cheap.
+    <div style={{ position: 'relative', height: '100%', overflow: 'hidden', ...(moving ? { willChange: 'transform', transform: 'translateZ(0)', contain: 'paint' } : null) }}>
+      <div
+        className={moving ? 'lt-tile-drift' : undefined}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          willChange: moving ? 'transform' : 'auto',
+          // Classic Safari flicker mitigation on an animated composited layer.
+          backfaceVisibility: 'hidden',
+          animation: moving ? `${dir === 'up' ? 'ltHeroUp' : 'ltHeroDown'} ${dur}s linear infinite` : 'none',
+        }}
+      >
         {cells.map((c, i) => {
           if (c === 's') {
             const bg = grads[g++ % grads.length]
@@ -68,7 +102,13 @@ export default function TileField({ animated = true, opacity = 1, twinkle = fals
   const grads = dark ? TILE_GRADS_DARK : TILE_GRADS
   const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
   useEffect(() => {
-    function onResize() { setColCount(Math.max(6, Math.ceil(window.innerWidth / 240))) }
+    // Only set state when the count actually changes. Writing the same number on every
+    // resize event would re-render the whole field and restart every column animation,
+    // which reads as the background jumping.
+    function onResize() {
+      const next = Math.max(6, Math.ceil(window.innerWidth / 240))
+      setColCount((prev) => (prev === next ? prev : next))
+    }
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
@@ -84,6 +124,9 @@ export default function TileField({ animated = true, opacity = 1, twinkle = fals
           0%, 30% { opacity: 0.2; filter: saturate(0.55) brightness(1.1); }
           50% { opacity: 1; filter: saturate(1.75) brightness(0.9); }
           70%, 100% { opacity: 0.2; filter: saturate(0.55) brightness(1.1); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .lt-tile-drift { animation: none !important; will-change: auto !important; }
         }
       `}</style>
     </>
