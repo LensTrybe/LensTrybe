@@ -68,7 +68,7 @@ function emailHtml(title: string, body: string, ctaLabel: string | null, ctaUrl:
 <body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-<tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
+<tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
 <tr><td style="padding:22px 36px 4px;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">From the LensTrybe team</div>
 <h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:800;color:#fff;">${esc(title)}</h1>

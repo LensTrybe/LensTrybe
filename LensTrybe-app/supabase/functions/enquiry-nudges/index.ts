@@ -61,7 +61,7 @@ function nudgeEmail(businessName: string, clientName: string, subject: string, w
   <span style="display:none;max-height:0;overflow:hidden;opacity:0;color:#0a0a0f;">${esc(clientName || 'A client')} is still waiting to hear back from you</span>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;"><tr><td align="center">
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;overflow:hidden;">
-  <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};letter-spacing:-0.02em;">LensTrybe</div></td></tr>
+  <tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
   <tr><td style="padding:22px 36px 8px;">
   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${GREEN};margin-bottom:10px;">Waiting on you</div>
   <h1 style="margin:0 0 10px;font-size:23px;line-height:1.25;font-weight:800;color:#ffffff;">${esc(clientName || 'A client')} is still waiting</h1>
@@ -76,7 +76,7 @@ function nudgeEmail(businessName: string, clientName: string, subject: string, w
   </td></tr>
   <tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(messagesUrl)}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">Reply now</a></td></tr></table></td></tr>
   <tr><td style="padding:18px 36px 0;"><p style="margin:0;color:#6a6a78;font-size:12px;line-height:1.6;">You are getting this once for this enquiry, not every day.</p></td></tr>
-  <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;"><div style="font-size:13px;font-weight:700;color:#ffffff;">LensTrybe</div><div style="font-size:12px;color:#6a6a78;margin-top:2px;">Connect. Capture. Create.</div><a href="${SITE}" style="font-size:12px;color:${GREEN};text-decoration:none;">lenstrybe.com</a></div></td></tr>
+  <tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:18px;"><div style="font-size:12px;font-weight:400;letter-spacing:0.24em;color:#ffffff;">LENSTRYBE</div><div style="font-size:12px;color:#6a6a78;margin-top:2px;">Connect. Capture. Create.</div><a href="${SITE}" style="font-size:12px;color:${GREEN};text-decoration:none;">lenstrybe.com</a></div></td></tr>
   </table></td></tr></table></body></html>`
 }
 

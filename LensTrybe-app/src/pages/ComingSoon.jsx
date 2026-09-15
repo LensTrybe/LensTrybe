@@ -435,7 +435,7 @@ function SuccessView({ result }) {
         </p>
       </div>
       <p style={{ margin: 0, fontSize: 13, color: TEXT_MUTED }}>
-        Follow <a href="https://instagram.com/lenstrybe" target="_blank" rel="noopener noreferrer" style={{ color: GREEN, fontWeight: 600, textDecoration: 'none' }}>@lenstrybe</a> to keep up with our progress.
+        Follow <a href="https://instagram.com/lenstrybe" target="_blank" rel="noopener noreferrer" style={{ color: GREEN, fontWeight: 600, textDecoration: 'none' }}>@LensTrybe</a> to keep up with our progress.
       </p>
     </div>
   )

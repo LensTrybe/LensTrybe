@@ -97,6 +97,7 @@ serve(async (req) => {
     if (RESEND && isEmail(prof.business_email)) {
       const when = whenLabel(proposedDate, proposedTime)
       const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:40px;color:#111">
+        <div style="margin-bottom:28px"><a href="https://lenstrybe.com" style="text-decoration:none"><img src="https://lenstrybe.com/email-logo.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px" /></a></div>
         <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1DB954;margin-bottom:8px">New call request</div>
         <div style="font-size:22px;font-weight:800;margin-bottom:6px">${esc(clientName || 'A client')} wants a phone call</div>
         <div style="font-size:14px;color:#555;margin-bottom:20px">You have a new phone call request on LensTrybe.</div>

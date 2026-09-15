@@ -57,7 +57,7 @@ function reminderEmail(clientName, businessName, title, url, expiryLabel) {
   return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
   <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
   <table role="presentation" width="100%" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-  <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
+  <tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
   <tr><td style="padding:22px 36px 8px;">
   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">Your gallery is expiring soon</div>
   <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(clientName || 'there')}, download your files before they go</h1>
@@ -72,7 +72,7 @@ function purgeWarningEmail(businessName, title, clientName, purgeLabel) {
   return `<!DOCTYPE html><html><body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
   <table role="presentation" width="100%" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
   <table role="presentation" width="100%" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-  <tr><td style="padding:32px 36px 0;"><div style="font-size:20px;font-weight:800;color:${GREEN};">LensTrybe</div></td></tr>
+  <tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
   <tr><td style="padding:22px 36px 8px;">
   <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#f59e0b;margin-bottom:10px;">Gallery files being removed</div>
   <h1 style="margin:0 0 10px;font-size:22px;font-weight:800;color:#fff;">Hi ${esc(businessName || 'there')}, one of your galleries is about to be cleared</h1>

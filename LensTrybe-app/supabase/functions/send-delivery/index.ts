@@ -67,7 +67,7 @@ serve(async (req) => {
 <body style="margin:0;background:#0a0a0f;font-family:Inter,-apple-system,Segoe UI,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:18px;overflow:hidden;">
-  <tr><td style="padding:32px 36px 0;"><div style="font-size:21px;font-weight:800;letter-spacing:-0.02em;color:${GREEN};">LensTrybe</div></td></tr>
+  <tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
   <tr><td style="padding:22px 36px 8px;">
     <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.12em;color:${GREEN};margin-bottom:12px;">Your gallery is ready</div>
     <h1 style="margin:0 0 12px;font-size:24px;font-weight:800;letter-spacing:-0.02em;color:#ffffff;line-height:1.25;">Hi ${clientName}, your files are ready</h1>

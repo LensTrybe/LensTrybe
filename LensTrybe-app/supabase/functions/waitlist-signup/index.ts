@@ -10,6 +10,15 @@ const corsHeaders = {
 const SITE = 'https://lenstrybe.com'
 const NOTIFY_TO = 'connect@lenstrybe.com'
 const IG = 'https://instagram.com/lenstrybe'
+const LOGO = 'https://lenstrybe.com/email-logo.png'
+
+// The launch instant. Also lives in src/App.jsx and src/pages/ComingSoon.jsx.
+// Edge Functions deploy separately from the app so the three cannot share a
+// constant. Move the date and you have to move it in all three.
+//
+// +10:00 is deliberate. Queensland has no daylight saving, so AEST is AEST all
+// year, and the southern states do not start theirs until 4 October 2026.
+const LAUNCH = Date.parse('2026-10-01T00:00:00+10:00')
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -30,13 +39,22 @@ function confirmationHtml(opts: { audience: string; refLink: string; unsubscribe
   const { audience, refLink, unsubscribeUrl } = opts
   const green = '#1DB954'
   const heading = "You're on the list."
+
+  // This email goes out either side of launch. Before 1 October it reaches people
+  // joining from the coming soon page, after it, people in states we have not
+  // opened in yet. Telling the first group we are already live was simply untrue,
+  // so the copy reads the clock instead of being written for one of the two.
+  const live = Date.now() >= LAUNCH
+  const where = live
+    ? `LensTrybe is live across South East Queensland and rolling out across Australia city by city.`
+    : `LensTrybe opens on 1 October, starting in South East Queensland and rolling out across Australia city by city.`
   const body = audience === 'client'
-    ? `LensTrybe is live in Brisbane and South East Queensland, and rolling out across Australia city by city. We'll let you know the moment you can book creatives in your area.`
-    : `LensTrybe is live in Brisbane and South East Queensland, and rolling out across Australia city by city. We'll let you know the moment we open in your area. No commissions, ever. Keep 100% of what you earn.`
+    ? `${where} We'll let you know the moment you can book creatives in your area.`
+    : `${where} We'll let you know the moment we open in your area. Your first three months are free, and there are no commissions, ever. You keep 100% of what you earn.`
   const shareBlock = audience === 'creative'
     ? `\n      <div style=\"background:#f6f8f6;border:1px solid #e5efe8;border-radius:12px;padding:20px 22px;margin:8px 0 4px\">\n        <div style=\"font-size:13px;color:#4b5a50;margin-bottom:10px\">Want to help bring LensTrybe to your city sooner? Share your link.</div>\n        <a href=\"${refLink}\" style=\"font-size:14px;color:${green};font-weight:600;text-decoration:none;word-break:break-all\">${refLink}</a>\n      </div>`
     : ''
-  return `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n<body style=\"margin:0;background:#f4f5f4;font-family:Arial,Helvetica,sans-serif;color:#14111a\">\n  <div style=\"max-width:520px;margin:0 auto;padding:40px 24px\">\n    <div style=\"font-size:20px;font-weight:800;letter-spacing:-0.3px;margin-bottom:28px\">Lens<span style=\"color:${green}\">Trybe</span></div>\n    <div style=\"background:#ffffff;border:1px solid #ececec;border-radius:16px;padding:32px 28px\">\n      <div style=\"display:inline-block;font-size:12px;font-weight:600;color:${green};background:rgba(29,185,84,0.1);border-radius:100px;padding:5px 12px;margin-bottom:18px\">Now live in Brisbane · South East Queensland</div>\n      <h1 style=\"font-size:24px;line-height:1.25;margin:0 0 14px;font-weight:800;color:#14111a\">${heading}</h1>\n      <p style=\"font-size:15px;line-height:1.65;color:#4b4a57;margin:0 0 20px\">${body}</p>\n      ${shareBlock}\n    </div>\n    <p style=\"font-size:13px;color:#4b4a57;text-align:center;margin:22px 0 6px\">Follow <a href=\"${IG}\" style=\"color:${green};font-weight:600;text-decoration:none\">@lenstrybe</a> to keep up with our progress.</p>\n    <p style=\"font-size:12px;color:#9a99a5;text-align:center;margin:8px 0 6px\">No spam. ${unsubscribeUrl ? `<a href=\"${unsubscribeUrl}\" style=\"color:#9a99a5;text-decoration:underline\">Unsubscribe</a> any time.` : 'Unsubscribe any time.'}</p>\n    <p style=\"font-size:12px;color:#b7b6c0;text-align:center;margin:0\">The LensTrybe Team</p>\n  </div>\n</body></html>`
+  return `<!DOCTYPE html>\n<html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>\n<body style=\"margin:0;background:#f4f5f4;font-family:Arial,Helvetica,sans-serif;color:#14111a\">\n  <div style=\"max-width:520px;margin:0 auto;padding:40px 24px\">\n    <div style=\"margin-bottom:28px\"><a href=\"${SITE}\" style=\"text-decoration:none\"><img src=\"${LOGO}\" width=\"180\" height=\"38\" alt=\"LensTrybe\" style=\"display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px\" /></a></div>\n    <div style=\"background:#ffffff;border:1px solid #ececec;border-radius:16px;padding:32px 28px\">\n      <div style=\"display:inline-block;font-size:12px;font-weight:600;color:${green};background:rgba(29,185,84,0.1);border-radius:100px;padding:5px 12px;margin-bottom:18px\">${live ? 'Live in South East Queensland' : 'Opening 1 October 2026'}</div>\n      <h1 style=\"font-size:24px;line-height:1.25;margin:0 0 14px;font-weight:800;color:#14111a\">${heading}</h1>\n      <p style=\"font-size:15px;line-height:1.65;color:#4b4a57;margin:0 0 20px\">${body}</p>\n      ${shareBlock}\n    </div>\n    <p style=\"font-size:13px;color:#4b4a57;text-align:center;margin:22px 0 6px\">Follow <a href=\"${IG}\" style=\"color:${green};font-weight:600;text-decoration:none\">@LensTrybe</a> to keep up with our progress.</p>\n    <p style=\"font-size:12px;color:#9a99a5;text-align:center;margin:8px 0 6px\">No spam. ${unsubscribeUrl ? `<a href=\"${unsubscribeUrl}\" style=\"color:#9a99a5;text-decoration:underline\">Unsubscribe</a> any time.` : 'Unsubscribe any time.'}</p>\n    <p style=\"font-size:12px;color:#b7b6c0;text-align:center;margin:0\">The LensTrybe Team</p>\n  </div>\n</body></html>`
 }
 
 function notifyHtml(opts: { email: string; audience: string; creativeType: string | null; city: string | null; state: string | null; referredBy: string | null }) {

@@ -158,7 +158,7 @@ serve(async (req) => {
 
     const emailBody = `
       <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;background:#080810;color:#fff;padding:40px 32px;border-radius:12px">
-        <div style="margin-bottom:24px"><span style="font-size:22px;font-weight:700;color:#1DB954">LensTrybe</span></div>
+        <div style="margin-bottom:24px"><a href="https://lenstrybe.com" style="text-decoration:none"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px" /></a></div>
         <h2 style="font-size:20px;font-weight:600;color:#fff;margin:0 0 8px">You have a new contract</h2>
         <p style="color:#888;font-size:14px;margin:0 0 24px">
           <strong style="color:#fff">${esc(profile.business_name || 'Your creative')}</strong> has sent you a contract${contract.project_name ? ` for <strong style="color:#fff">${esc(contract.project_name)}</strong>` : ''}.

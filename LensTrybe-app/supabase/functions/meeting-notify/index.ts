@@ -68,6 +68,7 @@ serve(async (req) => {
     if (kind === 'confirmed') {
       subject = `Your ${isPhone ? 'call' : 'meeting'} with ${hostName} is confirmed`
       html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:40px;color:#111">
+        <div style="margin-bottom:28px"><a href="https://lenstrybe.com" style="text-decoration:none"><img src="https://lenstrybe.com/email-logo.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px" /></a></div>
         <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1DB954;margin-bottom:8px">Confirmed</div>
         <div style="font-size:22px;font-weight:800;margin-bottom:6px">You’re booked in with ${esc(hostName)}</div>
         <div style="font-size:14px;color:#555;margin-bottom:20px">Your ${isPhone ? 'phone call' : 'meeting'} is confirmed for the time below.</div>
@@ -81,6 +82,7 @@ serve(async (req) => {
     } else {
       subject = `Update on your ${isPhone ? 'call' : 'meeting'} request`
       html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:40px;color:#111">
+        <div style="margin-bottom:28px"><a href="https://lenstrybe.com" style="text-decoration:none"><img src="https://lenstrybe.com/email-logo.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px" /></a></div>
         <div style="font-size:22px;font-weight:800;margin-bottom:6px">About your request with ${esc(hostName)}</div>
         <div style="font-size:14px;color:#555;margin-bottom:20px">Unfortunately ${esc(hostName)} isn’t able to make the time you requested. Feel free to reply with another time that suits you and they’ll do their best to fit you in.</div>
         <div style="font-size:13px;color:#777">Reply to this email to reach ${esc(hostName)} directly.</div>
