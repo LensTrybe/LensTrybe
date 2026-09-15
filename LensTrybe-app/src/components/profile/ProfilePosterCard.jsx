@@ -2,6 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { tierHas, lowestTierWith } from '../../lib/tierFeatures'
+import {
+  moderateText,
+  moderateImage,
+  MODERATION_BLOCKED_USER_MESSAGE,
+  PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
+} from '../../lib/moderateContent'
 
 // The promotional poster an Expert or Elite creative shows the first time a client opens
 // their public profile. A picture, or words, or both, and optionally a button that drops the
@@ -134,19 +140,35 @@ export default function ProfilePosterCard({ userId, tier }) {
     if (file.size > MAX_IMAGE_BYTES) { setError('That image is over 5MB. Try a smaller one.'); return }
 
     setUploading(true)
-    const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-    const path = `${userId}/poster-${Date.now()}.${ext}`
-    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })
-    setUploading(false)
-    if (upErr) { setError('That did not upload. Please try again.'); return }
+    try {
+      // Same check the portfolio and avatar uploads run. A poster is the first thing a
+      // client sees on a profile, so it should not be the one upload that skips it.
+      const check = await moderateImage(file)
+      if (check?.blocked) {
+        setError(PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE)
+        if (fileRef.current) fileRef.current.value = ''
+        return
+      }
+      if (check?.flagged) console.warn('[moderateContent] Poster image flagged (upload allowed)', check?.reason ?? '')
 
-    // Clear the old file rather than leaving it sitting in storage forever.
-    const previous = form.image_path
-    field('image_path', path)
-    if (previous && previous !== path) {
-      supabase.storage.from(BUCKET).remove([previous]).catch(() => { /* best effort */ })
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+      const path = `${userId}/poster-${Date.now()}.${ext}`
+      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })
+      if (upErr) { setError('That did not upload. Please try again.'); return }
+
+      // Clear the old file rather than leaving it sitting in storage forever.
+      const previous = form.image_path
+      field('image_path', path)
+      if (previous && previous !== path) {
+        supabase.storage.from(BUCKET).remove([previous]).catch(() => { /* best effort */ })
+      }
+      if (fileRef.current) fileRef.current.value = ''
+    } catch (err) {
+      setError(err?.message || 'Could not check that image. Please try again.')
+      if (fileRef.current) fileRef.current.value = ''
+    } finally {
+      setUploading(false)
     }
-    if (fileRef.current) fileRef.current.value = ''
   }
 
   async function removeImage() {
@@ -165,6 +187,27 @@ export default function ProfilePosterCard({ userId, tier }) {
       return
     }
     setSaving(true)
+
+    // Heading, body and button label all end up in front of a client, so all three go
+    // through the same check the rest of the app uses. One call, because the checker
+    // works on a blob of text and three round trips would only slow the save down.
+    const words = [form.heading, form.body, form.cta_enabled ? form.cta_label : '']
+      .map((s) => (s || '').trim()).filter(Boolean).join('\n')
+    if (words) {
+      try {
+        const check = await moderateText(words)
+        if (check?.blocked) {
+          setSaving(false)
+          setError(MODERATION_BLOCKED_USER_MESSAGE)
+          return
+        }
+        if (check?.flagged) console.warn('[moderateContent] Poster text flagged (save allowed)', check?.reason ?? '')
+      } catch {
+        // The checker being unreachable should not stop someone editing their own
+        // poster. The image check above is the one that matters most, and it fails loud.
+      }
+    }
+
     const { error: saveErr } = await supabase.from('profile_posters').upsert({
       creative_id: userId,
       enabled: form.enabled,
