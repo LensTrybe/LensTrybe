@@ -129,32 +129,40 @@ serve(async (req) => {
 
     const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
     if (RESEND_API_KEY) {
-      try {
-        await fetch('https://api.resend.com/emails', {
+      // These two Resend calls used to be awaited before responding, which left a
+      // visitor watching a "Sending" button for about eight seconds on a form whose
+      // entire job is to be quick. Measured, not guessed.
+      //
+      // The signup row is already written by this point, so nothing the visitor cares
+      // about depends on these. They now run as a background task and the response
+      // goes out immediately. waitUntil keeps the worker alive long enough to finish
+      // them, so nothing is dropped.
+      const send = (body: Record<string, unknown>) =>
+        fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'LensTrybe <noreply@mail.lenstrybe.com>',
-            to: email,
-            subject: "You're on the LensTrybe list",
-            html: confirmationHtml({ audience, refLink, unsubscribeUrl }),
-            ...(unsubscribeUrl ? { headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } } : {}),
-          }),
-        })
-      } catch (_e) { /* ignore */ }
-      try {
-        await fetch('https://api.resend.com/emails', {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            from: 'LensTrybe Waitlist <noreply@mail.lenstrybe.com>',
-            to: NOTIFY_TO,
-            reply_to: email,
-            subject: `New waitlist signup: ${audience === 'creative' ? 'creative' : 'client'}${city ? ` (${city})` : state ? ` (${state})` : ''}`,
-            html: notifyHtml({ email, audience, creativeType, city, state, referredBy }),
-          }),
-        })
-      } catch (_e) { /* ignore */ }
+          body: JSON.stringify(body),
+        }).catch((e) => console.error('waitlist: send failed', e instanceof Error ? e.message : String(e)))
+
+      const emails = Promise.all([
+        send({
+          from: 'LensTrybe <noreply@mail.lenstrybe.com>',
+          to: email,
+          subject: "You're on the LensTrybe list",
+          html: confirmationHtml({ audience, refLink, unsubscribeUrl }),
+          ...(unsubscribeUrl ? { headers: { 'List-Unsubscribe': `<${unsubscribeUrl}>` } } : {}),
+        }),
+        send({
+          from: 'LensTrybe Waitlist <noreply@mail.lenstrybe.com>',
+          to: NOTIFY_TO,
+          reply_to: email,
+          subject: `New waitlist signup: ${audience === 'creative' ? 'creative' : 'client'}${city ? ` (${city})` : state ? ` (${state})` : ''}`,
+          html: notifyHtml({ email, audience, creativeType, city, state, referredBy }),
+        }),
+      ])
+
+      const rt = (globalThis as { EdgeRuntime?: { waitUntil?: (p: Promise<unknown>) => void } }).EdgeRuntime
+      if (rt?.waitUntil) rt.waitUntil(emails)
     }
 
     return json({ ok: true, audience, position, referralCode })

@@ -19,6 +19,9 @@ const CATEGORIES = [
 const SEQ_REGIONS = ['Sunshine Coast', 'Moreton Bay', 'Brisbane', 'Ipswich', 'Logan', 'Redland Bay', 'Gold Coast'];
 // Categories live at launch; the rest come as we grow.
 const LAUNCH_CATEGORIES = ['Photographer', 'Videographer'];
+// Everywhere we are not open yet. The launch zone is South East Queensland, so for
+// most of the country this is how they tell us where to go next.
+const AU_STATES = ['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT'];
 
 const IconCamera = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>);
 const IconVideo = () => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/><line x1="2" y1="7" x2="7" y2="7"/><line x1="2" y1="17" x2="7" y2="17"/><line x1="17" y1="17" x2="22" y2="17"/><line x1="17" y1="7" x2="22" y2="7"/></svg>);
@@ -220,6 +223,122 @@ function LiquidPill({ onClick, children, primary, type = 'button', style }) {
           : LIQUID_GLASS.boxShadow,
         ...style,
       }}>{children}</button>
+  );
+}
+
+/**
+ * The hero's quiet second action.
+ *
+ * At launch the search covers South East Queensland and two creative types, so a good
+ * share of first time visitors will search and find nothing. This catches where they
+ * are and what they were after, rather than letting them leave.
+ *
+ * Collapsed to a single line on purpose. The hero has one job, the search. A second
+ * open form beside it makes a visitor choose between two boxes instead of using
+ * either, so this only becomes a form once someone has said it applies to them.
+ */
+function HeroWaitlist({ isMobile }) {
+  const [open, setOpen] = useState(false);
+  const [audience, setAudience] = useState('client');
+  const [email, setEmail] = useState('');
+  const [stateVal, setStateVal] = useState('');
+  const [craft, setCraft] = useState('');
+  const [status, setStatus] = useState('idle');
+  const [error, setError] = useState('');
+  const hp = useRef(null);
+
+  async function submit(e) {
+    e.preventDefault();
+    if (status === 'loading') return;
+    const clean = email.trim();
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clean)) { setError('Enter a valid email address.'); return; }
+    if (!stateVal) { setError('Pick your state, so we know where to open next.'); return; }
+    setError(''); setStatus('loading');
+    try {
+      const { data, error: fnErr } = await supabase.functions.invoke('waitlist-signup', {
+        body: {
+          email: clean, audience,
+          creative_type: audience === 'creative' ? (craft || null) : null,
+          state: stateVal, referred_by: null,
+          website: hp.current?.value || '',
+        },
+      });
+      if (fnErr || (data && data.error)) {
+        setError((data && data.error) || 'Something went wrong. Try again.');
+        setStatus('idle'); return;
+      }
+      setStatus('done');
+    } catch {
+      setError('Something went wrong. Try again.'); setStatus('idle');
+    }
+  }
+
+  if (status === 'done') {
+    return (
+      <div style={{ width: '100%', maxWidth: '660px', padding: '13px 16px', borderRadius: '13px',
+        background: 'rgba(29,185,84,0.10)', border: '1px solid rgba(29,185,84,0.28)',
+        fontSize: '13.5px', color: TEXT_PRIMARY, textAlign: 'left', position: 'relative', zIndex: 1 }}>
+        Thanks. We will tell you the moment LensTrybe opens in {stateVal}.
+      </div>
+    );
+  }
+
+  if (!open) {
+    return (
+      <button type="button" onClick={() => setOpen(true)}
+        style={{ width: '100%', maxWidth: '660px', background: 'none', border: 'none', padding: '2px 2px 0',
+          fontFamily: FONT, fontSize: '13.5px', color: TEXT_MUTED, cursor: 'pointer', textAlign: 'left',
+          position: 'relative', zIndex: 1 }}>
+        Outside South East Queensland?{' '}
+        <span style={{ color: TEXT_PRIMARY, fontWeight: 600, textDecoration: 'underline', textUnderlineOffset: '3px' }}>
+          Tell us where you are
+        </span>
+      </button>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 4,
+      padding: isMobile ? '16px' : '20px', width: '100%', maxWidth: '660px' }}>
+      <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase',
+        color: TEXT_SECONDARY, marginBottom: '6px', textAlign: 'left' }}>Tell us where you are</div>
+      <div style={{ fontSize: '13px', color: TEXT_MUTED, marginBottom: '14px', textAlign: 'left' }}>
+        We open in South East Queensland first. Where you tell us to go is where we go next.
+      </div>
+
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '10px' }}>
+        {[['client', 'I am hiring'], ['creative', 'I am a creative']].map(([val, label]) => (
+          <button key={val} type="button" onClick={() => setAudience(val)}
+            style={{ flex: '1 1 0', padding: '9px 12px', borderRadius: '999px', cursor: 'pointer',
+              fontFamily: FONT, fontSize: '13px', fontWeight: 600, whiteSpace: 'nowrap',
+              color: audience === val ? TEXT_PRIMARY : TEXT_MUTED,
+              background: audience === val ? 'rgba(29,185,84,0.18)' : 'rgba(255,255,255,0.6)',
+              border: `1px solid ${audience === val ? 'rgba(29,185,84,0.4)' : 'rgba(20,17,26,0.1)'}` }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
+        <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Your email"
+          aria-label="Email" style={HERO_FIELD} />
+        <LiquidSelect value={stateVal} onChange={setStateVal} ariaLabel="State" placeholder="Your state"
+          options={[{ value: '', label: 'Your state' }, ...AU_STATES.map((st) => ({ value: st, label: st }))]} />
+        {audience === 'creative' && (
+          <LiquidSelect value={craft} onChange={setCraft} ariaLabel="What you do" placeholder="What do you do?"
+            options={[{ value: '', label: 'What do you do?' }, ...CATEGORIES.map((c) => ({ value: c.value, label: c.label }))]} />
+        )}
+        <LiquidPill type="submit" primary style={{ flex: '1 1 100%', marginTop: '2px' }}>
+          {status === 'loading' ? 'Sending…' : 'Keep me posted'} <IconArrow />
+        </LiquidPill>
+      </div>
+
+      {/* Honeypot. Real people never fill this in. */}
+      <input ref={hp} type="text" name="website" tabIndex={-1} autoComplete="off" aria-hidden="true"
+        style={{ position: 'absolute', left: '-9999px', width: '1px', height: '1px', opacity: 0 }} />
+
+      {error && <div style={{ marginTop: '10px', fontSize: '13px', color: '#c2365c', textAlign: 'left' }}>{error}</div>}
+    </form>
   );
 }
 
@@ -600,6 +719,8 @@ export default function HomePage() {
                 <LiquidPill type="submit" primary style={{ flex: '1 1 100%', marginTop: '2px' }}>Find a Creative <IconArrow /></LiquidPill>
               </div>
             </form>
+
+            <HeroWaitlist isMobile={isMobile} />
 
             <div style={{ display: 'flex', gap: '12px', width: '100%', maxWidth: '660px', position: 'relative', zIndex: 1 }}>
               <LiquidPill primary onClick={() => navigate('/join')}>Join as a Creative</LiquidPill>
