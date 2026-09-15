@@ -7,6 +7,7 @@ import {
   PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
   partitionFilesByPortfolioImageModeration,
 } from '../../lib/moderateContent'
+import { getFeatures } from '../../lib/tierFeatures'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -147,7 +148,11 @@ export default function DeliverPage() {
   // set of visible files changes, because signed URLs expire.
   const [signedUrls, setSignedUrls] = useState({})
 
-  const storageLimit = tier === 'elite' ? 200 : 50
+  // From tierFeatures, not a guess. This used to read `tier === 'elite' ? 200 : 50`,
+  // which told a Pro creative they had 50GB when tier_limits gives them 1GB, and a
+  // Basic creative they had 50GB when they have none. They would have found out by
+  // hitting a server side wall partway through uploading a wedding.
+  const storageLimit = getFeatures(tier).deliverGb
 
   function showToast(msg, type = 'success', durationMs = 3000) {
     setToast({ msg, type })
@@ -377,7 +382,11 @@ export default function DeliverPage() {
 
   const totalStorageUsed = deliveries.reduce((sum, d) => sum + (d.files ?? []).reduce((s, f) => s + (f.size ?? 0), 0), 0)
   const storageUsedGB = totalStorageUsed / (1024 * 1024 * 1024)
-  const storagePercent = Math.min(100, (storageUsedGB / storageLimit) * 100)
+  // Guarded because Basic has no Deliver storage at all, so the limit is legitimately 0
+  // and a bare divide would render a NaN width. No allowance means the bar reads full.
+  const storagePercent = storageLimit > 0
+    ? Math.min(100, (storageUsedGB / storageLimit) * 100)
+    : 100
 
   const deliverBrand = useMemo(() => mergeDeliverGalleryBrand(brandKit), [brandKit])
   const onAccentText = useMemo(() => {

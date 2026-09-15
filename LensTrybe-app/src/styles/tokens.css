@@ -18,18 +18,18 @@
   --text-secondary: #565560;
   --text-muted:     #8a8995;
 
-  /* Brand — Primary */
+  /* Brand: primary */
   --green:        #1DB954;
   --green-dim:    rgba(29, 185, 84, 0.15);
   --green-bright: #1ED760;
   --green-muted:  rgba(29, 185, 84, 0.08);
 
-  /* Brand — Accent (was silver on dark; now ink on light) */
+  /* Brand: accent. Was silver on dark, now ink on light */
   --silver:        #565560;
   --silver-dim:    rgba(20,17,26,0.10);
   --silver-bright: #14111a;
 
-  /* Remove pink — replaced by green as primary action colour */
+  /* Pink removed, green is the primary action colour */
   --pink:     #1DB954;
   --pink-dim: rgba(29, 185, 84, 0.15);
 

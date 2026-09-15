@@ -1,3 +1,25 @@
+// Deployed with verify_jwt FALSE, deliberately.
+//
+// This is the client gallery behind /deliver/:token. The person opening it clicked a
+// link in an email and has no LensTrybe account, so there is no session to check and
+// the gateway must let the request reach this function.
+//
+// Until 15 September 2026 it was deployed with verify_jwt true, and it worked only by
+// accident: DeliverDownloadPage calls it through supabase.functions.invoke, and
+// supabase-js attaches the anon key, which is itself a valid project JWT and satisfies
+// the gateway. Anything not going through the JS client got a 401 before reaching a
+// line of this code: a plain fetch, a curl, a native call from the Capacitor app, or
+// any direct link. Verified on that date, same body, same token: with the anon key as
+// bearer it returned 200, with no Authorization header at all it returned 401
+// UNAUTHORIZED_NO_AUTH_HEADER. Every comparable client endpoint (respond-quote,
+// meeting-respond, contract-file, document-pdf, email-preferences) is already false.
+//
+// Nothing is lost by the change, because this function has never relied on the
+// gateway for authorisation. It authorises itself, below: the download_token must be
+// a well formed uuid that matches a row, an optional password must match, and wrong
+// passwords are throttled per delivery and IP (UNLOCK_MAX in UNLOCK_WINDOW_SECONDS).
+// The deliveries bucket is private, so files are only ever reachable through the
+// short lived signed URLs minted here.
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 

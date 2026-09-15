@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { planCardLines } from '../../lib/tierFeatures'
 import DeleteAccountModal from '../../components/account/DeleteAccountModal'
 import DownloadDataCard from '../../components/account/DownloadDataCard'
 import NewsletterPreferenceCard from '../../components/account/NewsletterPreferenceCard'
@@ -14,12 +15,12 @@ const SUB_PAGE = '/dashboard/settings/subscription'
 const LIVE = ['active', 'trialing', 'past_due']
 
 const TIER_COLOR = { basic: '#8a8a9a', pro: '#1DB954', expert: '#a855f7', elite: '#EAB308' }
-const TIER_FEATURES = {
-  basic: ['Public profile & listing', '5 portfolio photos', '5 message replies / month', '3 confirmed bookings / month', 'Browse gear marketplace', 'Basic search placement'],
-  pro: ['Everything in Basic', '20 photos + 1 video', '20 message replies / month', 'Unlimited bookings', 'Quotes & invoicing', 'Review requests', 'Marketplace listings (5)', 'Pro badge on profile'],
-  expert: ['Everything in Pro', '40 photos + 5 videos', 'Unlimited messages', 'Contracts & e-signatures', 'CRM (500 records)', 'Client portals', 'Brand kit', 'Portfolio website', 'LensTrybe Deliver (50GB)', 'Business insights'],
-  elite: ['Everything in Expert', 'Unlimited photos & videos', 'Team (up to 5 members)', 'CRM (unlimited)', 'LensTrybe Deliver (200GB)', 'Multi-page website + custom domain', 'Elite spotlight', 'Studio profile page'],
-}
+
+// This page used to restate every plan's inclusions as hand written prose, which drifted
+// from tierFeatures.js without anything noticing. It claimed Elite gets "Team (up to 5
+// members)" while the Team page hardcoded four, so one account could be told both numbers
+// in a single session. planCardLines is the same generator the public pricing page uses,
+// so all three screens now say whatever tierFeatures.js says and cannot disagree again.
 
 const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '')
 function fmtDate(iso) {
@@ -213,7 +214,7 @@ export default function SettingsPage() {
           <div className="ltset-card" style={{ padding: 24, display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="ltset-h">What's included in your {cap(tier)} plan</div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: '10px 20px' }}>
-              {(TIER_FEATURES[tier] ?? []).map((f, i) => (
+              {planCardLines(tier).map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: 'var(--lt-muted)', lineHeight: 1.4 }}>
                   <span style={{ color: GREEN, flexShrink: 0 }}>✓</span>{f}
                 </div>
@@ -301,7 +302,7 @@ export default function SettingsPage() {
           <>
             <div style={{ fontSize: 14, color: 'var(--lt-text)', fontWeight: 700 }}>What you'll lose on {cap(cancelTier)}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {(TIER_FEATURES[cancelTier] ?? []).filter((f) => !f.startsWith('Everything in')).map((f, i) => (
+              {planCardLines(cancelTier).map((f, i) => (
                 <div key={i} style={{ display: 'flex', gap: 9, fontSize: 13.5, color: 'var(--lt-muted)' }}><span style={{ color: RED }}>✕</span>{f}</div>
               ))}
             </div>

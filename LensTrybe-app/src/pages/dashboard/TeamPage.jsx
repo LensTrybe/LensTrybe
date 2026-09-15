@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
+import { getFeatures } from '../../lib/tierFeatures'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -39,7 +40,11 @@ export default function TeamPage() {
   const [saving, setSaving] = useState(false)
   const [email, setEmail] = useState('')
   const isElite = tier === 'elite'
-  const maxMembers = 4
+  // Read the seat count from tierFeatures rather than restating it. This was hardcoded
+  // to 4 while tierFeatures has said 5 for Elite since the tier matrix review, so an
+  // Elite creative could only fill four of the five seats they were paying for, and the
+  // Settings page cheerfully advertised "up to 5 members" on the same account.
+  const maxMembers = getFeatures(tier).teamSeats
 
   useEffect(() => { loadTeam() }, [user])
   useEffect(() => {
