@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 /* Full-bleed drifting pastel mosaic: the same field used on the hero.
    Drop it as an absolute background inside a position:relative; overflow:hidden
@@ -98,8 +98,27 @@ function MosaicColumn({ index, animated, twinkle, grads }) {
   )
 }
 
-export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false }) {
+/**
+ * How long the field drifts before it freezes where it stands.
+ *
+ * Perpetual motion behind glass is not affordable. Anything moving underneath a
+ * backdrop-filter forces every glass element on the page to re-blur its backdrop on
+ * every frame, and measurement on the homepage put that at 27fps with 102 of 106 frames
+ * arriving late. It is not a question of how much is moving: cutting six drifting
+ * columns to one moved it from 27fps to 29. Cutting to none gave a clean 60. One moving
+ * pixel costs the same as the whole mosaic.
+ *
+ * Chromium absorbs a blown frame budget as slight jerkiness. Safari drops and
+ * re-rasterises bands of the composited layers, which is the rows of tiles flashing.
+ *
+ * So the field drifts long enough to register as alive when someone arrives, then stops.
+ * It freezes in place rather than snapping back, so nothing jumps.
+ */
+const SETTLE_AFTER_MS = 10000
+
+export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false, settleAfterMs = SETTLE_AFTER_MS, settleFrom = 0 }) {
   const grads = dark ? TILE_GRADS_DARK : TILE_GRADS
+  const fieldRef = useRef(null)
   const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
   useEffect(() => {
     // Only set state when the count actually changes. Writing the same number on every
@@ -112,9 +131,33 @@ export default function TileField({ animated = true, opacity = 1, twinkle = fals
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
   }, [])
+
+  // Freeze the drift once it has had its moment. colCount and settleFrom are in the
+  // deps so a re-render, or a caller telling us the intro has finished, restarts the
+  // clock against the columns that are actually on screen now.
+  useEffect(() => {
+    if (!animated || twinkle || typeof window === 'undefined') return undefined
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const id = window.setTimeout(() => {
+      const root = fieldRef.current
+      if (!root) return
+      for (const el of root.querySelectorAll('.lt-tile-drift')) {
+        // Copy the live transform onto the element BEFORE removing the animation,
+        // otherwise it snaps back to translateY(0) and the whole field jumps.
+        const current = window.getComputedStyle(el).transform
+        el.style.transform = current && current !== 'none' ? current : 'translateY(0)'
+        el.style.animation = 'none'
+        el.style.willChange = 'auto'
+        const clip = el.parentElement
+        if (clip) clip.style.willChange = 'auto'
+      }
+    }, reduced ? 0 : Math.max(0, settleAfterMs))
+    return () => window.clearTimeout(id)
+  }, [animated, twinkle, colCount, settleAfterMs, settleFrom])
+
   return (
     <>
-      <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity }}>
+      <div ref={fieldRef} aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity }}>
         {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} twinkle={twinkle} grads={grads} />)}
       </div>
       <style>{`

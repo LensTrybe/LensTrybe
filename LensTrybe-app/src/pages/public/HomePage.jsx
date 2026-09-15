@@ -176,9 +176,50 @@ function MosaicColumn({ index }) {
   );
 }
 
-function DriftingTiles({ colCount = 8 }) {
+/**
+ * How long the field drifts before it freezes where it stands.
+ *
+ * Perpetual motion behind glass is not affordable. Anything moving underneath a
+ * backdrop-filter forces every glass element on the page to re-blur its backdrop on
+ * every frame. Measured on this page: 27fps with 102 of 106 frames arriving late. It is
+ * not about how much is moving, because cutting six drifting columns to one only moved
+ * it from 27fps to 29, while cutting to none gave a clean 60. One moving pixel costs the
+ * same as the whole mosaic.
+ *
+ * Chromium absorbs that as slight jerkiness. Safari drops and re-rasterises bands of the
+ * composited layers, which is the rows of tiles flashing that Michael reported.
+ *
+ * The clock starts when the cinematic entrance hands over, not on mount, because the
+ * entrance covers the hero for about twelve seconds and the drift would otherwise be
+ * over before anyone saw it.
+ */
+const TILE_SETTLE_AFTER_MS = 10000;
+
+function DriftingTiles({ colCount = 8, settleFrom = 0 }) {
+  const fieldRef = useRef(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const id = window.setTimeout(() => {
+      const root = fieldRef.current;
+      if (!root) return;
+      for (const el of root.querySelectorAll('.lt-tile-drift')) {
+        // Copy the live transform on BEFORE dropping the animation, or it snaps back to
+        // translateY(0) and the whole field visibly jumps.
+        const current = window.getComputedStyle(el).transform;
+        el.style.transform = current && current !== 'none' ? current : 'translateY(0)';
+        el.style.animation = 'none';
+        el.style.willChange = 'auto';
+        const clip = el.parentElement;
+        if (clip) clip.style.willChange = 'auto';
+      }
+    }, reduced ? 0 : TILE_SETTLE_AFTER_MS);
+    return () => window.clearTimeout(id);
+  }, [colCount, settleFrom]);
+
   return (
-    <div aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0 }}>
+    <div ref={fieldRef} aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0 }}>
       {Array.from({ length: colCount }).map((_, i) => (
         <MosaicColumn key={i} index={i} />
       ))}
@@ -669,7 +710,7 @@ export default function HomePage() {
 
       {/* CONTINUOUS TILE FIELD: one drifting field behind hero and mid sections */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {!isMobile && <DriftingTiles colCount={colCount} />}
+        {!isMobile && <DriftingTiles colCount={colCount} settleFrom={showEntrance ? 0 : 1} />}
         {/* hero clearing, confined to the top so the headline stays readable */}
         {!isMobile && (
           <div aria-hidden style={{
