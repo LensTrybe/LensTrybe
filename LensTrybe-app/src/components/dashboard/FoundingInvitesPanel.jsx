@@ -122,8 +122,21 @@ function PlacesMeter({ places, counts }) {
   )
 }
 
+// Where the modals render. They must escape AdminSection, which sets backdrop-filter on its
+// wrapper: a non-none backdrop-filter makes that element the containing block for
+// position:fixed descendants, so the overlay sized itself to the section instead of the
+// window. document.body escapes it but is also outside .lt-dash, where every --lt-* theme
+// token is declared, which left the modal with no background and no text colour. .lt-dash is
+// above AdminSection and carries the tokens, so it satisfies both.
+function modalHost() {
+  if (typeof document === 'undefined') return null
+  return document.querySelector('.lt-dash') || document.body
+}
+
 function EmailPreviewModal({ preview, onClose }) {
   if (!preview) return null
+  const host = modalHost()
+  if (!host) return null
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--lt-modal-bg)', border: '1px solid var(--lt-modal-border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--lt-modal-shadow)' }}>
@@ -137,7 +150,7 @@ function EmailPreviewModal({ preview, onClose }) {
         <iframe title="Email preview" srcDoc={preview.html} style={{ border: 'none', width: '100%', height: '70vh', background: '#0a0a0f' }} />
       </div>
     </div>,
-    document.body,
+    host,
   )
 }
 
@@ -253,6 +266,8 @@ function EditInviteModal({ inv, onClose, onSaved }) {
     if (!res.ok) { setError(res.error); return }
     onSaved(res.invite)
   }
+  const host = modalHost()
+  if (!host) return null
   return createPortal(
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: 'var(--lt-modal-bg)', border: '1px solid var(--lt-modal-border)', borderRadius: 16, padding: 20, boxShadow: 'var(--lt-modal-shadow)', display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -272,7 +287,7 @@ function EditInviteModal({ inv, onClose, onSaved }) {
         </div>
       </div>
     </div>,
-    document.body,
+    host,
   )
 }
 
