@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
@@ -123,8 +124,8 @@ function PlacesMeter({ places, counts }) {
 
 function EmailPreviewModal({ preview, onClose }) {
   if (!preview) return null
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+  return createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', background: 'var(--lt-modal-bg)', border: '1px solid var(--lt-modal-border)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--lt-modal-shadow)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, padding: '14px 16px', borderBottom: '1px solid var(--lt-hairline)' }}>
           <div style={{ minWidth: 0 }}>
@@ -135,7 +136,8 @@ function EmailPreviewModal({ preview, onClose }) {
         </div>
         <iframe title="Email preview" srcDoc={preview.html} style={{ border: 'none', width: '100%', height: '70vh', background: '#0a0a0f' }} />
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
@@ -251,8 +253,8 @@ function EditInviteModal({ inv, onClose, onSaved }) {
     if (!res.ok) { setError(res.error); return }
     onSaved(res.invite)
   }
-  return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+  return createPortal(
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
       <div onClick={(e) => e.stopPropagation()} style={{ width: '100%', maxWidth: 520, background: 'var(--lt-modal-bg)', border: '1px solid var(--lt-modal-border)', borderRadius: 16, padding: 20, boxShadow: 'var(--lt-modal-shadow)', display: 'flex', flexDirection: 'column', gap: 12 }}>
         <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>Edit invite <span style={{ fontFamily: 'ui-monospace, Menlo, monospace', color: 'var(--lt-muted)', fontSize: 13 }}>{inv.code}</span></div>
         <div><label style={label}>Full name</label><input style={field} value={f.name} onChange={(e) => set('name', e.target.value)} /></div>
@@ -269,7 +271,8 @@ function EditInviteModal({ inv, onClose, onSaved }) {
           <button type="button" style={btnPrimary} disabled={busy} onClick={save}>{busy ? 'Saving…' : 'Save'}</button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 
