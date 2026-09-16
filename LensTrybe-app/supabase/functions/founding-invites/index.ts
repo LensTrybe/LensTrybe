@@ -23,6 +23,15 @@
 //  takes a place. founding_places_used() in the database is the source of truth and a
 //  trigger on founding_invites refuses anything that would go over the cap.
 //
+//  Consent and unsubscribe (Spam Act 2003):
+//    Invites go to business addresses published on the recipient's own website, which is
+//    inferred consent under Schedule 2 clause 4(2). That still requires section 17 sender
+//    identification and a section 18 functional unsubscribe on every message, so every send
+//    here carries a real unsubscribe link, the RFC 8058 one-click headers, and LensTrybe
+//    named as the sender. Recipients live in email_subscribers, the same table the waitlist
+//    and newsletter use, and anyone whose row is 'unsubscribed' is never emailed again by
+//    this function: not an invite, not a reminder.
+//
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
@@ -36,6 +45,10 @@ const VALID_DAYS = 14
 const REMIND_AT_DAYS_LEFT = 7
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const MAX_BATCH = 100
+
+// Section 17 of the Spam Act: every commercial message must accurately identify who sent it
+// and how to reach them.
+const SENDER_LINE = 'LensTrybe, Brisbane, Queensland, Australia. Reply to this email or write to connect@lenstrybe.com.'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -99,16 +112,65 @@ function inviteLink(code: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Marketing consent
+//
+// One row per address in email_subscribers, shared with the waitlist and the newsletter, so
+// unsubscribing once stops everything. Section 18 of the Spam Act needs the unsubscribe to
+// keep working for at least 30 days, and a token row has no expiry, so it works indefinitely.
+// ---------------------------------------------------------------------------
+function unsubscribeUrl(token: string) {
+  return `${SITE}/unsubscribe/${token}`
+}
+
+// The unique index on email_subscribers is on lower(email), not on email, so a row stored
+// with any capitals would be invisible to an exact match while still blocking the insert.
+// That failure mode is the dangerous one: we would find no row, fail to insert, end up with
+// no token, and email someone who had already unsubscribed. So always look it up
+// case-insensitively.
+async function findSubscriber(sb: SupabaseClient, e: string) {
+  const pattern = e.replace(/[%_\\]/g, (m) => '\\' + m)
+  const { data } = await sb.from('email_subscribers').select('token, status').ilike('email', pattern).limit(1)
+  return (data ?? [])[0] as { token: string; status: string } | undefined
+}
+
+// Returns the address's unsubscribe token, creating the row on first contact. optedOut is
+// true when they have already unsubscribed, and nothing may be sent to them.
+async function subscriber(sb: SupabaseClient, email: string): Promise<{ token: string | null; optedOut: boolean }> {
+  const e = String(email || '').trim().toLowerCase()
+  if (!e) return { token: null, optedOut: false }
+
+  const found = await findSubscriber(sb, e)
+  if (found) return { token: found.token, optedOut: found.status === 'unsubscribed' }
+
+  const { data: made, error } = await sb.from('email_subscribers')
+    .insert({ email: e, status: 'subscribed', source: 'founding-invite', consented_at: new Date().toISOString() })
+    .select('token, status').maybeSingle()
+  if (made) return { token: made.token as string, optedOut: made.status === 'unsubscribed' }
+
+  // Another request inserted it between our select and insert. Read it back.
+  if (error) {
+    const again = await findSubscriber(sb, e)
+    if (again) return { token: again.token, optedOut: again.status === 'unsubscribed' }
+    console.error('founding-invites subscriber', error.message)
+  }
+  return { token: null, optedOut: false }
+}
+
+// ---------------------------------------------------------------------------
 // Emails
 // ---------------------------------------------------------------------------
-function shell(inner: string, footerNote: string) {
+function shell(inner: string, footerNote: string, unsubUrl: string | null) {
+  // A live link when we have a token, plain text only in the admin preview.
+  const unsub = unsubUrl
+    ? `<a href="${esc(unsubUrl)}" style="color:#8a8a98;text-decoration:underline;">Unsubscribe</a>`
+    : 'Unsubscribe'
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
 <tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
 ${inner}
-<tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;line-height:1.6;color:#6a6a78;">${footerNote}<br>Connect. Capture. Create.</div></td></tr>
+<tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;line-height:1.6;color:#6a6a78;">${footerNote}<br><br>Would you rather not hear from us? ${unsub} and we will not email you again.<br><br>${SENDER_LINE}<br>Connect. Capture. Create.</div></td></tr>
 </table></td></tr></table></body></html>`
 }
 
@@ -128,7 +190,7 @@ function codeBox(code: string, expiresIso: string) {
 const signOff = `<p style="margin:18px 0 0;color:#9a9aa8;font-size:15px;line-height:1.6;">Any questions at all, just reply to this email. It comes straight to me.</p>
 <p style="margin:18px 0 0;color:#fff;font-size:15px;line-height:1.5;">Michael<br><span style="color:#9a9aa8;font-size:13.5px;">Founder, LensTrybe</span></p>`
 
-function inviteEmail(first: string, code: string, expiresIso: string, note: string) {
+function inviteEmail(first: string, code: string, expiresIso: string, note: string, unsubUrl: string | null) {
   const name = first || 'there'
   const noteBlock = note
     ? `<tr><td style="padding:4px 36px 10px;"><div style="border-left:3px solid ${PINK};padding:4px 0 4px 14px;color:#e6e6ee;font-size:15px;line-height:1.6;white-space:pre-wrap;">${esc(note)}</div></td></tr>`
@@ -166,10 +228,10 @@ ${button(inviteLink(code), 'Claim my founding place')}
 <p style="margin:0;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The full details are in the <a href="${SITE}/founding-agreement" style="color:${GREEN};font-weight:600;text-decoration:none;">Founding Creative Agreement</a>.</p>
 ${signOff}
 </td></tr>`
-  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative. If it's not for you, no need to do anything. The code simply expires.")
+  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative, at a business address published on your own website. If it's not for you, no need to do anything. The code simply expires.", unsubUrl)
 }
 
-function reminderEmail(first: string, code: string, expiresIso: string, left: number | null) {
+function reminderEmail(first: string, code: string, expiresIso: string, left: number | null, unsubUrl: string | null) {
   const name = first || 'there'
   const scarcity = left !== null && left <= 40
     ? `<p style="margin:12px 0 0;color:#9a9aa8;font-size:15px;line-height:1.6;">For what it's worth, <strong style="color:#fff;">${left} of the 100 places are left</strong>.</p>`
@@ -188,7 +250,7 @@ ${button(inviteLink(code), 'Claim my founding place')}
 <p style="margin:0;color:#9a9aa8;font-size:13.5px;line-height:1.6;">Tap the button, then <strong style="color:#fff;">Apply</strong> next to your code. Everything's in the <a href="${SITE}/founding-agreement" style="color:${GREEN};font-weight:600;text-decoration:none;">Founding Creative Agreement</a>.</p>
 ${signOff}
 </td></tr>`
-  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative. If it's not for you, no need to do anything. The code simply expires.")
+  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative, at a business address published on your own website. If it's not for you, no need to do anything. The code simply expires.", unsubUrl)
 }
 
 function inviteSubject(first: string) {
@@ -199,14 +261,24 @@ function reminderSubject(first: string, left: number | null) {
   return first ? `${first}, your founding place is still open${scarce}` : `Your founding place is still open${scarce}`
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<string | null> {
+async function sendEmail(to: string, subject: string, html: string, unsubToken: string | null): Promise<string | null> {
   const key = Deno.env.get('RESEND_API_KEY')
   if (!key) return 'Email is not configured (RESEND_API_KEY missing)'
+  const payload: Record<string, unknown> = { from: FROM, to: [to], reply_to: REPLY_TO, subject, html }
+  // RFC 8058. The first URL is the page a person lands on, the second is the one-click
+  // endpoint Gmail and Outlook POST to from their own unsubscribe button.
+  if (unsubToken) {
+    const base = Deno.env.get('SUPABASE_URL') || ''
+    payload.headers = {
+      'List-Unsubscribe': `<${unsubscribeUrl(unsubToken)}>, <${base}/functions/v1/email-preferences?token=${unsubToken}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }
+  }
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to: [to], reply_to: REPLY_TO, subject, html }),
+      body: JSON.stringify(payload),
     })
     if (res.ok) return null
     const t = await res.text().catch(() => '')
@@ -233,7 +305,7 @@ function isFull(err: { message?: string } | null) {
   return Boolean(err && String(err.message || '').includes('FOUNDING_PLACES_FULL'))
 }
 
-function isLive(inv: { status: string; expires_at: string | null }) {
+function isLive(inv: { status?: string | null; expires_at?: string | null }) {
   return inv.status === 'unused' && (!inv.expires_at || new Date(inv.expires_at).getTime() > Date.now())
 }
 
@@ -255,6 +327,23 @@ async function sendInvite(sb: SupabaseClient, inv: Record<string, any>, manual =
   if (inv.status === 'cancelled') return { ok: false, error: 'This invite was cancelled. Add them again to send a new code.' }
   if (!inv.email && !manual) return { ok: false, error: 'This invite has no email address.' }
 
+  // Check consent before taking a place, so an opted-out address never burns one of the 100.
+  let unsubToken: string | null = null
+  if (!manual) {
+    const sub = await subscriber(sb, inv.email)
+    if (sub.optedOut) {
+      await sb.from('founding_invites').update({ email_error: 'Unsubscribed. They asked not to be emailed.' }).eq('id', inv.id)
+      return { ok: false, error: 'This person has unsubscribed, so they cannot be emailed. Send them the link yourself with Share manually instead.' }
+    }
+    // No token means no working unsubscribe link, and section 18 makes that a message we are
+    // not allowed to send. Fail loudly rather than quietly sending a non-compliant email.
+    if (!sub.token) {
+      await sb.from('founding_invites').update({ email_error: 'Could not create an unsubscribe link, so nothing was sent.' }).eq('id', inv.id)
+      return { ok: false, error: 'Could not set up the unsubscribe link for this address, so the email was not sent. Try again in a moment.' }
+    }
+    unsubToken = sub.token
+  }
+
   const prev = { status: inv.status, expires_at: inv.expires_at, reminded_at: inv.reminded_at }
   const expires = addDays(VALID_DAYS)
 
@@ -273,7 +362,7 @@ async function sendInvite(sb: SupabaseClient, inv: Record<string, any>, manual =
 
   // manual: Michael is sharing the link himself (text, DM). Start the clock, no email.
   const first = inv.first_name || firstNameOf(inv.full_name || '')
-  const err = manual ? null : await sendEmail(inv.email, inviteSubject(first), inviteEmail(first, inv.code, expires, inv.personal_note || ''))
+  const err = manual ? null : await sendEmail(inv.email, inviteSubject(first), inviteEmail(first, inv.code, expires, inv.personal_note || '', unsubToken ? unsubscribeUrl(unsubToken) : null), unsubToken)
   const now = new Date().toISOString()
 
   if (err) {
@@ -309,11 +398,25 @@ async function runCron(sb: SupabaseClient) {
 
   let reminded = 0
   let failed = 0
+  let skipped = 0
   const left = (await places(sb)).available
   for (const inv of due ?? []) {
     if (!inv.email) continue
+    const sub = await subscriber(sb, inv.email)
+    if (sub.optedOut) {
+      // Mark it reminded so we stop looking at it every night, and never email them again.
+      skipped++
+      await sb.from('founding_invites').update({ reminded_at: new Date().toISOString(), email_error: 'Unsubscribed. They asked not to be emailed.' }).eq('id', inv.id)
+      continue
+    }
+    if (!sub.token) {
+      // Same rule as a first send: no unsubscribe link, no email.
+      failed++
+      await sb.from('founding_invites').update({ email_error: 'Could not create an unsubscribe link, so no reminder was sent.' }).eq('id', inv.id)
+      continue
+    }
     const first = inv.first_name || firstNameOf(inv.full_name || '')
-    const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left))
+    const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left, unsubscribeUrl(sub.token)), sub.token)
     if (err) {
       failed++
       await sb.from('founding_invites').update({ email_error: err }).eq('id', inv.id)
@@ -322,7 +425,7 @@ async function runCron(sb: SupabaseClient) {
       await sb.from('founding_invites').update({ reminded_at: new Date().toISOString(), email_error: null }).eq('id', inv.id)
     }
   }
-  return { ran_at: nowIso, expired: (expired ?? []).length, reminded, failed }
+  return { ran_at: nowIso, expired: (expired ?? []).length, reminded, failed, skipped_unsubscribed: skipped }
 }
 
 // ---------------------------------------------------------------------------
@@ -372,7 +475,9 @@ Deno.serve(async (req) => {
       const left = (await places(sb)).available
       return json({
         subject: kind === 'reminder' ? reminderSubject(first, left) : inviteSubject(first),
-        html: kind === 'reminder' ? reminderEmail(first, code, expires, left) : inviteEmail(first, code, expires, cleanNote(body.note)),
+        html: kind === 'reminder'
+          ? reminderEmail(first, code, expires, left, `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`)
+          : inviteEmail(first, code, expires, cleanNote(body.note), `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`),
       })
     }
 
