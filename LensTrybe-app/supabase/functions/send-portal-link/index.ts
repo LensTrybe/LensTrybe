@@ -89,7 +89,15 @@ Deno.serve(async (req) => {
       }),
     })
     if (!res.ok) {
-      console.error('resend failed', res.status, await res.text().catch(() => ''))
+      const errBody = await res.text().catch(() => '')
+      // Resend answers 429 when the account's daily sending quota is gone. Telling
+      // someone to try again in that state is wrong advice, because it cannot succeed
+      // until the quota resets. Name the real reason instead.
+      if (res.status === 429 || /quota/i.test(errBody)) {
+        console.error('send-portal-link resend DAILY QUOTA exhausted', res.status, errBody)
+        return json({ error: 'Our email service has hit its daily sending limit, so this was not sent. That is a problem on our end, not with your portal link. Sending will work again once the limit resets.' }, 503)
+      }
+      console.error('send-portal-link resend error', res.status, errBody)
       return json({ error: 'Could not send the portal link' }, 502)
     }
     return json({ success: true })

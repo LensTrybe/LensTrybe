@@ -95,7 +95,15 @@ serve(async (req) => {
       }),
     })
     if (!send.ok) {
-      console.error('send-meeting resend error', send.status, await send.text().catch(() => ''))
+      const errBody = await send.text().catch(() => '')
+      // Resend answers 429 when the account's daily sending quota is gone. Telling
+      // someone to try again in that state is wrong advice, because it cannot succeed
+      // until the quota resets. Name the real reason instead.
+      if (send.status === 429 || /quota/i.test(errBody)) {
+        console.error('send-meeting resend DAILY QUOTA exhausted', send.status, errBody)
+        return json({ error: 'Our email service has hit its daily sending limit, so this was not sent. That is a problem on our end, not with your meeting. Sending will work again once the limit resets.' }, 503)
+      }
+      console.error('send-meeting resend error', send.status, errBody)
       return json({ error: 'Could not send the meeting email. Please try again.' }, 502)
     }
     const { error: upErr } = await admin.from('meetings').update({ status: 'sent', updated_at: new Date().toISOString() }).eq('id', meetingId)

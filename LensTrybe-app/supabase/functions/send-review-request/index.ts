@@ -98,6 +98,13 @@ Deno.serve(async (req) => {
   })
   const data = await res.json().catch(() => ({}))
   if (!res.ok) {
+    // Resend answers 429 when the account's daily sending quota is gone. Telling
+    // someone to try again in that state is wrong advice, because it cannot succeed
+    // until the quota resets. Name the real reason instead.
+    if (res.status === 429 || /quota/i.test(JSON.stringify(data ?? ''))) {
+      console.error('send-review-request resend DAILY QUOTA exhausted', res.status, data)
+      return json({ error: 'Our email service has hit its daily sending limit, so this was not sent. That is a problem on our end, not with your review request. Sending will work again once the limit resets.' }, 503)
+    }
     console.error('send-review-request resend error', res.status, data)
     return json({ error: 'Could not send the review request. Please try again.' }, 502)
   }

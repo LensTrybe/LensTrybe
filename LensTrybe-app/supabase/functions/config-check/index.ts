@@ -211,6 +211,67 @@ Deno.serve(async (req) => {
     add('cron_jobs_active', false, 'amber', `could not read cron jobs: ${e instanceof Error ? e.message : String(e)}`)
   }
 
+  // ---- Resend daily sending quota ----
+  //
+  // Every email the platform sends, including ones a creative triggers (quotes, invoices,
+  // contracts, deliveries), goes through one Resend account on one shared quota. The free
+  // plan caps that at 100 a day, which is roughly one email per founding creative per day,
+  // so it runs out long before the 3,000 a month does. When it runs out, sends fail and
+  // the creative is the one who sees it.
+  //
+  // Resend has no usage endpoint, but GET /emails lists the most recent sends, so counting
+  // the ones dated today is close enough to be useful. It is capped at 100 per page, which
+  // happens to be exactly the free plan's daily limit: a full page of today's emails means
+  // the quota is gone.
+  //
+  // Set RESEND_DAILY_LIMIT to 0 once the account is on a paid plan, which has no daily
+  // limit, and this check reports the count without ever failing.
+  const rawLimit = Deno.env.get('RESEND_DAILY_LIMIT')
+  const dailyLimit = rawLimit === undefined ? 100 : Number(rawLimit)
+  const resendKey = Deno.env.get('RESEND_API_KEY') || ''
+  const PAGE_SIZE = 100
+  if (resendKey) {
+    try {
+      const r = await fetch(`https://api.resend.com/emails?limit=${PAGE_SIZE}`, {
+        headers: { Authorization: `Bearer ${resendKey}` },
+      })
+      if (!r.ok) throw new Error(`Resend returned ${r.status}`)
+      const body = await r.json() as { data?: { created_at?: string }[] }
+      const page = body.data ?? []
+      // Resend's reset time is not published. The start of the current UTC day is the
+      // closest honest approximation, so a count near the limit matters more than the
+      // exact number.
+      const dayStart = new Date().toISOString().slice(0, 10)
+      const sentToday = page.filter((e) => String(e.created_at ?? '').startsWith(dayStart)).length
+
+      // Only one page is read. If it came back full, every email on it could be from
+      // today and there could be more behind it, so the count is a floor, not a total.
+      // Saying so matters: a silent undercount is how this check would report all clear
+      // on the day the quota actually runs out.
+      const partial = page.length >= PAGE_SIZE
+      const atLeast = partial ? 'at least ' : ''
+
+      if (!Number.isFinite(dailyLimit) || dailyLimit <= 0) {
+        add('resend_daily_quota', true, 'info', `${atLeast}${sentToday} sent today, no daily limit configured (paid plan)`)
+      } else {
+        const pct = Math.round((sentToday / dailyLimit) * 100)
+        const atLimit = sentToday >= dailyLimit
+        add(
+          'resend_daily_quota',
+          pct < 80 && !partial,
+          atLimit ? 'red' : 'amber',
+          atLimit
+            ? `${sentToday} of ${dailyLimit} used, the daily quota is gone and sends are failing`
+            : partial
+              ? `${atLeast}${sentToday} of ${dailyLimit} used today, and Resend returned a full page so the real number may be higher`
+              : `${sentToday} of ${dailyLimit} used today (${pct}%)`,
+        )
+      }
+    } catch (e) {
+      add('resend_daily_quota', false, 'amber', `could not read Resend usage: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
   // ---- The launch date, which lives in three places that cannot import each other ----
   const launch = Date.parse(LAUNCH_ISO)
   const claimed = req.headers.get('x-expected-launch')
