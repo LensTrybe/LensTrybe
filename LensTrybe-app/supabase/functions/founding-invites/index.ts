@@ -45,6 +45,13 @@ const VALID_DAYS = 14
 const REMIND_AT_DAYS_LEFT = 7
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
 const MAX_BATCH = 100
+// Reminders one nightly cron run will work through. Override per environment with
+// FOUNDING_REMINDERS_PER_RUN. At 25 a night a full 100 invite cohort drains in four
+// nights, inside the seven REMIND_AT_DAYS_LEFT has to give.
+const REMINDERS_PER_RUN = 25
+// Gap between reminder sends, so a run trickles rather than bursts.
+const SEND_GAP_MS = 350
+const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
 // Section 17 of the Spam Act: every commercial message must accurately identify who sent it
 // and how to reach them.
@@ -390,11 +397,38 @@ async function runCron(sb: SupabaseClient) {
     .eq('status', 'unused').not('expires_at', 'is', null).lte('expires_at', nowIso)
     .select('id')
 
+  // How many reminders one nightly run is allowed to work through.
+  //
+  // A whole cohort is invited at once, so every invite in it also falls due for its
+  // reminder on the same night, all at REMIND_AT_DAYS_LEFT before expiry. The first
+  // cohort was 100 invites, which is exactly a full day of Resend's free plan, and the
+  // old code took the lot in one straight loop on the same minute as billing-reminders.
+  //
+  // Capping the run spreads a cohort over consecutive nights instead. The remainder is
+  // not lost: it stays due, with reminded_at still null, and the next run picks it up.
+  // REMIND_AT_DAYS_LEFT is the budget, so a cohort has that many nights to drain, and
+  // the most urgent go first because the query orders by expiry.
+  //
+  // Worth keeping on a paid plan too. An unpaced burst of a hundred sends is fragile
+  // whatever the daily quota is.
+  const rawPerRun = Number(Deno.env.get('FOUNDING_REMINDERS_PER_RUN'))
+  const perRun = Number.isFinite(rawPerRun) && rawPerRun > 0 ? Math.floor(rawPerRun) : REMINDERS_PER_RUN
+
+  const remindBy = addDays(REMIND_AT_DAYS_LEFT)
+
+  // Total still owed a reminder, so a run reports whether a backlog is draining.
+  const { count: dueTotal } = await sb.from('founding_invites')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'unused').not('sent_at', 'is', null).is('reminded_at', null)
+    .gt('expires_at', nowIso).lte('expires_at', remindBy)
+
+  // Same filter, capped and ordered so the closest to expiring are reminded first.
   const { data: due } = await sb.from('founding_invites')
     .select(INVITE_COLS)
     .eq('status', 'unused').not('sent_at', 'is', null).is('reminded_at', null)
-    .gt('expires_at', nowIso).lte('expires_at', addDays(REMIND_AT_DAYS_LEFT))
-    .limit(200)
+    .gt('expires_at', nowIso).lte('expires_at', remindBy)
+    .order('expires_at', { ascending: true })
+    .limit(perRun)
 
   let reminded = 0
   let failed = 0
@@ -416,6 +450,10 @@ async function runCron(sb: SupabaseClient) {
       continue
     }
     const first = inv.first_name || firstNameOf(inv.full_name || '')
+    // Space the sends out. Without this the whole run lands on Resend inside a second or
+    // two, which is the shape most likely to trip rate limiting and the hardest to read
+    // in the logs when something does go wrong.
+    if (reminded + failed > 0) await sleep(SEND_GAP_MS)
     const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left, unsubscribeUrl(sub.token)), sub.token)
     if (err) {
       failed++
@@ -425,7 +463,19 @@ async function runCron(sb: SupabaseClient) {
       await sb.from('founding_invites').update({ reminded_at: new Date().toISOString(), email_error: null }).eq('id', inv.id)
     }
   }
-  return { ran_at: nowIso, expired: (expired ?? []).length, reminded, failed, skipped_unsubscribed: skipped }
+  // due_total is the backlog as it stood at the start of this run, so due_remaining is
+  // what the next night inherits. Both are reported so a stuck queue is obvious.
+  const processed = reminded + failed + skipped
+  return {
+    ran_at: nowIso,
+    expired: (expired ?? []).length,
+    reminded,
+    failed,
+    skipped_unsubscribed: skipped,
+    due_total: dueTotal ?? 0,
+    due_remaining: Math.max(0, (dueTotal ?? 0) - processed),
+    per_run_cap: perRun,
+  }
 }
 
 // ---------------------------------------------------------------------------
