@@ -221,10 +221,14 @@ export default function FoundingOfferPage() {
   return (
     <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
       <LiquidLensFilter />
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      {!isMobile && (
-        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
-      )}
+      {/* Most public pages drop the mosaic on mobile, which leaves a phone looking at a
+          flat grey page. This one is the link in the Instagram bio, so nearly everyone
+          who sees it sees it on a phone, and the colour is most of the first impression.
+          The field stays, with a lower column floor so the tiles stay roughly square
+          instead of stretching into stripes at 390px wide. It is static (animated={false}),
+          so it does not force the glass above it to re-blur on every frame. */}
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
+      <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
 
       <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>

@@ -116,21 +116,38 @@ function MosaicColumn({ index, animated, twinkle, grads }) {
  */
 const SETTLE_AFTER_MS = 10000
 
-export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false, settleAfterMs = SETTLE_AFTER_MS, settleFrom = 0 }) {
+/**
+ * Minimum columns, and why a caller would lower it.
+ *
+ * Column width is the viewport divided by the column count, but tile HEIGHTS are fixed
+ * (TILE_SINGLE_H, TILE_PAIR_H). On a wide screen six columns is about 240px each, so a
+ * single tile is roughly square and the field reads as a mosaic. On a 390px phone that
+ * same floor gives 55px columns against a 210px tile, so every tile becomes a thin
+ * vertical stripe and the mosaic reads as candy stripes instead.
+ *
+ * That is why most public pages simply skip the field on mobile. A page that wants the
+ * colour on a phone passes a lower floor instead, so the tiles stay roughly square:
+ * about 2 columns at phone width, which is what `Math.ceil(innerWidth / 240)` gives on
+ * its own. The default is unchanged, so no existing caller moves.
+ */
+const MIN_COLUMNS = 6
+
+export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false, settleAfterMs = SETTLE_AFTER_MS, settleFrom = 0, minColumns = MIN_COLUMNS }) {
   const grads = dark ? TILE_GRADS_DARK : TILE_GRADS
   const fieldRef = useRef(null)
-  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
+  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(minColumns, Math.ceil(window.innerWidth / 240)) : 8))
   useEffect(() => {
     // Only set state when the count actually changes. Writing the same number on every
     // resize event would re-render the whole field and restart every column animation,
     // which reads as the background jumping.
     function onResize() {
-      const next = Math.max(6, Math.ceil(window.innerWidth / 240))
+      const next = Math.max(minColumns, Math.ceil(window.innerWidth / 240))
       setColCount((prev) => (prev === next ? prev : next))
     }
+    onResize()
     window.addEventListener('resize', onResize)
     return () => window.removeEventListener('resize', onResize)
-  }, [])
+  }, [minColumns])
 
   // Freeze the drift once it has had its moment. colCount and settleFrom are in the
   // deps so a re-render, or a caller telling us the intro has finished, restarts the
