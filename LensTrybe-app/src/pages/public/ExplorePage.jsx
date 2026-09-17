@@ -334,8 +334,8 @@ export default function ExplorePage() {
   return (
     <div style={styles.page} className="explore-page-root">
       <LiquidLensFilter />
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      {!isMobile && (
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
+      {(
         <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
       )}
       <style>{`

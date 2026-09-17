@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabaseClient'
 import { LIQUID_GLASS, LIQUID_FIELD } from '../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidPill } from '../components/ui/liquidGlass'
 import TileField from '../components/ui/TileField'
+import useIsMobile from '../hooks/useIsMobile'
 
 /**
  * Password recovery, both halves of it.
@@ -48,6 +49,7 @@ const toggleStyle = {
 }
 
 export default function PasswordResetPage() {
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
 
   // 'checking' | 'request' | 'set' | 'sent' | 'done'
@@ -133,7 +135,7 @@ export default function PasswordResetPage() {
   return (
     <div style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
       <LiquidLensFilter />
-      <TileField animated={false} opacity={0.22} />
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <div style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '40px', width: '100%', maxWidth: '420px' }}>
         <div style={{ fontSize: '26px', fontWeight: 600, letterSpacing: '-0.02em', color: INK, marginBottom: '20px' }}>{heading}</div>
 

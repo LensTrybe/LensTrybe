@@ -628,7 +628,7 @@ export default function JobBoardPage() {
   if (isPublic) {
     return (
       <div className="ltjb-public-scope" style={{ position: 'relative', overflow: 'hidden', minHeight: '100vh', padding: '24px 0 80px' }}>
-        <TileField animated={false} opacity={0.22} />
+        <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
         <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: 200, zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.92) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
         <div style={{ position: 'relative', zIndex: 2, maxWidth: 1280, margin: '0 auto', padding: '0 40px', width: '100%', boxSizing: 'border-box' }}>
           {content}

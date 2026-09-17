@@ -5,8 +5,10 @@ import Input from '../../components/ui/Input'
 import { LIQUID_GLASS } from '../../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
+import useIsMobile from '../../hooks/useIsMobile'
 
 export default function ClientSignupPage() {
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
   const location = useLocation()
   const emailPrefillApplied = useRef(false)
@@ -134,7 +136,7 @@ export default function ClientSignupPage() {
   return (
     <div style={styles.page}>
       <LiquidLensFilter />
-      <TileField animated={false} opacity={0.22} />
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <div style={styles.card}>
 
         <div style={styles.header}>

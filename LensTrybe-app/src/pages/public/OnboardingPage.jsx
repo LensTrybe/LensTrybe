@@ -11,6 +11,7 @@ import { LIQUID_GLASS, LIQUID_FIELD } from '../../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
+import useIsMobile from '../../hooks/useIsMobile'
 
 const PAGE_BG = '#ffffff'
 const GREEN = '#1DB954'
@@ -69,6 +70,7 @@ function readStoredPlanTier() {
 }
 
 export default function OnboardingPage() {
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
   const fileRef = useRef(null)
   const [checking, setChecking] = useState(true)
@@ -413,7 +415,7 @@ export default function OnboardingPage() {
         .onboarding-root select option { background: #ffffff; color: #14111a; }
       `}</style>
       <LiquidLensFilter />
-      <TileField animated={false} opacity={0.22} />
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
 
       <div
         style={{

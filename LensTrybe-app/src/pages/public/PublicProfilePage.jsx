@@ -475,7 +475,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
     const basicSocials = socialLinks() || []
     return (
       <div style={styles.page} className="public-profile-page">
-        {!isMobile && <TileField animated={false} opacity={0.22} />}
+        <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div style={styles.hero}>
             <div style={styles.heroInner}>

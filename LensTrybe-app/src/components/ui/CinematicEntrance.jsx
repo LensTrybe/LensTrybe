@@ -3,6 +3,7 @@ import { LensMark } from './BrandLogo'
 import TileField from './TileField'
 import { LiquidLensFilter } from './liquidGlass'
 import { LIQUID_GLASS } from '../../lib/glassTokensLight'
+import useIsMobile from '../../hooks/useIsMobile'
 
 const TILE_GRADS = [
   'linear-gradient(135deg,#a9c8f0,#7fa8e8)',
@@ -21,6 +22,7 @@ const TILE_COLUMNS = [
 ]
 
 export default function CinematicEntrance({ onComplete }) {
+  const isMobile = useIsMobile()
   const containerRef = useRef(null)
   const timeoutsRef = useRef([])
   const completedRef = useRef(false)
@@ -111,15 +113,29 @@ export default function CinematicEntrance({ onComplete }) {
     transition: `opacity 0.9s ease ${delay}ms, transform 1.2s cubic-bezier(0.19, 1, 0.22, 1) ${delay}ms`,
   })
 
-  const chips = [
-    { text: 'Photography', top: '9%', left: '3%', delay: 1800, startX: -20, float: 'A', dur: 9, dot: '#1DB954' },
-    { text: 'Videography', top: '20%', right: '4%', delay: 2000, startX: 20, float: 'B', dur: 10.5, dot: '#D4537E' },
-    { text: 'Weddings', top: '46%', left: '2%', delay: 2200, startX: -20, float: 'A', dur: 11, dot: '#378ADD' },
-    { text: 'Brand Films', top: '40%', right: '3%', delay: 2400, startX: 20, float: 'B', dur: 8.5, dot: '#BA7517' },
-    { text: 'Events', bottom: '12%', left: '4%', delay: 2600, startX: -20, float: 'A', dur: 9.5, dot: '#7F77DD' },
-    { text: 'Portraits', bottom: '9%', right: '5%', delay: 2500, startX: 20, float: 'B', dur: 10, dot: '#1D9E75' },
-    { text: 'Real Estate', top: '70%', left: '9%', delay: 2700, startX: -20, float: 'B', dur: 8, dot: '#D4537E' },
-  ]
+  // The chips float in the space around the card. Their positions are percentages of the
+  // viewport, which works on a wide screen where the card is an island in the middle. On a
+  // phone the card fills almost the full width, so the desktop set landed on top of it:
+  // Weddings sat over the 0% commission stat and Real Estate covered the Join button.
+  //
+  // Mobile gets four chips instead of seven, confined to the clear strips above and below
+  // the card. Fewer, but readable, and nothing covers the thing they came to read.
+  const chips = isMobile
+    ? [
+      { text: 'Photography', top: '4%', left: '4%', delay: 1800, startX: -20, float: 'A', dur: 9, dot: '#1DB954' },
+      { text: 'Videography', top: '12%', right: '4%', delay: 2000, startX: 20, float: 'B', dur: 10.5, dot: '#D4537E' },
+      { text: 'Weddings', bottom: '15%', left: '4%', delay: 2200, startX: -20, float: 'A', dur: 11, dot: '#378ADD' },
+      { text: 'Portraits', bottom: '6%', right: '4%', delay: 2500, startX: 20, float: 'B', dur: 10, dot: '#1D9E75' },
+    ]
+    : [
+      { text: 'Photography', top: '9%', left: '3%', delay: 1800, startX: -20, float: 'A', dur: 9, dot: '#1DB954' },
+      { text: 'Videography', top: '20%', right: '4%', delay: 2000, startX: 20, float: 'B', dur: 10.5, dot: '#D4537E' },
+      { text: 'Weddings', top: '46%', left: '2%', delay: 2200, startX: -20, float: 'A', dur: 11, dot: '#378ADD' },
+      { text: 'Brand Films', top: '40%', right: '3%', delay: 2400, startX: 20, float: 'B', dur: 8.5, dot: '#BA7517' },
+      { text: 'Events', bottom: '12%', left: '4%', delay: 2600, startX: -20, float: 'A', dur: 9.5, dot: '#7F77DD' },
+      { text: 'Portraits', bottom: '9%', right: '5%', delay: 2500, startX: 20, float: 'B', dur: 10, dot: '#1D9E75' },
+      { text: 'Real Estate', top: '70%', left: '9%', delay: 2700, startX: -20, float: 'B', dur: 8, dot: '#D4537E' },
+    ]
 
   return (
     <div
@@ -155,7 +171,7 @@ export default function CinematicEntrance({ onComplete }) {
           transition: 'opacity 1.4s ease',
         }}
       >
-        <TileField twinkle />
+        <TileField twinkle minColumns={isMobile ? 2 : 6} />
       </div>
 
       {/* Soft clearing so the card reads clearly */}
@@ -243,16 +259,21 @@ export default function CinematicEntrance({ onComplete }) {
 
         <div style={{ ...baseStagger(1300), display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <LensMark size={34} />
-          <div
-            style={{
-              fontSize: 9,
-              letterSpacing: '0.22em',
-              color: 'rgba(20,17,26,0.4)',
-              textTransform: 'uppercase',
-            }}
-          >
-            Australia&apos;s Creative Platform
-          </div>
+          {/* At 0.22em tracking this wraps to two lines on a phone and crowds the mark.
+              The wordmark directly below already says who this is, so the strapline is
+              the thing that gives way. */}
+          {!isMobile && (
+            <div
+              style={{
+                fontSize: 9,
+                letterSpacing: '0.22em',
+                color: 'rgba(20,17,26,0.4)',
+                textTransform: 'uppercase',
+              }}
+            >
+              Australia&apos;s Creative Platform
+            </div>
+          )}
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div
               style={{

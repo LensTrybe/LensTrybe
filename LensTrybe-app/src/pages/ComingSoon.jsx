@@ -154,7 +154,8 @@ function timeLeft() {
 export default function ComingSoon() {
   const [time, setTime] = useState(timeLeft())
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 900)
-  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8))
+  // Two columns on a phone: see the note on TileField. Six gives stripes at 390px.
+  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(window.innerWidth < 768 ? 2 : 6, Math.ceil(window.innerWidth / 240)) : 8))
   const [audience, setAudience] = useState('creative')
   const [email, setEmail] = useState('')
   const [creativeType, setCreativeType] = useState('')
@@ -168,7 +169,7 @@ export default function ComingSoon() {
 
   useEffect(() => {
     const t = setInterval(() => setTime(timeLeft()), 1000)
-    const onResize = () => { setIsMobile(window.innerWidth < 900); setColCount(Math.max(6, Math.ceil(window.innerWidth / 240))) }
+    const onResize = () => { setIsMobile(window.innerWidth < 900); setColCount(Math.max(window.innerWidth < 768 ? 2 : 6, Math.ceil(window.innerWidth / 240))) }
     window.addEventListener('resize', onResize)
     return () => { clearInterval(t); window.removeEventListener('resize', onResize) }
   }, [])
@@ -273,11 +274,11 @@ export default function ComingSoon() {
 
       {/* drifting tile field + clearings (desktop only, like the hero) */}
       <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-        {!isMobile && <DriftingTiles colCount={colCount} />}
-        {!isMobile && (
+        <DriftingTiles colCount={colCount} />
+        {(
           <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 1, background: `radial-gradient(ellipse 900px 620px at 30% 340px, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 44%, rgba(${PAGE_TONE},0.34) 72%, rgba(${PAGE_TONE},0) 100%)` }} />
         )}
-        {!isMobile && (
+        {(
           <div aria-hidden style={{ position: 'absolute', inset: 0, zIndex: 1, background: `linear-gradient(180deg, rgba(${PAGE_TONE},0) 0%, rgba(${PAGE_TONE},0) 30%, rgba(${PAGE_TONE},0.5) 62%, rgba(${PAGE_TONE},0.9) 86%, rgba(${PAGE_TONE},1) 100%)` }} />
         )}
       </div>

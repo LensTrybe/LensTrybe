@@ -4,8 +4,10 @@ import { LT_JOIN_FLASH_KEY } from '../../context/AuthContext'
 import { LIQUID_GLASS } from '../../lib/glassTokensLight'
 import { LiquidLensFilter, LiquidPill } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
+import useIsMobile from '../../hooks/useIsMobile'
 
 export default function JoinHubPage() {
+  const isMobile = useIsMobile()
   const navigate = useNavigate()
   const location = useLocation()
   const emailHint = typeof location.state?.email === 'string' ? location.state.email.trim() : ''
@@ -45,7 +47,7 @@ export default function JoinHubPage() {
     }}
     >
       <LiquidLensFilter />
-      <TileField animated={false} opacity={0.22} />
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <div style={{ width: '100%', maxWidth: '440px', display: 'flex', flexDirection: 'column', gap: '24px', ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '36px 32px' }}>
         <div style={{ textAlign: 'center' }}>
           <div

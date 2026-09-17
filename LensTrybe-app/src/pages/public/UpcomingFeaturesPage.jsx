@@ -211,8 +211,8 @@ export default function UpcomingFeaturesPage() {
   return (
     <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
       <LiquidLensFilter />
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      {!isMobile && (
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
+      {(
         <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
       )}
       <div style={{ maxWidth: '1100px', margin: '0 auto', position: 'relative', zIndex: 2 }}>

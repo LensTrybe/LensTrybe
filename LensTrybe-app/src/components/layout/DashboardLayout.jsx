@@ -145,12 +145,12 @@ export default function DashboardLayout() {
       `}</style>
       {dark ? (
         <div aria-hidden style={DARK_WRAP}>
-          <TileField dark opacity={isHome ? 0.85 : 0.3} animated={isHome} />
+          <TileField dark opacity={isHome ? 0.85 : 0.3} animated={isHome} minColumns={isMobile ? 2 : 6} />
           <div style={{ position: 'absolute', inset: 0, background: DARK_SCRIM }} />
         </div>
       ) : (
         <div aria-hidden style={LIGHT_WRAP}>
-          <TileField opacity={isHome ? 1 : 0.22} animated={isHome} />
+          <TileField opacity={isHome ? 1 : 0.22} animated={isHome} minColumns={isMobile ? 2 : 6} />
           <div style={{ position: 'absolute', inset: 0, background: LIGHT_SCRIM }} />
         </div>
       )}

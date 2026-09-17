@@ -626,7 +626,9 @@ export default function HomePage() {
   const [eliteCreatives, setEliteCreatives] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false);
-  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(6, Math.ceil(window.innerWidth / 240)) : 8));
+  // Two columns on a phone, not six. Tile heights are fixed, so six columns at 390px
+  // wide gives 55px columns against a 210px tile and the mosaic renders as stripes.
+  const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(window.innerWidth < 768 ? 2 : 6, Math.ceil(window.innerWidth / 240)) : 8));
 
   // Hero "Find a Creative" search
   const [hType, setHType] = useState('');
@@ -650,7 +652,7 @@ export default function HomePage() {
   useEffect(() => {
     function handleResize() {
       setIsMobile(window.innerWidth < 768);
-      setColCount(Math.max(6, Math.ceil(window.innerWidth / 240)));
+      setColCount(Math.max(window.innerWidth < 768 ? 2 : 6, Math.ceil(window.innerWidth / 240)));
     }
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -710,16 +712,16 @@ export default function HomePage() {
 
       {/* CONTINUOUS TILE FIELD: one drifting field behind hero and mid sections */}
       <div style={{ position: 'relative', overflow: 'hidden' }}>
-        {!isMobile && <DriftingTiles colCount={colCount} settleFrom={showEntrance ? 0 : 1} />}
+        <DriftingTiles colCount={colCount} settleFrom={showEntrance ? 0 : 1} />
         {/* hero clearing, confined to the top so the headline stays readable */}
-        {!isMobile && (
+        {(
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
             background: `radial-gradient(ellipse 760px 460px at 26% 300px, rgba(${PAGE_TONE},0.97) 0%, rgba(${PAGE_TONE},0.82) 42%, rgba(${PAGE_TONE},0.32) 70%, rgba(${PAGE_TONE},0) 100%)`,
           }} />
         )}
         {/* whole-field downward fade, dissolves the tiles to page colour toward the bottom */}
-        {!isMobile && (
+        {(
           <div aria-hidden style={{
             position: 'absolute', inset: 0, zIndex: 1,
             background: `linear-gradient(180deg, rgba(${PAGE_TONE},0) 0%, rgba(${PAGE_TONE},0) 42%, rgba(${PAGE_TONE},0.4) 66%, rgba(${PAGE_TONE},0.85) 88%, rgba(${PAGE_TONE},1) 100%)`,

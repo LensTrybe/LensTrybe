@@ -119,7 +119,7 @@ export default function LoginPage() {
         }
       `}</style>
       <LiquidLensFilter />
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <div style={styles.card}>
         <div style={styles.header}>
           <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>

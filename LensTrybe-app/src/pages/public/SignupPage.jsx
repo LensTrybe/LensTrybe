@@ -701,7 +701,7 @@ export default function SignupPage() {
     return (
       <div style={styles.page} className="signup-page">
         <LiquidLensFilter />
-        {!isMobile && <TileField animated={false} opacity={0.22} />}
+        <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
         <div style={{ ...styles.container, maxWidth: '480px' }}>
           <div style={styles.header}>
             <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
@@ -792,7 +792,7 @@ export default function SignupPage() {
     return (
       <div style={styles.page} className="signup-page">
         <LiquidLensFilter />
-        {!isMobile && <TileField animated={false} opacity={0.22} />}
+        <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
         <div style={{ ...styles.container, maxWidth: '480px' }}>
           <div style={styles.header}>
             <div style={styles.logo} onClick={() => navigate('/')}>LensTrybe</div>
@@ -849,8 +849,8 @@ export default function SignupPage() {
         }
       `}</style>
       <LiquidLensFilter />
-      {!isMobile && <TileField animated={false} opacity={0.22} />}
-      {!isMobile && (
+      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
+      {(
         <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '200px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
       )}
       <div style={styles.container}>
