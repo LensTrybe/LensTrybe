@@ -152,8 +152,17 @@ function EmailPreviewModal({ preview, onClose }) {
   )
 }
 
-function AddInviteForm({ onDone, onPreview }) {
-  const [f, setF] = useState({ name: '', email: '', skill_type: 'Photographer', region: '', note: '' })
+// prefill comes from an application below. The panel gives this component a key tied to
+// that prefill, so React remounts it with the new starting values rather than us pushing
+// them in from an effect and fighting whatever is already typed.
+function AddInviteForm({ onDone, onPreview, prefill }) {
+  const [f, setF] = useState({
+    name: prefill?.name || '',
+    email: prefill?.email || '',
+    skill_type: prefill?.skill_type || 'Photographer',
+    region: prefill?.region || '',
+    note: '',
+  })
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
   const set = (k, v) => { setF((p) => ({ ...p, [k]: v })); setError('') }
@@ -247,6 +256,94 @@ function BulkAddForm({ onDone }) {
         <button type="button" style={{ ...btn, opacity: !good.length || bad.length ? 0.5 : 1 }} disabled={!!busy || !good.length || bad.length > 0} onClick={() => submit(false)}>{busy === 'draft' ? 'Saving…' : `Save ${good.length || ''} as drafts`}</button>
         <button type="button" style={{ ...btnPrimary, opacity: !good.length || bad.length ? 0.5 : 1 }} disabled={!!busy || !good.length || bad.length > 0} onClick={() => submit(true)}>{busy === 'send' ? 'Sending…' : `Add and send ${good.length || ''}`}</button>
       </div>
+    </div>
+  )
+}
+
+// Applications from the form on /founding. These are requests, not places: nothing here
+// creates an invite on its own. Invite fills in the form above with their details so the
+// code still goes out the same way, with whatever personal note you want to add.
+const APP_STATES = {
+  new: { label: 'New', color: GREEN },
+  invited: { label: 'Invited', color: AMBER },
+  dismissed: { label: 'Dismissed', color: 'var(--lt-faint)' },
+}
+
+function ApplicationRow({ app, busy, onInvite, onStatus }) {
+  const st = APP_STATES[app.status] || APP_STATES.new
+  const link = /^https?:\/\//i.test(app.portfolio_url || '') ? app.portfolio_url : ''
+  const meta = []
+  if (app.creative_type) meta.push(app.creative_type)
+  if (app.region) meta.push(app.region)
+  meta.push(`Applied ${fmtDate(app.created_at)}`)
+
+  return (
+    <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', padding: '12px 0', borderTop: '1px solid var(--lt-hairline)', opacity: app.status === 'dismissed' ? 0.6 : 1 }}>
+      <div style={{ minWidth: 220, flex: '1 1 260px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--lt-text)' }}>{app.name || 'No name'}</span>
+          <Chip state={st} />
+        </div>
+        <div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 3 }}>{app.email}</div>
+        <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 2 }}>{meta.join(' · ')}</div>
+        {link && (
+          <a href={link} target="_blank" rel="noopener noreferrer nofollow"
+            style={{ fontSize: 12.5, color: GREEN, fontWeight: 600, textDecoration: 'none', marginTop: 3, display: 'inline-block', wordBreak: 'break-all' }}>
+            {link.replace(/^https?:\/\//i, '').replace(/\/$/, '')}
+          </a>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+        <button type="button" style={app.status === 'new' ? btnPrimary : btn} disabled={!!busy} onClick={() => onInvite(app)}>
+          {app.status === 'new' ? 'Invite' : 'Invite again'}
+        </button>
+        {app.status === 'new' && (
+          <button type="button" style={btn} disabled={!!busy} onClick={() => onStatus(app, 'dismissed')}>
+            {busy === 'dismissed' ? 'Saving…' : 'Not a fit'}
+          </button>
+        )}
+        {app.status !== 'new' && (
+          <button type="button" style={btn} disabled={!!busy} onClick={() => onStatus(app, 'new')}>
+            {busy === 'new' ? 'Saving…' : 'Back to new'}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+function ApplicationsCard({ applications, busy, onInvite, onStatus }) {
+  const [showDone, setShowDone] = useState(false)
+  const fresh = applications.filter((a) => a.status === 'new')
+  const done = applications.filter((a) => a.status !== 'new')
+  const shown = showDone ? [...fresh, ...done] : fresh
+
+  return (
+    <div style={card}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--lt-text)' }}>
+          Applications {fresh.length > 0 && <span style={{ color: GREEN }}>({fresh.length} new)</span>}
+        </div>
+        {done.length > 0 && (
+          <button type="button" style={{ ...btn, padding: '6px 12px', fontSize: 12.5 }} onClick={() => setShowDone((s) => !s)}>
+            {showDone ? 'Hide' : 'Show'} {done.length} dealt with
+          </button>
+        )}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 6, lineHeight: 1.5 }}>
+        Creatives who filled in the form on lenstrybe.com/founding. Invite fills in the form above with their details, so you still choose the note and when it sends.
+      </div>
+      {shown.length === 0 ? (
+        <div style={{ fontSize: 13, color: 'var(--lt-muted)', padding: '14px 0 2px' }}>
+          {applications.length === 0 ? 'No applications yet.' : 'Nothing new. Everything here has been dealt with.'}
+        </div>
+      ) : (
+        <div style={{ marginTop: 4 }}>
+          {shown.map((a) => (
+            <ApplicationRow key={a.id} app={a} busy={busy[a.id] || null} onInvite={onInvite} onStatus={onStatus} />
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -364,6 +461,9 @@ const FILTERS = [
 export default function FoundingInvitesPanel({ embedded = false, onSummary } = {}) {
   const [open, setOpen] = useState(true)
   const [invites, setInvites] = useState([])
+  const [applications, setApplications] = useState([])
+  const [appBusy, setAppBusy] = useState({})
+  const [prefill, setPrefill] = useState(null)
   const [founders, setFounders] = useState([])
   const [founderStatus, setFounderStatus] = useState({})
   const [places, setPlaces] = useState(null)
@@ -378,11 +478,13 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
   const [editing, setEditing] = useState(null)
   const [preview, setPreview] = useState(null)
   const flashTimer = useRef(0)
+  const formRef = useRef(null)
 
   const load = useCallback(async () => {
     const res = await callInvites('list')
     if (!res.ok) { setLoadError(res.error); setLoading(false); return }
     setInvites(res.invites || [])
+    setApplications(res.applications || [])
     setFounders(res.founders || [])
     setPlaces(res.places || null)
     setLoadError('')
@@ -519,7 +621,31 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
     ;(res.created || []).slice().reverse().forEach(mergeInvite)
     if (res.places) setPlaces(res.places)
     setFilter('waiting')
+    // The Edge Function marks matching applications as invited when it creates the invite,
+    // so mirror that here rather than reloading the whole list for one field.
+    const emails = new Set((res.created || []).map((c) => String(c.email || '').toLowerCase()))
+    if (emails.size) {
+      setApplications((prev) => prev.map((a) => (a.status === 'new' && emails.has(String(a.email || '').toLowerCase()) ? { ...a, status: 'invited' } : a)))
+    }
+    setPrefill(null)
     flash(message, res.sent?.some((s) => !s.ok) || res.failed?.length ? 'error' : 'ok')
+  }
+
+  // Invite on an application: fill in the form above and take them to it. Nothing is sent
+  // and nothing is created here, so a misread application costs a scroll, not a place.
+  function onInviteApplication(app) {
+    setMode('single')
+    setPrefill({ key: `${app.id}:${Date.now()}`, name: app.name, email: app.email, skill_type: app.creative_type, region: app.region })
+    try { formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }) } catch { /* older browsers */ }
+    flash(`Filled in the invite form with ${app.name || app.email}. Add a note, then send.`)
+  }
+
+  async function onApplicationStatus(app, status) {
+    setAppBusy((b) => ({ ...b, [app.id]: status }))
+    const res = await callInvites('application', { application_id: app.id, status })
+    setAppBusy((b) => ({ ...b, [app.id]: null }))
+    if (!res.ok) { flash(res.error, 'error'); return }
+    setApplications((prev) => prev.map((a) => (a.id === app.id ? res.application : a)))
   }
 
   const tab = (key, text) => (
@@ -527,13 +653,19 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
   )
 
   // Header summary for the Admin page card.
+  const newApplications = useMemo(() => applications.filter((a) => a.status === 'new').length, [applications])
+
   useEffect(() => {
     if (!onSummary || !places) return
+    const parts = [`${places.used} of ${places.cap} places taken`, `${counts.live} waiting`, `${counts.drafts} draft${counts.drafts === 1 ? '' : 's'}`]
+    if (newApplications) parts.push(`${newApplications} new application${newApplications === 1 ? '' : 's'}`)
     onSummary({
-      summary: `${places.used} of ${places.cap} places taken · ${counts.live} waiting · ${counts.drafts} draft${counts.drafts === 1 ? '' : 's'}`,
-      badge: places.available === 0 ? { text: 'All places claimed', tone: 'attention' } : { text: `${places.available} places free`, tone: 'good' },
+      summary: parts.join(' · '),
+      badge: newApplications
+        ? { text: `${newApplications} to review`, tone: 'attention' }
+        : places.available === 0 ? { text: 'All places claimed', tone: 'attention' } : { text: `${places.available} places free`, tone: 'good' },
     })
-  }, [onSummary, places, counts])
+  }, [onSummary, places, counts, newApplications])
 
   return (
     <div style={{ marginBottom: embedded ? 0 : 20 }}>
@@ -585,19 +717,26 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
             </div>
           )}
 
-          <div style={card}>
+          <div style={card} ref={formRef}>
             <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--lt-hairline)' }}>
               {tab('single', 'Invite one creative')}
               {tab('bulk', 'Paste a list')}
             </div>
             {mode === 'single'
-              ? <AddInviteForm onDone={onCreated} onPreview={showPreview} />
+              ? <AddInviteForm key={prefill?.key || 'blank'} onDone={onCreated} onPreview={showPreview} prefill={prefill} />
               : <BulkAddForm onDone={onCreated} />}
             <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 12, lineHeight: 1.5 }}>
               Each creative gets a personal code like SARAH-7KQ2 and an email from you, with replies going to connect@lenstrybe.com. Codes work once and expire 14 days after sending. A reminder goes out automatically when 7 days are left.
               {' '}<button type="button" onClick={() => callInvites('preview', { name: 'Sarah', kind: 'reminder' }).then((r) => r.ok && setPreview({ subject: r.subject, html: r.html }))} style={{ background: 'none', border: 'none', padding: 0, color: GREEN, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Preview the reminder</button>
             </div>
           </div>
+
+          <ApplicationsCard
+            applications={applications}
+            busy={appBusy}
+            onInvite={onInviteApplication}
+            onStatus={onApplicationStatus}
+          />
 
           {notice && (
             <div style={{ ...card, padding: '10px 14px', fontSize: 13.5, color: notice.tone === 'error' ? PINK : 'var(--lt-text)', borderColor: notice.tone === 'error' ? 'rgba(255,45,120,0.4)' : 'rgba(29,185,84,0.4)' }}>{notice.text}</div>

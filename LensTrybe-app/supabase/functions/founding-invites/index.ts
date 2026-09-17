@@ -514,7 +514,19 @@ Deno.serve(async (req) => {
       const { data: founders } = await sb.from('profiles')
         .select('id, business_name, subscription_tier, founding_deal_status, founding_member_since, pending_deletion, is_admin')
         .eq('founding_member', true)
-      return json({ invites: invites ?? [], founders: founders ?? [], places: await places(sb), valid_days: VALID_DAYS })
+      // Applications from /founding, newest first. The panel groups them by status, so
+      // sorting that out here would only be a second, weaker source of truth.
+      const { data: applications } = await sb.from('founding_applications')
+        .select('id, name, email, creative_type, region, portfolio_url, status, created_at')
+        .order('created_at', { ascending: false })
+        .limit(300)
+      return json({
+        invites: invites ?? [],
+        founders: founders ?? [],
+        applications: applications ?? [],
+        places: await places(sb),
+        valid_days: VALID_DAYS,
+      })
     }
 
     if (action === 'preview') {
@@ -593,7 +605,35 @@ Deno.serve(async (req) => {
           if (r.ok && r.invite) created[i] = r.invite
         }
       }
+      // If any of these people applied through /founding, their application has now been
+      // acted on. Doing it here rather than in the panel means it is still right when an
+      // invite is created some other way. A failure must not lose the invites, so it is
+      // logged and nothing is thrown.
+      if (created.length) {
+        const { error: markErr } = await sb.from('founding_applications')
+          .update({ status: 'invited' })
+          .in('email', created.map((c) => c.email))
+          .eq('status', 'new')
+        if (markErr) console.error('founding-invites application mark failed', markErr.message)
+      }
+
       return json({ created, failed, sent: sendResults, places: await places(sb) })
+    }
+
+    // Applications are their own object, so this has to sit above the invite lookup below.
+    if (action === 'application') {
+      const appId = String(body.application_id || '')
+      const status = String(body.status || '')
+      if (!appId) return json({ error: 'Missing application' }, 400)
+      if (!['new', 'invited', 'dismissed'].includes(status)) return json({ error: 'Unknown status' }, 400)
+      const { data, error } = await sb.from('founding_applications')
+        .update({ status })
+        .eq('id', appId)
+        .select('id, name, email, creative_type, region, portfolio_url, status, created_at')
+        .maybeSingle()
+      if (error) { console.error('founding-invites application update', error.message); return json({ error: 'Could not update that application.' }, 500) }
+      if (!data) return json({ error: 'Application not found' }, 404)
+      return json({ application: data })
     }
 
     const id = String(body.id || '')
