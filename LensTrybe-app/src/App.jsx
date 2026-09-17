@@ -77,6 +77,7 @@ import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
 import PublicPageShell from './components/layout/PublicPageShell'
+import DirectoryClosedPage from './pages/public/DirectoryClosedPage'
 import { LiquidPill } from './components/ui/liquidGlass'
 import { LIQUID_GLASS } from './lib/glassTokensLight'
 
@@ -141,21 +142,9 @@ function PublicNoticePage({ eyebrow, title, body, primary, secondary }) {
   )
 }
 
-function DirectoryOpensSoon() {
-  return (
-    <PublicNoticePage
-      eyebrow="Opening 1 October 2026"
-      title="The directory opens 1 October"
-      body="Our founding creatives are setting up their profiles right now. Come back on 1 October and you will be able to search every one of them."
-      primary={{ to: '/join/creative', label: "I'm a creative, let me in early" }}
-      secondary={{ to: '/', label: 'Back to home' }}
-    />
-  )
-}
-
 function DirectoryGate({ children }) {
   if (hasLaunched() || previewUnlocked()) return children
-  return <DirectoryOpensSoon />
+  return <DirectoryClosedPage />
 }
 
 function NotFoundPage() {
