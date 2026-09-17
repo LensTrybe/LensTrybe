@@ -211,12 +211,12 @@ function inviteEmail(first: string, code: string, expiresIso: string, note: stri
 ${noteBlock}
 <tr><td style="padding:4px 36px 6px;">
 <p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm building LensTrybe: a home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever.</p>
-<p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm hand-picking 100 creatives to be the founding members, and I'd like you to be one of them.</p>
+<p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm hand-picking creatives for the founding 100, and I'd like you to be one of them. The places go to the first 100 who use their code.</p>
 </td></tr>
 <tr><td style="padding:12px 36px 0;">
 <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;">What you get</div>
 <ul style="color:#e6e6ee;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">
-${li('Our <strong style="color:#fff;">Expert plan free for 12 months</strong> from the day you join (normally $74.99 a month)')}
+${li('Our <strong style="color:#fff;">Expert plan free for 12 months</strong> from the day you join (normally $74.99 a month), or 6 months if the 100 places have already gone')}
 ${li('Then <strong style="color:#fff;">$49 a month, or $588 a year, locked in for life</strong>')}
 ${li('A Founding Creative badge on your profile')}
 ${li('A direct line to me, and a real say in what we build next')}
@@ -231,7 +231,7 @@ ${li('Share a little feedback each month. A sentence or two is plenty.')}
 ${codeBox(code, expiresIso)}
 ${button(inviteLink(code), 'Claim my founding place')}
 <tr><td style="padding:14px 36px 0;">
-<p style="margin:0 0 10px;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The button takes you to sign up with your code already filled in. Just tap <strong style="color:#fff;">Apply</strong> and follow the steps. You'll add a card at the end, but you won't be charged anything for 12 months, and you can cancel any time.</p>
+<p style="margin:0 0 10px;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The button takes you to sign up with your code already filled in. Just tap <strong style="color:#fff;">Apply</strong> and follow the steps. You'll add a card at the end, but you won't be charged anything during your free period, and you can cancel any time.</p>
 <p style="margin:0;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The full details are in the <a href="${SITE}/founding-agreement" style="color:${GREEN};font-weight:600;text-decoration:none;">Founding Creative Agreement</a>.</p>
 ${signOff}
 </td></tr>`
@@ -247,7 +247,7 @@ function reminderEmail(first: string, code: string, expiresIso: string, left: nu
 <tr><td style="padding:22px 36px 6px;">
 <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">Your founding place</div>
 <h1 style="margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:800;color:#fff;">Hi ${esc(name)}, your place is still here</h1>
-<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">Just a quick nudge in case my last email got buried. Your founding invite is still open: Expert free for 12 months, then $49 a month locked in for life, and no commission on your jobs, ever.</p>
+<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">Just a quick nudge in case my last email got buried. Your founding invite is still open: Expert free, then $49 a month locked in for life, and no commission on your jobs, ever. Places go to the first 100 to use a code, so the sooner you claim it the better.</p>
 <p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.6;">Your code expires on <strong style="color:#fff;">${esc(fmtDate(expiresIso))}</strong>. After that the place goes to the next creative on my list.</p>
 ${scarcity}
 </td></tr>

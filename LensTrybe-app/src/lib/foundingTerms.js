@@ -8,8 +8,8 @@
 // Body format (rendered by LegalBody): blank lines separate blocks, lines starting with
 // "• " make a list, **text** is bold and [text](/path) is a link.
 
-export const FOUNDING_TERMS_VERSION = '2026-09-11'
-export const FOUNDING_TERMS_UPDATED = '11 September 2026'
+export const FOUNDING_TERMS_VERSION = '2026-09-17'
+export const FOUNDING_TERMS_UPDATED = '17 September 2026'
 export const FOUNDING_TERMS_TITLE = 'Founding Creative Agreement'
 
 export const FOUNDING_TERMS_INTRO = `**The terms for the Founding 100.**
@@ -25,6 +25,7 @@ export const FOUNDING_TERMS_SECTIONS = [
     id: 'who',
     title: '1. Who can join',
     body: `• The founding deal is offered by invitation only, at LensTrybe's discretion, and there are no more than 100 places.
+• **We invite more creatives than there are places, and the places go to the first 100 who use their code.** Holding a code does not reserve a place. If the 100 are taken before you use yours, you still join as a founding creative on everything below, with 6 months free instead of 12. Section 2 sets out both.
 • Your founding code is personal to you, works once, can't be transferred or sold, and expires 14 days after we send it.
 • One founding account per person or business.
 • You must be 18 or older and running a genuine creative business in Australia.
@@ -33,8 +34,8 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'you-get',
     title: '2. What you get',
-    body: `• **12 months of Expert, free.** Full access to our Expert plan (normally $74.99 a month) for 12 months from the day you create your account.
-• **$49 a month for life after that.** When your free year ends, your Expert plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
+    body: `• **Expert free, for 12 months or 6.** Full access to our Expert plan (normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is identical either way. Your dashboard shows the date your free period ends, and we email you about 7 days before.
+• **$49 a month for life after that.** When your free period ends, your Expert plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
 • **A permanent Founding Creative badge** on your profile. The badge stays for life, even if your founding deal ends.
 • **Zero commission, always.** You keep 100% of what you earn. LensTrybe never takes a cut of your work.
 • **A real say.** Founding creatives get a direct line to us and help shape what we build next.`,
@@ -42,9 +43,9 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'billing',
     title: '3. Your card and billing',
-    body: `• You add a card when you create your account. Nothing is charged during your free year while your founding deal is in place.
-• We'll email you about 7 days before your free year ends, so there are no surprises. If you cancel before then, you won't be charged.
-• After the free year, your plan renews automatically at your founding rate until you cancel.
+    body: `• You add a card when you create your account. Nothing is charged during your free period while your founding deal is in place.
+• We'll email you about 7 days before your free period ends, so there are no surprises. If you cancel before then, you won't be charged.
+• After your free period, your plan renews automatically at your founding rate until you cancel.
 • Prices are in Australian dollars.
 • Your founding rate applies to the Expert plan. If you move to a different plan, standard pricing for that plan applies.`,
   },
@@ -54,7 +55,7 @@ export const FOUNDING_TERMS_SECTIONS = [
     body: `To keep your founding deal, you agree to two things:
 
 • **Get your profile live within 7 days.** Complete your profile to 100% within 7 days of creating your account, so clients see a real, finished listing. Your Founding Hub shows exactly what's left.
-• **Run your next 3 real client jobs through LensTrybe within 6 months.** For each job, send the client a quote through LensTrybe, have them accept it, then issue the invoice and mark it paid. These must be genuine jobs for real clients (not yourself, a friend doing you a favour or a made-up client), completed within the first 6 months of your free year.
+• **Run your next 3 real client jobs through LensTrybe within 6 months.** For each job, send the client a quote through LensTrybe, have them accept it, then issue the invoice and mark it paid. These must be genuine jobs for real clients (not yourself, a friend doing you a favour or a made-up client), completed within your first 6 months.
 
 We'd also love **one piece of feedback a month**: a quick note on what's working and what could be better. This one is light-touch. If you miss a month, we'll send a friendly reminder, and it never affects your founding deal on its own.
 
@@ -72,7 +73,7 @@ Your progress is tracked automatically and you can see it any time in your Found
 Your founding deal can also end if you tell us you want to leave the founding programme, or if you seriously or repeatedly break our Terms, misuse your founding code or record jobs that aren't genuine.
 
 **When your founding deal ends:**
-• The rest of your free year ends and the $49 founding rate is gone for good.
+• The rest of your free period ends and the $49 founding rate is gone for good.
 • Your plan continues at the standard price for your plan (for Expert, $74.99 a month or $749.90 a year, depending on the billing you chose).
 • Your first payment at the standard price is taken **7 days after the deal ends**, or on your original first payment date if that's sooner.
 • We'll email you when it ends, with the amount and the date of that first payment.
@@ -86,7 +87,7 @@ If something outside your control is getting in the way, reply to any of our ema
     title: '6. Cancelling',
     body: `• You can cancel your plan at any time from your dashboard. What happens to your access when you cancel is set out in our Terms.
 • If you cancel, your founding deal ends and your founding place can be offered to another creative.
-• If you come back later, the free year doesn't restart and the founding rate isn't available again.`,
+• If you come back later, the free period doesn't restart and the founding rate isn't available again.`,
   },
   {
     id: 'changes',
