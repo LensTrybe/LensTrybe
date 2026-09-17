@@ -344,7 +344,13 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
           <div onClick={() => { navigate('/dashboard'); onCloseMobile?.() }} style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}>
             <BrandLogo markSize={26} showWordmark={false} />{wordmark}
           </div>
-          <nav style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '4px 0 8px' }}>
+          {/* minHeight: 0 is belt and braces, not the fix: overflow-y other than visible
+              already zeroes a flex item's automatic minimum size, so this nav scrolls
+              without it. What actually broke scrolling was a legacy .sidebar-drawer
+              block in index.css forcing height: 100vh and a second overflow-y on the
+              drawer, which is gone. overscroll-behavior stops a flick at the end of the
+              list scrolling the page underneath. */}
+          <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'contain', padding: '4px 0 8px' }}>
             {TOP.map((it) => flyItem({ ...it }))}
             {sections.map((s) => (
               <div key={s.label}>
@@ -353,6 +359,26 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
               </div>
             ))}
           </nav>
+
+          {/* The drawer had no footer at all, so on a phone there was no profile, no plan
+              and nowhere to sign out. The rail on wider screens has all three, which is
+              why landscape looked complete and portrait did not. Pinned rather than
+              scrolled, and padded past the home indicator. */}
+          <div style={{ flexShrink: 0, borderTop: `1px solid ${t.divider}`, padding: '6px 0 calc(8px + env(safe-area-inset-bottom))' }}>
+            <div onClick={() => { navigate('/dashboard/profile/view-profile'); closeAll(); onCloseMobile?.() }} title="Profile"
+              style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '8px 18px', cursor: 'pointer' }}>
+              {avatar}
+              <div style={{ overflow: 'hidden' }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: t.text, fontFamily: FONT, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{profile?.full_name ?? profile?.business_name ?? user?.email}</div>
+                <div style={{ fontSize: 11, color: tierColor, fontFamily: FONT, textTransform: 'capitalize' }}>{tier} plan</div>
+              </div>
+            </div>
+            <div onClick={() => { signOut(); onCloseMobile?.() }} title="Sign out"
+              style={{ display: 'flex', alignItems: 'center', gap: 11, padding: '5px 10px', margin: '3px 8px', borderRadius: 13, fontFamily: FONT, fontSize: 13.5, fontWeight: 450, cursor: 'pointer', color: t.muted }}>
+              {chip('logout', false)}
+              <span>Sign Out</span>
+            </div>
+          </div>
         </div>
       </div>
     )

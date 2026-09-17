@@ -92,20 +92,22 @@ input, textarea, select {
     justify-content: center;
   }
 
-  .sidebar-drawer {
-    position: fixed !important;
-    top: 0 !important;
-    left: -280px !important;
-    height: 100vh !important;
-    z-index: 1000 !important;
-    transition: left 0.25s ease !important;
-    overflow-y: auto !important;
-    width: 260px !important;
-  }
+  /* The .sidebar-drawer rules that used to live here were removed on 17 September 2026.
+     They were a leftover from an older drawer and every one of them overrode the
+     component's inline styles with !important:
 
-  .sidebar-drawer.open {
-    left: 0 !important;
-  }
+       height: 100vh      beat the component's 100dvh. On iOS Safari 100vh is the LARGE
+                          viewport, taller than the visible area, so the bottom of the
+                          drawer sat under the browser toolbar where it could not be
+                          reached. Admin is the last item of the last section, so it was
+                          the first thing to disappear.
+       overflow-y: auto   put a second scroll container on the drawer itself, while the
+                          component scrolls the inner nav. Two scrollers, neither behaving.
+       left: -280px/0     fought the component's transform: translateX for the slide.
+       width: 260px       beat the component's 86% capped at 320px.
+
+     Styling lives inline in Sidebar.jsx, per the project's no-CSS-files rule. Do not
+     re-add layout rules for this component here. */
 
   .dash-main {
     margin-left: 0 !important;
