@@ -1,18 +1,25 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
+import { TYPO, LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD } from '../../lib/glassTokensLight'
+import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import TileField from '../../components/ui/TileField'
 
-// The Founding 100 offer, as one link Michael can send in a DM instead of explaining the
-// deal every time. The terms themselves live at /founding-agreement; this page sells it.
+// The Founding 100 offer, as one link Michael can send in a DM or put in a bio instead of
+// explaining the deal every time. The terms themselves live at /founding-agreement; this
+// page sells it, and the form at the bottom lets an interested creative put their hand up.
 //
-// Still invitation only: nobody signs up from here. What the form at the bottom does is
-// let a creative put their hand up, so Michael has their details in the admin panel and
-// decides who gets a code. An application is a request, never a place.
+// Still invitation only: nobody signs up from here. An application is a request, never a
+// place, and a person decides what happens next.
+//
+// Built on the public site's liquid-glass language (glassTokensLight + TileField), the
+// same as Home, Pricing and Upcoming Features. It used to be a one-off black page with its
+// own CSS, which read as a different website once the light header sat on top of it.
 
-const GREEN = '#1DB954'
-const ON_GREEN = '#04120a'
-const PINK = '#FF2D78'
-const BG = '#0a0a0f'
+// Brand green and pink are too light for text on the site's near-white background, so
+// small bold type uses the darkened pair the rest of the public site uses.
+const GREEN_TEXT = '#0E7C3A'
+const PINK_TEXT = '#c11f5a'
 
 const GET = [
   ['12 months of Expert, free', 'Our top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The 12 months go to the first 100 creatives who use a code. After that it is 6 months, on the same locked rate.'],
@@ -28,6 +35,12 @@ const ASK = [
   ['A line of feedback each month', 'What worked, what did not. A sentence is plenty, and missing one never costs you the deal.'],
 ]
 
+const HOW = [
+  ['You need a code', 'Founding places are invitation only. Each code is personal, works once, and expires 14 days after I send it.'],
+  ['Signing up takes a few minutes', 'Your code is filled in for you. You add a card at the end, but nothing is charged during your free period and you can cancel any time.'],
+  ['Then build your profile', 'Your Founding Hub shows exactly what is left to do and how you are tracking.'],
+]
+
 const CREATIVE_TYPES = [
   'Photographer',
   'Videographer',
@@ -40,10 +53,28 @@ const CREATIVE_TYPES = [
   'Something else',
 ]
 
+function Card({ title, body }) {
+  return (
+    <div style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '20px' }}>
+      <div style={{ fontSize: '16px', marginBottom: '8px', ...TYPO.heading }}>{title}</div>
+      <div style={{ color: 'var(--text-secondary)', fontSize: '14px', ...TYPO.body }}>{body}</div>
+    </div>
+  )
+}
+
+function SectionHeading({ title, lede, isMobile }) {
+  return (
+    <>
+      <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{title}</h2>
+      {lede && <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', maxWidth: '64ch', ...TYPO.body }}>{lede}</p>}
+    </>
+  )
+}
+
 // Module level on purpose. Defined inside FoundingOfferPage it would be a new component
 // type on every render, so React would throw the inputs away and the field you are typing
 // in would lose focus after each keystroke.
-function ApplyForm() {
+function ApplyForm({ isMobile }) {
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -55,10 +86,7 @@ function ApplyForm() {
   const [done, setDone] = useState(false)
   const [err, setErr] = useState('')
 
-  const set = (key) => (e) => {
-    const { value } = e.target
-    setForm((f) => ({ ...f, [key]: value }))
-  }
+  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
 
   async function onSubmit(e) {
     e.preventDefault()
@@ -89,98 +117,88 @@ function ApplyForm() {
 
   if (done) {
     return (
-      <div className="fo-card">
-        <p className="fo-done">
-          <b>Got it.</b> Your details are with me. I go through every application myself, so
-          give it a few days. If you are a fit, your code arrives by email from
-          connect@lenstrybe.com.
-        </p>
+      <div style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
+        <div style={{ fontSize: '17px', marginBottom: '8px', color: GREEN_TEXT, ...TYPO.heading }}>Got it.</div>
+        <div style={{ color: 'var(--text-secondary)', fontSize: '15px', ...TYPO.body }}>
+          Your details are with me. I go through every application myself, so give it a few
+          days. If you are a fit, your code arrives by email from connect@lenstrybe.com.
+        </div>
       </div>
     )
   }
 
+  const fieldStyle = { width: '100%', padding: '13px 14px', ...LIQUID_FIELD }
+  const labelStyle = { display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }
+  const twoUp = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }
+
   return (
-    <form className="fo-form" onSubmit={onSubmit} noValidate>
-      <div className="fo-two">
+    <form onSubmit={onSubmit} noValidate style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
+      <div style={twoUp}>
         <div>
-          <label className="fo-label" htmlFor="fo-name">Your name</label>
-          <input
-            id="fo-name"
-            className="fo-in"
-            type="text"
-            autoComplete="name"
-            value={form.name}
-            onChange={set('name')}
-            placeholder="Jess Turner"
-          />
+          <label style={labelStyle} htmlFor="fo-name">Your name</label>
+          <input id="fo-name" type="text" autoComplete="name" maxLength={120} value={form.name}
+            onChange={(e) => set('name', e.target.value)} placeholder="Jess Turner" style={fieldStyle} />
         </div>
         <div>
-          <label className="fo-label" htmlFor="fo-email">Email</label>
-          <input
-            id="fo-email"
-            className="fo-in"
-            type="email"
-            autoComplete="email"
-            value={form.email}
-            onChange={set('email')}
-            placeholder="you@yourstudio.com.au"
-          />
+          <label style={labelStyle} htmlFor="fo-email">Email</label>
+          <input id="fo-email" type="email" autoComplete="email" maxLength={254} value={form.email}
+            onChange={(e) => set('email', e.target.value)} placeholder="you@yourstudio.com.au" style={fieldStyle} />
         </div>
       </div>
 
-      <div className="fo-two">
+      <div style={twoUp}>
         <div>
-          <label className="fo-label" htmlFor="fo-type">What you do</label>
-          <select id="fo-type" className="fo-in" value={form.creative_type} onChange={set('creative_type')}>
-            <option value="">Choose one</option>
-            {CREATIVE_TYPES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="fo-label" htmlFor="fo-region">Where you work</label>
-          <input
-            id="fo-region"
-            className="fo-in"
-            type="text"
-            value={form.region}
-            onChange={set('region')}
-            placeholder="Brisbane and the Sunshine Coast"
+          <span style={labelStyle}>What you do</span>
+          <LiquidSelect
+            value={form.creative_type}
+            onChange={(v) => set('creative_type', v)}
+            ariaLabel="What you do"
+            placeholder="Choose one"
+            style={{ flex: '1 1 100%' }}
+            options={[{ value: '', label: 'Choose one' }, ...CREATIVE_TYPES.map((t) => ({ value: t, label: t }))]}
           />
         </div>
+        <div>
+          <label style={labelStyle} htmlFor="fo-region">Where you work</label>
+          <input id="fo-region" type="text" maxLength={120} value={form.region}
+            onChange={(e) => set('region', e.target.value)} placeholder="Brisbane and the Sunshine Coast" style={fieldStyle} />
+        </div>
       </div>
 
-      <div>
-        <label className="fo-label" htmlFor="fo-link">A link to your work</label>
-        <input
-          id="fo-link"
-          className="fo-in"
-          type="text"
-          inputMode="url"
-          value={form.portfolio_url}
-          onChange={set('portfolio_url')}
-          placeholder="@yourhandle or yourwebsite.com.au"
-        />
-        <p className="fo-hint">Instagram, a website, a Drive folder. Whatever shows your work best.</p>
+      <div style={{ marginBottom: '14px' }}>
+        <label style={labelStyle} htmlFor="fo-link">A link to your work</label>
+        <input id="fo-link" type="text" inputMode="url" maxLength={300} value={form.portfolio_url}
+          onChange={(e) => set('portfolio_url', e.target.value)} placeholder="@yourhandle or yourwebsite.com.au" style={fieldStyle} />
+        <p style={{ margin: '6px 0 0', fontSize: '12.5px', color: 'var(--text-muted)', ...TYPO.body }}>
+          Instagram, a website, a Drive folder. Whatever shows your work best.
+        </p>
       </div>
 
-      {err && <p className="fo-err">{err}</p>}
+      {err && <p style={{ margin: '0 0 12px', fontSize: '13.5px', color: PINK_TEXT, ...TYPO.body }}>{err}</p>}
 
-      <button className="fo-submit" type="submit" disabled={sending}>
+      <LiquidPill type="submit" primary disabled={sending}
+        style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px', opacity: sending ? 0.7 : 1 }}>
         {sending ? 'Sending' : 'Apply for a place'}
-      </button>
+      </LiquidPill>
 
-      <p className="fo-hint">
+      <p style={{ margin: '14px 0 0', fontSize: '12.5px', color: 'var(--text-muted)', ...TYPO.body }}>
         No spam. Your details are only used to look at your application and send you a code.
-        Read our <Link to="/privacy">Privacy Policy</Link>.
+        Read our <Link to="/privacy" style={{ color: GREEN_TEXT, fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</Link>.
       </p>
     </form>
   )
 }
 
 export default function FoundingOfferPage() {
+  const navigate = useNavigate()
   const [taken, setTaken] = useState(null)
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
+
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 768)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
 
   useEffect(() => {
     let live = true
@@ -197,149 +215,96 @@ export default function FoundingOfferPage() {
   // is worse than a sales page with no counter at all.
   const left = Number.isFinite(taken) ? Math.max(0, Math.min(100, 100 - taken)) : null
 
+  const cardGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }
+  const scrollToApply = () => document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' })
+
   return (
-    <div style={{ background: BG, color: '#fff', fontFamily: "'Inter', sans-serif" }}>
-      <style>{`
-        .fo-wrap { max-width: 880px; margin: 0 auto; padding-inline: 20px; padding-block: 64px 96px; }
-        .fo-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: ${PINK}; margin: 0 0 14px; }
-        .fo-h1 { font-size: clamp(32px, 6vw, 52px); line-height: 1.08; font-weight: 800; letter-spacing: -0.02em; margin: 0 0 18px; text-wrap: balance; }
-        .fo-lede { font-size: 17px; line-height: 1.6; color: #b4b4c2; max-width: 60ch; margin: 0 0 28px; }
-        .fo-h2 { font-size: clamp(22px, 3.4vw, 28px); font-weight: 700; letter-spacing: -0.01em; margin: 0 0 18px; }
-        .fo-card { background: #14141d; border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 22px 24px; }
-        .fo-rows { display: flex; flex-direction: column; gap: 2px; }
-        .fo-row { padding: 16px 0; border-top: 1px solid rgba(255,255,255,0.07); }
-        .fo-row:first-child { border-top: none; }
-        .fo-rt { font-size: 16.5px; font-weight: 650; margin-bottom: 5px; }
-        .fo-rb { font-size: 14.5px; line-height: 1.55; color: #9a9aa8; max-width: 62ch; }
-        .fo-section { margin-top: 56px; }
-        .fo-cta { display: inline-flex; align-items: center; justify-content: center; padding: 15px 30px; border-radius: 999px; background: ${GREEN}; color: ${ON_GREEN}; font-weight: 700; font-size: 16px; text-decoration: none; }
-        .fo-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 15px 28px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.18); color: #fff; font-weight: 600; font-size: 15.5px; text-decoration: none; }
-        .fo-btns { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 8px; }
-        .fo-meter { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 26px; }
-        .fo-meter b { font-size: 30px; font-weight: 800; color: ${GREEN}; font-variant-numeric: tabular-nums; }
-        .fo-meter span { font-size: 14.5px; color: #9a9aa8; }
-        .fo-bar { height: 6px; border-radius: 999px; background: rgba(255,255,255,0.09); overflow: hidden; max-width: 340px; margin-top: 10px; }
-        .fo-bar > div { height: 100%; background: ${GREEN}; }
-        .fo-note { font-size: 13.5px; line-height: 1.6; color: #7a7a88; margin-top: 14px; }
-        .fo-note a { color: ${GREEN}; font-weight: 600; text-decoration: none; }
-        .fo-form { display: grid; gap: 14px; margin-top: 4px; }
-        .fo-two { display: grid; gap: 14px; grid-template-columns: 1fr 1fr; }
-        .fo-label { display: block; font-size: 13px; font-weight: 600; color: #b4b4c2; margin-bottom: 6px; }
-        .fo-in { width: 100%; box-sizing: border-box; background: #0f0f16; border: 1px solid rgba(255,255,255,0.14); border-radius: 10px; padding: 13px 14px; color: #fff; font-size: 16px; font-family: inherit; }
-        .fo-in:focus { outline: none; border-color: ${GREEN}; }
-        .fo-in::placeholder { color: #6a6a78; }
-        select.fo-in { appearance: none; cursor: pointer; background-image: linear-gradient(45deg, transparent 50%, #9a9aa8 50%), linear-gradient(135deg, #9a9aa8 50%, transparent 50%); background-position: calc(100% - 20px) calc(50% + 2px), calc(100% - 15px) calc(50% + 2px); background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 40px; }
-        select.fo-in option { background: #14141d; color: #fff; }
-        .fo-hint { font-size: 12.5px; color: #7a7a88; margin: 6px 0 0; line-height: 1.55; }
-        .fo-hint a { color: ${GREEN}; font-weight: 600; text-decoration: none; }
-        .fo-submit { appearance: none; border: 0; cursor: pointer; padding: 15px 30px; border-radius: 999px; background: ${GREEN}; color: ${ON_GREEN}; font-weight: 700; font-size: 16px; font-family: inherit; justify-self: start; }
-        .fo-submit[disabled] { opacity: 0.55; cursor: default; }
-        .fo-err { font-size: 14px; color: ${PINK}; line-height: 1.5; margin: 0; }
-        .fo-done { font-size: 16px; line-height: 1.6; color: #fff; margin: 0; }
-        .fo-done b { color: ${GREEN}; }
-        @media (max-width: 640px) { .fo-wrap { padding-block: 44px 72px; } .fo-two { grid-template-columns: 1fr; } }
-      `}</style>
+    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
+      <LiquidLensFilter />
+      {!isMobile && <TileField animated={false} opacity={0.22} />}
+      {!isMobile && (
+        <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
+      )}
 
-      <div className="fo-wrap">
-        <p className="fo-eyebrow">Invitation only</p>
-        <h1 className="fo-h1">The first 100 creatives on LensTrybe</h1>
-        <p className="fo-lede">
-          LensTrybe is a home for Australian photographers and videographers where you keep
-          everything you earn. No commission on your jobs, ever. I am hand-picking 100
-          creatives to start it with me, and the deal they get never comes back.
-        </p>
+      <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+        <div style={{ textAlign: 'center', marginBottom: '40px' }}>
+          <p style={{ margin: '0 0 14px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: PINK_TEXT }}>Invitation only</p>
+          <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>
+            The first 100 creatives on LensTrybe
+          </h1>
+          <p style={{ margin: '16px auto 0', maxWidth: '660px', color: 'var(--text-secondary)', fontSize: '16px', ...TYPO.body }}>
+            LensTrybe is a home for Australian photographers and videographers where you keep
+            everything you earn. No commission on your jobs, ever. I am hand-picking 100
+            creatives to start it with me, and the deal they get never comes back.
+          </p>
 
-        {left != null && (
-          <div>
-            <div className="fo-meter">
-              <b>{left}</b>
-              <span>of 100 founding places left</span>
-            </div>
-            <div className="fo-bar" aria-hidden="true">
-              <div style={{ width: `${Math.min(100, ((100 - left) / 100) * 100)}%` }} />
-            </div>
-          </div>
-        )}
-
-        <div className="fo-section">
-          <h2 className="fo-h2">What you get</h2>
-          <div className="fo-card fo-rows">
-            {GET.map(([t, b]) => (
-              <div className="fo-row" key={t}>
-                <div className="fo-rt">{t}</div>
-                <div className="fo-rb">{b}</div>
+          {left != null && (
+            <div style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '16px 20px', margin: '26px auto 0', maxWidth: '340px' }}>
+              <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'center', gap: '9px', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '30px', fontWeight: 700, color: GREEN_TEXT, fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.02em' }}>{left}</span>
+                <span style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>of 100 founding places left</span>
               </div>
-            ))}
+              <div aria-hidden style={{ height: '6px', borderRadius: '999px', background: 'rgba(20,17,26,0.09)', overflow: 'hidden', marginTop: '12px' }}>
+                <div style={{ height: '100%', width: `${100 - left}%`, background: GREEN_TEXT }} />
+              </div>
+            </div>
+          )}
+
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '26px' }}>
+            <LiquidPill primary style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px' }} onClick={() => navigate('/join/creative')}>
+              I have a code
+            </LiquidPill>
+            <LiquidPill style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px' }} onClick={scrollToApply}>
+              Ask for a code
+            </LiquidPill>
           </div>
-          <p className="fo-note">
+        </div>
+
+        <section style={{ marginBottom: '56px' }}>
+          <SectionHeading title="What you get" isMobile={isMobile} />
+          <div style={cardGrid}>
+            {GET.map(([t, b]) => <Card key={t} title={t} body={b} />)}
+          </div>
+          <p style={{ margin: '14px 0 0', fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '68ch', ...TYPO.body }}>
             A place is taken when a creative uses their code, not when I send one. I invite
             more people than there are places, so holding a code does not hold a place.
           </p>
-        </div>
+        </section>
 
-        <div className="fo-section">
-          <h2 className="fo-h2">What I ask in return</h2>
-          <p className="fo-lede" style={{ marginBottom: 18 }}>
-            This is a partnership, not a giveaway. A directory of half-finished profiles helps
-            nobody, so the founding deal comes with three commitments.
-          </p>
-          <div className="fo-card fo-rows">
-            {ASK.map(([t, b]) => (
-              <div className="fo-row" key={t}>
-                <div className="fo-rt">{t}</div>
-                <div className="fo-rb">{b}</div>
-              </div>
-            ))}
+        <section style={{ marginBottom: '56px' }}>
+          <SectionHeading
+            title="What I ask in return"
+            lede="This is a partnership, not a giveaway. A directory of half-finished profiles helps nobody, so the founding deal comes with three commitments."
+            isMobile={isMobile}
+          />
+          <div style={cardGrid}>
+            {ASK.map(([t, b]) => <Card key={t} title={t} body={b} />)}
           </div>
-          <p className="fo-note">
+          <p style={{ margin: '14px 0 0', fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '68ch', ...TYPO.body }}>
             If you fall behind, you get an email and 14 days to put it right. Nothing happens
             silently. The full terms are in the{' '}
-            <Link to="/founding-agreement">Founding Creative Agreement</Link>.
+            <Link to="/founding-agreement" style={{ color: GREEN_TEXT, fontWeight: 600, textDecoration: 'none' }}>Founding Creative Agreement</Link>.
           </p>
-        </div>
+        </section>
 
-        <div className="fo-section">
-          <h2 className="fo-h2">How it works</h2>
-          <div className="fo-card fo-rows">
-            <div className="fo-row">
-              <div className="fo-rt">You need a code</div>
-              <div className="fo-rb">
-                Founding places are invitation only. Each code is personal, works once, and
-                expires 14 days after I send it.
-              </div>
-            </div>
-            <div className="fo-row">
-              <div className="fo-rt">Signing up takes a few minutes</div>
-              <div className="fo-rb">
-                Your code is filled in for you. You add a card at the end, but nothing is
-                charged during your free period and you can cancel any time.
-              </div>
-            </div>
-            <div className="fo-row">
-              <div className="fo-rt">Then build your profile</div>
-              <div className="fo-rb">
-                Your Founding Hub shows exactly what is left to do and how you are tracking.
-              </div>
-            </div>
+        <section style={{ marginBottom: '56px' }}>
+          <SectionHeading title="How it works" isMobile={isMobile} />
+          <div style={cardGrid}>
+            {HOW.map(([t, b]) => <Card key={t} title={t} body={b} />)}
           </div>
-
-          <div className="fo-btns" style={{ marginTop: 22 }}>
-            <Link className="fo-cta" to="/join/creative">I have a code</Link>
-            <a className="fo-ghost" href="#apply">Ask for a code</a>
-          </div>
-          <p className="fo-note">
+          <p style={{ margin: '14px 0 0', fontSize: '13.5px', color: 'var(--text-muted)', ...TYPO.body }}>
             Launching on the east coast on 1 October 2026, starting in South East Queensland.
           </p>
-        </div>
+        </section>
 
-        <div className="fo-section" id="apply">
-          <h2 className="fo-h2">Want one of the places?</h2>
-          <p className="fo-lede" style={{ marginBottom: 22 }}>
-            Tell me who you are and show me your work. I read every one of these myself, and
-            if you are a fit I will send you a code.
-          </p>
-          <ApplyForm />
-        </div>
+        <section id="apply" style={{ margin: '0 auto', maxWidth: '640px', scrollMarginTop: '90px' }}>
+          <SectionHeading
+            title="Want one of the places?"
+            lede="Tell me who you are and show me your work. I read every one of these myself, and if you are a fit I will send you a code."
+            isMobile={isMobile}
+          />
+          <ApplyForm isMobile={isMobile} />
+        </section>
       </div>
     </div>
   )
