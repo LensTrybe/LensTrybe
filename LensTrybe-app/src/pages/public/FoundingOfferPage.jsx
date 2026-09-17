@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { TYPO, LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD } from '../../lib/glassTokensLight'
-import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
-import TileField from '../../components/ui/TileField'
+import { LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import PublicPageShell from '../../components/layout/PublicPageShell'
 
 // The Founding 100 offer, as one link Michael can send in a DM or put in a bio instead of
 // explaining the deal every time. The terms themselves live at /founding-agreement; this
@@ -192,13 +192,6 @@ function ApplyForm({ isMobile }) {
 export default function FoundingOfferPage() {
   const navigate = useNavigate()
   const [taken, setTaken] = useState(null)
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
-
-  useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < 768)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [])
 
   useEffect(() => {
     let live = true
@@ -215,22 +208,14 @@ export default function FoundingOfferPage() {
   // is worse than a sales page with no counter at all.
   const left = Number.isFinite(taken) ? Math.max(0, Math.min(100, 100 - taken)) : null
 
-  const cardGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }
   const scrollToApply = () => document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' })
 
   return (
-    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
-      <LiquidLensFilter />
-      {/* Most public pages drop the mosaic on mobile, which leaves a phone looking at a
-          flat grey page. This one is the link in the Instagram bio, so nearly everyone
-          who sees it sees it on a phone, and the colour is most of the first impression.
-          The field stays, with a lower column floor so the tiles stay roughly square
-          instead of stretching into stripes at 390px wide. It is static (animated={false}),
-          so it does not force the glass above it to re-blur on every frame. */}
-      <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
-      <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '220px', zIndex: 1, background: 'linear-gradient(180deg, rgba(246,245,243,0.9) 0%, rgba(246,245,243,0.5) 55%, rgba(246,245,243,0) 100%)' }} />
-
-      <div style={{ maxWidth: '1000px', margin: '0 auto', position: 'relative', zIndex: 2 }}>
+    <PublicPageShell>
+      {({ isMobile }) => {
+        const cardGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }
+        return (
+        <>
         <div style={{ textAlign: 'center', marginBottom: '40px' }}>
           <p style={{ margin: '0 0 14px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: PINK_TEXT }}>Invitation only</p>
           <h1 style={{ margin: 0, fontSize: isMobile ? '36px' : '52px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>
@@ -309,7 +294,9 @@ export default function FoundingOfferPage() {
           />
           <ApplyForm isMobile={isMobile} />
         </section>
-      </div>
-    </div>
+        </>
+        )
+      }}
+    </PublicPageShell>
   )
 }

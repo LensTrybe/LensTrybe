@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { hasLaunched } from './lib/launch'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabaseClient'
@@ -76,6 +76,9 @@ import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
+import PublicPageShell from './components/layout/PublicPageShell'
+import { LiquidPill } from './components/ui/liquidGlass'
+import { LIQUID_GLASS } from './lib/glassTokensLight'
 
 // Accounts opened on 17 September so invited creatives could set up before the public
 // launch, but the directory should not open with a hundred half built profiles in it.
@@ -95,43 +98,58 @@ function previewUnlocked() {
   }
 }
 
+// A short, centred public page: eyebrow, heading, a line of explanation, and up to two
+// actions. Both the directory gate and the 404 are this shape, and both used to be
+// hand-rolled with serif headings and a flat green pill, which is not the public house
+// style. Anything else of this shape should use it rather than growing a third copy.
+function PublicNoticePage({ eyebrow, title, body, primary, secondary }) {
+  const navigate = useNavigate()
+  return (
+    <PublicPageShell maxWidth={700} centre>
+      {({ isMobile }) => (
+        <div style={{ ...LIQUID_GLASS, width: '100%', textAlign: 'center', padding: isMobile ? '32px 22px' : '48px 40px' }}>
+          {eyebrow && (
+            <p style={{ margin: '0 0 14px', fontSize: '12px', fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: '#c11f5a' }}>
+              {eyebrow}
+            </p>
+          )}
+          <h1 style={{ margin: 0, fontSize: isMobile ? '32px' : '44px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>
+            {title}
+          </h1>
+          {body && (
+            <p style={{ margin: '16px auto 0', maxWidth: '48ch', fontSize: '16px', lineHeight: 1.6, color: 'var(--text-secondary)' }}>
+              {body}
+            </p>
+          )}
+          {(primary || secondary) && (
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '26px' }}>
+              {primary && (
+                <LiquidPill primary style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px' }} onClick={() => navigate(primary.to)}>
+                  {primary.label}
+                </LiquidPill>
+              )}
+              {secondary && (
+                <LiquidPill style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px' }} onClick={() => navigate(secondary.to)}>
+                  {secondary.label}
+                </LiquidPill>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </PublicPageShell>
+  )
+}
+
 function DirectoryOpensSoon() {
   return (
-    <div style={{
-      minHeight: '60vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      gap: '14px',
-      padding: '48px 20px',
-      textAlign: 'center',
-      fontFamily: 'var(--font-ui)',
-    }}>
-      <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1DB954' }}>
-        Opening 1 October 2026
-      </div>
-      <div style={{ fontSize: '30px', lineHeight: 1.2, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', maxWidth: '18ch' }}>
-        The directory opens 1 October
-      </div>
-      <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: '46ch' }}>
-        Our founding creatives are setting up their profiles right now. Come back on 1 October and you will be able to search every one of them.
-      </p>
-      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '10px' }}>
-        <Link to="/join/creative" style={{
-          background: '#1DB954', color: '#04120a', fontWeight: 700, fontSize: '15px',
-          padding: '13px 26px', borderRadius: '999px', textDecoration: 'none',
-        }}>
-          I'm a creative, let me in early
-        </Link>
-        <Link to="/" style={{
-          color: 'var(--text-secondary)', fontWeight: 600, fontSize: '15px',
-          padding: '13px 20px', textDecoration: 'none',
-        }}>
-          Back to home
-        </Link>
-      </div>
-    </div>
+    <PublicNoticePage
+      eyebrow="Opening 1 October 2026"
+      title="The directory opens 1 October"
+      body="Our founding creatives are setting up their profiles right now. Come back on 1 October and you will be able to search every one of them."
+      primary={{ to: '/join/creative', label: "I'm a creative, let me in early" }}
+      secondary={{ to: '/', label: 'Back to home' }}
+    />
   )
 }
 
@@ -140,21 +158,15 @@ function DirectoryGate({ children }) {
   return <DirectoryOpensSoon />
 }
 
-function PlaceholderPage({ page }) {
+function NotFoundPage() {
   return (
-    <div style={{
-      minHeight: '60vh',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      flexDirection: 'column',
-      gap: '12px',
-      color: 'var(--text-secondary)',
-      fontFamily: 'var(--font-ui)'
-    }}>
-      <div style={{ fontSize: '11px', color: 'var(--text-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Building</div>
-      <div style={{ fontSize: '24px', color: 'var(--text-primary)', fontWeight: 600, fontFamily: 'var(--font-display)' }}>{page}</div>
-    </div>
+    <PublicNoticePage
+      eyebrow="404"
+      title="We can't find that page"
+      body="The link may be out of date, or the page may have moved. Everything else is still where you left it."
+      primary={{ to: '/', label: 'Back to home' }}
+      secondary={{ to: '/support', label: 'Get help' }}
+    />
   )
 }
 
@@ -169,7 +181,6 @@ function ProtectedRoute({ children }) {
 
 export default function App() {
   const navigate = useNavigate()
-  const { user } = useAuth()
 
   useEffect(() => {
     const hash = window.location.hash
@@ -294,7 +305,7 @@ export default function App() {
       <Route path="/site/:slug" element={<PublicSitePage />} />
 
       {/* Fallback */}
-      <Route path="*" element={<PlaceholderPage page="404: Page Not Found" />} />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 

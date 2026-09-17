@@ -1,10 +1,15 @@
 import { useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
+import { TYPO, LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD } from '../../lib/glassTokensLight'
+import { LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
+import PublicPageShell from '../../components/layout/PublicPageShell'
 
 const GREEN = '#1DB954'
-const GREEN_DARK = '#04120a'
-const PINK = '#FF2D78'
+// Green and pink are decoration colours. As text on the near-white public background they
+// fail contrast, so coloured type uses the darkened pair the rest of the public site uses.
+const GREEN_TEXT = '#0E7C3A'
+const PINK_TEXT = '#c11f5a'
 const TEXT = '#14111a'
 const TEXT_MUTED = '#55545f'
 const TEXT_FAINT = '#8a8995'
@@ -41,25 +46,14 @@ const FAQS = [
 function StyleBlock() {
   return (
     <style>{`
-      .ltps-wrap { max-width: 880px; margin: 0 auto; padding: 48px 20px 72px; font-family: 'Inter', sans-serif; }
-      .ltps-card { background: linear-gradient(160deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.62) 100%); border: 1px solid rgba(20,17,26,0.07); border-radius: 20px; padding: 26px 26px; box-shadow: 0 10px 30px -12px rgba(40,30,60,0.16), inset 0 1px 0 rgba(255,255,255,0.85); }
       .ltps-label { display: block; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: ${TEXT_FAINT}; margin: 0 0 6px; }
-      .ltps-input, .ltps-select, .ltps-textarea {
+      .ltps-input, .ltps-textarea {
         width: 100%; box-sizing: border-box; font-family: inherit; font-size: 14px; color: ${TEXT};
-        background: rgba(255,255,255,0.75); border: 1px solid rgba(20,17,26,0.12); border-radius: 10px; padding: 11px 13px; outline: none;
+        background: rgba(255,255,255,0.72); border: 1px solid rgba(20,17,26,0.1); border-radius: 11px; padding: 12px 13px; outline: none;
         transition: border-color .15s ease, box-shadow .15s ease;
       }
       .ltps-textarea { resize: vertical; min-height: 150px; line-height: 1.55; }
-      .ltps-input:focus, .ltps-select:focus, .ltps-textarea:focus { border-color: ${GREEN}; box-shadow: 0 0 0 3px rgba(29,185,84,0.16); }
-      .ltps-select { appearance: none; -webkit-appearance: none; cursor: pointer; }
-      .ltps-btn {
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        background: ${GREEN}; color: ${GREEN_DARK}; border: none; border-radius: 10px;
-        padding: 12px 24px; font-size: 14px; font-weight: 700; font-family: inherit; cursor: pointer;
-        transition: filter .15s ease, opacity .15s ease;
-      }
-      .ltps-btn:hover { filter: brightness(1.06); }
-      .ltps-btn:disabled { opacity: 0.55; cursor: default; }
+      .ltps-input:focus, .ltps-textarea:focus { border-color: ${GREEN}; box-shadow: 0 0 0 3px rgba(29,185,84,0.16); }
       .ltps-faq { border: 1px solid rgba(20,17,26,0.09); border-radius: 12px; overflow: hidden; background: rgba(255,255,255,0.55); }
       .ltps-faq + .ltps-faq { margin-top: 10px; }
       .ltps-faq-q { width: 100%; text-align: left; background: transparent; border: none; cursor: pointer; padding: 15px 16px; font-family: inherit; font-size: 14px; font-weight: 600; color: ${TEXT}; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
@@ -76,7 +70,7 @@ function FaqItem({ item }) {
     <div className="ltps-faq">
       <button type="button" className="ltps-faq-q" onClick={() => setOpen((o) => !o)} aria-expanded={open}>
         <span>{item.q}</span>
-        <span style={{ color: GREEN, fontSize: 18, lineHeight: 1, transform: open ? 'rotate(45deg)' : 'none', transition: 'transform .18s ease' }}>+</span>
+        <span style={{ color: GREEN_TEXT, fontSize: 18, lineHeight: 1, transform: open ? 'rotate(45deg)' : 'none', transition: 'transform .18s ease' }}>+</span>
       </button>
       {open && <div className="ltps-faq-a">{item.a}</div>}
     </div>
@@ -123,40 +117,42 @@ export default function PublicSupportPage() {
 
   if (done) {
     return (
-      <div className="ltps-wrap">
+      <PublicPageShell maxWidth={880} centre>
         <StyleBlock />
-        <div className="ltps-card" style={{ textAlign: 'center', padding: '48px 24px', maxWidth: 620, margin: '0 auto' }}>
+        <div style={{ ...LIQUID_GLASS, width: '100%', textAlign: 'center', padding: '48px 24px', maxWidth: 620, margin: '0 auto' }}>
           <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(29,185,84,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 18px' }}>
             <svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke={GREEN} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
           </div>
-          <h2 style={{ margin: '0 0 10px', fontSize: 24, fontWeight: 800, color: TEXT }}>Thanks, we are on it</h2>
+          <h2 style={{ margin: '0 0 10px', fontSize: 26, fontWeight: 600, letterSpacing: '-0.02em', color: TEXT }}>Thanks, we are on it</h2>
           <p style={{ margin: '0 auto', maxWidth: 460, fontSize: 15, lineHeight: 1.6, color: TEXT_MUTED }}>
             Your message has reached the LensTrybe team. We will reply to you at {email} as soon as we can, usually within one business day.
           </p>
           {done.ref && <p style={{ margin: '14px 0 0', fontSize: 13, color: TEXT_FAINT }}>Reference: <span style={{ color: TEXT, fontWeight: 700 }}>#{done.ref}</span></p>}
         </div>
-      </div>
+      </PublicPageShell>
     )
   }
 
   return (
-    <div className="ltps-wrap">
+    <PublicPageShell maxWidth={880}>
+      {({ isMobile }) => (
+      <>
       <StyleBlock />
 
       <div style={{ textAlign: 'center', marginBottom: 30 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: GREEN, marginBottom: 12 }}>Support</div>
-        <h1 style={{ margin: '0 0 10px', fontSize: 34, fontWeight: 800, color: TEXT, letterSpacing: '-0.02em' }}>How can we help?</h1>
+        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: '0.16em', textTransform: 'uppercase', color: PINK_TEXT, marginBottom: 14 }}>Support</div>
+        <h1 style={{ margin: '0 0 10px', fontSize: isMobile ? 36 : 52, fontFamily: "'Inter', sans-serif", fontWeight: 600, color: TEXT, letterSpacing: '-0.02em', lineHeight: 1.1 }}>How can we help?</h1>
         <p style={{ margin: '0 auto', maxWidth: 560, fontSize: 15.5, lineHeight: 1.6, color: TEXT_MUTED }}>
           Whether you are a creative, a client or just curious, drop us a line and a real person will get back to you.
         </p>
       </div>
 
-      <div className="ltps-card" style={{ marginBottom: 22 }}>
+      <div style={{ ...LIQUID_GLASS_CARD, borderRadius: 16, padding: isMobile ? 20 : 26, marginBottom: 22 }}>
         <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: TEXT_FAINT, marginBottom: 14 }}>Common questions</div>
         {FAQS.map((f, i) => <FaqItem key={i} item={f} />)}
       </div>
 
-      <div className="ltps-card">
+      <div style={{ ...LIQUID_GLASS, padding: isMobile ? 20 : 26 }}>
         <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: '0.04em', textTransform: 'uppercase', color: TEXT_FAINT, marginBottom: 16 }}>Send us a message</div>
         <form onSubmit={submit}>
           <div className="ltps-grid" style={{ marginBottom: 14 }}>
@@ -172,11 +168,15 @@ export default function PublicSupportPage() {
 
           <div className="ltps-grid" style={{ marginBottom: 14 }}>
             <div>
-              <label className="ltps-label" htmlFor="ltps-cat">Category</label>
-              <select id="ltps-cat" className="ltps-select" value={category} onChange={(e) => setCategory(e.target.value)}>
-                <option value="">Choose a topic (optional)</option>
-                {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
-              </select>
+              <span className="ltps-label">Category</span>
+              <LiquidSelect
+                value={category}
+                onChange={setCategory}
+                ariaLabel="Category"
+                placeholder="Choose a topic (optional)"
+                style={{ flex: '1 1 100%' }}
+                options={[{ value: '', label: 'Choose a topic (optional)' }, ...CATEGORIES.map((c) => ({ value: c, label: c }))]}
+              />
             </div>
             <div>
               <label className="ltps-label" htmlFor="ltps-subj">Subject</label>
@@ -190,19 +190,21 @@ export default function PublicSupportPage() {
           </div>
 
           {error && (
-            <div style={{ marginBottom: 14, padding: '11px 14px', borderRadius: 10, background: 'rgba(255,45,120,0.1)', border: `1px solid ${PINK}`, color: PINK, fontSize: 13.5 }}>
+            <div style={{ marginBottom: 14, padding: '11px 14px', borderRadius: 10, background: 'rgba(255,45,120,0.1)', border: '1px solid rgba(255,45,120,0.4)', color: PINK_TEXT, fontSize: 13.5 }}>
               {error}
             </div>
           )}
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <button type="submit" className="ltps-btn" disabled={sending}>
+            <LiquidPill type="submit" primary disabled={sending} style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px', opacity: sending ? 0.7 : 1 }}>
               {sending ? 'Sending…' : 'Send message'}
-            </button>
+            </LiquidPill>
             <span style={{ fontSize: 12.5, color: TEXT_FAINT }}>Or email us directly at support@lenstrybe.com</span>
           </div>
         </form>
       </div>
-    </div>
+      </>
+      )}
+    </PublicPageShell>
   )
 }
