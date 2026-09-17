@@ -107,8 +107,6 @@ function PlacesMeter({ places, counts }) {
       </div>
       <div style={{ display: 'flex', height: 10, borderRadius: 999, overflow: 'hidden', background: 'var(--lt-track)' }}>
         {seg(counts.founders, GREEN)}
-        {seg(counts.live, AMBER)}
-        {seg(counts.drafts, 'var(--lt-faint)')}
       </div>
       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 10 }}>
         {legend(GREEN, `${counts.founders} founding creative${counts.founders === 1 ? '' : 's'}`)}
@@ -116,7 +114,7 @@ function PlacesMeter({ places, counts }) {
         {legend('var(--lt-faint)', `${counts.drafts} draft${counts.drafts === 1 ? '' : 's'}`)}
       </div>
       <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 10, lineHeight: 1.5 }}>
-        Drafts and sent codes hold a place. Cancelled and expired codes free theirs straight away, and so does a founding creative whose deal ends.
+        A place is taken when a creative redeems a code, not when you send one, so you can have far more codes out than there are places. The first {cap} to redeem get 12 months free, anyone after gets 6. A founding creative whose deal ends frees their place again.
       </div>
     </div>
   )
@@ -154,7 +152,7 @@ function EmailPreviewModal({ preview, onClose }) {
   )
 }
 
-function AddInviteForm({ available, onDone, onPreview }) {
+function AddInviteForm({ onDone, onPreview }) {
   const [f, setF] = useState({ name: '', email: '', skill_type: 'Photographer', region: '', note: '' })
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -193,14 +191,14 @@ function AddInviteForm({ available, onDone, onPreview }) {
       {error && <div style={{ fontSize: 13, color: PINK }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
         <button type="button" style={btn} onClick={() => onPreview(f.name, f.note)}>Preview email</button>
-        <button type="button" style={btn} disabled={!!busy || available <= 0} onClick={() => submit(false)}>{busy === 'draft' ? 'Saving…' : 'Save as draft'}</button>
-        <button type="button" style={{ ...btnPrimary, opacity: available <= 0 ? 0.5 : 1 }} disabled={!!busy || available <= 0} onClick={() => submit(true)}>{busy === 'send' ? 'Sending…' : 'Add and send invite'}</button>
+        <button type="button" style={btn} disabled={!!busy} onClick={() => submit(false)}>{busy === 'draft' ? 'Saving…' : 'Save as draft'}</button>
+        <button type="button" style={btnPrimary} disabled={!!busy} onClick={() => submit(true)}>{busy === 'send' ? 'Sending…' : 'Add and send invite'}</button>
       </div>
     </div>
   )
 }
 
-function BulkAddForm({ available, onDone }) {
+function BulkAddForm({ onDone }) {
   const [text, setText] = useState('')
   const [busy, setBusy] = useState('')
   const [error, setError] = useState('')
@@ -210,7 +208,6 @@ function BulkAddForm({ available, onDone }) {
 
   async function submit(send) {
     if (!good.length || bad.length) return
-    if (good.length > available) { setError(`Only ${available} place${available === 1 ? '' : 's'} left. You're adding ${good.length}.`); return }
     setBusy(send ? 'send' : 'draft'); setError('')
     const res = await callInvites('create', { send, invites: good.map(({ name, email, skill_type, region }) => ({ name, email, skill_type, region })) })
     setBusy('')
@@ -534,7 +531,7 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
     if (!onSummary || !places) return
     onSummary({
       summary: `${places.used} of ${places.cap} places taken · ${counts.live} waiting · ${counts.drafts} draft${counts.drafts === 1 ? '' : 's'}`,
-      badge: places.available === 0 ? { text: 'Full', tone: 'attention' } : { text: `${places.available} free`, tone: 'good' },
+      badge: places.available === 0 ? { text: 'All places claimed', tone: 'attention' } : { text: `${places.available} places free`, tone: 'good' },
     })
   }, [onSummary, places, counts])
 
@@ -594,8 +591,8 @@ export default function FoundingInvitesPanel({ embedded = false, onSummary } = {
               {tab('bulk', 'Paste a list')}
             </div>
             {mode === 'single'
-              ? <AddInviteForm available={places?.available ?? 0} onDone={onCreated} onPreview={showPreview} />
-              : <BulkAddForm available={places?.available ?? 0} onDone={onCreated} />}
+              ? <AddInviteForm onDone={onCreated} onPreview={showPreview} />
+              : <BulkAddForm onDone={onCreated} />}
             <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 12, lineHeight: 1.5 }}>
               Each creative gets a personal code like SARAH-7KQ2 and an email from you, with replies going to connect@lenstrybe.com. Codes work once and expire 14 days after sending. A reminder goes out automatically when 7 days are left.
               {' '}<button type="button" onClick={() => callInvites('preview', { name: 'Sarah', kind: 'reminder' }).then((r) => r.ok && setPreview({ subject: r.subject, html: r.html }))} style={{ background: 'none', border: 'none', padding: 0, color: GREEN, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', fontSize: 12 }}>Preview the reminder</button>
