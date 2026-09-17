@@ -75,7 +75,6 @@ import TrybeEditIssue01 from './pages/TrybeEditIssue01'
 import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
-import { hasLaunched } from './lib/launch'
 
 function PlaceholderPage({ page }) {
   return (
@@ -158,6 +157,9 @@ export default function App() {
         <Route path="/the-trybe-edit" element={<TrybeEditPage />} />
         <Route path="/the-trybe-edit/issue-01" element={<TrybeEditIssue01 />} />
         <Route path="/trybe-edit" element={<Navigate to="/the-trybe-edit" replace />} />
+        {/* Kept on its own URL now that it is no longer the gate, so the waitlist still
+            works for anyone who lands on an older link. */}
+        <Route path="/waitlist" element={<ComingSoon />} />
       </Route>
 
       {/* Protected dashboard routes with sidebar */}
@@ -232,18 +234,20 @@ export default function App() {
     </Routes>
   )
 
-  if (new URLSearchParams(window.location.search).get('preview') === 'letmein') {
-    sessionStorage.setItem('lt_preview', 'true')
-  }
-  const isPreview = sessionStorage.getItem('lt_preview') === 'true'
-  const isLaunched = hasLaunched()
-  // Signed-in users (verified creatives/clients) always get the real app, even before
-  // launch, so the founding cohort can use their dashboard while the public sees the waitlist.
-  const showWaitlist = !isLaunched && !isPreview && !user
+  // The pre-launch gate used to stand here, showing ComingSoon to everyone who was not
+  // signed in. It was removed on 17 September 2026 because it silently broke the founding
+  // programme: an invited creative has no account yet, so they were never signed in, and
+  // every invite link landed on the countdown instead of the signup form. All 100 codes
+  // expired between 7 and 15 hours before the gate would have lifted, so not one of them
+  // could ever have been redeemed.
+  //
+  // Accounts are open from now. 1 October stays the public launch date, it is just a
+  // marketing moment rather than a switch in the code. The waitlist page is still served
+  // at /waitlist, and the homepage carries its own waitlist capture.
 
   return (
     <>
-      {showWaitlist ? <ComingSoon /> : routes}
+      {routes}
       <CinematicIntro />
     </>
   )
