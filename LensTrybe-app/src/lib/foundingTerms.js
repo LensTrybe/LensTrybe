@@ -25,7 +25,7 @@ export const FOUNDING_TERMS_SECTIONS = [
     id: 'who',
     title: '1. Who can join',
     body: `• The founding deal is offered by invitation only, at LensTrybe's discretion, and there are no more than 100 places.
-• **We invite more creatives than there are places, and the places go to the first 100 who use their code.** Holding a code does not reserve a place. If the 100 are taken before you use yours, you still join as a founding creative on everything below, with 6 months free instead of 12. Section 2 sets out both.
+• **We invite more creatives than there are places, and the places go to the first 100 who use their code.** Holding a code does not reserve a place. If the 100 are taken before you use yours, you still join on the same locked rate and the same terms, with 6 months free instead of 12 and without the Founding Creative badge. Section 2 sets out both.
 • Your founding code is personal to you, works once, can't be transferred or sold, and expires 14 days after we send it.
 • One founding account per person or business.
 • You must be 18 or older and running a genuine creative business in Australia.
@@ -34,9 +34,9 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'you-get',
     title: '2. What you get',
-    body: `• **Expert free, for 12 months or 6.** Full access to our Expert plan (normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is identical either way. Your dashboard shows the date your free period ends, and we email you about 7 days before.
+    body: `• **Expert free, for 12 months or 6.** Full access to our Expert plan (normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is the same either way, apart from the badge. Your dashboard shows the date your free period ends, and we email you about 7 days before.
 • **$49 a month for life after that.** When your free period ends, your Expert plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
-• **A permanent Founding Creative badge** on your profile. The badge stays for life, even if your founding deal ends.
+• **A permanent Founding Creative badge** on your profile, for the first 100 to use a code. It stays for life, even if your founding deal ends. If the places were already taken when you used yours, you don't get the badge.
 • **Zero commission, always.** You keep 100% of what you earn. LensTrybe never takes a cut of your work.
 • **A real say.** Founding creatives get a direct line to us and help shape what we build next.`,
   },
@@ -78,7 +78,7 @@ Your founding deal can also end if you tell us you want to leave the founding pr
 • Your first payment at the standard price is taken **7 days after the deal ends**, or on your original first payment date if that's sooner.
 • We'll email you when it ends, with the amount and the date of that first payment.
 • If you don't want to continue, switch to the free Basic plan or cancel before that date and you won't be charged.
-• You keep your profile, your Founding Creative badge and all your work. There are no penalties and no loss of data.
+• You keep your profile, all your work, and your Founding Creative badge if you had one. There are no penalties and no loss of data.
 
 If something outside your control is getting in the way, reply to any of our emails and talk to us. We'd rather help than end a deal.`,
   },

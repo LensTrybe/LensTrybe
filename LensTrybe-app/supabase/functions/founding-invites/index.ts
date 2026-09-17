@@ -218,7 +218,7 @@ ${noteBlock}
 <ul style="color:#e6e6ee;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">
 ${li('Our <strong style="color:#fff;">Expert plan free for 12 months</strong> from the day you join (normally $74.99 a month), or 6 months if the 100 places have already gone')}
 ${li('Then <strong style="color:#fff;">$49 a month, or $588 a year, locked in for life</strong>')}
-${li('A Founding Creative badge on your profile')}
+${li('A Founding Creative badge on your profile, for the first 100 to claim a place')}
 ${li('A direct line to me, and a real say in what we build next')}
 </ul>
 <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;">What I ask in return</div>
