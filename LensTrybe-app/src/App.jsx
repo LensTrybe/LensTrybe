@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
-import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { Link, Navigate, Route, Routes, useNavigate } from 'react-router-dom'
+import { hasLaunched } from './lib/launch'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabaseClient'
 import HomePage from './pages/public/HomePage'
@@ -76,6 +77,69 @@ import ComingSoon from './pages/ComingSoon'
 import CinematicIntro from './components/CinematicIntro'
 import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
 
+// Accounts opened on 17 September so invited creatives could set up before the public
+// launch, but the directory should not open with a hundred half built profiles in it.
+// It stays shut until 1 October and says so, rather than redirecting: HomePage's search
+// navigates straight to /creatives/:id and PublicLayout links to /creatives, so a bounce
+// back to home would turn both into dead ends with no explanation.
+function previewUnlocked() {
+  if (typeof window === 'undefined') return false
+  try {
+    if (new URLSearchParams(window.location.search).get('preview') === 'letmein') {
+      sessionStorage.setItem('lt_preview', 'true')
+    }
+    return sessionStorage.getItem('lt_preview') === 'true'
+  } catch {
+    // Private browsing can refuse sessionStorage. A locked directory is the safe answer.
+    return false
+  }
+}
+
+function DirectoryOpensSoon() {
+  return (
+    <div style={{
+      minHeight: '60vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      flexDirection: 'column',
+      gap: '14px',
+      padding: '48px 20px',
+      textAlign: 'center',
+      fontFamily: 'var(--font-ui)',
+    }}>
+      <div style={{ fontSize: '11px', fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: '#1DB954' }}>
+        Opening 1 October 2026
+      </div>
+      <div style={{ fontSize: '30px', lineHeight: 1.2, fontWeight: 800, color: 'var(--text-primary)', fontFamily: 'var(--font-display)', maxWidth: '18ch' }}>
+        The directory opens 1 October
+      </div>
+      <p style={{ margin: 0, fontSize: '16px', lineHeight: 1.6, color: 'var(--text-secondary)', maxWidth: '46ch' }}>
+        Our founding creatives are setting up their profiles right now. Come back on 1 October and you will be able to search every one of them.
+      </p>
+      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', justifyContent: 'center', marginTop: '10px' }}>
+        <Link to="/join/creative" style={{
+          background: '#1DB954', color: '#04120a', fontWeight: 700, fontSize: '15px',
+          padding: '13px 26px', borderRadius: '999px', textDecoration: 'none',
+        }}>
+          I'm a creative, let me in early
+        </Link>
+        <Link to="/" style={{
+          color: 'var(--text-secondary)', fontWeight: 600, fontSize: '15px',
+          padding: '13px 20px', textDecoration: 'none',
+        }}>
+          Back to home
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function DirectoryGate({ children }) {
+  if (hasLaunched() || previewUnlocked()) return children
+  return <DirectoryOpensSoon />
+}
+
 function PlaceholderPage({ page }) {
   return (
     <div style={{
@@ -133,8 +197,8 @@ export default function App() {
       {/* Public routes with navbar */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/creatives" element={<ExplorePage />} />
-        <Route path="/creatives/:id" element={<PublicProfilePage />} />
+        <Route path="/creatives" element={<DirectoryGate><ExplorePage /></DirectoryGate>} />
+        <Route path="/creatives/:id" element={<DirectoryGate><PublicProfilePage /></DirectoryGate>} />
         <Route path="/pricing" element={<PricingPage />} />
         <Route path="/support" element={<PublicSupportPage />} />
         <Route path="/upcoming-features" element={<UpcomingFeaturesPage />} />
