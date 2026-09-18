@@ -7,3 +7,11 @@ Claude outputs/
 
 # Supabase CLI scratch
 LensTrybe-app/supabase/.temp/
+
+# macOS Finder metadata. Tracked by accident, and it changes every time a folder is
+# opened, so it turns up in unrelated commits.
+.DS_Store
+**/.DS_Store
+
+# Working folder from a session, not part of the app
+brag-output/
