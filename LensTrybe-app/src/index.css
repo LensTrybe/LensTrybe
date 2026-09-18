@@ -70,9 +70,18 @@ input, textarea, select {
    16px exactly, phones only. Above 768px the smaller sizes are kept, because there is
    no zoom behaviour to avoid and the denser type is deliberate. */
 @media (max-width: 767px) {
-  input,
-  textarea,
-  select {
+  /* :root twice, which is not a typo. Three pages inject their own scoped block with a
+     rule like `.login-page input { font-size: 14px !important }`. A class beats a bare
+     element selector even when both carry !important, so the plain `input` version of
+     this rule lost on exactly the pages that needed it most: login, signup and the
+     website builder. Doubling :root outranks a single class without having to know which
+     pages exist, so a new page that sets its own field size is covered too.
+
+     Verified against a real build: before this, /login still reported 2 of 2 fields
+     under 16px at 390px wide. */
+  :root:root input,
+  :root:root textarea,
+  :root:root select {
     font-size: 16px !important;
   }
 }
