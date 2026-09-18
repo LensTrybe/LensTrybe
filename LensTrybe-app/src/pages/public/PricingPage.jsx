@@ -280,7 +280,7 @@ export default function PricingPage() {
           <button
             type="button"
             style={{
-              padding: '6px 20px',
+              padding: '12px 20px', minHeight: '44px',
               borderRadius: '999px',
               border: 'none',
               background: !annual ? '#1DB954' : 'transparent',
@@ -297,7 +297,7 @@ export default function PricingPage() {
           <button
             type="button"
             style={{
-              padding: '6px 20px',
+              padding: '12px 20px', minHeight: '44px',
               borderRadius: '999px',
               border: 'none',
               background: annual ? '#1DB954' : 'transparent',

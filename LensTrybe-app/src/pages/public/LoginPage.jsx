@@ -92,9 +92,11 @@ export default function LoginPage() {
     form: { display: 'flex', flexDirection: 'column', gap: '16px' },
     passwordWrap: { position: 'relative' },
     showBtn: {
-      position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)',
+      position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)',
       background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer',
-      fontSize: '12px', fontFamily: 'var(--font-ui)', padding: '4px',
+      fontSize: '13px', fontWeight: 600, fontFamily: 'var(--font-ui)',
+      minWidth: '56px', minHeight: '44px',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
     },
     forgotLink: {
       fontSize: '13px', color: 'var(--text-muted)', textDecoration: 'none',
@@ -148,9 +150,10 @@ export default function LoginPage() {
             <button
               type="button"
               style={styles.showBtn}
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
               onClick={() => setShowPassword(p => !p)}
             >
-              {''}
+              {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
           <span style={styles.forgotLink} onClick={() => navigate('/forgot-password')}>

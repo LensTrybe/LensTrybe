@@ -689,7 +689,7 @@ export default function SignupPage() {
           value={codeInput}
           onChange={e => { setCodeInput(e.target.value.toUpperCase()); setCodeError('') }}
         />
-        <LiquidPill primary type="button" style={{ flex: '0 0 auto', padding: '10px 18px', fontSize: '13px', opacity: codeChecking ? 0.6 : 1 }} disabled={codeChecking} onClick={applyFoundingCode}>
+        <LiquidPill primary type="button" style={{ flex: '0 0 auto', padding: '10px 18px', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: '13px', opacity: codeChecking ? 0.6 : 1 }} disabled={codeChecking} onClick={applyFoundingCode}>
           {codeChecking ? 'Checking…' : 'Apply'}
         </LiquidPill>
       </div>
@@ -741,7 +741,7 @@ export default function SignupPage() {
                 <button
                   type="button"
                   onClick={() => setRegion('__other__')}
-                  style={{ ...styles.passwordToggleBtn, color: 'var(--text-secondary)', textAlign: 'left', fontSize: '13px' }}
+                  style={{ ...styles.passwordToggleBtn, color: 'var(--text-secondary)', textAlign: 'left', fontSize: '13px', minHeight: '44px', display: 'flex', alignItems: 'center' }}
                 >
                   I&apos;m somewhere else in Australia →
                 </button>
@@ -781,7 +781,7 @@ export default function SignupPage() {
           )}
 
           <div style={styles.actions}>
-            <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => navigate('/')}>← Back to home</LiquidPill>
+            <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: '14px' }} onClick={() => navigate('/')}>← Back to home</LiquidPill>
           </div>
         </div>
       </div>
@@ -1215,8 +1215,8 @@ export default function SignupPage() {
 
         <div style={styles.actions}>
           {step > 0
-            ? <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => { setStep(s => s - 1); setError('') }}>← Back</LiquidPill>
-            : <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', fontSize: '14px' }} onClick={() => navigate('/login')}>Already have an account?</LiquidPill>
+            ? <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: '14px' }} onClick={() => { setStep(s => s - 1); setError('') }}>← Back</LiquidPill>
+            : <LiquidPill style={{ flex: '0 0 auto', padding: '12px 22px', minHeight: 44, display: 'inline-flex', alignItems: 'center', fontSize: '14px' }} onClick={() => navigate('/login')}>Already have an account?</LiquidPill>
           }
           {step < STEPS.length - 1
             ? <LiquidPill primary style={{ flex: '0 0 auto', padding: '12px 24px', fontSize: '14px', opacity: !canProceed() ? 0.6 : 1 }} disabled={!canProceed()} onClick={() => { setError(''); setStep(s => s + 1) }}>Continue →</LiquidPill>

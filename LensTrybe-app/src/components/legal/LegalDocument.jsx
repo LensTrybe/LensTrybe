@@ -108,7 +108,7 @@ export default function LegalDocument({ title, updated, intro, sections }) {
           {LEGAL_DOCS.map((d) => {
             const on = location.pathname === d.path
             return (
-              <Link key={d.path} to={d.path} style={{ padding: '6px 12px', borderRadius: 999, fontSize: 12.5, fontWeight: 600, border: `1px solid ${on ? GREEN_DARK : 'rgba(20,17,26,0.12)'}`, background: on ? 'rgba(29,185,84,0.12)' : 'transparent', color: on ? GREEN_DARK : 'var(--text-secondary)' }}>{d.label}</Link>
+              <Link key={d.path} to={d.path} style={{ padding: '12px 14px', minHeight: 44, display: 'inline-flex', alignItems: 'center', borderRadius: 999, fontSize: 12.5, fontWeight: 600, border: `1px solid ${on ? GREEN_DARK : 'rgba(20,17,26,0.12)'}`, background: on ? 'rgba(29,185,84,0.12)' : 'transparent', color: on ? GREEN_DARK : 'var(--text-secondary)' }}>{d.label}</Link>
             )
           })}
         </nav>
