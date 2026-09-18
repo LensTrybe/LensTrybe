@@ -17,7 +17,7 @@ import QuotesWidget from '../../components/dashboard/QuotesWidget'
 import DeliverablesWidget from '../../components/dashboard/DeliverablesWidget'
 import SearchVisibilityWidget from '../../components/dashboard/SearchVisibilityWidget'
 import CashflowWidget from '../../components/dashboard/CashflowWidget'
-import { isDemoMode } from '../../lib/demoMode'
+import { applyDemoAccess } from '../../lib/demoMode'
 import LeadsWidget from '../../components/dashboard/LeadsWidget'
 import BookingsAnalyticsWidget from '../../components/dashboard/BookingsAnalyticsWidget'
 import ReviewsWidget from '../../components/dashboard/ReviewsWidget'
@@ -139,7 +139,10 @@ export default function DashboardHome() {
   // marketing screenshots. Flips the ?demo flag and reloads so every widget
   // re-reads its data source. Nothing is written to the database.
   const isAdmin = Boolean(profile && (profile.is_admin === true || profile.is_admin === 'true' || profile.is_admin === 1 || profile.is_admin === '1'))
-  const demoOn = isDemoMode()
+  // Resolved during the render that first knows who is signed in, not in an effect:
+  // an effect would leave one paint where an admin's widgets had already gone and
+  // fetched real data. See applyDemoAccess on why calling it here is safe.
+  const demoOn = applyDemoAccess(isAdmin)
   function toggleDemo() {
     try {
       const url = new URL(window.location.href)
@@ -527,7 +530,11 @@ export default function DashboardHome() {
 
         <div style={{ maxWidth: BOARD_MAX, width: '100%', display: 'flex', flexDirection: 'column', gap: 22 }}>
           <QuickLinksBar items={quickItems} editing={false} onReorder={reorderQuick} onRemove={removeQuick} onOpen={(id) => { if (id === 'settings') navigate('/dashboard/settings'); else setActiveLink(id) }} hiddenList={quickHiddenList} onAdd={addQuick} />
-          <DashboardBoard items={boardItems} editing={false} onReorder={reorderWidgets} onRemove={removeWidget} />
+          {/* Keyed on demo so every widget remounts and refetches when it flips. The
+              first render does not know who is signed in yet, so an admin's widgets
+              have already queried Supabase by the time demo mode turns on. Without
+              this they would sit there holding real data. */}
+          <DashboardBoard key={demoOn ? 'demo' : 'live'} items={boardItems} editing={false} onReorder={reorderWidgets} onRemove={removeWidget} />
         </div>
       </div>
 

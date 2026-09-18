@@ -1,16 +1,60 @@
 // Demo mode: feeds realistic placeholder analytics into every dashboard widget
 // WITHOUT touching the database, for marketing screenshots. Fully reversible.
-//   Enter:  add ?demo=1 to the dashboard URL
-//   Leave:  add ?demo=0  (or clear site data)
-// Once entered it persists in localStorage so navigation keeps it on.
+//
+// Admin only. The Demo switch on the dashboard was always admin-gated, but the mode
+// behind it was not: anyone who opened /dashboard?demo=1 got fake revenue, fake
+// bookings and fake enquiries, with no switch on screen to turn it back off. The
+// realistic way that happened was a dashboard link shared or screenshotted with the
+// parameter still on it.
+//
+// So the parameter is no longer read on sight. Nothing is demo until the app says who
+// is looking, through applyDemoAccess below, and for anyone who is not an admin that
+// call also clears a flag left behind by an earlier visit.
+//
+//   Enter:  an admin adds ?demo=1 to the dashboard URL, or uses the switch
+//   Leave:  ?demo=0, the switch, or clear site data
+//
+// Once on it persists in localStorage so navigation inside the app keeps it.
 
-export function isDemoMode() {
+const KEY = 'lt_demo'
+
+// False until the app tells us otherwise, so a widget that renders before the profile
+// has loaded shows real data rather than flashing placeholders at a real creative.
+let on = false
+
+/**
+ * Tell demo mode who is looking, and get back whether demo mode is now on.
+ *
+ * Call this wherever the signed-in profile is known. It reads ?demo= only for an admin,
+ * and for everyone else it turns demo off and clears any stored flag.
+ *
+ * It writes to localStorage, so it is not a pure read, but it is idempotent: calling it
+ * twice with the same argument and the same URL gives the same answer and leaves the
+ * same state, which is what makes it safe to call during a render.
+ */
+export function applyDemoAccess(isAdmin) {
   try {
+    if (!isAdmin) {
+      localStorage.removeItem(KEY)
+      on = false
+      return on
+    }
     const p = new URLSearchParams(window.location.search)
-    if (p.get('demo') === '1') { localStorage.setItem('lt_demo', '1'); return true }
-    if (p.get('demo') === '0') { localStorage.removeItem('lt_demo'); return false }
-    return localStorage.getItem('lt_demo') === '1'
-  } catch { return false }
+    if (p.get('demo') === '1') { localStorage.setItem(KEY, '1'); on = true }
+    else if (p.get('demo') === '0') { localStorage.removeItem(KEY); on = false }
+    else { on = localStorage.getItem(KEY) === '1' }
+  } catch { on = false }
+  return on
+}
+
+/**
+ * Whether the widgets should draw placeholder data instead of querying Supabase.
+ *
+ * A plain read of what applyDemoAccess last decided. Safe to call from anywhere,
+ * including a page that never calls applyDemoAccess: there it stays false.
+ */
+export function isDemoMode() {
+  return on
 }
 
 const iso = (daysAgo) => new Date(Date.now() - daysAgo * 86400000).toISOString()
