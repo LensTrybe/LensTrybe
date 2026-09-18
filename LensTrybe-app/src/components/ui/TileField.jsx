@@ -132,15 +132,27 @@ const SETTLE_AFTER_MS = 10000
  */
 const MIN_COLUMNS = 6
 
+// On a desktop the mosaic sits behind a card that covers maybe a third of the screen, so
+// it reads as a backdrop. On a phone the card is nearly the whole screen, so the same
+// mosaic stops being background and becomes texture inside the form: placeholder text
+// crosses four different pastel tiles as you scroll, and the contrast moves with it.
+//
+// Two thirds of the opacity on a phone. The mosaic still frames the page and still says
+// LensTrybe, it just stops competing with the words on top of it. One number here rather
+// than a mobile branch at twenty call sites.
+const MOBILE_OPACITY_SCALE = 0.62
+
 export default function TileField({ animated = true, opacity = 1, twinkle = false, dark = false, settleAfterMs = SETTLE_AFTER_MS, settleFrom = 0, minColumns = MIN_COLUMNS }) {
   const grads = dark ? TILE_GRADS_DARK : TILE_GRADS
   const fieldRef = useRef(null)
   const [colCount, setColCount] = useState(() => (typeof window !== 'undefined' ? Math.max(minColumns, Math.ceil(window.innerWidth / 240)) : 8))
+  const [narrow, setNarrow] = useState(() => (typeof window !== 'undefined' ? window.innerWidth < 768 : false))
   useEffect(() => {
     // Only set state when the count actually changes. Writing the same number on every
     // resize event would re-render the whole field and restart every column animation,
     // which reads as the background jumping.
     function onResize() {
+      setNarrow(window.innerWidth < 768)
       const next = Math.max(minColumns, Math.ceil(window.innerWidth / 240))
       setColCount((prev) => (prev === next ? prev : next))
     }
@@ -174,7 +186,7 @@ export default function TileField({ animated = true, opacity = 1, twinkle = fals
 
   return (
     <>
-      <div ref={fieldRef} aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity }}>
+      <div ref={fieldRef} aria-hidden style={{ position: 'absolute', inset: 0, display: 'grid', gridTemplateColumns: `repeat(${colCount}, 1fr)`, gap: `${TILE_GAP}px`, padding: `${TILE_GAP}px`, zIndex: 0, opacity: narrow ? opacity * MOBILE_OPACITY_SCALE : opacity }}>
         {Array.from({ length: colCount }).map((_, i) => <MosaicColumn key={i} index={i} animated={animated} twinkle={twinkle} grads={grads} />)}
       </div>
       <style>{`
