@@ -60,7 +60,7 @@ function StyleBlock() {
       @media (max-width: 767px) {
         .ltk-grid2 { grid-template-columns: 1fr; }
         .ltk-overlay { padding: 0; }
-        .ltk-modal { max-width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+        .ltk-modal { max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; }
         .ltk-page button { min-height: 40px; }
         .ltk-tablewrap table { min-width: 640px; }
       }

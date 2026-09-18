@@ -8,7 +8,7 @@ const GREEN = '#1DB954'
 const GREEN_TEXT = '#04120a'
 
 const CSS = `
-  .ltpd-page { min-height: 100vh; box-sizing: border-box; background: radial-gradient(900px 600px at 20% -10%, #14132a 0%, transparent 60%), #0a0a0f; color: #fff; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
+  .ltpd-page { min-height: 100dvh; box-sizing: border-box; background: radial-gradient(900px 600px at 20% -10%, #14132a 0%, transparent 60%), #0a0a0f; color: #fff; font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; display: flex; align-items: center; justify-content: center; padding: 32px 16px; }
   .ltpd-card { width: 100%; max-width: 520px; background: #14141c; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; padding: 32px 28px; display: flex; flex-direction: column; gap: 18px; box-shadow: 0 30px 80px -30px rgba(0,0,0,0.7); }
   .ltpd-logo { font-size: 20px; font-weight: 800; color: ${GREEN}; letter-spacing: -0.02em; }
   .ltpd-kicker { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #FF2D78; }

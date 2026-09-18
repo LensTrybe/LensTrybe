@@ -469,7 +469,7 @@ export default function CollaboratePage() {
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent', color: 'var(--lt-text)', ...FONT, paddingBottom: 40 }}>
+    <div style={{ minHeight: '100dvh', background: 'transparent', color: 'var(--lt-text)', ...FONT, paddingBottom: 40 }}>
       <style>{`
         .ltc-select {
           -webkit-appearance: none; -moz-appearance: none; appearance: none;

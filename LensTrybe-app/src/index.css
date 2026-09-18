@@ -40,7 +40,7 @@ body {
   font-family: var(--font-ui);
   font-size: var(--text-base);
   line-height: 1.6;
-  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 a {
@@ -126,7 +126,7 @@ input, textarea, select {
      They were a leftover from an older drawer and every one of them overrode the
      component's inline styles with !important:
 
-       height: 100vh      beat the component's 100dvh. On iOS Safari 100vh is the LARGE
+       height: 100dvh      beat the component's 100dvh. On iOS Safari 100dvh is the LARGE
                           viewport, taller than the visible area, so the bottom of the
                           drawer sat under the browser toolbar where it could not be
                           reached. Admin is the last item of the last section, so it was

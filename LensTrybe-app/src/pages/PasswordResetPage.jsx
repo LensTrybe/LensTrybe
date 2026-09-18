@@ -133,7 +133,7 @@ export default function PasswordResetPage() {
   const heading = mode === 'request' || mode === 'sent' ? 'Reset your password' : 'Set a new password'
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ minHeight: '100dvh', background: 'transparent', position: 'relative', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px', fontFamily: 'Inter, sans-serif' }}>
       <LiquidLensFilter />
       <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <div style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 2, padding: '40px', width: '100%', maxWidth: '420px' }}>

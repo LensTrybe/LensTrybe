@@ -441,7 +441,7 @@ const styles = `
   .dgl-root {
     --bg: #f6f5f3; --surface: #ffffff; --surface-2: #f0efec;
     --text: #14111a; --muted: #6a6976; --faint: #9a99a5; --border: rgba(20,17,26,0.10); --hairline: rgba(20,17,26,0.08);
-    min-height: 100vh; background: var(--bg); color: var(--text);
+    min-height: 100dvh; background: var(--bg); color: var(--text);
     font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
   @media (prefers-color-scheme: dark) {
@@ -450,7 +450,7 @@ const styles = `
       --text: #f5f5f7; --muted: #9a99a5; --faint: #6a6976; --border: rgba(255,255,255,0.10); --hairline: rgba(255,255,255,0.07);
     }
   }
-  .dgl-center { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 24px; }
+  .dgl-center { min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 24px; }
   .dgl-spin { width: 34px; height: 34px; border: 3px solid var(--border); border-top-color: ${BRAND_GREEN}; border-radius: 50%; animation: dglspin .8s linear infinite; }
   @keyframes dglspin { to { transform: rotate(360deg) } }
   .dgl-h1 { font-size: 22px; font-weight: 800; color: var(--text); margin-bottom: 8px; }

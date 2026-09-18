@@ -463,7 +463,7 @@ export default function SignupPage() {
 
   const styles = {
     page: {
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'transparent',
       position: 'relative',
       overflow: 'hidden',

@@ -22,7 +22,7 @@ function whenText(date, start, end) {
 }
 
 const S = {
-  page: { minHeight: '100vh', background: '#f4f1ec', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '48px 20px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', color: '#14111a', boxSizing: 'border-box' },
+  page: { minHeight: '100dvh', background: '#f4f1ec', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '48px 20px', fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif', color: '#14111a', boxSizing: 'border-box' },
   card: { width: '100%', maxWidth: 480, background: '#fff', borderRadius: 20, boxShadow: '0 30px 80px -30px rgba(20,17,26,0.28)', padding: 32, boxSizing: 'border-box' },
   brand: { fontWeight: 900, letterSpacing: '-0.02em', fontSize: 18, marginBottom: 24 },
   eyebrow: { fontSize: 12, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#1DB954', marginBottom: 8 },

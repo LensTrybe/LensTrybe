@@ -64,7 +64,7 @@ function StyleBlock() {
       @media (max-width: 767px) {
         .ltm-grid { grid-template-columns: 1fr; }
         .ltm-overlay { padding: 0; }
-        .ltm-modal { max-width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+        .ltm-modal { max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; }
         .ltm-page button { min-height: 40px; }
       }
     `}</style>

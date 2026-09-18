@@ -296,7 +296,7 @@ export default function ExplorePage() {
   }
 
   const styles = {
-    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px', position: 'relative', overflow: 'hidden' },
+    page: { background: 'transparent', minHeight: '100dvh', paddingBottom: '80px', position: 'relative', overflow: 'hidden' },
     inner: { maxWidth: '1280px', margin: '0 auto', padding: isMobile ? '0 16px' : '0 40px', position: 'relative', zIndex: 2 },
     header: { padding: isMobile ? '32px 0 24px' : '48px 0 32px' },
     title: { fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.04, fontSize: 'clamp(34px, 4.4vw, 60px)', color: 'var(--text-primary)', marginBottom: '10px' },

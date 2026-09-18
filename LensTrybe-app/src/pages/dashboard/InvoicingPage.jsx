@@ -68,7 +68,7 @@ function StyleBlock() {
         .lti-row { grid-template-columns: 1fr auto; }
         .lti-row .lti-col-due, .lti-row .lti-col-status { display: none; }
         .lti-overlay { padding: 0; }
-        .lti-modal { max-width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+        .lti-modal { max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; }
         .lti-page button { min-height: 40px; }
       }
     `}</style>

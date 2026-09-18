@@ -233,7 +233,7 @@ export default function PublicLayout() {
       ...GLASS_MODAL,
       padding: '16px', display: 'flex',
       flexDirection: 'column', gap: '10px',
-      maxHeight: 'calc(100vh - 96px)', overflowY: 'auto',
+      maxHeight: 'calc(100dvh - 96px)', overflowY: 'auto',
     },
     mobileMenuLink: {
       width: '100%', minHeight: '52px', borderRadius: '10px',
@@ -301,7 +301,7 @@ export default function PublicLayout() {
 
   if (isMobile) {
     return (
-      <div className="lt-public-light" style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
+      <div className="lt-public-light" style={{ position: 'relative', minHeight: '100dvh', background: PAGE_BG }}>
         <PublicBgOrbs />
         <div style={{ position: 'relative', zIndex: 1 }}>
         <nav style={{ position: 'sticky', top: 0, zIndex: 100, ...GLASS_NAV, padding: '0 16px', height: '64px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -354,7 +354,7 @@ export default function PublicLayout() {
           </div>
         )}
 
-        <main style={{ minHeight: 'calc(100vh - 64px)', background: 'transparent' }}>
+        <main style={{ minHeight: 'calc(100dvh - 64px)', background: 'transparent' }}>
           <Outlet />
         </main>
 
@@ -377,7 +377,7 @@ export default function PublicLayout() {
   }
 
   return (
-    <div className="lt-public-light" style={{ position: 'relative', minHeight: '100vh', background: PAGE_BG }}>
+    <div className="lt-public-light" style={{ position: 'relative', minHeight: '100dvh', background: PAGE_BG }}>
       <PublicBgOrbs />
       <div style={{ position: 'relative', zIndex: 1 }}>
       <nav style={styles.nav}>
@@ -454,7 +454,7 @@ export default function PublicLayout() {
         </div>
       </nav>
 
-      <main style={{ minHeight: 'calc(100vh - 64px)', background: 'transparent' }}>
+      <main style={{ minHeight: 'calc(100dvh - 64px)', background: 'transparent' }}>
         <Outlet />
       </main>
 

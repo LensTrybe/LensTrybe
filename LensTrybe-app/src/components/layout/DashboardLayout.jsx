@@ -197,7 +197,7 @@ export default function DashboardLayout() {
           }}
         />
       )}
-      <div className="lt-dash" data-theme={theme} style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: 'transparent', colorScheme: dark ? 'dark' : 'light', width: '100%', position: 'relative', zIndex: 1 }}>
+      <div className="lt-dash" data-theme={theme} style={{ display: isMobile ? 'block' : 'flex', minHeight: '100dvh', background: 'transparent', colorScheme: dark ? 'dark' : 'light', width: '100%', position: 'relative', zIndex: 1 }}>
         {!isMobile && <Sidebar isMobile={false} mobileOpen={false} onCloseMobile={() => setMobileSidebarOpen(false)} theme={theme} />}
         <main style={{
           flex: 1,

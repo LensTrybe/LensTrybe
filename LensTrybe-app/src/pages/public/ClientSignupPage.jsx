@@ -92,7 +92,7 @@ export default function ClientSignupPage() {
 
   const styles = {
     page: {
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'transparent',
       position: 'relative',
       overflow: 'hidden',

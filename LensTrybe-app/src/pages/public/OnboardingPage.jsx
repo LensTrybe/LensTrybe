@@ -357,7 +357,7 @@ export default function OnboardingPage() {
     return (
       <div
         style={{
-          minHeight: '100vh',
+          minHeight: '100dvh',
           background: PAGE_BG,
           display: 'flex',
           alignItems: 'center',
@@ -397,7 +397,7 @@ export default function OnboardingPage() {
     <div
       className="onboarding-root"
       style={{
-        minHeight: '100vh',
+        minHeight: '100dvh',
         background: 'transparent',
         position: 'relative',
         overflow: 'hidden',

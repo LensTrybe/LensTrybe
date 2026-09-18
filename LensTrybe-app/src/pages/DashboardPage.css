@@ -1,7 +1,7 @@
 .dashboard-page {
   padding: 28px 32px;
   background: #0f0f0f;
-  min-height: 100vh;
+  min-height: 100dvh;
   color: #e8e8e8;
   font-family: 'DM Sans', system-ui, sans-serif;
 }

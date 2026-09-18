@@ -27,11 +27,11 @@ export default function PublicSitePage() {
   }, [slug])
 
   if (state.loading) {
-    return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#888' }}>Loading…</div>
+    return <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#888' }}>Loading…</div>
   }
   if (!state.id) {
     return (
-      <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#555', gap: 8, padding: 24, textAlign: 'center' }}>
+      <div style={{ minHeight: '100dvh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', color: '#555', gap: 8, padding: 24, textAlign: 'center' }}>
         <div style={{ fontSize: 22, fontWeight: 800 }}>Site not found</div>
         <div style={{ fontSize: 14 }}>This website isn’t available. Check the link and try again.</div>
       </div>

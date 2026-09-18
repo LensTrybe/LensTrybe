@@ -348,7 +348,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
           {/* minHeight: 0 is belt and braces, not the fix: overflow-y other than visible
               already zeroes a flex item's automatic minimum size, so this nav scrolls
               without it. What actually broke scrolling was a legacy .sidebar-drawer
-              block in index.css forcing height: 100vh and a second overflow-y on the
+              block in index.css forcing height: 100dvh and a second overflow-y on the
               drawer, which is gone. overscroll-behavior stops a flick at the end of the
               list scrolling the page underneath. */}
           <nav style={{ flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden', overscrollBehavior: 'contain', padding: '4px 0 8px' }}>

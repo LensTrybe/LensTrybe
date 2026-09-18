@@ -209,7 +209,7 @@ export default function UpcomingFeaturesPage() {
   const cardGrid = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, minmax(0, 1fr))', gap: '12px' }
 
   return (
-    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100vh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ background: 'transparent', color: 'var(--text-primary)', minHeight: '100dvh', padding: isMobile ? '48px 16px 88px' : '72px 24px 96px', fontFamily: 'var(--font-ui)', ...TYPO.body, position: 'relative', overflow: 'hidden' }}>
       <LiquidLensFilter />
       <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       {(

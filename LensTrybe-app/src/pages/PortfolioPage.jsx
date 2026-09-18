@@ -85,7 +85,7 @@ export default function PortfolioPage() {
   }, [id])
 
   const maxWrap = { maxWidth: 1100, margin: '0 auto', width: '100%' }
-  const shell = { background: BRAND.bg, minHeight: '100vh', color: BRAND.text, fontFamily: 'Inter, sans-serif' }
+  const shell = { background: BRAND.bg, minHeight: '100dvh', color: BRAND.text, fontFamily: 'Inter, sans-serif' }
 
   if (loading) {
     return (

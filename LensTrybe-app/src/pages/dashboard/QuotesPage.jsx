@@ -59,7 +59,7 @@ function StyleBlock() {
         .ltq-row { grid-template-columns: 1fr auto; }
         .ltq-row .ltq-col-due, .ltq-row .ltq-col-status { display: none; }
         .ltq-overlay { padding: 0; }
-        .ltq-modal { max-width: 100vw; max-height: 100vh; height: 100vh; border-radius: 0; }
+        .ltq-modal { max-width: 100vw; max-height: 100dvh; height: 100dvh; border-radius: 0; }
         .ltq-page button { min-height: 40px; }
       }
     `}</style>

@@ -35,7 +35,7 @@ export default function JoinHubPage() {
 
   return (
     <div style={{
-      minHeight: '100vh',
+      minHeight: '100dvh',
       background: 'transparent',
       position: 'relative',
       overflow: 'hidden',

@@ -31,7 +31,7 @@ const CSS = `
 .ltmsg .btn.ghost:hover{color:var(--lt-text);background:var(--lt-surface)}
 .ltmsg .usage{margin-bottom:12px;padding:10px 14px;border-radius:10px;font-size:13px;background:var(--lt-surface);border:1px solid var(--lt-border);color:var(--lt-muted)}
 .ltmsg .usage.blocked{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.35);color:#f2777a}
-.ltmsg .shell{display:flex;border-radius:18px;overflow:hidden;background:var(--lt-glass-bg);border:var(--lt-glass-border);box-shadow:var(--lt-glass-shadow);backdrop-filter:var(--lt-glass-blur);-webkit-backdrop-filter:var(--lt-glass-blur);height:calc(100vh - 172px);min-height:520px}
+.ltmsg .shell{display:flex;border-radius:18px;overflow:hidden;background:var(--lt-glass-bg);border:var(--lt-glass-border);box-shadow:var(--lt-glass-shadow);backdrop-filter:var(--lt-glass-blur);-webkit-backdrop-filter:var(--lt-glass-blur);height:calc(100dvh - 172px);min-height:520px}
 .ltmsg .side{width:312px;flex-shrink:0;border-right:1px solid var(--lt-hairline);display:flex;flex-direction:column;min-height:0}
 .ltmsg .sidehead{padding:15px 18px;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:var(--lt-muted);border-bottom:1px solid var(--lt-hairline)}
 .ltmsg .threads{flex:1;overflow-y:auto;min-height:0}

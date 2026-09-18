@@ -80,7 +80,7 @@ export default function LoginPage() {
 
   const styles = {
     page: {
-      minHeight: '100vh', background: 'transparent', position: 'relative', overflow: 'hidden',
+      minHeight: '100dvh', background: 'transparent', position: 'relative', overflow: 'hidden',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
       padding: isMobile ? '24px' : '40px 24px',
     },

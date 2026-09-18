@@ -249,7 +249,7 @@ export default function ComingSoon() {
   const units = [['Days', time.d], ['Hours', time.h], ['Mins', time.m], ['Secs', time.s]]
 
   return (
-    <div style={{ position: 'relative', minHeight: '100vh', width: '100%', overflowX: 'hidden', background: `rgb(${PAGE_TONE})`, color: TEXT_PRIMARY, fontFamily: FONT }}>
+    <div style={{ position: 'relative', minHeight: '100dvh', width: '100%', overflowX: 'hidden', background: `rgb(${PAGE_TONE})`, color: TEXT_PRIMARY, fontFamily: FONT }}>
       {/* liquid-glass refraction filter: required by LIQUID_GLASS */}
       <svg width="0" height="0" style={{ position: 'absolute' }} aria-hidden>
         <filter id="liquidLens" x="-25%" y="-25%" width="150%" height="150%" colorInterpolationFilters="sRGB">

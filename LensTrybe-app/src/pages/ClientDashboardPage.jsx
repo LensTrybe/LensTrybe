@@ -218,13 +218,13 @@ export default function ClientDashboardPage() {
   const tierColor = { pro: '#ec4899', expert: '#a855f7', elite: '#f59e0b', basic: '#6b7280' }
 
   const s = {
-    page: { minHeight: '100vh', background: '#080810', color: '#fff', fontFamily: 'var(--font-ui)' },
+    page: { minHeight: '100dvh', background: '#080810', color: '#fff', fontFamily: 'var(--font-ui)' },
     nav: { height: '64px', background: 'rgba(8,8,16,0.95)', borderBottom: '1px solid rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 40px', position: 'sticky', top: 0, zIndex: 100 },
     logo: { fontSize: '18px', fontFamily: 'var(--font-display)', color: '#fff', cursor: 'pointer' },
     navRight: { display: 'flex', alignItems: 'center', gap: '16px' },
     userName: { fontSize: '13px', color: '#b0b0be' },
     signOutBtn: { fontSize: '13px', color: '#8a8a99', background: 'none', border: 'none', cursor: 'pointer', padding: '6px 12px' },
-    body: { display: 'flex', height: 'calc(100vh - 64px)' },
+    body: { display: 'flex', height: 'calc(100dvh - 64px)' },
     sidebar: { width: '260px', borderRight: '1px solid rgba(255,255,255,0.06)', display: 'flex', flexDirection: 'column', overflowY: 'auto' },
     sidebarHeader: { padding: '20px 20px 8px', fontSize: '11px', fontWeight: 700, color: '#8a8a99', letterSpacing: '0.08em', textTransform: 'uppercase' },
     navItem: (active) => ({ padding: '10px 20px', fontSize: '14px', cursor: 'pointer', color: active ? '#1DB954' : '#b0b0be', background: active ? 'rgba(29,185,84,0.08)' : 'transparent', borderLeft: active ? '2px solid #1DB954' : '2px solid transparent', transition: 'all 0.15s' }),
@@ -290,7 +290,7 @@ export default function ClientDashboardPage() {
         /* Phones: the sidebar becomes a scrolling row of chips above the content, so the
            content gets the full width instead of about 140 pixels of it. */
         @media (max-width: 820px) {
-          .cd-body { flex-direction: column; height: auto; min-height: calc(100vh - 64px); }
+          .cd-body { flex-direction: column; height: auto; min-height: calc(100dvh - 64px); }
           .cd-side {
             width: 100% !important; border-right: none !important;
             border-bottom: 1px solid rgba(255,255,255,0.06);

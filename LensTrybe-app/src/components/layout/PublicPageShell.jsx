@@ -28,7 +28,7 @@ export default function PublicPageShell({ children, maxWidth = 1000, centre = fa
     <div style={{
       background: 'transparent',
       color: 'var(--text-primary)',
-      minHeight: '100vh',
+      minHeight: '100dvh',
       padding: isMobile ? '48px 16px 88px' : '72px 24px 96px',
       fontFamily: 'var(--font-ui)',
       ...TYPO.body,

@@ -89,7 +89,7 @@ export default function LegalDocument({ title, updated, intro, sections }) {
   }, [location.pathname, location.hash])
 
   return (
-    <div className="lt-legal" style={{ background: 'transparent', minHeight: '100vh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }}>
+    <div className="lt-legal" style={{ background: 'transparent', minHeight: '100dvh', padding: isMobile ? '24px 16px' : '60px 24px', fontFamily: 'Inter, sans-serif', overflow: 'hidden', position: 'relative' }}>
       <TileField animated={false} opacity={0.22} minColumns={isMobile ? 2 : 6} />
       <style>{`
         .lt-legal a:hover { opacity: .8; }

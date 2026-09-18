@@ -15,7 +15,7 @@ const TYPES = { invoice: 'Invoice', quote: 'Quote' }
 
 function Shell({ children }) {
   return (
-    <div style={{ minHeight: '100vh', background: '#f4f4f6', fontFamily: "'Inter', system-ui, sans-serif", padding: '24px 16px' }}>
+    <div style={{ minHeight: '100dvh', background: '#f4f4f6', fontFamily: "'Inter', system-ui, sans-serif", padding: '24px 16px' }}>
       <div style={{ maxWidth: 900, margin: '0 auto' }}>{children}</div>
     </div>
   )

@@ -119,8 +119,8 @@ export default function PublicPortalPage() {
 
   const statusColor = (s) => ({ draft: '#666', sent: '#facc15', paid: '#1DB954', accepted: '#1DB954', signed: '#1DB954', declined: '#f87171', overdue: '#f87171' }[s] || '#666')
 
-  if (loading) return <div style={{ background: '#0f0f0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'system-ui' }}>Loading your portal...</div>
-  if (notFound) return <div style={{ background: '#0f0f0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'system-ui', flexDirection: 'column', gap: 12 }}><span style={{ fontSize: 48 }}></span><p>Portal not found</p></div>
+  if (loading) return <div style={{ background: '#0f0f0f', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'system-ui' }}>Loading your portal...</div>
+  if (notFound) return <div style={{ background: '#0f0f0f', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#444', fontFamily: 'system-ui', flexDirection: 'column', gap: 12 }}><span style={{ fontSize: 48 }}></span><p>Portal not found</p></div>
 
   const tabs = [
     { id: 'invoices', label: 'Invoices', count: invoices.length },
@@ -134,7 +134,7 @@ export default function PublicPortalPage() {
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #0f0f0f; }
-        .portal-page { min-height: 100vh; background: #0f0f0f; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
+        .portal-page { min-height: 100dvh; background: #0f0f0f; color: #e8e8e8; font-family: 'DM Sans', system-ui, sans-serif; }
         .portal-hero { background: #141414; border-bottom: 1px solid #1e1e1e; padding: 32px; text-align: center; }
         .portal-brand { font-size: 22px; font-weight: 800; color: #1DB954; margin-bottom: 4px; }
         .portal-welcome { font-size: 15px; color: #888; }

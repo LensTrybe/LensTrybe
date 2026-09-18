@@ -21,7 +21,7 @@ export default function TrybeEditPage() {
     return () => window.removeEventListener('resize', handleResize)
   }, [])
   const styles = {
-    page: { background: 'transparent', minHeight: 'calc(100vh - 64px)', paddingBottom: '80px' },
+    page: { background: 'transparent', minHeight: 'calc(100dvh - 64px)', paddingBottom: '80px' },
     header: {
       padding: isMobile ? '40px 16px 24px' : '80px 24px 48px',
       maxWidth: '1280px',

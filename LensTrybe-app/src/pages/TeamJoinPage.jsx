@@ -130,13 +130,13 @@ export default function TeamJoinPage() {
   const accentColor = invitation?.profiles?.brand_primary_color || '#1DB954';
 
   if (loading) return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif' }}>
       <div style={{ color: '#888' }}>Loading invitation...</div>
     </div>
   );
 
   return (
-    <div style={{ background: '#0a0a0f', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '32px' }}>
+    <div style={{ background: '#0a0a0f', minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, sans-serif', padding: '32px' }}>
       <div style={{ background: '#13131a', border: '1px solid #1e1e1e', borderRadius: '14px', padding: '40px', maxWidth: '500px', width: '100%' }}>
 
         {/* Header */}

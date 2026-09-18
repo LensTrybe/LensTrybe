@@ -400,15 +400,15 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   // offers, but never block on being signed out. An anonymous visitor sees the whole
   // profile and meets the sign in gate only when they try to do something.
   if (!previewMode && !siteMode && authLoading) return (
-    <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
+    <div style={{ minHeight: '100dvh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>
       Loading…
     </div>
   )
   if (loading) return (
-    <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>Loading profile…</div>
+    <div style={{ minHeight: '100dvh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', ...TYPO.body }}>Loading profile…</div>
   )
   if (!profile) return (
-    <div style={{ minHeight: '100vh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
+    <div style={{ minHeight: '100dvh', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '16px' }}>
       <div style={{ fontFamily: "'Inter', sans-serif", fontSize: '24px', color: 'var(--text-primary)', ...TYPO.heading }}>Profile not found</div>
       <Button variant="secondary" onClick={() => navigate('/creatives')}>Back to Search</Button>
     </div>
@@ -963,7 +963,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: `${pageAurora}, ${bg}`, backgroundAttachment: 'fixed', fontFamily: bodyFont, overflowX: 'hidden', position: 'relative' }} className="public-profile-site">
+    <div style={{ minHeight: '100dvh', background: `${pageAurora}, ${bg}`, backgroundAttachment: 'fixed', fontFamily: bodyFont, overflowX: 'hidden', position: 'relative' }} className="public-profile-site">
       {/* On a phone this header used to collapse to a burger, which landed directly under
           the LensTrybe burger, so a client saw two identical menu buttons stacked. The page
           links become a swipeable chip row on their own line instead: no second burger, and
@@ -1052,7 +1052,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       <>
         {showReview && (
           <div style={{ position: 'fixed', inset: 0, ...GLASS_MODAL_OVERLAY_BASE, zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? '0' : '24px' }}>
-            <div style={{ ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : GLASS_MODAL_PANEL.borderRadius, width: '100%', maxWidth: isMobile ? '100vw' : '480px', minHeight: isMobile ? '100vh' : 'auto', padding: isMobile ? '16px' : '28px' }}>
+            <div style={{ ...GLASS_MODAL_PANEL, borderRadius: isMobile ? '0' : GLASS_MODAL_PANEL.borderRadius, width: '100%', maxWidth: isMobile ? '100vw' : '480px', minHeight: isMobile ? '100dvh' : 'auto', padding: isMobile ? '16px' : '28px' }}>
               {reviewSent ? (
                 <div style={{ textAlign: 'center', padding: '24px', color: '#1DB954', fontSize: '16px', ...TYPO.heading }}>✓ Review submitted! Thank you.</div>
               ) : (
@@ -1211,7 +1211,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
 // ---- classic (Basic tier) styles + mobile css, module scope ----
 function classicStyles(isMobile) {
   return {
-    page: { background: 'transparent', minHeight: '100vh', paddingBottom: '80px', position: 'relative', overflow: 'hidden' },
+    page: { background: 'transparent', minHeight: '100dvh', paddingBottom: '80px', position: 'relative', overflow: 'hidden' },
     hero: { ...LIQUID_GLASS_CARD, padding: isMobile ? '32px 16px' : '48px 40px', maxWidth: '1280px', margin: '0 auto' },
     heroInner: { display: 'flex', alignItems: isMobile ? 'center' : 'flex-start', gap: '32px', flexWrap: 'wrap', flexDirection: isMobile ? 'column' : 'row' },
     avatar: { width: '120px', height: '120px', borderRadius: 'var(--radius-full)', objectFit: 'cover', border: '2px solid var(--border-default)', flexShrink: 0, background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' },

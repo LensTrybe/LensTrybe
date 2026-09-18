@@ -214,7 +214,7 @@ export default function PricingPage() {
   return (
     <div style={{
       background: 'transparent',
-      minHeight: '100vh',
+      minHeight: '100dvh',
       paddingBottom: '80px',
       overflow: 'hidden',
       position: 'relative',

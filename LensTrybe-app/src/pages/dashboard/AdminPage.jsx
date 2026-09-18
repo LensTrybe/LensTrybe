@@ -896,7 +896,7 @@ export default function AdminPage() {
   const isAdmin = callerRole === 'admin';
 
   return (
-    <div style={{ minHeight: '100vh', background: 'transparent', ...FONT, padding: isMobile ? '16px 14px' : '24px 28px', paddingRight: isMobile ? '28px' : undefined }}>
+    <div style={{ minHeight: '100dvh', background: 'transparent', ...FONT, padding: isMobile ? '16px 14px' : '24px 28px', paddingRight: isMobile ? '28px' : undefined }}>
       <LtDashboardSelectDarkStyles />
       {toast && (
         <div
