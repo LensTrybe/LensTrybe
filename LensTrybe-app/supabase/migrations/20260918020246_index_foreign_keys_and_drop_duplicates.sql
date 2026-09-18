@@ -51,9 +51,6 @@ begin
   raise notice 'created % foreign key indexes', n;
 end $$;
 
--- The one foreign key outside public, on the backend agent's incident log.
-create index if not exists idx_incidents_run_id on ops.incidents (run_id);
-
 -- Three pairs of identical indexes, one of each pair kept. Two indexes on the same column
 -- means every insert and update maintains both for no benefit. The kept name in each pair
 -- is the Postgres default shape, so a future migration that recreates it lands on the
