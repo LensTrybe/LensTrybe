@@ -297,7 +297,14 @@ export default function PublicLayout() {
     },
   }
 
-  const footerLinkStyle = { color: TEXT_MUTED, fontSize: '13px', textDecoration: 'none', fontWeight: 400, lineHeight: 1.6 }
+  // 21px tall in a stack of seven. WCAG exempts a link sitting inline in a sentence from
+  // the 44px minimum, but a column of seven stacked links is not that: it is a menu, and
+  // on a phone the one above or below is a thumb's width away. Vertical padding gives
+  // each one a 44px band without moving the text or changing how the footer reads.
+  const footerLinkStyle = {
+    color: TEXT_MUTED, fontSize: '13px', textDecoration: 'none', fontWeight: 400, lineHeight: 1.6,
+    display: 'inline-flex', alignItems: 'center', minHeight: 44,
+  }
 
   if (isMobile) {
     return (

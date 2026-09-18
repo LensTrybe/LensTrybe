@@ -344,7 +344,7 @@ function HeroWaitlist({ isMobile }) {
   if (!open) {
     return (
       <button type="button" onClick={() => setOpen(true)}
-        style={{ width: '100%', maxWidth: '660px', background: 'none', border: 'none', padding: '2px 2px 0',
+        style={{ width: '100%', maxWidth: '660px', background: 'none', border: 'none', padding: '10px 2px', minHeight: 44,
           fontFamily: FONT, fontSize: '13.5px', color: TEXT_MUTED, cursor: 'pointer', textAlign: 'left',
           position: 'relative', zIndex: 1 }}>
         Outside South East Queensland?{' '}

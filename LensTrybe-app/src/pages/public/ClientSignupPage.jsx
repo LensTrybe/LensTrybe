@@ -122,6 +122,7 @@ export default function ClientSignupPage() {
     dividerText: { fontSize: '12px', color: 'var(--text-muted)', fontFamily: 'var(--font-ui)' },
     footer: { fontSize: '13px', color: 'var(--text-muted)', textAlign: 'center', fontFamily: 'var(--font-ui)' },
     link: { color: 'var(--green)', textDecoration: 'none', fontWeight: 500 },
+    linkCta: { color: 'var(--green)', textDecoration: 'none', fontWeight: 500, display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 2px' },
     freeNote: {
       padding: '14px 16px',
       background: 'var(--green-dim)',
@@ -193,7 +194,7 @@ export default function ClientSignupPage() {
         <div style={styles.footer}>
           <Link to="/join" style={styles.link}>Join as a Creative</Link>
           {' '}or{' '}
-          <Link to="/login" style={styles.link}>sign in to existing account</Link>
+          <Link to="/login" style={styles.linkCta}>sign in to existing account</Link>
         </div>
 
       </div>
