@@ -1,83 +1,83 @@
-import { useEffect } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { Navigate, Route, Routes, useNavigate } from 'react-router-dom'
 import { hasLaunched } from './lib/launch'
 import { useAuth } from './context/AuthContext'
 import { supabase } from './lib/supabaseClient'
 import HomePage from './pages/public/HomePage'
-import LoginPage from './pages/public/LoginPage'
-import PricingPage from './pages/public/PricingPage'
-import UpcomingFeaturesPage from './pages/public/UpcomingFeaturesPage'
-import SignupPage from './pages/public/SignupPage'
-import OnboardingPage from './pages/public/OnboardingPage'
-import JoinHubPage from './pages/public/JoinHubPage'
-import ClientSignupPage from './pages/public/ClientSignupPage'
-import MessagesPage from './pages/dashboard/MessagesPage'
-import MeetingsPage from './pages/dashboard/MeetingsPage'
-import InvoicingPage from './pages/dashboard/InvoicingPage'
-import QuotesPage from './pages/dashboard/QuotesPage'
-import ContractsPage from './pages/dashboard/ContractsPage'
-import FinanceOverviewPage from './pages/dashboard/FinanceOverviewPage'
-import ExpensesPage from './pages/dashboard/ExpensesPage'
-import TaxHubPage from './pages/dashboard/TaxHubPage'
-import BrandKitPage from './pages/dashboard/BrandKitPage'
-import DeliverPage from './pages/dashboard/DeliverPage'
-import CRMPage from './pages/dashboard/CRMPage'
-import ContactsPage from './pages/dashboard/ContactsPage'
-import DashboardHome from './pages/dashboard/DashboardHome'
-import ProjectsPage from './pages/dashboard/ProjectsPage'
-import ProjectDetailPage from './pages/dashboard/ProjectDetailPage'
-import InventoryPage from './pages/dashboard/InventoryPage'
-import NotesPage from './pages/dashboard/NotesPage'
-import ContentCalendarPage from './pages/dashboard/ContentCalendarPage'
-import ContentIdeasPage from './pages/dashboard/ContentIdeasPage'
-import ReviewsPage from './pages/dashboard/ReviewsPage'
-import MarketplacePage from './pages/dashboard/MarketplacePage'
-import TeamPage from './pages/dashboard/TeamPage'
-import CollaboratePage from './pages/dashboard/CollaboratePage'
-import EditProfilePage from './pages/dashboard/EditProfilePage'
-import ViewProfilePage from './pages/dashboard/ViewProfilePage'
-import SettingsPage from './pages/dashboard/SettingsPage'
-import ReferralsPage from './pages/dashboard/ReferralsPage'
-import SubscriptionPage from './pages/dashboard/SubscriptionPage'
-import MyBookingsPage from './pages/dashboard/MyBookingsPage'
-import LumiPage from './pages/dashboard/LumiPage'
-import AdminPage from './pages/dashboard/AdminPage'
-import SupportPage from './pages/dashboard/SupportPage'
-import PublicSupportPage from './pages/public/SupportPage'
-import FoundingHubPage from './pages/dashboard/FoundingHubPage'
-import PublicLayout from './components/layout/PublicLayout'
-import DashboardLayout from './components/layout/DashboardLayout'
+const LoginPage = lazy(() => import('./pages/public/LoginPage'))
+const PricingPage = lazy(() => import('./pages/public/PricingPage'))
+const UpcomingFeaturesPage = lazy(() => import('./pages/public/UpcomingFeaturesPage'))
+const SignupPage = lazy(() => import('./pages/public/SignupPage'))
+const OnboardingPage = lazy(() => import('./pages/public/OnboardingPage'))
+const JoinHubPage = lazy(() => import('./pages/public/JoinHubPage'))
+const ClientSignupPage = lazy(() => import('./pages/public/ClientSignupPage'))
+const MessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'))
+const MeetingsPage = lazy(() => import('./pages/dashboard/MeetingsPage'))
+const InvoicingPage = lazy(() => import('./pages/dashboard/InvoicingPage'))
+const QuotesPage = lazy(() => import('./pages/dashboard/QuotesPage'))
+const ContractsPage = lazy(() => import('./pages/dashboard/ContractsPage'))
+const FinanceOverviewPage = lazy(() => import('./pages/dashboard/FinanceOverviewPage'))
+const ExpensesPage = lazy(() => import('./pages/dashboard/ExpensesPage'))
+const TaxHubPage = lazy(() => import('./pages/dashboard/TaxHubPage'))
+const BrandKitPage = lazy(() => import('./pages/dashboard/BrandKitPage'))
+const DeliverPage = lazy(() => import('./pages/dashboard/DeliverPage'))
+const CRMPage = lazy(() => import('./pages/dashboard/CRMPage'))
+const ContactsPage = lazy(() => import('./pages/dashboard/ContactsPage'))
+const DashboardHome = lazy(() => import('./pages/dashboard/DashboardHome'))
+const ProjectsPage = lazy(() => import('./pages/dashboard/ProjectsPage'))
+const ProjectDetailPage = lazy(() => import('./pages/dashboard/ProjectDetailPage'))
+const InventoryPage = lazy(() => import('./pages/dashboard/InventoryPage'))
+const NotesPage = lazy(() => import('./pages/dashboard/NotesPage'))
+const ContentCalendarPage = lazy(() => import('./pages/dashboard/ContentCalendarPage'))
+const ContentIdeasPage = lazy(() => import('./pages/dashboard/ContentIdeasPage'))
+const ReviewsPage = lazy(() => import('./pages/dashboard/ReviewsPage'))
+const MarketplacePage = lazy(() => import('./pages/dashboard/MarketplacePage'))
+const TeamPage = lazy(() => import('./pages/dashboard/TeamPage'))
+const CollaboratePage = lazy(() => import('./pages/dashboard/CollaboratePage'))
+const EditProfilePage = lazy(() => import('./pages/dashboard/EditProfilePage'))
+const ViewProfilePage = lazy(() => import('./pages/dashboard/ViewProfilePage'))
+const SettingsPage = lazy(() => import('./pages/dashboard/SettingsPage'))
+const ReferralsPage = lazy(() => import('./pages/dashboard/ReferralsPage'))
+const SubscriptionPage = lazy(() => import('./pages/dashboard/SubscriptionPage'))
+const MyBookingsPage = lazy(() => import('./pages/dashboard/MyBookingsPage'))
+const LumiPage = lazy(() => import('./pages/dashboard/LumiPage'))
+const AdminPage = lazy(() => import('./pages/dashboard/AdminPage'))
+const SupportPage = lazy(() => import('./pages/dashboard/SupportPage'))
+const PublicSupportPage = lazy(() => import('./pages/public/SupportPage'))
+const FoundingHubPage = lazy(() => import('./pages/dashboard/FoundingHubPage'))
+const PublicLayout = lazy(() => import('./components/layout/PublicLayout'))
+const DashboardLayout = lazy(() => import('./components/layout/DashboardLayout'))
 import TierGate from './components/dashboard/TierGate'
-import SignContract from './pages/SignContract'
-import MeetingRespondPage from './pages/MeetingRespondPage'
-import PublicPortfolioPage from './pages/PortfolioPage'
-import PublicPortalPage from './pages/public/PublicPortalPage'
-import DeliverDownloadPage from './pages/DeliverDownloadPage'
-import DocumentViewPage from './pages/DocumentViewPage'
-import BookingUnavailablePage from './pages/BookingUnavailablePage'
-import TeamAcceptPage from './pages/TeamAcceptPage'
-import AvailabilityPage from './pages/dashboard/AvailabilityPage'
-import JobBoardPage from './pages/dashboard/JobBoardPage'
-import WebsiteBuilderPage from './pages/dashboard/WebsiteBuilderPage'
-import PublicSitePage from './pages/public/PublicSitePage'
-import ClientDashboardPage from './pages/ClientDashboardPage'
-import ExplorePage from './pages/public/ExplorePage'
-import PublicProfilePage from './pages/public/PublicProfilePage'
-import PasswordResetPage from './pages/PasswordResetPage'
-import TermsPage from './pages/legal/TermsPage'
-import PrivacyPage from './pages/legal/PrivacyPage'
-import CookiesPage from './pages/legal/CookiesPage'
-import RefundPolicyPage from './pages/legal/RefundPolicyPage'
-import FoundingAgreementPage from './pages/legal/FoundingAgreementPage'
-import FoundingOfferPage from './pages/public/FoundingOfferPage'
-import UnsubscribePage from './pages/public/UnsubscribePage'
-import TrybeEditPage from './pages/public/TrybeEditPage'
-import TrybeEditIssue01 from './pages/TrybeEditIssue01'
-import ComingSoon from './pages/ComingSoon'
-import CinematicIntro from './components/CinematicIntro'
-import AccountPendingDeletionPage from './pages/AccountPendingDeletionPage'
+const SignContract = lazy(() => import('./pages/SignContract'))
+const MeetingRespondPage = lazy(() => import('./pages/MeetingRespondPage'))
+const PublicPortfolioPage = lazy(() => import('./pages/PortfolioPage'))
+const PublicPortalPage = lazy(() => import('./pages/public/PublicPortalPage'))
+const DeliverDownloadPage = lazy(() => import('./pages/DeliverDownloadPage'))
+const DocumentViewPage = lazy(() => import('./pages/DocumentViewPage'))
+const BookingUnavailablePage = lazy(() => import('./pages/BookingUnavailablePage'))
+const TeamAcceptPage = lazy(() => import('./pages/TeamAcceptPage'))
+const AvailabilityPage = lazy(() => import('./pages/dashboard/AvailabilityPage'))
+const JobBoardPage = lazy(() => import('./pages/dashboard/JobBoardPage'))
+const WebsiteBuilderPage = lazy(() => import('./pages/dashboard/WebsiteBuilderPage'))
+const PublicSitePage = lazy(() => import('./pages/public/PublicSitePage'))
+const ClientDashboardPage = lazy(() => import('./pages/ClientDashboardPage'))
+const ExplorePage = lazy(() => import('./pages/public/ExplorePage'))
+const PublicProfilePage = lazy(() => import('./pages/public/PublicProfilePage'))
+const PasswordResetPage = lazy(() => import('./pages/PasswordResetPage'))
+const TermsPage = lazy(() => import('./pages/legal/TermsPage'))
+const PrivacyPage = lazy(() => import('./pages/legal/PrivacyPage'))
+const CookiesPage = lazy(() => import('./pages/legal/CookiesPage'))
+const RefundPolicyPage = lazy(() => import('./pages/legal/RefundPolicyPage'))
+const FoundingAgreementPage = lazy(() => import('./pages/legal/FoundingAgreementPage'))
+const FoundingOfferPage = lazy(() => import('./pages/public/FoundingOfferPage'))
+const UnsubscribePage = lazy(() => import('./pages/public/UnsubscribePage'))
+const TrybeEditPage = lazy(() => import('./pages/public/TrybeEditPage'))
+const TrybeEditIssue01 = lazy(() => import('./pages/TrybeEditIssue01'))
+const ComingSoon = lazy(() => import('./pages/ComingSoon'))
+const CinematicIntro = lazy(() => import('./components/CinematicIntro'))
+const AccountPendingDeletionPage = lazy(() => import('./pages/AccountPendingDeletionPage'))
 import PublicPageShell from './components/layout/PublicPageShell'
-import DirectoryClosedPage from './pages/public/DirectoryClosedPage'
+const DirectoryClosedPage = lazy(() => import('./pages/public/DirectoryClosedPage'))
 import { LiquidPill } from './components/ui/liquidGlass'
 import { LIQUID_GLASS } from './lib/glassTokensLight'
 
@@ -188,8 +188,15 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  // One boundary for the whole route table.
+  //
+  // The fallback is deliberately almost nothing. A chunk for a route already visited
+  // resolves from cache in a frame or two, and a spinner that flashes for thirty
+  // milliseconds reads as jank rather than progress. It holds the viewport height so the
+  // page does not collapse and jump while a chunk arrives.
   const routes = (
-    <Routes>
+    <Suspense fallback={<div aria-busy="true" style={{ minHeight: '100dvh' }} />}>
+      <Routes>
       <Route path="/reset-password" element={<PasswordResetPage />} />
       <Route path="/forgot-password" element={<PasswordResetPage />} />
       <Route path="/onboarding" element={<OnboardingPage />} />
@@ -295,7 +302,8 @@ export default function App() {
 
       {/* Fallback */}
       <Route path="*" element={<NotFoundPage />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 
   // The pre-launch gate used to stand here, showing ComingSoon to everyone who was not
