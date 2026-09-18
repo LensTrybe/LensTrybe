@@ -56,6 +56,27 @@ input, textarea, select {
   font-family: var(--font-ui);
 }
 
+/* iOS Safari zooms the viewport in when you focus a field smaller than 16px, and it
+   does not zoom back out when you leave it. Every field in this app is 13.3 to 15px,
+   so a creative filling in the founding application on an iPhone was left on a zoomed,
+   sideways-scrolling page halfway through.
+
+   This is the one place a stylesheet beats the house style of inline styles. The sizes
+   are set inline on hundreds of fields across every form, and inline wins over a
+   stylesheet, so the alternative is either !important here or editing every one of them
+   and having the next new form reintroduce it. One rule, applied once, and new forms
+   are covered for free.
+
+   16px exactly, phones only. Above 768px the smaller sizes are kept, because there is
+   no zoom behaviour to avoid and the denser type is deliberate. */
+@media (max-width: 767px) {
+  input,
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
