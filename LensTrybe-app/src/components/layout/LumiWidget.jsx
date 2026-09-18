@@ -4,10 +4,11 @@ import { supabase } from '../../lib/supabaseClient'
 import { tierHas, getFeatures, TIER_ORDER, UNLIMITED } from '../../lib/tierFeatures'
 import { useAuth } from '../../context/AuthContext'
 import { LumiAboutLink, LumiAboutPanel, LumiIntroCard } from '../lumi/LumiCapabilities'
-import { FLOAT_BOTTOM, FLOAT_ICON, FLOAT_RIGHT, FLOAT_SIZE } from '../../lib/floatingStack'
+import { DOCK_EVENTS } from '../../lib/floatingStack'
 
-// Global Lumi launcher: a floating circle on every dashboard page (stacked above
-// the notification bell / Notes circle) that opens a slide-in glass chat drawer.
+// Global Lumi: a slide-in glass chat drawer available from every dashboard page.
+// The floating button that opens it lives in FloatingDock now, alongside notifications
+// and the quick-note pad, so the corner holds one circle rather than three.
 // The drawer stays over whatever page the creative is on, so Lumi can work in
 // context (e.g. help while they are on Invoicing). Theme-aware via --lt-* tokens.
 
@@ -80,8 +81,8 @@ export default function LumiWidget() {
   // Let other parts of the app (e.g. the sidebar Lumi item) open the drawer.
   useEffect(() => {
     function onOpen() { setOpen(true) }
-    window.addEventListener('lt:open-lumi', onOpen)
-    return () => window.removeEventListener('lt:open-lumi', onOpen)
+    window.addEventListener(DOCK_EVENTS.lumi, onOpen)
+    return () => window.removeEventListener(DOCK_EVENTS.lumi, onOpen)
   }, [])
 
   useEffect(() => {
@@ -210,16 +211,6 @@ export default function LumiWidget() {
       <style>{`
         @keyframes lumiPulse { 0%,80%,100% { opacity: .3; transform: scale(.8) } 40% { opacity: 1; transform: scale(1) } }
         @keyframes lumiSlideIn { from { transform: translateX(24px); opacity: 0 } to { transform: translateX(0); opacity: 1 } }
-        /* Liquid glass rather than a filled gradient: translucent and blurred so it belongs
-           to the page, with a green rim and a green mark so it is still the first thing you
-           spot in the corner. Positions come from lib/floatingStack so Lumi, Notes and the
-           bell cannot end up on top of each other. */
-        .lumi-launch { position: fixed; right: ${FLOAT_RIGHT.desktop}px; bottom: ${FLOAT_BOTTOM.lumi.desktop}px; z-index: 952; width: ${FLOAT_SIZE}px; height: ${FLOAT_SIZE}px; border-radius: 50%; cursor: pointer; padding: 0; background: var(--lt-glass-bg); border: 1px solid ${GREEN}66; backdrop-filter: blur(18px) saturate(180%); -webkit-backdrop-filter: blur(18px) saturate(180%); box-shadow: 0 10px 30px -12px rgba(0,0,0,0.45), 0 0 18px -6px ${GREEN}59, inset 0 1px 0 rgba(255,255,255,0.38), inset 0 -1px 0 rgba(0,0,0,0.06); display: flex; align-items: center; justify-content: center; transition: transform .14s ease, box-shadow .14s ease, border-color .14s ease; }
-        .lumi-launch:hover { transform: translateY(-2px); border-color: ${GREEN}; }
-        .lumi-launch:active { transform: translateY(0); }
-        /* With the bell moved to the top bar on a phone, Lumi sits properly in the corner
-           and Notes stacks directly above it. */
-        @media (max-width: 767px) { .lumi-launch { right: ${FLOAT_RIGHT.mobile}px; bottom: ${FLOAT_BOTTOM.lumi.mobile}px; } }
         .lumi-overlay { position: fixed; inset: 0; z-index: 1490; background: rgba(8,7,13,0.32); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
         .lumi-drawer { position: fixed; top: 0; right: 0; height: 100dvh; z-index: 1491; display: flex; flex-direction: column; background: var(--lt-modal-bg); border-left: var(--lt-modal-border); box-shadow: var(--lt-modal-shadow); backdrop-filter: var(--lt-modal-blur); -webkit-backdrop-filter: var(--lt-modal-blur); animation: lumiSlideIn .22s ease; }
         .lumi-icon-btn { background: none; border: none; color: var(--lt-muted); cursor: pointer; padding: 6px; border-radius: 8px; display: flex; align-items: center; justify-content: center; transition: background .12s ease, color .12s ease; }
@@ -229,12 +220,6 @@ export default function LumiWidget() {
         .lumi-convo { padding: 10px 12px; border-radius: 10px; cursor: pointer; border: 1px solid transparent; }
         .lumi-convo:hover { background: var(--lt-surface); }
       `}</style>
-
-      {!open && (
-        <button type="button" className="lumi-launch" aria-label="Open Lumi AI" onClick={() => setOpen(true)}>
-          <LumiMark size={22} colour={FLOAT_ICON} />
-        </button>
-      )}
 
       {open && (
         <>

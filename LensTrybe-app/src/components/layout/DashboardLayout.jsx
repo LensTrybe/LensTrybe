@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext'
 import Sidebar from './Sidebar'
 import TileField from '../ui/TileField'
 import NoteTaker from './NoteTaker'
+import FloatingDock from './FloatingDock'
 import NotificationBell from './NotificationBell'
 import BroadcastHost from '../broadcasts/BroadcastHost'
 import LumiWidget from './LumiWidget'
@@ -238,8 +239,9 @@ export default function DashboardLayout() {
           </div>
         </main>
         <NoteTaker />
-        <NotificationBell />
+        <NotificationBell docked />
         <LumiWidget />
+        <FloatingDock />
         <DashboardTour />
       </div>
       {isMobile && (

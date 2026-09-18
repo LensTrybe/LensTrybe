@@ -2,9 +2,20 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { DOCK_EDGE, DOCK_EVENTS, UNREAD_EVENT, UNREAD_PING, panelBottom } from '../../lib/floatingStack'
 
 const GREEN = '#1DB954'
 const PINK = '#FF2D78'
+
+// Notifications, with two ways in.
+//
+// On the creative dashboard this is docked: FloatingDock owns the button, this owns the
+// data and the panel, and the two talk over window events. The dock needs the unread count
+// for its badge, so every load announces it, and it answers a ping because the dock mounts
+// alongside this and can miss the first announcement.
+//
+// The client dashboard mounts this on its own with no dock, so it still draws its own bell
+// in the corner. Same panel either way.
 
 function timeAgo(iso) {
   if (!iso) return ''
@@ -28,13 +39,14 @@ function BellIcon() {
   )
 }
 
-export default function NotificationBell() {
+export default function NotificationBell({ docked = false }) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [items, setItems] = useState([])
   const [open, setOpen] = useState(false)
   const panelRef = useRef(null)
   const bellRef = useRef(null)
+  const unreadRef = useRef(0)
 
   const load = useCallback(async () => {
     if (!user) return
@@ -54,6 +66,30 @@ export default function NotificationBell() {
     return () => clearInterval(t)
   }, [user, load])
 
+  const unread = items.filter((n) => !n.read).length
+
+  // Kept in a ref as well so the ping handler can answer with the current figure without
+  // re-binding the listener on every count change.
+  useEffect(() => {
+    unreadRef.current = unread
+    if (!docked) return
+    window.dispatchEvent(new CustomEvent(UNREAD_EVENT, { detail: unread }))
+  }, [unread, docked])
+
+  useEffect(() => {
+    if (!docked) return undefined
+    function onPing() {
+      window.dispatchEvent(new CustomEvent(UNREAD_EVENT, { detail: unreadRef.current }))
+    }
+    function onOpen() { setOpen(true) }
+    window.addEventListener(UNREAD_PING, onPing)
+    window.addEventListener(DOCK_EVENTS.notifications, onOpen)
+    return () => {
+      window.removeEventListener(UNREAD_PING, onPing)
+      window.removeEventListener(DOCK_EVENTS.notifications, onOpen)
+    }
+  }, [docked])
+
   useEffect(() => {
     function onDoc(e) {
       if (!open) return
@@ -64,8 +100,6 @@ export default function NotificationBell() {
     document.addEventListener('mousedown', onDoc)
     return () => document.removeEventListener('mousedown', onDoc)
   }, [open])
-
-  const unread = items.filter((n) => !n.read).length
 
   async function markRead(id) {
     setItems((prev) => prev.map((n) => (n.id === id ? { ...n, read: true } : n)))
@@ -88,12 +122,12 @@ export default function NotificationBell() {
   return (
     <>
       <style>{`
-        /* right is 26 rather than 24 because this button is 48px beside two 52px ones,
-           so it needs 2px more to share their centre line. See lib/floatingStack. */
+        /* right is 26 rather than 24 because this button is 48px beside the 56px dock,
+           so it needs 2px more to share its centre line. See lib/floatingStack. */
         .ltn-bell { position: fixed; right: 26px; bottom: 88px; z-index: 950; width: 48px; height: 48px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--lt-text, #14111a); background: var(--lt-glass-bg, rgba(255,255,255,0.9)); border: var(--lt-glass-border, 1px solid rgba(20,17,26,0.1)); box-shadow: var(--lt-glass-shadow, 0 10px 30px -12px rgba(40,30,60,0.35)); backdrop-filter: var(--lt-glass-blur, blur(16px)); -webkit-backdrop-filter: var(--lt-glass-blur, blur(16px)); transition: transform .12s ease; }
         .ltn-bell:hover { transform: translateY(-2px); }
         .ltn-badge { position: absolute; top: -3px; right: -3px; min-width: 19px; height: 19px; padding: 0 5px; border-radius: 999px; background: ${PINK}; color: #fff; font-size: 11px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
-        .ltn-panel { position: fixed; right: 24px; bottom: 146px; z-index: 951; width: 340px; max-width: calc(100vw - 32px); max-height: 62vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--lt-modal-bg, rgba(255,255,255,0.97)); border: var(--lt-modal-border, 1px solid rgba(20,17,26,0.1)); box-shadow: var(--lt-modal-shadow, 0 24px 60px -20px rgba(40,30,60,0.35)); backdrop-filter: var(--lt-modal-blur, blur(20px)); -webkit-backdrop-filter: var(--lt-modal-blur, blur(20px)); }
+        .ltn-panel { position: fixed; right: ${DOCK_EDGE.desktop}px; bottom: ${panelBottom(DOCK_EDGE.desktop)}px; z-index: 953; width: 340px; max-width: calc(100vw - 32px); max-height: 62vh; display: flex; flex-direction: column; border-radius: 16px; overflow: hidden; background: var(--lt-modal-bg, rgba(255,255,255,0.97)); border: var(--lt-modal-border, 1px solid rgba(20,17,26,0.1)); box-shadow: var(--lt-modal-shadow, 0 24px 60px -20px rgba(40,30,60,0.35)); backdrop-filter: var(--lt-modal-blur, blur(20px)); -webkit-backdrop-filter: var(--lt-modal-blur, blur(20px)); }
         .ltn-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-bottom: 1px solid var(--lt-hairline, rgba(20,17,26,0.08)); flex-shrink: 0; }
         .ltn-title { font-size: 14px; font-weight: 800; color: var(--lt-text, #14111a); }
         .ltn-markall { background: none; border: none; color: ${GREEN}; font-size: 12.5px; font-weight: 700; cursor: pointer; font-family: inherit; padding: 0; }
@@ -103,22 +137,24 @@ export default function NotificationBell() {
         .ltn-dot { width: 8px; height: 8px; border-radius: 50%; background: ${GREEN}; flex-shrink: 0; margin-top: 5px; }
         .ltn-dot.read { background: transparent; }
         .ltn-empty { padding: 32px 16px; text-align: center; color: var(--lt-muted, #6b6a75); font-size: 13px; }
-        /* On a phone the bell sits in the top bar opposite the menu button, not in the
-           bottom-right corner where it stacked on top of Lumi, the quick-note button and
-           whatever row of the page happened to be under them. */
+        /* On a phone the undocked bell sits in the top bar opposite the menu button, not in
+           the bottom-right corner where it covered whatever row was under it. */
         @media (max-width: 767px) {
           .ltn-bell { top: 12px; right: 12px; bottom: auto; width: 44px; height: 44px; border-radius: 10px; }
-          .ltn-panel { top: 64px; right: 12px; bottom: auto; width: auto; left: 12px; max-width: none; max-height: 70vh; }
+          .ltn-panel { right: 12px; left: 12px; bottom: ${panelBottom(DOCK_EDGE.mobile)}px; width: auto; max-width: none; max-height: 68vh; }
+          .ltn-panel.undocked { top: 64px; bottom: auto; max-height: 70vh; }
         }
       `}</style>
 
-      <button ref={bellRef} type="button" className="ltn-bell" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
-        <BellIcon />
-        {unread > 0 && <span className="ltn-badge">{unread > 9 ? '9+' : unread}</span>}
-      </button>
+      {!docked && (
+        <button ref={bellRef} type="button" className="ltn-bell" onClick={() => setOpen((o) => !o)} aria-label="Notifications">
+          <BellIcon />
+          {unread > 0 && <span className="ltn-badge">{unread > 9 ? '9+' : unread}</span>}
+        </button>
+      )}
 
       {open && (
-        <div className="ltn-panel" ref={panelRef}>
+        <div className={`ltn-panel${docked ? '' : ' undocked'}`} ref={panelRef}>
           <div className="ltn-head">
             <span className="ltn-title">Notifications{unread > 0 ? ` (${unread})` : ''}</span>
             {unread > 0 && <button type="button" className="ltn-markall" onClick={markAll}>Mark all read</button>}
