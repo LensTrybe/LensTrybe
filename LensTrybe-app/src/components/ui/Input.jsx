@@ -12,6 +12,17 @@ export default function Input({
   prefix,
   suffix,
   className,
+  // Everything else lands on the input itself.
+  //
+  // This component used to take a fixed list of props and drop the rest, which meant no
+  // form built on it could carry autoComplete, inputMode, name or id. That is not a
+  // detail: without autoComplete a password manager and iOS Keychain have nothing to
+  // match on, so every sign-in and every signup had to be typed out by hand on a phone,
+  // and without inputMode a phone number field opens a full QWERTY keyboard.
+  //
+  // The named props above stay named because they are either transformed here or used
+  // for layout. Everything else is the caller's business.
+  ...rest
 }) {
   const [focused, setFocused] = useState(false);
 
@@ -126,9 +137,10 @@ export default function Input({
           onChange={onChange}
           placeholder={placeholder}
           disabled={disabled}
-          style={inputStyle}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          {...rest}
+          style={{ ...inputStyle, ...(rest.style || {}) }}
+          onFocus={(e) => { setFocused(true); rest.onFocus?.(e) }}
+          onBlur={(e) => { setFocused(false); rest.onBlur?.(e) }}
         />
         {suffix && <span style={{ ...affixStyle, paddingRight: '14px' }}>{suffix}</span>}
       </div>

@@ -290,7 +290,7 @@ export default function ContactsPage() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
                 <div>
                   <label className="ltc-label" htmlFor="ltc-phone">Phone</label>
-                  <input id="ltc-phone" className="ltc-input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" inputMode="tel" />
+                  <input id="ltc-phone" type="tel" autoComplete="tel" className="ltc-input" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="Phone" inputMode="tel" />
                 </div>
                 <div>
                   <label className="ltc-label" htmlFor="ltc-email">Email</label>

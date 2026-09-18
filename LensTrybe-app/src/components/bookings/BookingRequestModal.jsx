@@ -130,7 +130,7 @@ export default function BookingRequestModal({ open, onClose, creativeId, creativ
             <label style={label}>Your details</label>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <input style={{ ...field, flex: '1 1 150px', width: 'auto' }} placeholder="Your name" value={form.name} onChange={(e) => set('name', e.target.value)} maxLength={120} />
-              <input style={{ ...field, flex: '1 1 150px', width: 'auto' }} placeholder="Phone (optional)" value={form.phone} onChange={(e) => set('phone', e.target.value)} maxLength={40} />
+              <input type="tel" inputMode="tel" autoComplete="tel" style={{ ...field, flex: '1 1 150px', width: 'auto' }} placeholder="Phone (optional)" value={form.phone} onChange={(e) => set('phone', e.target.value)} maxLength={40} />
             </div>
           </div>
 

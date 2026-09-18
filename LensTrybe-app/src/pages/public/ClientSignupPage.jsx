@@ -153,19 +153,19 @@ export default function ClientSignupPage() {
 
         <form style={styles.form} onSubmit={handleSubmit}>
           <div style={styles.row}>
-            <Input label="First name" placeholder="Alex" value={form.firstName} onChange={e => update('firstName', e.target.value)} />
-            <Input label="Last name" placeholder="Johnson" value={form.lastName} onChange={e => update('lastName', e.target.value)} />
+            <Input label="First name" placeholder="Alex" name="given-name" autoComplete="given-name" autoCapitalize="words" value={form.firstName} onChange={e => update('firstName', e.target.value)} />
+            <Input label="Last name" placeholder="Johnson" name="family-name" autoComplete="family-name" autoCapitalize="words" value={form.lastName} onChange={e => update('lastName', e.target.value)} />
           </div>
-          <Input label="Email address" type="email" placeholder="you@example.com" value={form.email} onChange={e => update('email', e.target.value)} />
-          <Input label="Company (optional)" placeholder="Your business name" value={form.company} onChange={e => update('company', e.target.value)} />
+          <Input label="Email address" type="email" placeholder="you@example.com" name="email" autoComplete="email" inputMode="email" autoCapitalize="none" autoCorrect="off" value={form.email} onChange={e => update('email', e.target.value)} />
+          <Input label="Company (optional)" placeholder="Your business name" name="organization" autoComplete="organization" autoCapitalize="words" value={form.company} onChange={e => update('company', e.target.value)} />
           <div style={{ position: 'relative' }}>
-            <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" value={form.password} onChange={e => update('password', e.target.value)} />
+            <Input label="Password" type={showPassword ? 'text' : 'password'} placeholder="Min 8 characters" name="new-password" autoComplete="new-password" value={form.password} onChange={e => update('password', e.target.value)} />
             <button type="button" onClick={() => setShowPassword(p => !p)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', minWidth: '56px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
               {showPassword ? 'Hide' : 'Show'}
             </button>
           </div>
           <div style={{ position: 'relative' }}>
-            <Input label="Confirm password" type={showConfirm ? 'text' : 'password'} placeholder="Repeat your password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : ''} />
+            <Input label="Confirm password" type={showConfirm ? 'text' : 'password'} placeholder="Repeat your password" autoComplete="new-password" value={form.confirmPassword} onChange={e => update('confirmPassword', e.target.value)} error={form.confirmPassword && form.password !== form.confirmPassword ? 'Passwords do not match' : ''} />
             <button type="button" onClick={() => setShowConfirm(p => !p)} style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '13px', fontWeight: 600, fontFamily: 'inherit', minWidth: '56px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginTop: '10px' }}>
               {showConfirm ? 'Hide' : 'Show'}
             </button>

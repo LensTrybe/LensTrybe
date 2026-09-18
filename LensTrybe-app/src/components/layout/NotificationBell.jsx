@@ -52,18 +52,46 @@ export default function NotificationBell({ docked = false }) {
     if (!user) return
     const { data } = await supabase
       .from('notifications')
-      .select('*')
+      // Named columns rather than *, because this runs every 30 seconds for as long as
+      // the dashboard is open. On a phone on a metered connection, pulling whole rows
+      // 120 times an hour for fields the panel never renders is someone's data plan.
+      .select('id, title, body, link, read, created_at')
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(30)
     setItems(data ?? [])
   }, [user])
 
+  // Poll while the tab is in front, and stop when it is not.
+  //
+  // A phone with the dashboard open in a background tab was still making two requests a
+  // minute, waking the radio each time, for a panel nobody could see. Polling now pauses
+  // when the page is hidden and does one immediate refresh when it comes back, so what
+  // you see on returning is current rather than up to thirty seconds stale.
   useEffect(() => {
     if (!user) return undefined
+    let timer = null
+    function start() {
+      if (timer) return
+      timer = setInterval(load, 30000)
+    }
+    function stop() {
+      if (!timer) return
+      clearInterval(timer)
+      timer = null
+    }
+    function onVisibility() {
+      if (document.hidden) { stop(); return }
+      load()
+      start()
+    }
     load()
-    const t = setInterval(load, 30000)
-    return () => clearInterval(t)
+    if (!document.hidden) start()
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      stop()
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
   }, [user, load])
 
   const unread = items.filter((n) => !n.read).length

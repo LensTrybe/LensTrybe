@@ -394,7 +394,7 @@ export default function CRMPage() {
               <div className="field"><label className="lab">Email</label><input className="inp" value={form.email} onChange={(e) => setForm((p) => ({ ...p, email: e.target.value }))} placeholder="jane@example.com" /></div>
             </div>
             <div className="grid2">
-              <div className="field"><label className="lab">Phone</label><input className="inp" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="0400 000 000" /></div>
+              <div className="field"><label className="lab">Phone</label><input type="tel" inputMode="tel" className="inp" value={form.phone} onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))} placeholder="0400 000 000" /></div>
               <div className="field"><label className="lab">Company</label><input className="inp" value={form.company} onChange={(e) => setForm((p) => ({ ...p, company: e.target.value }))} placeholder="Smith Co." /></div>
             </div>
             <div className="field"><label className="lab">Stage</label>
@@ -447,7 +447,7 @@ export default function CRMPage() {
                     <div className="field"><label className="lab">Email</label><input className="inp" defaultValue={selected.email || ''} onBlur={(e) => updateContact(selected.id, { email: e.target.value || null })} /></div>
                   </div>
                   <div className="grid2">
-                    <div className="field"><label className="lab">Phone</label><input className="inp" defaultValue={selected.phone || ''} onBlur={(e) => updateContact(selected.id, { phone: e.target.value || null })} /></div>
+                    <div className="field"><label className="lab">Phone</label><input type="tel" inputMode="tel" className="inp" defaultValue={selected.phone || ''} onBlur={(e) => updateContact(selected.id, { phone: e.target.value || null })} /></div>
                     <div className="field"><label className="lab">Company</label><input className="inp" defaultValue={selected.company || ''} onBlur={(e) => updateContact(selected.id, { company: e.target.value || null })} /></div>
                   </div>
                   <div className="grid2">

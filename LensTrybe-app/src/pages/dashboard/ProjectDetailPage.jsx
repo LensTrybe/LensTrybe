@@ -610,7 +610,7 @@ export default function ProjectDetailPage() {
                   <div className="addpart">
                     <input className="inp" autoFocus placeholder="Name" value={partForm.name} onChange={e => setPartForm(f => ({ ...f, name: e.target.value }))} />
                     <input className="inp" placeholder="Email" value={partForm.email} onChange={e => setPartForm(f => ({ ...f, email: e.target.value }))} />
-                    <input className="inp" placeholder="Phone" value={partForm.phone} onChange={e => setPartForm(f => ({ ...f, phone: e.target.value }))} />
+                    <input type="tel" inputMode="tel" className="inp" placeholder="Phone" value={partForm.phone} onChange={e => setPartForm(f => ({ ...f, phone: e.target.value }))} />
                     <input className="inp" placeholder="Role, e.g. Partner, Planner (optional)" value={partForm.role} onChange={e => setPartForm(f => ({ ...f, role: e.target.value }))} onKeyDown={e => { if (e.key === 'Enter') addParticipant() }} />
                     <div style={{ display: 'flex', gap: 8 }}>
                       <button className="btn sm" style={{ flex: 1 }} onClick={() => { setShowAddPart(false); setPartForm({ name: '', email: '', phone: '', role: '' }) }}>Cancel</button>

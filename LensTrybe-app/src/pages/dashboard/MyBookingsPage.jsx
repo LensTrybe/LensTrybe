@@ -168,7 +168,7 @@ function BookingForm({ mode, booking, services, onClose, onSaved, onUpgrade }) {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
           <div><label className="ltb-label">Client name</label><input className="ltb-input" value={form.clientName} onChange={(e) => set('clientName', e.target.value)} maxLength={120} placeholder="e.g. Sam Taylor" /></div>
           <div><label className="ltb-label">Client email</label><input className="ltb-input" type="email" value={form.clientEmail} onChange={(e) => set('clientEmail', e.target.value)} maxLength={200} placeholder="Optional" /></div>
-          <div><label className="ltb-label">Client phone</label><input className="ltb-input" value={form.clientPhone} onChange={(e) => set('clientPhone', e.target.value)} maxLength={40} placeholder="Optional" /></div>
+          <div><label className="ltb-label">Client phone</label><input type="tel" inputMode="tel" className="ltb-input" value={form.clientPhone} onChange={(e) => set('clientPhone', e.target.value)} maxLength={40} placeholder="Optional" /></div>
         </div>
       )}
       {editing && <div style={{ fontSize: 14, color: 'var(--lt-muted)' }}>Booking with <strong style={{ color: 'var(--lt-text)' }}>{booking.client_name || 'your client'}</strong></div>}
