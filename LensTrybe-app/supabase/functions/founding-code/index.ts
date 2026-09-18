@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
 
     const { data: invite, error } = await admin
       .from("founding_invites")
-      .select("status, region, expires_at")
+      .select("status, region, expires_at, grant_tier, grant_forever")
       .eq("code", normalisedCode)
       .maybeSingle();
 
@@ -67,8 +67,18 @@ Deno.serve(async (req) => {
     }
 
     // Just checking a code (user not signed in yet).
+    //
+    // tier and forever are returned so the signup screen can say what the code actually
+    // gives. Without them it assumed every code was the founding offer and showed Expert,
+    // which would have been wrong on the face of a comped Elite code even though the
+    // grant itself is done by handle_new_user and would have been right.
     if (action === "validate") {
-      return json({ valid: true, region: invite.region ?? null });
+      return json({
+        valid: true,
+        region: invite.region ?? null,
+        tier: invite.grant_tier ?? "expert",
+        forever: invite.grant_forever === true,
+      });
     }
 
     // Redeem after the account exists: claim the code and grant the free year.
@@ -94,16 +104,27 @@ Deno.serve(async (req) => {
       if (claimErr) return json({ valid: false, reason: "claim_error" }, 500);
       if (!claimed) return json({ valid: false, reason: "already_redeemed" });
 
+      // A code carrying its own grant is not a founding place: no badge, and
+      // founding_member stays false so founding_places_used() does not count it.
+      const grant = claimed.grant_tier
+        ? {
+            subscription_tier: claimed.grant_tier,
+            subscription_status: "active",
+            comp_tier: claimed.grant_forever === true ? claimed.grant_tier : null,
+            next_billing_date: claimed.grant_forever === true ? null : rollingBillingStart(),
+          }
+        : {
+            subscription_tier: "expert",
+            subscription_status: "active",
+            founding_member: true,
+            founding_member_since: new Date().toISOString(),
+            show_founding_badge: true,
+            next_billing_date: rollingBillingStart(),
+          };
+
       const { error: profErr } = await admin
         .from("profiles")
-        .update({
-          subscription_tier: "expert",
-          subscription_status: "active",
-          founding_member: true,
-          founding_member_since: new Date().toISOString(),
-          show_founding_badge: true,
-          next_billing_date: rollingBillingStart(),
-        })
+        .update(grant)
         .eq("id", userId);
 
       if (profErr) {

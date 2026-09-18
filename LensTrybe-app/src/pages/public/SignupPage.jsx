@@ -213,7 +213,12 @@ export default function SignupPage() {
         setFoundingCode(code)
         setFoundingValid(true)
         try { sessionStorage.setItem('lt_founding_code', code) } catch { /* ignore */ }
-        setForm(prev => ({ ...prev, tier: 'expert' }))
+        // The tier comes from the code now rather than being assumed. A founding invite
+        // still answers expert, so nothing changes for the hundred already out there, but
+        // a comped code can say elite and the screen will show elite. The grant itself is
+        // made by handle_new_user from the code in the signup metadata; this only decides
+        // what the person is looking at while they fill the form in.
+        setForm(prev => ({ ...prev, tier: data.tier || 'expert' }))
         setZoneChosen(true)
       } else {
         setCodeError(foundingCodeMessage(data?.reason))
@@ -349,7 +354,9 @@ export default function SignupPage() {
     const email = String(form.email || '').trim()
     const password = String(form.password || '')
     // A founding invite code always means Expert (free until 1 Oct 2027, applied by the trigger).
-    const effectiveTier = foundingCode ? 'expert' : (form.tier || 'basic')
+    // form.tier is set from the code's own grant when one was applied, so a comped
+    // code signs up on its own tier rather than on expert.
+    const effectiveTier = foundingCode ? (form.tier || 'expert') : (form.tier || 'basic')
 
     try {
       let userId = createdUser?.id
