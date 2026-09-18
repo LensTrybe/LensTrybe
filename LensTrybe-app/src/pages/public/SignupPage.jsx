@@ -1129,7 +1129,7 @@ export default function SignupPage() {
             <>
               <div style={styles.avatarUpload} onClick={() => document.getElementById('avatar-upload').click()}>
                 {form.avatarPreview
-                  ? <img src={form.avatarPreview} alt="Preview" style={styles.avatarPreview} />
+                  ? <img loading="lazy" decoding="async" src={form.avatarPreview} alt="Preview" style={styles.avatarPreview} />
                   : <div style={{ fontSize: '32px' }}></div>
                 }
                 <div style={{ fontSize: '14px', color: 'var(--text-secondary)', ...TYPO.body }}>

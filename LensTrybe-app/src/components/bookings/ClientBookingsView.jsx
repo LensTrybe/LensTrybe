@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { bookingAction, bookingStatus, fmtDayLong, timeText, todayIso } from '../../lib/bookings'
+import { imageUrl } from '../../lib/imageUrl'
 
 // Client dashboard: the bookings they've requested or that creatives have made with them.
 // Styled on the client dashboard's light tokens.
@@ -36,7 +37,7 @@ function BookingCard({ b, creative, highlight, onCancelled }) {
       <div style={{ display: 'flex', gap: 12, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 12, alignItems: 'center', minWidth: 0 }}>
           {creative?.avatar_url
-            ? <img src={creative.avatar_url} alt="" style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+            ? <img loading="lazy" decoding="async" src={imageUrl(creative.avatar_url, 42)} alt="" style={{ width: 42, height: 42, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
             : <div style={{ width: 42, height: 42, borderRadius: '50%', background: 'rgba(29,185,84,0.14)', color: '#1DB954', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, flexShrink: 0 }}>{name.charAt(0)}</div>}
           <div style={{ minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary, #14111a)' }}>{name}</div>

@@ -412,7 +412,7 @@ export default function DeliverPage() {
   const galleryPreviewCard = (
     <div style={{ borderRadius: 12, overflow: 'hidden', border: '1px solid var(--lt-border)' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: deliverBrand.primary, color: onAccentText }}>
-        {deliverBrand.logo ? <img src={deliverBrand.logo} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} /> : null}
+        {deliverBrand.logo ? <img loading="lazy" decoding="async" src={deliverBrand.logo} alt="" style={{ height: 32, maxWidth: 120, objectFit: 'contain' }} /> : null}
         <span style={{ fontWeight: 700, fontFamily: deliverBrand.fontStack, fontSize: 14 }}>Gallery preview</span>
       </div>
       <div style={{ padding: '14px 16px', fontSize: 13, color: 'var(--lt-muted)', background: 'var(--lt-surface-2)' }}>
@@ -661,7 +661,7 @@ export default function DeliverPage() {
                   {favMatchedFiles.map((f) => (
                     <div key={f.path} style={{ borderRadius: 10, overflow: 'hidden', aspectRatio: 1, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-hairline)' }}>
                       {isImage(f)
-                        ? <img src={signedUrls[f.path] || ''} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ? <img loading="lazy" decoding="async" src={signedUrls[f.path] || ''} alt={f.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                         : <div style={{ padding: 10, fontSize: 11, color: 'var(--lt-muted)', wordBreak: 'break-word' }}>{f.name}</div>}
                     </div>
                   ))}
@@ -712,7 +712,7 @@ export default function DeliverPage() {
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(80px, 1fr))', gap: 8 }}>
                     {editFiles.filter(isImage).map((f) => (
                       <div key={f.path} className={`ltd-cover${editForm.cover_url === f.path ? ' on' : ''}`} onClick={() => setEditForm(p => ({ ...p, cover_url: p.cover_url === f.path ? '' : f.path }))}>
-                        <img src={signedUrls[f.path] || ''} alt={f.name} />
+                        <img loading="lazy" decoding="async" src={signedUrls[f.path] || ''} alt={f.name} />
                         {editForm.cover_url === f.path && <div style={{ position: 'absolute', top: 4, right: 4, width: 18, height: 18, borderRadius: '50%', background: GREEN, color: GREEN_DARK, fontSize: 11, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>✓</div>}
                       </div>
                     ))}

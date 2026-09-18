@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabaseClient';
 import CinematicEntrance from '../../components/ui/CinematicEntrance';
 import { LIQUID_GLASS } from '../../lib/glassTokensLight';
+import { imageUrl } from '../../lib/imageUrl'
 
 const CATEGORIES = [
   { key: 'photographer', value: 'Photographer', label: 'Photographers' },
@@ -464,7 +465,7 @@ function CreativeCard({ creative, isCenter }) {
       </div>
       <div style={{ display: 'flex', justifyContent: 'center', padding: '6px 0 8px' }}>
         {creative.avatar_url
-          ? <img src={creative.avatar_url} alt={creative.business_name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: isCenter ? '2px solid rgba(29,185,84,0.45)' : '2px solid rgba(20,17,26,0.08)' }} />
+          ? <img loading="lazy" decoding="async" src={imageUrl(creative.avatar_url, 80)} alt={creative.business_name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: isCenter ? '2px solid rgba(29,185,84,0.45)' : '2px solid rgba(20,17,26,0.08)' }} />
           : <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(29,185,84,0.14)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '28px', border: isCenter ? '2px solid rgba(29,185,84,0.45)' : '2px solid rgba(20,17,26,0.08)' }}></div>
         }
       </div>

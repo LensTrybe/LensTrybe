@@ -84,7 +84,7 @@ export default function ProfilePosterModal({ poster, imageUrl, businessName, onC
         </button>
 
         {imageUrl && (
-          <img
+          <img loading="lazy" decoding="async"
             src={imageUrl}
             alt={heading || 'Offer'}
             style={{ display: 'block', width: '100%', maxHeight: 340, objectFit: 'cover' }}

@@ -23,6 +23,7 @@ import TileField from '../../components/ui/TileField'
 import { resolveTheme, FONTS_HREF } from '../../lib/siteTheme'
 import BookingRequestModal from '../../components/bookings/BookingRequestModal'
 import { fmtTime as fmtBookTime } from '../../lib/bookings'
+import { imageUrl } from '../../lib/imageUrl'
 
 // The creative's PROFILE is their website. Basic keeps the classic single-page
 // profile (no socials/website). Pro/Expert/Elite render a brand-styled,
@@ -81,7 +82,7 @@ function MediaThumb({ item, style }) {
       </div>
     )
   }
-  return <img src={url} alt={item.alt_text || ''} style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+  return <img loading="lazy" decoding="async" src={imageUrl(url, 600)} alt={item.alt_text || ''} style={{ ...style, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
 }
 
 // siteMode: the creative's public website link (/site/:slug). No sign-in wall, and
@@ -479,7 +480,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <div style={{ position: 'relative', zIndex: 2 }}>
           <div style={styles.hero}>
             <div style={styles.heroInner}>
-              {profile.avatar_url ? <img src={profile.avatar_url} alt={displayName} style={styles.avatar} /> : <div style={styles.avatar}>📷</div>}
+              {profile.avatar_url ? <img loading="eager" decoding="async" src={imageUrl(profile.avatar_url, 170)} alt={displayName} style={styles.avatar} /> : <div style={styles.avatar}>📷</div>}
               <div style={styles.heroContent}>
                 <div style={styles.nameRow}><h1 style={styles.name}>{displayName}</h1></div>
                 {profile.tagline && <div style={{ ...styles.location, fontSize: '16px', color: 'var(--text-secondary)', fontWeight: 500 }}>{profile.tagline}</div>}
@@ -631,25 +632,25 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
             {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 18, lineHeight: 1.6, margin: '16px 0 24px' }}>{sub}</p>}
             {actionRow()}
           </div>
-          {heroImg ? <img src={heroImg} alt="" style={{ width: '100%', height: 440, objectFit: 'cover', borderRadius: radius }} /> : <div style={{ width: '100%', height: 440, borderRadius: radius, background: accent + '18' }} />}
+          {heroImg ? <img loading="eager" decoding="async" src={imageUrl(heroImg, 900)} alt="" style={{ width: '100%', height: 440, objectFit: 'cover', borderRadius: radius }} /> : <div style={{ width: '100%', height: 440, borderRadius: radius, background: accent + '18' }} />}
         </section>
       )
     } else if (homeT === 't3') {
       hero = (
         <section style={{ ...wrap, textAlign: 'center', padding: '64px 24px 24px' }}>
           <div style={{ maxWidth: 820, margin: '0 auto' }}>
-            {logo ? <img src={logo} alt="" style={{ height: 54, objectFit: 'contain', marginBottom: 22 }} /> : null}
+            {logo ? <img loading="lazy" decoding="async" src={logo} alt="" style={{ height: 54, objectFit: 'contain', marginBottom: 22 }} /> : null}
             <h1 style={H('clamp(34px,5vw,58px)')}>{headline}</h1>
             {sub && <p style={{ fontFamily: bodyFont, color: soft, fontSize: 19, lineHeight: 1.6, margin: '18px auto 26px', maxWidth: 620, overflowWrap: 'anywhere' }}>{sub}</p>}
             <div style={{ display: 'flex', justifyContent: 'center' }}>{actionRow('center')}</div>
           </div>
-          {heroImg && <img src={heroImg} alt="" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: radius, marginTop: 40 }} />}
+          {heroImg && <img loading="eager" decoding="async" src={imageUrl(heroImg, 900)} alt="" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', borderRadius: radius, marginTop: 40 }} />}
         </section>
       )
     } else {
       hero = (
         <section style={{ position: 'relative', minHeight: 500, display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', color: '#fff', overflow: 'hidden' }}>
-          {heroImg ? <img src={heroImg} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}, ${ink})` }} />}
+          {heroImg ? <img loading="eager" decoding="async" src={imageUrl(heroImg, 900)} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(135deg, ${accent}, ${ink})` }} />}
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.44)' }} />
           <div style={{ position: 'relative', ...wrap }}>
             <h1 style={{ ...H('clamp(38px,6vw,66px)'), color: '#fff' }}>{headline}</h1>
@@ -683,7 +684,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         {!isFull && (profile.bio || profile.avatar_url || profile.specialties?.length) ? (
           <section style={{ ...wrap, padding: '8px 24px 40px' }}>
             <div style={{ ...glassCard, padding: isMobile ? '26px 22px' : '34px 40px', maxWidth: 880, margin: '0 auto', display: 'grid', gridTemplateColumns: profile.avatar_url && !isMobile ? '150px minmax(0,1fr)' : '1fr', gap: 28, alignItems: 'center' }}>
-              {profile.avatar_url && <img src={profile.avatar_url} alt={displayName} style={{ width: isMobile ? 120 : 150, height: isMobile ? 120 : 150, borderRadius: '50%', objectFit: 'cover', margin: isMobile ? '0 auto' : 0, border: `4px solid ${accent}22` }} />}
+              {profile.avatar_url && <img loading="eager" decoding="async" src={imageUrl(profile.avatar_url, 160)} alt={displayName} style={{ width: isMobile ? 120 : 150, height: isMobile ? 120 : 150, borderRadius: '50%', objectFit: 'cover', margin: isMobile ? '0 auto' : 0, border: `4px solid ${accent}22` }} />}
               <div style={{ minWidth: 0, textAlign: isMobile ? 'center' : 'left' }}>
                 <h2 style={{ ...H('26px'), marginBottom: 12 }}>About {displayName}</h2>
                 {(profile.bio || '').split('\n').filter(Boolean).map((para, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.8, margin: '0 0 12px' }}>{para}</p>)}
@@ -745,18 +746,18 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       <>
         {aboutT === 't2' ? (
           <section style={{ ...wrap, padding: '64px 24px', textAlign: 'center', maxWidth: 760 }}>
-            {portrait && <img src={portrait} alt="" style={{ width: 176, height: 176, borderRadius: '50%', objectFit: 'cover', marginBottom: 24, border: `4px solid ${accent}22` }} />}
+            {portrait && <img loading="eager" decoding="async" src={imageUrl(portrait, 180)} alt="" style={{ width: 176, height: 176, borderRadius: '50%', objectFit: 'cover', marginBottom: 24, border: `4px solid ${accent}22` }} />}
             <h2 style={{ ...H('clamp(28px,4vw,42px)'), marginBottom: 20 }}>{heading}</h2>
             {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.85, margin: '0 auto 16px', maxWidth: 640 }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, margin: 0 }}>Add your story in the website builder.</p>}
           </section>
         ) : (
           <section style={{ ...wrap, display: 'grid', gridTemplateColumns: portrait ? (aboutT === 't3' ? 'minmax(0,1fr) minmax(280px,380px)' : 'minmax(280px,380px) minmax(0,1fr)') : '1fr', gap: 56, alignItems: 'center', padding: '64px 24px' }} className="lt-2col">
-            {portrait && aboutT !== 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
+            {portrait && aboutT !== 't3' && <img loading="eager" decoding="async" src={imageUrl(portrait, 520)} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
             <div style={{ minWidth: 0 }}>
               <h2 style={{ ...H('clamp(28px,4vw,44px)'), marginBottom: 18 }}>{heading}</h2>
               {body.length ? body.map((p, i) => <p key={i} style={{ fontFamily: bodyFont, color: ink, fontSize: baseSize, lineHeight: 1.85, margin: '0 0 16px' }}>{p}</p>) : <p style={{ fontFamily: bodyFont, color: soft, fontSize: 17, lineHeight: 1.85, margin: 0 }}>Add your story in the website builder.</p>}
             </div>
-            {portrait && aboutT === 't3' && <img src={portrait} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
+            {portrait && aboutT === 't3' && <img loading="eager" decoding="async" src={imageUrl(portrait, 520)} alt="" style={{ width: '100%', aspectRatio: '4/5', objectFit: 'cover', borderRadius: radius }} />}
           </section>
         )}
         {((profile.specialties?.length) || hasCredentials) ? (
@@ -811,7 +812,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           {services.map((s) => (
             <div key={s.id} style={{ ...glassCard, display: 'grid', gridTemplateColumns: s.image_url ? '220px minmax(0,1fr)' : '1fr', gap: 22, alignItems: 'center', overflow: 'hidden' }} className="lt-2col">
-              {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', height: '100%', minHeight: 150, objectFit: 'cover' }} />}
+              {s.image_url && <img loading="lazy" decoding="async" src={imageUrl(s.image_url, 420)} alt="" style={{ width: '100%', height: '100%', minHeight: 150, objectFit: 'cover' }} />}
               <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('21px') }}>{s.name}</div>
                 {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
@@ -842,7 +843,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 320px))', gap: 18, justifyContent: 'center' }}>
           {services.map((s) => (
             <div key={s.id} style={{ ...glassCard, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-              {s.image_url && <img src={s.image_url} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
+              {s.image_url && <img loading="lazy" decoding="async" src={imageUrl(s.image_url, 420)} alt="" style={{ width: '100%', aspectRatio: '3/2', objectFit: 'cover' }} />}
               <div style={{ padding: '18px 20px', display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ ...H('20px') }}>{s.name}</div>
                 {s.price && <div style={{ fontFamily: bodyFont, fontWeight: 700, color: accent, fontSize: 16 }}>{s.price}</div>}
@@ -973,7 +974,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
       <header style={{ position: 'sticky', top: 0, zIndex: 40, background: dark ? 'rgba(16,16,22,0.55)' : 'rgba(255,255,255,0.55)', backdropFilter: 'blur(18px) saturate(160%)', WebkitBackdropFilter: 'blur(18px) saturate(160%)', borderBottom: glassBorder }}>
         <div className="lt-sitebar" style={{ ...wrap, display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 64 }}>
           <div onClick={() => setActivePage('home')} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10 }}>
-            {logo ? <img src={logo} alt={displayName} style={{ height: 32, objectFit: 'contain' }} /> : <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 21, color: ink, letterSpacing: '-0.02em' }}>{displayName}</span>}
+            {logo ? <img loading="lazy" decoding="async" src={logo} alt={displayName} style={{ height: 32, objectFit: 'contain' }} /> : <span style={{ fontFamily: headingFont, fontWeight: 700, fontSize: 21, color: ink, letterSpacing: '-0.02em' }}>{displayName}</span>}
           </div>
           <nav className="lt-desknav" style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
             {navPages.map((pt) => (
@@ -1116,7 +1117,7 @@ export default function PublicProfilePage({ previewMode = false, previewId = nul
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.9)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', padding: '40px' }} onClick={() => setLightbox(null)}>
             {lightbox.video
               ? <video src={lightbox.url} controls autoPlay playsInline onClick={(e) => e.stopPropagation()} style={{ maxWidth: '90vw', maxHeight: '90vh', borderRadius: 'var(--radius-lg)', background: '#000', cursor: 'default' }} />
-              : <img src={lightbox.url} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' }} />}
+              : <img loading="eager" decoding="async" src={imageUrl(lightbox.url, 1400)} alt="" style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: 'var(--radius-lg)' }} />}
           </div>
         )}
 

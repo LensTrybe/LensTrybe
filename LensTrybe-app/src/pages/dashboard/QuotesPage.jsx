@@ -463,7 +463,7 @@ export default function QuotesPage() {
               <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...quoteHeaderBg, color: quoteHeaderTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                    {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
+                    {brandLogo && <img loading="lazy" decoding="async" src={brandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
                     <div>
                       <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 4, fontFamily: quoteBrandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                       <div style={{ fontSize: 13, opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>
@@ -577,7 +577,7 @@ export default function QuotesPage() {
               <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...quoteHeaderBg, color: quoteHeaderTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                    {brandLogo && <img src={brandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
+                    {brandLogo && <img loading="lazy" decoding="async" src={brandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
                     <div>
                       <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.5px', marginBottom: 4, fontFamily: quoteBrandFontStack }}>{profile?.business_name ?? 'Your Business'}</div>
                       <div style={{ fontSize: 13, opacity: 0.85 }}>{profile?.business_email ?? user?.email}</div>

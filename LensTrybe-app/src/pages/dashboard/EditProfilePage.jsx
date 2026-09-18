@@ -10,6 +10,8 @@ import {
 import { useAuth } from '../../context/AuthContext'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 import ProfilePosterCard from '../../components/profile/ProfilePosterCard'
+import { imageUrl } from '../../lib/imageUrl'
+import { resizeImage } from '../../lib/resizeImage'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -256,7 +258,7 @@ export default function EditProfilePage() {
         const isVideo = file.type.startsWith('video')
         const path = `${user.id}/${Date.now()}_${file.name}`
         const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
-        const { error } = await supabase.storage.from(bucket).upload(path, file)
+        const { error } = await supabase.storage.from(bucket).upload(path, await resizeImage(file))
         if (!error) {
           const { data: { publicUrl } } = supabase.storage.from(bucket).getPublicUrl(path)
           await supabase.from('portfolio_items').insert({
@@ -329,7 +331,7 @@ export default function EditProfilePage() {
       if (result?.flagged) console.warn('[moderateContent] Avatar flagged (upload allowed)', result?.reason ?? '')
       const ext = file.name.split('.').pop()
       const path = `${user.id}/avatar.${ext}`
-      await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
+      await supabase.storage.from('portfolio').upload(path, await resizeImage(file))
       const { data: { publicUrl } } = supabase.storage.from('portfolio').getPublicUrl(path)
       update('avatar_url', publicUrl)
     } catch (err) {
@@ -452,7 +454,7 @@ export default function EditProfilePage() {
         {/* Avatar */}
         <div style={{ ...card, flexDirection: 'row', alignItems: 'center', gap: 24 }}>
           {form.avatar_url
-            ? <img src={form.avatar_url} alt="Avatar" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--lt-border)', flexShrink: 0 }} />
+            ? <img loading="eager" decoding="async" src={imageUrl(form.avatar_url, 80)} alt="Avatar" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--lt-border)', flexShrink: 0 }} />
             : <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--lt-surface-2)', border: '1px solid var(--lt-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, color: 'var(--lt-faint)', flexShrink: 0 }}>👤</div>
           }
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -651,7 +653,7 @@ export default function EditProfilePage() {
                   <div key={item.id} style={{ position: 'relative', borderRadius: 10, overflow: 'hidden', aspectRatio: '1', background: 'var(--lt-surface-2)' }}>
                     {item.file_type === 'video'
                       ? <video src={item.file_url ?? item.image_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} muted />
-                      : <img src={item.file_url ?? item.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      : <img loading="lazy" decoding="async" src={imageUrl(item.file_url ?? item.image_url, 300)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     <button type="button" onClick={() => deletePortfolioItem(item.id)} style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 24, height: 24, color: '#fff', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                   </div>
                 ))}

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { renderDocumentHtml, DOC_FONTS, DOC_TEMPLATES } from '../../lib/documentTemplate'
+import { resizeImage } from '../../lib/resizeImage'
 
 const TABS = [{ id: 'invoice', name: 'Invoice' }, { id: 'quote', name: 'Quote' }]
 
@@ -162,7 +163,7 @@ export default function BrandKitPage() {
     try {
       const ext = (file.name.split('.').pop() || 'png').toLowerCase()
       const path = `${user.id}/brand-kit/${scope}-${Date.now()}.${ext}`
-      const { error } = await supabase.storage.from('portfolio').upload(path, file, { upsert: true })
+      const { error } = await supabase.storage.from('portfolio').upload(path, await resizeImage(file), { upsert: true })
       if (error) throw error
       const { data } = supabase.storage.from('portfolio').getPublicUrl(path)
       if (scope === 'base') setBase((b) => ({ ...b, logoUrl: data.publicUrl }))
@@ -251,7 +252,7 @@ export default function BrandKitPage() {
               <div className="logo" onClick={() => baseLogoInput.current?.click()}>
                 {base.logoUrl ? (<>
                   <span className="rm" onClick={(e) => { e.stopPropagation(); setBase((b) => ({ ...b, logoUrl: null })) }}>Remove</span>
-                  <img src={base.logoUrl} alt="logo" />
+                  <img loading="lazy" decoding="async" src={base.logoUrl} alt="logo" />
                 </>) : (<><div style={{ fontWeight: 700, color: 'var(--lt-muted)' }}>Click to upload</div><div>PNG or SVG recommended</div></>)}
               </div>
               <input ref={baseLogoInput} type="file" accept="image/*" hidden onChange={(e) => uploadLogo(e.target.files?.[0], 'base')} />
@@ -312,7 +313,7 @@ export default function BrandKitPage() {
             <div className="field">
               <label className="lab">Logo override</label>
               <div className="logo" style={{ minHeight: 72 }} onClick={() => docLogoInput.current?.click()}>
-                {d.logoUrl ? (<><span className="rm" onClick={(e) => { e.stopPropagation(); setDoc('logoUrl', null) }}>Remove</span><img src={d.logoUrl} alt="logo" /></>) : (<div>Uses your brand base logo. Click to set a different one.</div>)}
+                {d.logoUrl ? (<><span className="rm" onClick={(e) => { e.stopPropagation(); setDoc('logoUrl', null) }}>Remove</span><img loading="lazy" decoding="async" src={d.logoUrl} alt="logo" /></>) : (<div>Uses your brand base logo. Click to set a different one.</div>)}
               </div>
               <input ref={docLogoInput} type="file" accept="image/*" hidden onChange={(e) => uploadLogo(e.target.files?.[0], tab)} />
             </div>

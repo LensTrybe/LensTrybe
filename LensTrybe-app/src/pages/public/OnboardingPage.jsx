@@ -12,6 +12,7 @@ import { LiquidLensFilter, LiquidPill, LiquidSelect } from '../../components/ui/
 import TileField from '../../components/ui/TileField'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 import useIsMobile from '../../hooks/useIsMobile'
+import { resizeImage } from '../../lib/resizeImage'
 
 const PAGE_BG = '#ffffff'
 const GREEN = '#1DB954'
@@ -210,7 +211,7 @@ export default function OnboardingPage() {
     }
     const ext = (avatarFile.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
     const path = `${user.id}/avatar.${ext}`
-    const { error: upErr } = await supabase.storage.from('portfolio').upload(path, avatarFile, { upsert: true })
+    const { error: upErr } = await supabase.storage.from('portfolio').upload(path, await resizeImage(avatarFile), { upsert: true })
     if (upErr) {
       setError(upErr.message)
       return { url: null, ok: false }
@@ -500,7 +501,7 @@ export default function OnboardingPage() {
                     }}
                   >
                     {avatarPreview ? (
-                      <img src={avatarPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img loading="lazy" decoding="async" src={avatarPreview} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     ) : (
                       <div style={{ width: '100%', height: '100%' }} />
                     )}

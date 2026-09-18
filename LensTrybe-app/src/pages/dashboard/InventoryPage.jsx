@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { imageUrl } from '../../lib/imageUrl'
+import { resizeImage } from '../../lib/resizeImage'
 
 // Inventory hub. Creatives log their gear into folders they name themselves
 // (shown as tabs), see it as a photo gallery or a list, track total value for
@@ -212,7 +214,7 @@ export default function InventoryPage() {
     if (file) {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-      const up = await supabase.storage.from('inventory').upload(path, file, { upsert: false })
+      const up = await supabase.storage.from('inventory').upload(path, await resizeImage(file), { upsert: false })
       if (up.error) { setSaving(false); flash('Photo upload failed', 'err'); return }
       photo_path = path
     }
@@ -370,7 +372,7 @@ export default function InventoryPage() {
                 <div key={it.id} className="icard">
                   <div className="photo" onClick={() => openEdit(it)}>
                     <Badge it={it} />
-                    {url ? <img src={url} alt={it.name} /> : <span className="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" /></svg></span>}
+                    {url ? <img loading="lazy" decoding="async" src={imageUrl(url, 220)} alt={it.name} /> : <span className="ph"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /><path d="M3.27 6.96 12 12.01l8.73-5.05M12 22.08V12" /></svg></span>}
                   </div>
                   <div className="ibody" onClick={() => openEdit(it)}>
                     {it.sku && <div className="isku">{it.sku}</div>}
@@ -395,7 +397,7 @@ export default function InventoryPage() {
               const s = statusOf(it); const avail = availableOf(it)
               return (
                 <div key={it.id} className="lrow">
-                  <span className="lthumb">{url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>}</span>
+                  <span className="lthumb">{url ? <img loading="lazy" decoding="async" src={imageUrl(url, 80)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 8 }} /> : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" /></svg>}</span>
                   <span style={{ minWidth: 0, cursor: 'pointer' }} onClick={() => openEdit(it)}>
                     <span style={{ fontSize: 13.5, fontWeight: 600, display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.name}</span>
                     <span className="pill" style={{ background: s.color + '22', color: s.color, marginTop: 3 }}><span className="dot" style={{ background: s.color }} />{s.label}</span>
@@ -423,7 +425,7 @@ export default function InventoryPage() {
             <div className="field">
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => pickFile(e.target.files?.[0])} />
               <div className="uploader" onClick={() => fileRef.current?.click()}>
-                {preview ? <img src={preview} alt="" /> : <span className="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>Add a photo</span>}
+                {preview ? <img loading="lazy" decoding="async" src={preview} alt="" /> : <span className="cam"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>Add a photo</span>}
               </div>
             </div>
 

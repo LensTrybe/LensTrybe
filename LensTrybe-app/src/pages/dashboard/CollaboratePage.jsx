@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { normalizeSubscriptionTier } from '../../lib/tierFeatures'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
+import { imageUrl } from '../../lib/imageUrl'
 
 // Theme-aware Collaborate hub (light + dark) built on the --lt-* tokens. Adds a
 // Saved creatives tab: creatives can be bookmarked from the Browse posters and the
@@ -550,7 +551,7 @@ export default function CollaboratePage() {
                     )}
                     <div style={{ padding: '16px 18px', display: 'flex', gap: 14 }}>
                       <div style={avatarBox(52)}>
-                        {p?.avatar_url ? <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
+                        {p?.avatar_url ? <img loading="lazy" decoding="async" src={imageUrl(p.avatar_url, 48)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -747,7 +748,7 @@ export default function CollaboratePage() {
                 <div key={p.id} style={{ ...glassCard, borderRadius: 14, padding: '14px 16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     <div style={avatarBox(46)}>
-                      {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
+                      {p.avatar_url ? <img loading="lazy" decoding="async" src={imageUrl(p.avatar_url, 48)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
@@ -797,7 +798,7 @@ export default function CollaboratePage() {
                   <div key={p.id} style={{ ...glassCard, borderRadius: 12, padding: '14px 16px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                       <div style={avatarBox(44)}>
-                        {p.avatar_url ? <img src={p.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
+                        {p.avatar_url ? <img loading="lazy" decoding="async" src={imageUrl(p.avatar_url, 48)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initialsFromProfile(p, '')}
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ fontWeight: 700, color: 'var(--lt-text)' }}>{p.business_name || 'Creative'}</div>

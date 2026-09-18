@@ -212,7 +212,7 @@ export default function PortfolioPage() {
                         lineHeight: 0,
                       }}
                     >
-                      <img
+                      <img loading="lazy" decoding="async"
                         src={src}
                         alt={imgAlt}
                         title={headlineTrim || undefined}
@@ -267,7 +267,7 @@ export default function PortfolioPage() {
           >
             Close
           </button>
-          <img
+          <img loading="lazy" decoding="async"
             src={lightbox.src}
             alt=""
             style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain' }}

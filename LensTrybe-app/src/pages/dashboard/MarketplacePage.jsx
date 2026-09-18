@@ -7,6 +7,8 @@ import {
   threadOwnerTierContactSharingRestricted,
 } from '../../lib/messagingContactPolicy'
 import { useAuth } from '../../context/AuthContext'
+import { imageUrl } from '../../lib/imageUrl'
+import { resizeImage } from '../../lib/resizeImage'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -24,7 +26,7 @@ function ListingCard({ l, showSave, saved, onSelect, onToggleSave }) {
           {saved ? '★' : '☆'}
         </button>
       )}
-      {l.photos?.[0] && <img src={l.photos[0]} alt="" style={{ width: '100%', height: 130, objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} />}
+      {l.photos?.[0] && <img loading="lazy" decoding="async" src={imageUrl(l.photos[0], 400)} alt="" style={{ width: '100%', height: 130, objectFit: 'cover', borderRadius: 10, marginBottom: 10 }} />}
       <div style={{ fontSize: 16, fontWeight: 800, color: GREEN, marginBottom: 4 }}>AUD {Number(l.price).toFixed(2)}</div>
       <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--lt-text)', marginBottom: 3 }}>{l.title}</div>
       <div style={{ fontSize: 12, color: 'var(--lt-muted)' }}>{l.category} · {l.condition}</div>
@@ -151,7 +153,7 @@ export default function MarketplacePage() {
     for (const file of files) {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${user.id}/${Date.now()}_${safeName}`
-      const { error } = await supabase.storage.from('marketplace').upload(path, file)
+      const { error } = await supabase.storage.from('marketplace').upload(path, await resizeImage(file))
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl(path)
         urls.push(publicUrl)
@@ -168,7 +170,7 @@ export default function MarketplacePage() {
     for (const file of files) {
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
       const path = `${user.id}/${Date.now()}_${safeName}`
-      const { error } = await supabase.storage.from('marketplace').upload(path, file)
+      const { error } = await supabase.storage.from('marketplace').upload(path, await resizeImage(file))
       if (!error) {
         const { data: { publicUrl } } = supabase.storage.from('marketplace').getPublicUrl(path)
         urls.push(publicUrl)
@@ -381,7 +383,7 @@ export default function MarketplacePage() {
                   <div style={{ display: 'flex', gap: 8, marginTop: 10, flexWrap: 'wrap' }}>
                     {photoUrls.map((url, i) => (
                       <div key={i} style={{ position: 'relative' }}>
-                        <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} />
+                        <img loading="lazy" decoding="async" src={imageUrl(url, 72)} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} />
                         <button type="button" onClick={e => { e.stopPropagation(); setPhotoUrls(prev => prev.filter((_, j) => j !== i)) }} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 18, height: 18, color: '#fff', fontSize: 10, cursor: 'pointer' }}>✕</button>
                       </div>
                     ))}
@@ -421,7 +423,7 @@ export default function MarketplacePage() {
                   {selected.photos?.length > 0 && (
                     <div style={{ display: 'flex', gap: 8, overflowX: 'auto' }}>
                       {selected.photos.map((url, i) => (
-                        <img key={i} src={url} alt="" onClick={e => { e.stopPropagation(); setLightbox(url) }} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, flexShrink: 0, cursor: 'zoom-in' }} />
+                        <img loading="lazy" decoding="async" key={i} src={imageUrl(url, 120)} alt="" onClick={e => { e.stopPropagation(); setLightbox(url) }} style={{ width: 120, height: 120, objectFit: 'cover', borderRadius: 8, flexShrink: 0, cursor: 'zoom-in' }} />
                       ))}
                     </div>
                   )}
@@ -451,7 +453,7 @@ export default function MarketplacePage() {
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
                       {editPhotoUrls.map((url, i) => (
                         <div key={i} style={{ position: 'relative' }}>
-                          <img src={url} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} />
+                          <img loading="lazy" decoding="async" src={imageUrl(url, 72)} alt="" style={{ width: 72, height: 72, objectFit: 'cover', borderRadius: 8, border: '1px solid var(--lt-border)' }} />
                           <button type="button" onClick={() => setEditPhotoUrls(prev => prev.filter((_, j) => j !== i))} style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 18, height: 18, color: '#fff', fontSize: 10, cursor: 'pointer' }}>✕</button>
                         </div>
                       ))}
@@ -509,7 +511,7 @@ export default function MarketplacePage() {
       {lightbox && (
         <div onClick={() => setLightbox(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.85)', zIndex: 2000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24, cursor: 'zoom-out' }}>
           <button type="button" onClick={() => setLightbox(null)} style={{ position: 'absolute', top: 20, right: 24, background: 'none', border: 'none', color: '#fff', fontSize: 28, cursor: 'pointer', lineHeight: 1 }}>✕</button>
-          <img src={lightbox} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }} />
+          <img loading="eager" decoding="async" src={imageUrl(lightbox, 1400)} alt="" onClick={e => e.stopPropagation()} style={{ maxWidth: '100%', maxHeight: '90vh', objectFit: 'contain', borderRadius: 8, boxShadow: '0 8px 40px rgba(0,0,0,0.5)' }} />
         </div>
       )}
     </>

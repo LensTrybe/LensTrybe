@@ -16,6 +16,7 @@ import NewsletterPreferenceCard from '../components/account/NewsletterPreference
 import ClientBookingsView from '../components/bookings/ClientBookingsView'
 import NotificationBell from '../components/layout/NotificationBell'
 import BroadcastHost from '../components/broadcasts/BroadcastHost'
+import { imageUrl } from '../lib/imageUrl'
 
 export default function ClientDashboardPage() {
   const { user, clientAccount, profile } = useAuth()
@@ -425,7 +426,7 @@ export default function ClientDashboardPage() {
                     >
                       <div style={s.avatar}>
                         {c.avatar_url
-                          ? <img src={c.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ? <img loading="lazy" decoding="async" src={imageUrl(c.avatar_url, 48)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           : (c.business_name?.[0] ?? '?').toUpperCase()
                         }
                       </div>

@@ -6,6 +6,8 @@ import {
   CONTENT_CSS, PLATFORMS, PLATFORM_MAP, DEFAULT_CONTENT_STAGES, STAGE_COLORS,
   FORMATS, prettyDate, darken, initials,
 } from '../../lib/contentShared'
+import { imageUrl } from '../../lib/imageUrl'
+import { resizeImage } from '../../lib/resizeImage'
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -100,7 +102,7 @@ export default function ContentCalendarPage() {
     if (file) {
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase()
       const path = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
-      const up = await supabase.storage.from('content-media').upload(path, file, { upsert: false })
+      const up = await supabase.storage.from('content-media').upload(path, await resizeImage(file), { upsert: false })
       if (up.error) { setSaving(false); flash('Image upload failed', 'err'); return }
       media_path = path
     }
@@ -283,7 +285,7 @@ export default function ContentCalendarPage() {
                           onDragEnd={() => { dragCard.current = null; setTimeout(() => { didDrag.current = false }, 60) }}
                           onClick={() => { if (!didDrag.current) openEdit(p) }}>
                           <span className="accent" style={{ background: st.color }} />
-                          {url && <img className="thumb" src={url} alt="" />}
+                          {url && <img loading="lazy" decoding="async" className="thumb" src={imageUrl(url, 200)} alt="" />}
                           <div className="ptitle">{p.title || 'Untitled post'}</div>
                           <PlatChips list={p.platforms} />
                           <div className="prow">
@@ -369,7 +371,7 @@ export default function ContentCalendarPage() {
             <div className="field">
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => pickFile(e.target.files?.[0])} />
               <div className="uploader" onClick={() => fileRef.current?.click()}>
-                {preview ? <img src={preview} alt="" /> : <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600 }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>Add media</span>}
+                {preview ? <img loading="lazy" decoding="async" src={preview} alt="" /> : <span style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 7, fontSize: 12.5, fontWeight: 600 }}><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7"><rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="M21 15l-5-5L5 21" /></svg>Add media</span>}
               </div>
             </div>
 

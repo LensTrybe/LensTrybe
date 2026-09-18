@@ -6,6 +6,7 @@ import { lowestTierWith } from '../../lib/tierFeatures'
 import { supabase } from '../../lib/supabaseClient'
 import BrandLogo from '../ui/BrandLogo'
 import NavIcon from './navIcons'
+import { imageUrl } from '../../lib/imageUrl'
 
 const FONT = "'Inter', sans-serif"
 const SERIF = "'Instrument Serif', Georgia, serif"
@@ -284,7 +285,7 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
   const avatar = (
     <div style={{ width: 38, height: 38, borderRadius: '50%', background: t.avatarBg, border: t.avatarBorder, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: t.pink, fontWeight: 600, overflow: 'hidden', fontFamily: FONT, flexShrink: 0 }}>
       {profile?.avatar_url
-        ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        ? <img loading="eager" decoding="async" src={imageUrl(profile.avatar_url, 44)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         : (profile?.full_name ?? user?.email ?? 'U')[0].toUpperCase()}
     </div>
   )

@@ -622,7 +622,7 @@ export default function ContractsPage() {
               <div style={{ margin: isMobile ? '-16px -16px 16px -16px' : '-40px -48px 24px -48px', padding: isMobile ? '14px 16px' : '20px 48px', ...contractHeaderBg, color: contractHeaderTextColor }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0 }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-                    {contractBrandLogo && <img src={contractBrandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
+                    {contractBrandLogo && <img loading="lazy" decoding="async" src={contractBrandLogo} alt="Logo" style={{ height: 48, width: 'auto', maxWidth: 140, objectFit: 'contain' }} />}
                     <div>
                       <div style={{ fontSize: 26, fontWeight: 800, marginBottom: 4, fontFamily: contractBrandFontStack }}>{profile?.business_name ?? 'Creative'}</div>
                       <div style={{ fontSize: 13, opacity: 0.85 }}>{profile?.business_email}</div>

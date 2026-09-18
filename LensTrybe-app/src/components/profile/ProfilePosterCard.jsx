@@ -8,6 +8,7 @@ import {
   MODERATION_BLOCKED_USER_MESSAGE,
   PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE,
 } from '../../lib/moderateContent'
+import { resizeImage } from '../../lib/resizeImage'
 
 // The promotional poster an Expert or Elite creative shows the first time a client opens
 // their public profile. A picture, or words, or both, and optionally a button that drops the
@@ -153,7 +154,7 @@ export default function ProfilePosterCard({ userId, tier }) {
 
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
       const path = `${userId}/poster-${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: true })
+      const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, await resizeImage(file), { upsert: true })
       if (upErr) { setError('That did not upload. Please try again.'); return }
 
       // Clear the old file rather than leaving it sitting in storage forever.
@@ -291,7 +292,7 @@ export default function ProfilePosterCard({ userId, tier }) {
         <Label hint="optional">Picture</Label>
         {imageUrl ? (
           <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', flexWrap: 'wrap' }}>
-            <img
+            <img loading="lazy" decoding="async"
               src={imageUrl}
               alt="Your poster"
               style={{ width: 132, height: 132, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--lt-border)' }}

@@ -16,6 +16,7 @@ import {
 import { LiquidLensFilter, LiquidSelect, LiquidPill } from '../../components/ui/liquidGlass'
 import TileField from '../../components/ui/TileField'
 import { CREATIVE_TYPE_OPTIONS } from '../../lib/creativeTypes'
+import { imageUrl } from '../../lib/imageUrl'
 
 // Launch scope (Photographer, Videographer) from the shared source of truth.
 const CATEGORIES = CREATIVE_TYPE_OPTIONS
@@ -109,7 +110,7 @@ function CreativeCard({ profile, onClick }) {
       }}
     >
       {profile.avatar_url
-        ? <img src={profile.avatar_url} alt={displayName} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
+        ? <img loading="lazy" decoding="async" src={imageUrl(profile.avatar_url, 420)} alt={displayName} style={{ width: '100%', aspectRatio: '4/3', objectFit: 'cover', display: 'block' }} />
         : <div style={{ width: '100%', aspectRatio: '4/3', background: 'var(--bg-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}></div>
       }
       <div style={{ padding: '16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>

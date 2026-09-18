@@ -5,6 +5,8 @@ import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { PORTFOLIO_PHOTO_MODERATION_BLOCKED_MESSAGE, partitionFilesByPortfolioImageModeration } from '../../lib/moderateContent'
 import { FONT_OPTIONS, PALETTES, STYLES, DEFAULT_THEME, normalizeTheme, mergeTheme, resolveTheme } from '../../lib/siteTheme'
+import { imageUrl } from '../../lib/imageUrl'
+import { resizeImage } from '../../lib/resizeImage'
 
 // Website builder: edits the creative's PROFILE-as-website. Content pages
 // (Home/About/Contact) live in site_pages; Gallery uses portfolio_items grouped
@@ -174,7 +176,7 @@ function PageEditor({ pageType, content, template, visible, onField, onTemplate,
             <div key={f.key}>
               <div style={label}>{f.label}</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, alignItems: 'center', marginTop: 8 }}>
-                {url ? <img src={url} alt="" style={{ width: 'min(100%, 300px)', maxHeight: 150, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--lt-border)' }} /> : null}
+                {url ? <img loading="lazy" decoding="async" src={imageUrl(url, 300)} alt="" style={{ width: 'min(100%, 300px)', maxHeight: 150, objectFit: 'cover', borderRadius: 12, border: '1px solid var(--lt-border)' }} /> : null}
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   <Btn variant="secondary" type="button" disabled={uploadingField === f.key} onClick={() => { setPendingField(f.key); fileRef.current?.click() }}>{uploadingField === f.key ? 'Uploading…' : url ? 'Replace image' : 'Upload image'}</Btn>
                   {url ? <Btn variant="ghost" type="button" onClick={() => onField(f.key, '')}>Remove</Btn> : null}
@@ -224,7 +226,7 @@ function GalleryManager({ items, uploading, albumInput, setAlbumInput, onUpload,
             {photos.map((it) => (
               <div key={it.id} style={{ border: '1px solid var(--lt-hairline)', borderRadius: 12, overflow: 'hidden', background: 'var(--lt-surface)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ aspectRatio: '4/3', background: 'var(--lt-surface-2)', overflow: 'hidden' }}>
-                  {it.file_type === 'video' ? <video src={it.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img src={it.file_url || it.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                  {it.file_type === 'video' ? <video src={it.file_url} muted style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <img loading="lazy" decoding="async" src={imageUrl(it.file_url || it.image_url, 300)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                 </div>
                 <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   <input defaultValue={it.category || ''} placeholder="Album" onBlur={(e) => { if ((e.target.value || '') !== (it.category || '')) onSetCategory(it, e.target.value.trim()) }} style={{ ...inputStyle, padding: '7px 10px', fontSize: 13 }} />
@@ -285,7 +287,7 @@ function HomeMediaManager({ items, cap, fullBuilder, uploading, notice, onUpload
                 <div style={{ position: 'relative', aspectRatio: '1', background: 'var(--lt-surface-2)', overflow: 'hidden' }}>
                   {it.file_type === 'video'
                     ? <video src={`${url}#t=0.1`} muted playsInline preload="metadata" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
-                    : <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+                    : <img loading="lazy" decoding="async" src={imageUrl(url, 600)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
                   {it.file_type === 'video' ? <span style={{ position: 'absolute', left: 8, bottom: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.6)', color: '#fff' }}>▶ Video</span> : null}
                   {showing && !on ? <span style={{ position: 'absolute', left: 8, top: 8, fontSize: 11, fontWeight: 700, padding: '3px 8px', borderRadius: 999, background: 'rgba(0,0,0,0.6)', color: '#fff' }}>Showing</span> : null}
                   <button type="button" onClick={() => onDelete(it)} aria-label="Delete" style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.7)', border: 'none', borderRadius: '50%', width: 26, height: 26, color: '#fff', fontSize: 12, cursor: 'pointer' }}>✕</button>
@@ -312,7 +314,7 @@ function ServiceRow({ s, idx, onChangeLocal, onSaveRow, onDeleteRow, onUploadIma
     <div style={{ border: '1px solid var(--lt-hairline)', borderRadius: 10, padding: 12, background: 'var(--lt-surface)', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '130px 1fr', gap: 12, alignItems: 'start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ width: '100%', aspectRatio: '3/2', borderRadius: 8, overflow: 'hidden', background: 'var(--lt-surface-2)', border: '1px dashed var(--lt-border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {s.image_url ? <img src={s.image_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: 'var(--lt-faint)', fontFamily: 'inherit' }}>No photo</span>}
+          {s.image_url ? <img loading="lazy" decoding="async" src={imageUrl(s.image_url, 420)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <span style={{ fontSize: 11, color: 'var(--lt-faint)', fontFamily: 'inherit' }}>No photo</span>}
         </div>
         <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadImage(idx, f); if (fileRef.current) fileRef.current.value = '' }} />
         <Btn variant="secondary" size="sm" type="button" disabled={uploading} onClick={() => fileRef.current?.click()}>{uploading ? 'Uploading…' : s.image_url ? 'Replace photo' : 'Add photo'}</Btn>
@@ -514,7 +516,7 @@ function DesignEditor({ scope, setScope, active, customised, onCustomised, onApp
             <p style={{ margin: '6px 0', fontSize: 12.5, color: 'var(--lt-faint)', fontFamily: 'inherit' }}>Shown in your website header. Leave blank to show your business name.</p>
             <input ref={logoRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={(e) => { const f = e.target.files?.[0]; if (f) onUploadLogo(f); if (logoRef.current) logoRef.current.value = '' }} />
             <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-              {logo ? <img src={logo} alt="" style={{ height: 40, objectFit: 'contain', background: 'var(--lt-surface)', border: '1px solid var(--lt-hairline)', borderRadius: 8, padding: 4 }} /> : null}
+              {logo ? <img loading="lazy" decoding="async" src={logo} alt="" style={{ height: 40, objectFit: 'contain', background: 'var(--lt-surface)', border: '1px solid var(--lt-hairline)', borderRadius: 8, padding: 4 }} /> : null}
               <Btn variant="secondary" type="button" disabled={uploadingLogo} onClick={() => logoRef.current?.click()}>{uploadingLogo ? 'Uploading…' : logo ? 'Replace logo' : 'Upload logo'}</Btn>
               {logo ? <Btn variant="ghost" type="button" onClick={() => onUploadLogo(null)}>Remove</Btn> : null}
             </div>
@@ -533,7 +535,7 @@ function DesignEditor({ scope, setScope, active, customised, onCustomised, onApp
         <div style={{ marginTop: 8, border: '1px solid var(--lt-border)', borderRadius: 14, overflow: 'hidden' }}>
           <div style={{ background: P.bg, padding: 18, fontFamily: P.bodyFont }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }} onClick={() => jump('wb-logo')} title="Logo & name">
-              {logo ? <img src={logo} alt="" style={{ height: 20, objectFit: 'contain' }} /> : <span style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 15 }}>Studio</span>}
+              {logo ? <img loading="lazy" decoding="async" src={logo} alt="" style={{ height: 20, objectFit: 'contain' }} /> : <span style={{ fontFamily: P.headingFont, fontWeight: P.headingWeight, color: P.heading, fontSize: 15 }}>Studio</span>}
               <span style={{ fontSize: 11, color: P.soft }}>Home · About · Contact</span>
             </div>
             <div onClick={() => jump('wb-typography')} title="Typography" style={{ cursor: 'pointer' }}>
@@ -650,7 +652,7 @@ export default function WebsiteBuilderPage() {
     try {
       const ext = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'jpg'
       const path = `${user.id}/site/${pt}/${field}-${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file, { upsert: true })
+      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, await resizeImage(file), { upsert: true })
       if (upErr) throw new Error(upErr.message)
       const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
       setField(pt, field, pub.publicUrl)
@@ -678,7 +680,7 @@ export default function WebsiteBuilderPage() {
       for (const file of files) {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
         const path = `${user.id}/gallery/${Date.now()}-${safe}`
-        const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file)
+        const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, await resizeImage(file))
         if (upErr) throw new Error(upErr.message)
         const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
         const isVideo = (file.type || '').startsWith('video/')
@@ -708,7 +710,7 @@ export default function WebsiteBuilderPage() {
         const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
         const bucket = isVideo ? 'portfolio-videos' : 'portfolio'
         const path = `${user.id}/${Date.now()}_${safe}`
-        const { error: upErr } = await supabase.storage.from(bucket).upload(path, file)
+        const { error: upErr } = await supabase.storage.from(bucket).upload(path, await resizeImage(file))
         if (upErr) { failed.push(file.name); continue }
         const { data: pub } = supabase.storage.from(bucket).getPublicUrl(path)
         const featured = chosen < homeCap
@@ -772,7 +774,7 @@ export default function WebsiteBuilderPage() {
     try {
       const ext = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'jpg'
       const path = `${user.id}/services/${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file, { upsert: true })
+      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, await resizeImage(file), { upsert: true })
       if (upErr) throw new Error(upErr.message)
       const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
       serviceChangeLocal(idx, { image_url: pub.publicUrl })
@@ -840,7 +842,7 @@ export default function WebsiteBuilderPage() {
     try {
       const ext = file.name.split('.').pop()?.replace(/[^a-z0-9]/gi, '') || 'png'
       const path = `${user.id}/site/logo-${Date.now()}.${ext}`
-      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, file, { upsert: true })
+      const { error: upErr } = await supabase.storage.from('portfolio-website').upload(path, await resizeImage(file), { upsert: true })
       if (upErr) throw new Error(upErr.message)
       const { data: pub } = supabase.storage.from('portfolio-website').getPublicUrl(path)
       setSiteLogo(pub.publicUrl)

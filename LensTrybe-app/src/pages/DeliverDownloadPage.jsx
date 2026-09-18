@@ -97,7 +97,7 @@ function Lightbox({ items, index, onClose, onNav, favSet, onToggleFav, onDownloa
       <div className="dgl-lb-stage" onClick={(e) => e.stopPropagation()}>
         {isVideo(item)
           ? <video src={item.url} controls autoPlay style={{ maxWidth: '100%', maxHeight: '82vh', borderRadius: 10 }} />
-          : <img src={item.url} alt={item.name} style={{ maxWidth: '100%', maxHeight: '82vh', objectFit: 'contain', borderRadius: 10 }} />}
+          : <img loading="lazy" decoding="async" src={item.url} alt={item.name} style={{ maxWidth: '100%', maxHeight: '82vh', objectFit: 'contain', borderRadius: 10 }} />}
         <div className="dgl-lb-bar">
           <span className="dgl-lb-name">{item.name}</span>
           <div style={{ display: 'flex', gap: 8 }}>
@@ -276,7 +276,7 @@ export default function DeliverDownloadPage() {
       ) : locked && !unlocked ? (
         <div className="dgl-center">
           <div className="dgl-lock">
-            {creative?.avatar_url && <img src={creative.avatar_url} alt="" className="dgl-lock-av" />}
+            {creative?.avatar_url && <img loading="lazy" decoding="async" src={creative.avatar_url} alt="" className="dgl-lock-av" />}
             <div className="dgl-lock-name">{businessName}</div>
             <div className="dgl-sub" style={{ marginBottom: 24 }}>This gallery is password protected</div>
             <input
@@ -300,7 +300,7 @@ export default function DeliverDownloadPage() {
           <div className="dgl-hero" style={delivery?.cover_url ? { backgroundImage: `linear-gradient(180deg, rgba(0,0,0,0.15), rgba(0,0,0,0.55)), url(${delivery.cover_url})` } : undefined}>
             <div className={`dgl-hero-inner ${delivery?.cover_url ? 'on-cover' : ''}`}>
               <div className="dgl-brandrow">
-                {creative?.avatar_url && <img src={creative.avatar_url} alt="" className="dgl-brand-av" />}
+                {creative?.avatar_url && <img loading="lazy" decoding="async" src={creative.avatar_url} alt="" className="dgl-brand-av" />}
                 <div>
                   <div className="dgl-brand-name">{businessName}</div>
                   <div className="dgl-brand-sub">via LensTrybe</div>
@@ -349,7 +349,7 @@ export default function DeliverDownloadPage() {
                         const lbIndex = lightboxItems.indexOf(f)
                         return (
                           <div key={f.path} className="dgl-tile" onClick={() => setLightbox(lbIndex)}>
-                            <img src={f.url} alt={f.name} loading="lazy" />
+                            <img decoding="async" src={f.url} alt={f.name} loading="lazy" />
                             <button
                               type="button"
                               className={`dgl-heart ${fav ? 'on' : ''}`}

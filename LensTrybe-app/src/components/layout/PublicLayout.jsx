@@ -3,6 +3,7 @@ import { Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
 import BrandLogo from '../ui/BrandLogo'
+import { imageUrl } from '../../lib/imageUrl'
 
 const FONT = "'Inter', sans-serif"
 
@@ -319,7 +320,7 @@ export default function PublicLayout() {
                 <div style={styles.mobileProfile}>
                   <div style={styles.avatar}>
                     {profile?.avatar_url
-                      ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ? <img loading="eager" decoding="async" src={imageUrl(profile.avatar_url, 40)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                       : (displayName[0] ?? 'U').toUpperCase()}
                   </div>
                   <div style={{ fontSize: '14px', color: TEXT_PRIMARY, fontFamily: FONT, fontWeight: 500, lineHeight: 1.6 }}>{shortName}</div>
@@ -406,7 +407,7 @@ export default function PublicLayout() {
                 >
                   <div style={styles.avatar}>
                     {profile?.avatar_url
-                      ? <img src={profile.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ? <img loading="eager" decoding="async" src={imageUrl(profile.avatar_url, 40)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                       : (displayName[0] ?? 'U').toUpperCase()}
                   </div>
                   <span>{shortName}</span>

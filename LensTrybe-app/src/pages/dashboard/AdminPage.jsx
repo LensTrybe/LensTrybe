@@ -1002,7 +1002,7 @@ export default function AdminPage() {
             <div style={{ flex: 1, overflowY: 'auto', padding: '18px 18px 24px' }}>
               <div style={{ display: 'flex', gap: 14, marginBottom: 18 }}>
                 {panelUser.profile?.avatar_url ? (
-                  <img
+                  <img loading="lazy" decoding="async"
                     src={panelUser.profile.avatar_url}
                     alt=""
                     style={{ width: 64, height: 64, borderRadius: 12, objectFit: 'cover', border: `1px solid ${COLORS.border}` }}

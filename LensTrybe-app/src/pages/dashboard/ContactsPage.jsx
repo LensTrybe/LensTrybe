@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { supabase } from '../../lib/supabaseClient'
+import { imageUrl } from '../../lib/imageUrl'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -42,7 +43,7 @@ function Avatar({ name, url, size = 44 }) {
       background: url ? 'transparent' : bg, color: fg, display: 'flex', alignItems: 'center', justifyContent: 'center',
       fontWeight: 700, fontSize: size * 0.36, fontFamily: 'inherit',
     }}>
-      {url ? <img src={url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(name)}
+      {url ? <img loading="lazy" decoding="async" src={imageUrl(url, 48)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(name)}
     </div>
   )
 }
