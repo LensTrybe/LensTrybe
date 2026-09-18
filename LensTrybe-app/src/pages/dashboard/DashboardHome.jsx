@@ -52,6 +52,15 @@ const ALL_WIDGETS = [
 ]
 const ALL_WIDGET_IDS = ALL_WIDGETS.map((w) => w.id)
 
+// Which of them draw the wide analytics tile from widgetKit rather than the square
+// one. The board gives these more than one column, and it cannot tell which is which
+// by looking at a rendered node, so it is told here. Keep in step with widgetNodes:
+// a widget built on AnalyticsTile belongs in this list, one built on Tile does not.
+const WIDE_WIDGETS = [
+  'revenue', 'leads', 'bookings', 'reviews',
+  'quotes', 'deliverables', 'search_visibility', 'cashflow',
+]
+
 // Width of a full board row (6 square tiles = 2 analytics tiles) so the quick-link
 // row lines up exactly with the start and end of the tile grid.
 const BOARD_MAX = 156 * 6 + 16 * 5 // 1016
@@ -476,7 +485,7 @@ export default function DashboardHome() {
 
   const boardItems = widgetOrder
     .filter((id) => widgetNodes[id] && !hiddenWidgets.includes(id))
-    .map((id) => ({ id, node: gated(id, widgetNodes[id]) }))
+    .map((id) => ({ id, wide: WIDE_WIDGETS.includes(id), node: gated(id, widgetNodes[id]) }))
   const hiddenList = ALL_WIDGETS.filter((w) => hiddenWidgets.includes(w.id))
   const quickItems = quickOrder.filter((id) => ALL_QUICK_LINK_IDS.includes(id) && !quickHidden.includes(id)).map((id) => ALL_QUICK_LINKS.find((l) => l.id === id))
   const quickHiddenList = ALL_QUICK_LINKS.filter((l) => quickHidden.includes(l.id))

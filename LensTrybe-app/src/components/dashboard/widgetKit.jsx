@@ -22,6 +22,9 @@ export const INPUT_BORDER = 'var(--lt-input-border)'
 export const HAIRLINE = 'var(--lt-hairline)'
 export const TRACK = 'var(--lt-track)'
 
+// The square tile at full desktop width: six of these plus five 16px gaps is the
+// board's maximum width. Tiles no longer set this as a hard width, the board's grid
+// column does, but every width that depends on the board is still derived from it.
 export const TILE_SIZE = 156
 
 // Liquid glass: light frosted white (hero) or deep HUD, via CSS variables.
@@ -49,7 +52,7 @@ export function Tile({ label, corner, onClick, children }) {
     <button
       type="button"
       onClick={onClick}
-      style={{ ...GLASS, position: 'relative', overflow: 'hidden', width: TILE_SIZE, height: TILE_SIZE, padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', cursor: 'pointer', fontFamily: FONT, appearance: 'none', WebkitAppearance: 'none' }}
+      style={{ ...GLASS, position: 'relative', overflow: 'hidden', boxSizing: 'border-box', width: '100%', aspectRatio: '1 / 1', padding: 16, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', textAlign: 'left', cursor: 'pointer', fontFamily: FONT, appearance: 'none', WebkitAppearance: 'none' }}
     >
       <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '55%', background: SHEEN, pointerEvents: 'none', borderTopLeftRadius: 22, borderTopRightRadius: 22 }} />
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
@@ -61,15 +64,18 @@ export function Tile({ label, corner, onClick, children }) {
   )
 }
 
-// Wide analytics tile: 3 tiles wide, 1 tile tall. Shows a KPI + trend pill and
-// a mini chart (passed as children). Expands on click.
-export const ANALYTICS_W = TILE_SIZE * 3 + 32 // 500
+// Wide analytics tile: three squares wide at full desktop width, one tall. Shows a
+// KPI + trend pill and a mini chart (passed as children). Expands on click.
+//
+// The width is the board's, not this tile's: DashboardBoard spans it across three grid
+// columns, or across the whole row once the screen is too narrow for that to look
+// deliberate. At full width three columns and two gaps come to 500px, as designed.
 
 export function AnalyticsTile({ title, value, sub, trend, accent = '#a855f7', onClick, children }) {
   const hasTrend = trend !== null && trend !== undefined && !Number.isNaN(trend)
   const up = hasTrend && trend >= 0
   return (
-    <button type="button" onClick={onClick} style={{ ...GLASS, position: 'relative', overflow: 'hidden', width: ANALYTICS_W, maxWidth: '100%', height: TILE_SIZE, padding: 16, display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer', fontFamily: FONT, appearance: 'none', WebkitAppearance: 'none' }}>
+    <button type="button" onClick={onClick} style={{ ...GLASS, position: 'relative', overflow: 'hidden', boxSizing: 'border-box', width: '100%', height: TILE_SIZE, padding: 16, display: 'flex', flexDirection: 'column', textAlign: 'left', cursor: 'pointer', fontFamily: FONT, appearance: 'none', WebkitAppearance: 'none' }}>
       <div aria-hidden style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '45%', background: `radial-gradient(120% 100% at 85% 0%, ${accent}44 0%, transparent 60%), ${SHEEN}`, pointerEvents: 'none', borderTopLeftRadius: 22, borderTopRightRadius: 22 }} />
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexShrink: 0 }}>
         <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: MUTED }}>{title}</span>
