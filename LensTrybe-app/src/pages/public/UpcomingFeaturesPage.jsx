@@ -60,7 +60,7 @@ const PLATFORM_FEATURES = [
   { name: 'Mobile app for iPhone and Android', status: 'building', description: 'Your whole LensTrybe business in your pocket. Take bookings, reply to clients, send invoices and check payments from your phone. In build now.' },
   { name: 'More creative disciplines', status: 'planned', description: 'LensTrybe opens with Photographers and Videographers. Drone Pilots, Video Editors, Photo Editors, Social Media Managers, Hair and Makeup Artists and UGC Creators follow after launch.' },
   { name: 'Two-way calendar sync', status: 'planned', description: 'Connect Google Calendar or Apple Calendar so your LensTrybe availability and your own diary stay in step in both directions. Stop double booking yourself.' },
-  { name: 'Creative community feed', status: 'exploring', description: 'A place for creatives on LensTrybe to share work, ask questions and find people to collaborate with. We are still working out what it should be, so tell us.' },
+  { name: 'Creative community feed', status: 'building', description: 'A place for creatives on LensTrybe to share work, ask questions and find people to collaborate with. Groups, mentions and collaboration posts are being built now.' },
 ]
 
 const SKILLS = [
