@@ -298,11 +298,16 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
 
   const firstBody = (
     <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-      <div onClick={() => { navigate('/dashboard'); closeAll(); onCloseMobile?.() }} title="LensTrybe"
-        style={{ minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: expanded ? 'flex-start' : 'center', gap: 10, padding: expanded ? '0 18px' : 0, cursor: 'pointer', flexShrink: 0 }}>
+      {/* The mark goes to the public home page, not the dashboard. A creative wanting the
+          dashboard is already on it, and the only way back out to the marketing site was
+          editing the address bar. A Link rather than a div with onClick, so it is
+          reachable by keyboard and opens in a new tab on cmd-click like any other link. */}
+      <Link to="/" title="LensTrybe home" aria-label="LensTrybe home"
+        onClick={() => { closeAll(); onCloseMobile?.() }}
+        style={{ minHeight: 62, display: 'flex', alignItems: 'center', justifyContent: expanded ? 'flex-start' : 'center', gap: 10, padding: expanded ? '0 18px' : 0, flexShrink: 0, textDecoration: 'none' }}>
         <BrandLogo markSize={26} showWordmark={false} />
         {expanded && wordmark}
-      </div>
+      </Link>
       <div style={{ flex: 1, overflowY: 'auto', overflowX: 'hidden', padding: '2px 0' }}>
         {TOP.map((it) => panelRow({ id: it.path, icon: it.icon, label: it.label, active: !selected && itemActive(it.path), to: it.path, title: it.label }))}
         <div style={{ height: 1, background: t.divider, margin: expanded ? '8px 18px' : '8px 14px' }} />
@@ -342,9 +347,10 @@ export default function Sidebar({ isMobile = false, mobileOpen = false, onCloseM
         style={{ position: 'fixed', top: 0, left: 0, width: '86%', maxWidth: 320, height: '100dvh', zIndex: 1001, transform: mobileOpen ? 'translateX(0)' : 'translateX(-100%)', transition: 'transform .25s ease', ...t.glass, borderRadius: '0 20px 20px 0', overflow: 'hidden', boxSizing: 'border-box' }}>
         {sheen('0 20px 20px 0')}
         <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
-          <div onClick={() => { navigate('/dashboard'); onCloseMobile?.() }} style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', flexShrink: 0 }}>
+          <Link to="/" aria-label="LensTrybe home" onClick={() => onCloseMobile?.()}
+            style={{ padding: '18px 20px', minHeight: 64, display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0, textDecoration: 'none' }}>
             <BrandLogo markSize={26} showWordmark={false} />{wordmark}
-          </div>
+          </Link>
           {/* minHeight: 0 is belt and braces, not the fix: overflow-y other than visible
               already zeroes a flex item's automatic minimum size, so this nav scrolls
               without it. What actually broke scrolling was a legacy .sidebar-drawer
