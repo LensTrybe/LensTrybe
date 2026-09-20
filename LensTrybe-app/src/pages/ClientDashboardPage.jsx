@@ -21,6 +21,72 @@ import NotificationBell from '../components/layout/NotificationBell'
 import BroadcastHost from '../components/broadcasts/BroadcastHost'
 import { imageUrl } from '../lib/imageUrl'
 
+/* An empty screen should say what this is for and offer the one thing worth
+ * doing next. A single grey line in the middle of a large panel does neither,
+ * and it is the first thing a new client sees. */
+function EmptyState({ icon, title, body, actionLabel, onAction }) {
+  return (
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '40px 24px',
+      }}
+    >
+      <div style={{ maxWidth: 360, textAlign: 'center' }}>
+        <div
+          aria-hidden
+          style={{
+            width: 58,
+            height: 58,
+            margin: '0 auto 18px',
+            borderRadius: 999,
+            background: 'rgba(29,185,84,0.14)',
+            border: '1px solid rgba(29,185,84,0.32)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#0E7C3A',
+          }}
+        >
+          {icon}
+        </div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--lt-text)', letterSpacing: '-0.01em' }}>{title}</div>
+        <div style={{ fontSize: 14.5, lineHeight: 1.55, color: 'var(--lt-muted)', marginTop: 8 }}>{body}</div>
+        {actionLabel && (
+          <button
+            type="button"
+            onClick={onAction}
+            style={{
+              marginTop: 18,
+              minHeight: 44,
+              padding: '0 20px',
+              borderRadius: 10,
+              border: 'none',
+              background: '#1DB954',
+              color: '#04120a',
+              fontFamily: 'inherit',
+              fontSize: 14,
+              fontWeight: 700,
+              cursor: 'pointer',
+            }}
+          >
+            {actionLabel}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+const IconChat = (
+  <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z" />
+  </svg>
+)
+
 export default function ClientDashboardPage() {
   const { user, clientAccount, profile } = useAuth()
   const { theme, dark, toggleTheme } = useDashTheme()
@@ -232,17 +298,18 @@ export default function ClientDashboardPage() {
 
   const s = {
     page: { minHeight: '100dvh', background: 'transparent', color: 'var(--lt-text)', fontFamily: 'var(--font-ui)', position: 'relative', zIndex: 1 },
-    nav: { height: '64px', ...GLASS, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', position: 'sticky', top: 0, zIndex: 100 },
+    nav: { height: '64px', ...GLASS, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', position: 'sticky', top: 0, zIndex: 100 },
+    navInner: { height: '100%', maxWidth: 1400, margin: '0 auto', padding: '0 18px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
     logo: { fontSize: '18px', fontFamily: 'var(--font-display)', color: 'var(--lt-text)', cursor: 'pointer', background: 'none', border: 'none', padding: 0 },
     navRight: { display: 'flex', alignItems: 'center', gap: '10px' },
     userName: { fontSize: '13px', color: 'var(--lt-muted)' },
     signOutBtn: { minHeight: 44, fontSize: '13px', fontWeight: 600, color: 'var(--lt-text)', background: 'var(--lt-input-bg)', border: '1px solid var(--lt-border)', borderRadius: 10, cursor: 'pointer', padding: '0 14px', fontFamily: 'inherit' },
     themeBtn: { width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--lt-text)', background: 'var(--lt-input-bg)', border: '1px solid var(--lt-border)', borderRadius: 10, cursor: 'pointer', padding: 0 },
     body: { display: 'flex', gap: 18, height: 'calc(100dvh - 64px)', padding: 18, boxSizing: 'border-box', maxWidth: 1400, margin: '0 auto' },
-    sidebar: { width: '244px', flexShrink: 0, ...GLASS, borderRadius: 18, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '8px 0' },
+    sidebar: { width: '228px', flexShrink: 0, ...GLASS, borderRadius: 18, display: 'flex', flexDirection: 'column', overflowY: 'auto', padding: '8px 0' },
     sidebarHeader: { padding: '12px 18px 6px', fontSize: '11px', fontWeight: 700, color: 'var(--lt-muted)', letterSpacing: '0.08em', textTransform: 'uppercase' },
     navItem: (active) => ({
-      display: 'block', width: 'calc(100% - 16px)', margin: '1px 8px', textAlign: 'left',
+      display: 'block', width: 'calc(100% - 16px)', margin: '2px 8px', textAlign: 'left',
       minHeight: 44, padding: '0 14px', fontSize: '14px', fontWeight: active ? 700 : 500, cursor: 'pointer',
       fontFamily: 'inherit', borderRadius: 10,
       color: active ? '#0E7C3A' : 'var(--lt-muted)',
@@ -285,8 +352,13 @@ export default function ClientDashboardPage() {
   }
 
   return (
-    <div style={{ ...s.page, colorScheme: dark ? 'dark' : 'light' }} className="lt-dash cd-root" data-theme={theme}>
+    <>
+      {/* A sibling, not a child. The background wrapper is position: fixed, and
+          nesting it inside an element that makes a stacking context (position
+          relative plus a z-index) paints it inside that context instead of
+          behind the page. DashboardLayout has always mounted it this way. */}
       <DashSurface dark={dark} isMobile={isMobile} />
+      <div style={{ ...s.page, colorScheme: dark ? 'dark' : 'light' }} className="lt-dash cd-root" data-theme={theme}>
       <style>{`
 
         /* Phones: the sidebar becomes a scrolling row of chips above the content, so the
@@ -318,6 +390,7 @@ export default function ClientDashboardPage() {
         </div>
       )}
       <nav style={s.nav}>
+        <div style={s.navInner}>
         <button type="button" style={s.logo} onClick={() => navigate('/')}>LensTrybe</button>
         <div style={s.navRight}>
           <span style={s.userName}>{displayName}</span>
@@ -340,6 +413,7 @@ export default function ClientDashboardPage() {
             )}
           </button>
           <button type="button" style={s.signOutBtn} onClick={signOut}>Sign Out</button>
+        </div>
         </div>
       </nav>
 
@@ -400,7 +474,7 @@ export default function ClientDashboardPage() {
                 </div>
                 <div style={s.messageList}>
                   {messages.length === 0
-                    ? <div style={{ color: 'var(--lt-muted)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>No messages yet.</div>
+                    ? <div style={{ color: 'var(--lt-muted)', fontSize: '14px', textAlign: 'center', marginTop: '40px' }}>No messages yet. Say hello below.</div>
                     : messages.map(m => (
                       <div key={m.id} style={s.messageRow(m.sender_type === 'client')}>
                         <div style={s.bubble(m.sender_type === 'client')}>{m.body}</div>
@@ -426,7 +500,13 @@ export default function ClientDashboardPage() {
                 </div>
               </>
             ) : (
-              <div style={s.empty}>No conversations yet. <span style={{ color: '#1DB954', cursor: 'pointer', marginLeft: '6px' }} onClick={() => navigate('/creatives')}>Find a Creative →</span></div>
+              <EmptyState
+                icon={IconChat}
+                title="No conversations yet"
+                body="When you message a creative about a job, the thread shows up here and stays in one place."
+                actionLabel="Find a creative"
+                onAction={() => navigate('/creatives')}
+              />
             )
           )}
 
@@ -584,6 +664,7 @@ export default function ClientDashboardPage() {
         kind="client"
         onDeleted={async () => { setShowDelete(false); try { await supabase.auth.signOut() } catch { /* already signed out */ } navigate('/', { replace: true }) }}
       />
-    </div>
+      </div>
+    </>
   )
 }
