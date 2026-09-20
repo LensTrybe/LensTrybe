@@ -9,13 +9,19 @@
  * Nothing here touches React, so it can be exercised on its own.
  */
 
-/** The five things a creative can send a client, in the order they are listed. */
+/* The shot list builder is not live yet, so /shot-list/:token is not a route on
+ * this branch and a shot list row would link nowhere. client_documents() still
+ * returns them, so they are filtered out here rather than removed. Flip this to
+ * true in the same commit that ships the builder. */
+export const SHOT_LISTS_LIVE = false
+
+/** The things a creative can send a client, in the order they are listed. */
 export const DOC_KINDS = [
   { key: 'invoice',  collection: 'invoices',   label: 'Invoice' },
   { key: 'quote',    collection: 'quotes',     label: 'Quote' },
   { key: 'contract', collection: 'contracts',  label: 'Contract' },
   { key: 'delivery', collection: 'deliveries', label: 'Gallery' },
-  { key: 'shotlist', collection: 'shot_lists', label: 'Shot list' },
+  ...(SHOT_LISTS_LIVE ? [{ key: 'shotlist', collection: 'shot_lists', label: 'Shot list' }] : []),
 ]
 
 export const DOC_LABEL = Object.fromEntries(DOC_KINDS.map((k) => [k.key, k.label]))

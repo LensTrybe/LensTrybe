@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
-import { DOC_LABEL, describeDocument, formatDay } from '../../lib/clientDocuments'
+import { DOC_LABEL, SHOT_LISTS_LIVE, describeDocument, formatDay } from '../../lib/clientDocuments'
 
 /* Everything a client has been sent, in one place.
  *
@@ -19,7 +19,7 @@ const TYPES = [
   { key: 'quote', label: 'Quotes' },
   { key: 'contract', label: 'Contracts' },
   { key: 'delivery', label: 'Galleries' },
-  { key: 'shotlist', label: 'Shot lists' },
+  ...(SHOT_LISTS_LIVE ? [{ key: 'shotlist', label: 'Shot lists' }] : []),
 ]
 
 const TONE = {
@@ -149,7 +149,7 @@ export default function ClientDocumentsView({ onFindCreative }) {
     ...(d.quotes || []).map((row) => ({ kind: 'quote', row })),
     ...(d.contracts || []).map((row) => ({ kind: 'contract', row })),
     ...(d.deliveries || []).map((row) => ({ kind: 'delivery', row })),
-    ...(d.shot_lists || []).map((row) => ({ kind: 'shotlist', row })),
+    ...(SHOT_LISTS_LIVE ? (d.shot_lists || []).map((row) => ({ kind: 'shotlist', row })) : []),
   ].map((item) => ({
     ...item,
     id: `${item.kind}:${item.row.id}`,
