@@ -154,9 +154,16 @@ export default function ClientDashboardPage() {
   async function loadThreads() {
     if (!user) return
 
-    // Link enquiry threads sent from this person's confirmed email to their account
-    // (done server-side: threads are only readable by their participants).
-    try { await supabase.rpc('link_my_client_threads') } catch { /* best effort */ }
+    // Join anything addressed to this person's confirmed email to their account.
+    // Both are server side and match on the confirmed address only. Bookings need
+    // this as much as threads do: a creative can book somebody who has no account
+    // yet, and without this their My Bookings stays empty after they sign up.
+    try {
+      await Promise.all([
+        supabase.rpc('link_my_client_threads'),
+        supabase.rpc('link_my_client_bookings'),
+      ])
+    } catch { /* best effort */ }
 
     // Threads where this client is a participant
     const { data: byId } = await supabase
@@ -198,7 +205,7 @@ export default function ClientDashboardPage() {
     if (!user) return
     const { data } = await supabase
       .from('job_listings')
-      .select('*, job_applications(*)')
+      .select('id, title, description, creative_types, specialty, location, job_date, budget_range, status, expires_at, created_at, posted_by, poster_name, job_applications(*)')
       .eq('posted_by', user.id)
       .order('created_at', { ascending: false })
     setJobs(data ?? [])

@@ -7,6 +7,7 @@ import { useSubscription } from '../../context/SubscriptionContext'
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../../lib/posterJobApplicationActions'
 import TileField from '../../components/ui/TileField'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
+import { formatClientAccountDisplayName } from '../../lib/clientDisplayName'
 import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 
 const GREEN = '#1DB954'
@@ -160,7 +161,12 @@ export default function JobBoardPage() {
   }
 
   async function loadJobs() {
-    const { data } = await supabase.from('job_listings').select('*').eq('status', 'active').order('created_at', { ascending: false })
+    // Named columns on purpose. select('*') put poster_email in the JSON every
+    // anonymous visitor to /jobs received, and the column grant is revoked now,
+    // so a star select would be refused outright.
+    const { data } = await supabase.from('job_listings')
+      .select('id, title, description, creative_types, specialty, location, job_date, budget_range, status, expires_at, created_at, posted_by, poster_name, job_applications(*)')
+      .eq('status', 'active').order('created_at', { ascending: false })
     const raw = data ?? []
     const posterIds = [...new Set(raw.map((j) => j.posted_by).filter(Boolean))]
     let adminPosterIds = new Set()
@@ -186,7 +192,7 @@ export default function JobBoardPage() {
     if (!user) { setMyPostedJobs([]); return }
     const { data } = await supabase
       .from('job_listings')
-      .select('*, job_applications(*)')
+      .select('id, title, description, creative_types, specialty, location, job_date, budget_range, status, expires_at, created_at, posted_by, poster_name, job_applications(*)')
       .eq('posted_by', user.id)
       .order('created_at', { ascending: false })
     setMyPostedJobs(data ?? [])
@@ -208,29 +214,6 @@ export default function JobBoardPage() {
     if (applyMod?.flagged) console.warn('[moderation] Flagged job application text', applyMod.reason)
     setSubmittingApply(true)
 
-    const { data: jobListing } = await supabase
-      .from('job_listings')
-      .select('title, posted_by, poster_email, poster_name')
-      .eq('id', applyingJob.id)
-      .maybeSingle()
-
-    let posterProfile = null
-    let posterClient = null
-    if (jobListing?.posted_by) {
-      const [profRes, clientRes] = await Promise.all([
-        supabase.from('profiles').select('business_email, business_name, full_name').eq('id', jobListing.posted_by).eq('is_admin', false).maybeSingle(),
-        supabase.from('client_accounts').select('email, first_name, last_name').eq('id', jobListing.posted_by).maybeSingle(),
-      ])
-      posterProfile = profRes.data
-      posterClient = clientRes.data
-    }
-
-    const clientDisplayName = posterClient
-      ? `${[posterClient.first_name, posterClient.last_name].filter(Boolean).join(' ')}`.trim() || posterClient.email
-      : null
-
-    const posterEmail = jobListing?.poster_email ?? posterProfile?.business_email ?? posterClient?.email ?? null
-    const posterName = jobListing?.poster_name ?? posterProfile?.business_name ?? posterProfile?.full_name ?? clientDisplayName ?? 'there'
     const creativeLabel = creativeSenderDisplayName(profile, user)
 
     const { data: insertedApp, error } = await supabase.from('job_applications').insert({
@@ -286,7 +269,9 @@ export default function JobBoardPage() {
       status: 'active',
       expires_at: expiresAt,
       poster_email: profile?.business_email ?? user?.email ?? null,
-      poster_name: profile?.business_name ?? profile?.full_name ?? user?.email ?? null,
+      poster_name: profile?.business_name ?? profile?.full_name
+        ?? formatClientAccountDisplayName(clientAccount)
+        ?? 'A LensTrybe client',
     })
     if (postError) { setJobPostModerationError('Could not post job: ' + postError.message); setSaving(false); return }
     await loadJobs()
