@@ -1,5 +1,5 @@
 import TileField from '../ui/TileField'
-import { DASH_TOKENS, DARK_SCRIM, DARK_WRAP, LIGHT_SCRIM, LIGHT_WRAP } from './dashSurface'
+import { DASH_TOKENS, DARK_SCRIM, DARK_WRAP, LIGHT_SCRIM, LIGHT_WRAP } from './dashTokens'
 
 /* The tokens and the background that every signed in page sits on.
  *

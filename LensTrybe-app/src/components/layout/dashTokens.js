@@ -1,4 +1,10 @@
-/* The dashboard's surface: its colour tokens and the background behind them.
+/* The dashboard's colour tokens and the background constants behind them.
+ *
+ * Named dashTokens rather than dashSurface on purpose. A dashSurface.js next
+ * to DashSurface.jsx differs only in case, and macOS filesystems are
+ * case-insensitive, so `import from './dashSurface'` inside DashSurface.jsx
+ * resolved to the component importing itself. That crashed the whole app to a
+ * white screen. Two files in one folder should never differ only by case.
  *
  * These lived inside DashboardLayout, and a hand written copy of the dark half
  * also lived inside ClientDashboardPage so that shared components mounted
