@@ -98,3 +98,69 @@ export function bookingDocPrefill(b) {
     notes: when ? `For your booking on ${when}${where}.` : '',
   }
 }
+
+// A booking as a calendar file.
+//
+// Times are written floating, with no timezone and no Z, because a booking
+// stores a plain date and plain local times. Nine in the morning means nine in
+// the morning where the shoot is, which is exactly what floating time means.
+// Converting to UTC would need a timezone the booking does not carry.
+function icsEscape(v) {
+  return String(v || '')
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n')
+}
+
+function icsDate(iso) { return String(iso).slice(0, 10).replace(/-/g, '') }
+function icsTime(t) { return String(t || '00:00').slice(0, 5).replace(':', '') + '00' }
+
+export function bookingIcs(b, creativeName) {
+  if (!b?.booking_date) return null
+  const stamp = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+  const date = icsDate(b.booking_date)
+
+  let start, end
+  if (b.all_day || !b.start_time) {
+    start = `DTSTART;VALUE=DATE:${date}`
+    end = `DTEND;VALUE=DATE:${icsDate(addDaysIso(String(b.booking_date).slice(0, 10), 1))}`
+  } else {
+    start = `DTSTART:${date}T${icsTime(b.start_time)}`
+    end = `DTEND:${date}T${icsTime(b.end_time || b.start_time)}`
+  }
+
+  const summary = [b.service, creativeName].filter(Boolean).join(' with ') || 'LensTrybe booking'
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//LensTrybe//Bookings//EN',
+    'CALSCALE:GREGORIAN',
+    'BEGIN:VEVENT',
+    `UID:booking-${b.id}@lenstrybe.com`,
+    `DTSTAMP:${stamp}`,
+    start,
+    end,
+    `SUMMARY:${icsEscape(summary)}`,
+    b.location ? `LOCATION:${icsEscape(b.location)}` : null,
+    `DESCRIPTION:${icsEscape([b.notes, b.message].filter(Boolean).join('\n\n') || 'Booked through LensTrybe.')}`,
+    'END:VEVENT',
+    'END:VCALENDAR',
+  ].filter(Boolean)
+
+  return lines.join('\r\n')
+}
+
+export function downloadBookingIcs(b, creativeName) {
+  const body = bookingIcs(b, creativeName)
+  if (!body) return false
+  const url = URL.createObjectURL(new Blob([body], { type: 'text/calendar;charset=utf-8' }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `booking-${String(b.booking_date).slice(0, 10)}.ics`
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  setTimeout(() => URL.revokeObjectURL(url), 2000)
+  return true
+}
