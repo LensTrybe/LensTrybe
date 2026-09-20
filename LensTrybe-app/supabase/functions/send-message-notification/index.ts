@@ -142,14 +142,17 @@ async function handleJobApplication(admin: Admin, resendKey: string, user: { id:
     `What's included: ${preview(app.includes || '-', 500)}\n\n` +
     `Cover message: ${preview(app.description || app.message || '', 1500)}`
 
-  if (poster.isCreative) {
-    try {
-      await admin.from('notifications').insert({
-        user_id: job.posted_by, type: 'message', title: `New application from ${fromName}`,
-        body: preview(`For "${title}"`, 140), link: '/dashboard', meta: { job_id: job.id },
-      })
-    } catch (_e) { /* non-blocking */ }
-  }
+  // The poster gets this whether they are a creative or a client. It used to be
+  // wrapped in a creative check, so a client's bell could never show an
+  // application even though the dashboard polls for one every thirty seconds.
+  try {
+    await admin.from('notifications').insert({
+      user_id: job.posted_by, type: 'message', title: `New application from ${fromName}`,
+      body: preview(`For "${title}"`, 140),
+      link: poster.isCreative ? '/dashboard/my-work/jobs' : '/client-dashboard?view=jobs',
+      meta: { job_id: job.id },
+    })
+  } catch (_e) { /* non-blocking */ }
 
   const html = emailShell({
     preheader: `${fromName} applied for your job on LensTrybe`,
@@ -161,7 +164,7 @@ async function handleJobApplication(admin: Admin, resendKey: string, user: { id:
       `<p style="margin:0;color:${BRAND.text};font-size:15px;line-height:1.7;">${nl2br(bodyText)}</p>`
     ),
     ctaText: 'View applications on LensTrybe',
-    ctaUrl: poster.isCreative ? `${APP}/dashboard` : `${APP}/client-dashboard`,
+    ctaUrl: poster.isCreative ? `${APP}/dashboard/my-work/jobs` : `${APP}/client-dashboard?view=jobs`,
     footNote: `You're receiving this because you posted a job on LensTrybe.`,
   })
   const res = await sendEmail(resendKey, { to, subject: plain(`New application for your job: ${title}`, 150), html })
@@ -253,11 +256,18 @@ Deno.serve(async (req) => {
     }
     if (!to) return json({ success: true, skipped: 'no_recipient' })
 
-    if (recipientIsCreative) {
+    // Both sides get a row. A client whose creative replies used to get the
+    // email and nothing in the product. A client with no account (a portal only
+    // client) has no client_user_id and no bell to put this in, so they still
+    // get the email alone.
+    const notifyUserId = recipientIsCreative ? thread.creative_id : thread.client_user_id
+    if (notifyUserId) {
       try {
         await admin.from('notifications').insert({
-          user_id: thread.creative_id, type: 'message', title: `New message from ${fromName}`,
-          body: preview(msg.body || threadSubject, 140) || null, link: '/dashboard/clients/messages', meta: { thread_id: thread.id },
+          user_id: notifyUserId, type: 'message', title: `New message from ${fromName}`,
+          body: preview(msg.body || threadSubject, 140) || null,
+          link: recipientIsCreative ? '/dashboard/clients/messages' : '/client-dashboard',
+          meta: { thread_id: thread.id },
         })
       } catch (_e) { /* non-blocking */ }
     }
