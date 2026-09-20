@@ -21,6 +21,7 @@ import ClientDocumentsView from '../components/documents/ClientDocumentsView.jsx
 import ClientCreativesView from '../components/creatives/ClientCreativesView.jsx'
 import { useConfirm } from '../components/ui/useConfirm'
 import NotificationBell from '../components/layout/NotificationBell'
+import BrandLogo from '../components/ui/BrandLogo'
 import BroadcastHost from '../components/broadcasts/BroadcastHost'
 
 /* An empty screen should say what this is for and offer the one thing worth
@@ -325,7 +326,7 @@ export default function ClientDashboardPage() {
     page: { minHeight: '100dvh', background: 'transparent', color: 'var(--lt-text)', fontFamily: 'var(--font-ui)', position: 'relative', zIndex: 1 },
     nav: { height: '64px', ...GLASS, borderRadius: 0, borderLeft: 'none', borderRight: 'none', borderTop: 'none', position: 'sticky', top: 0, zIndex: 100 },
     navInner: { height: '100%', maxWidth: 1400, margin: '0 auto', padding: '0 18px', boxSizing: 'border-box', display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-    logo: { fontSize: '18px', fontFamily: 'var(--font-display)', color: 'var(--lt-text)', cursor: 'pointer', background: 'none', border: 'none', padding: 0 },
+    logo: { display: 'inline-flex', alignItems: 'center', cursor: 'pointer', background: 'none', border: 'none', padding: 0, minHeight: 44 },
     navRight: { display: 'flex', alignItems: 'center', gap: '10px' },
     userName: { fontSize: '13px', color: 'var(--lt-muted)' },
     signOutBtn: { minHeight: 44, fontSize: '13px', fontWeight: 600, color: 'var(--lt-text)', background: 'var(--lt-input-bg)', border: '1px solid var(--lt-border)', borderRadius: 10, cursor: 'pointer', padding: '0 14px', fontFamily: 'inherit' },
@@ -415,7 +416,9 @@ export default function ClientDashboardPage() {
       )}
       <nav style={s.nav}>
         <div style={s.navInner}>
-        <button type="button" style={s.logo} onClick={() => navigate('/')}>LensTrybe</button>
+        <button type="button" style={s.logo} aria-label="LensTrybe home" onClick={() => navigate('/')}>
+          <BrandLogo markSize={26} color="var(--lt-text)" />
+        </button>
         <div style={s.navRight}>
           <span style={s.userName}>{displayName}</span>
           <button
