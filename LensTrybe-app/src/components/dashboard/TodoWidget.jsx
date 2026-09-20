@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { FONT, TEXT, MUTED, GREEN, Tile, CenterModal } from './widgetKit'
 import { isDemoMode, demoTasks } from '../../lib/demoMode'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const inputStyle = { flex: 1, minWidth: 0, background: 'var(--lt-surface-2)', border: '1px solid var(--lt-input-border)', borderRadius: 10, padding: '10px 12px', fontSize: 14, color: TEXT, fontFamily: FONT, outline: 'none' }
 const addBtnStyle = { flexShrink: 0, width: 42, borderRadius: 10, border: `1px solid ${GREEN}66`, background: `${GREEN}26`, color: GREEN, fontSize: 18, fontWeight: 700, cursor: 'pointer', lineHeight: 1 }
@@ -30,6 +31,7 @@ function TaskRow({ task, onToggle, onDelete }) {
 }
 
 export default function TodoWidget({ userId, kind, label }) {
+  const { confirm, confirmDialog } = useConfirm()
   const [tasks, setTasks] = useState([])
   const [open, setOpen] = useState(false)
   const [text, setText] = useState('')
@@ -51,7 +53,15 @@ export default function TodoWidget({ userId, kind, label }) {
     setTasks((p) => p.map((x) => (x.id === task.id ? { ...x, done: next } : x)))
     await supabase.from('creative_tasks').update({ done: next, updated_at: new Date().toISOString() }).eq('id', task.id)
   }
-  async function del(task) {
+  /* Asks first. The delete itself is doDel below. */
+  function del(task) {
+    confirm({
+      title: 'Delete this to do?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDel(task),
+    })
+  }
+  async function doDel(task) {
     setTasks((p) => p.filter((x) => x.id !== task.id))
     await supabase.from('creative_tasks').delete().eq('id', task.id)
   }
@@ -62,6 +72,7 @@ export default function TodoWidget({ userId, kind, label }) {
 
   return (
     <>
+      {confirmDialog}
       <Tile label={label} onClick={() => setOpen(true)}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 34, fontWeight: 700, letterSpacing: '-0.02em', color: active.length ? TEXT : GREEN, fontFamily: FONT, lineHeight: 1 }}>{active.length}</span>

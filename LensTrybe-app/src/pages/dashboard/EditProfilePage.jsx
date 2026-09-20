@@ -12,6 +12,7 @@ import { CREATIVE_TYPES } from '../../lib/creativeTypes'
 import ProfilePosterCard from '../../components/profile/ProfilePosterCard'
 import { imageUrl } from '../../lib/imageUrl'
 import { resizeImage } from '../../lib/resizeImage'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -128,6 +129,7 @@ function TextField({ label, value, onChange, placeholder, type = 'text', error }
 }
 
 export default function EditProfilePage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user, profile, fetchUserData, loading: authLoading } = useAuth()
   const profileTier = String(profile?.subscription_tier || 'basic').toLowerCase()
   // Contact details are an Expert/Elite feature (same rule as sharing them in messages).
@@ -279,7 +281,17 @@ export default function EditProfilePage() {
     }
   }
 
-  async function deletePortfolioItem(id) {
+  /* Asks first. The delete itself is doDeletePortfolioItem below. */
+  function deletePortfolioItem(id) {
+    confirm({
+      title: 'Remove this from your portfolio?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDeletePortfolioItem(id),
+    })
+  }
+
+
+  async function doDeletePortfolioItem(id) {
     await supabase.from('portfolio_items').delete().eq('id', id)
     setPortfolioItems(prev => prev.filter(p => p.id !== id))
   }
@@ -433,6 +445,7 @@ export default function EditProfilePage() {
 
   return (
     <>
+      {confirmDialog}
       <StyleBlock />
       <div className="ltep-page">
         {toast && (

@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { onCalendarChange, emitCalendarChange } from '../../lib/calendarBus'
 import { FONT, SERIF, TEXT, MUTED, FAINT, GREEN, Tile, CenterModal } from './widgetKit'
 import { isDemoMode, demoEvents } from '../../lib/demoMode'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const COLORS = [
   { key: 'green', v: '#1DB954' },
@@ -96,6 +97,7 @@ function EventForm({ dateStr, initial, onSave, onDelete, onCancel }) {
 }
 
 export default function CalendarWidget({ userId, hostName, hostEmail }) {
+  const { confirm, confirmDialog } = useConfirm()
   const now = new Date()
   const [open, setOpen] = useState(false)
   const [year, setYear] = useState(now.getFullYear())
@@ -138,7 +140,15 @@ export default function CalendarWidget({ userId, hostName, hostEmail }) {
       try { await supabase.functions.invoke('send-event-invite', { body: { event_id: saved.id } }) } catch { /* best effort */ }
     }
   }
-  async function delEvent(ev) {
+  /* Asks first. The delete itself is doDelEvent below. */
+  function delEvent(ev) {
+    confirm({
+      title: 'Delete this event?',
+      body: 'It will be taken off your calendar. This cannot be undone.',
+      onConfirm: () => doDelEvent(ev),
+    })
+  }
+  async function doDelEvent(ev) {
     setEvents((p) => p.filter((x) => x.id !== ev.id))
     await supabase.from('calendar_events').delete().eq('id', ev.id)
     emitCalendarChange()
@@ -155,6 +165,7 @@ export default function CalendarWidget({ userId, hostName, hostEmail }) {
 
   return (
     <>
+      {confirmDialog}
       <Tile label={WEEKDAYS_FULL[now.getDay()]} onClick={() => setOpen(true)}>
         <div>
           <div style={{ fontSize: 40, fontWeight: 700, letterSpacing: '-0.02em', color: TEXT, fontFamily: FONT, lineHeight: 1 }}>{now.getDate()}</div>

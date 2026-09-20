@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 // Central Meetings hub. Aggregates every meeting for the creative across all
 // projects, standalone meetings they create here, and phone-call requests
@@ -93,6 +94,7 @@ const CSS = `
 const BLANK = { title: '', project_id: '', meeting_type: 'in_person', meeting_date: '', start_time: '', end_time: '', location: '', description: '', client_name: '', client_email: '' }
 
 export default function MeetingsPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -232,7 +234,13 @@ export default function MeetingsPage() {
     flash('Client has been let know')
   }
 
-  async function deleteMeeting(m) {
+  /* Asks first. The delete itself is doDeleteMeeting below. */
+  function deleteMeeting(m) {
+    confirm({ title: 'Delete this meeting?', body: 'It comes off your calendar too. This cannot be undone.', onConfirm: () => doDeleteMeeting(m) })
+  }
+
+
+  async function doDeleteMeeting(m) {
     if (m.calendar_event_id) await supabase.from('calendar_events').delete().eq('id', m.calendar_event_id).catch(() => {})
     setMeetings(prev => prev.filter(x => x.id !== m.id))
     await supabase.from('meetings').delete().eq('id', m.id)
@@ -252,6 +260,7 @@ export default function MeetingsPage() {
     const busy = busyId === m.id
     return (
       <div className="card">
+        {confirmDialog}
         <div className="mrow">
           <div style={{ minWidth: 0, flex: 1 }}>
             <div className="mt">

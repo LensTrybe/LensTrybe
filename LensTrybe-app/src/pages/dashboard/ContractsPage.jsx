@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -69,6 +70,7 @@ function StyleBlock() {
 }
 
 export default function ContractsPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user, profile } = useAuth()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const [contracts, setContracts] = useState([])
@@ -339,14 +341,34 @@ export default function ContractsPage() {
     showToast('Template saved')
   }
 
-  async function deleteContract(id) {
+  /* Asks first. The delete itself is doDeleteContract below. */
+  function deleteContract(id) {
+    confirm({
+      title: 'Delete this contract?',
+      body: 'If it has been signed, you lose the record of that too. This cannot be undone.',
+      onConfirm: () => doDeleteContract(id),
+    })
+  }
+
+
+  async function doDeleteContract(id) {
     await supabase.from('contracts').delete().eq('id', id)
     setContracts(prev => prev.filter(c => c.id !== id))
     setShowView(null)
     showToast('Contract deleted')
   }
 
-  async function deleteTemplate(id) {
+  /* Asks first. The delete itself is doDeleteTemplate below. */
+  function deleteTemplate(id) {
+    confirm({
+      title: 'Delete this template?',
+      body: 'Contracts already made from it are not affected. This cannot be undone.',
+      onConfirm: () => doDeleteTemplate(id),
+    })
+  }
+
+
+  async function doDeleteTemplate(id) {
     await supabase.from('contract_templates').delete().eq('id', id)
     setTemplates(prev => prev.filter(t => t.id !== id))
     showToast('Template deleted')
@@ -402,6 +424,7 @@ export default function ContractsPage() {
 
   return (
     <>
+      {confirmDialog}
       <StyleBlock />
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 9999, background: toast.type === 'success' ? GREEN : '#ef4444', color: toast.type === 'success' ? GREEN_DARK : '#fff', padding: '12px 20px', borderRadius: 10, fontSize: 14, fontWeight: 700, boxShadow: '0 10px 30px -8px rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', gap: 8 }}>

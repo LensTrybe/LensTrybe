@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { imageUrl } from '../../lib/imageUrl'
 import { resizeImage } from '../../lib/resizeImage'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 // Inventory hub. Creatives log their gear into folders they name themselves
 // (shown as tabs), see it as a photo gallery or a list, track total value for
@@ -115,6 +116,7 @@ const CSS = `
 const BLANK = { name: '', folder_id: '', sku: '', quantity: 1, unit_value: '', reorder_level: 0, notes: '' }
 
 export default function InventoryPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [folders, setFolders] = useState([])
@@ -240,7 +242,17 @@ export default function InventoryPage() {
     load()
   }
 
-  async function deleteItem(it) {
+  /* Asks first. The delete itself is doDeleteItem below. */
+  function deleteItem(it) {
+    confirm({
+      title: 'Delete this item?',
+      body: 'Its record, value and history go with it. This cannot be undone.',
+      onConfirm: () => doDeleteItem(it),
+    })
+  }
+
+
+  async function doDeleteItem(it) {
     if (it.photo_path) await supabase.storage.from('inventory').remove([it.photo_path]).catch(() => {})
     await supabase.from('inventory_items').delete().eq('id', it.id)
     setShowItem(false)
@@ -285,7 +297,12 @@ export default function InventoryPage() {
     setFolderModal(null)
     flash('Folder saved')
   }
-  async function deleteFolder(id) {
+  /* Asks first. The delete itself is doDeleteFolder below. */
+  function deleteFolder(id) {
+    confirm({ title: 'Delete this folder?', body: 'The items inside are kept and moved out of it. This cannot be undone.', onConfirm: () => doDeleteFolder(id) })
+  }
+
+  async function doDeleteFolder(id) {
     await supabase.from('inventory_items').update({ folder_id: null }).eq('folder_id', id)
     await supabase.from('inventory_folders').delete().eq('id', id)
     setFolderModal(null)
@@ -301,6 +318,7 @@ export default function InventoryPage() {
 
   return (
     <div className="lti">
+      {confirmDialog}
       <style>{CSS}</style>
       <div className="inner">
         <div className="phead">

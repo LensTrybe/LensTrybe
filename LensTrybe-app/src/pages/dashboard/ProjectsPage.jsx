@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 // Palette of stage colours a creative can pick from.
 const COLORS = ['#8b8f9a', '#4aa3ff', '#1DB954', '#f5a524', '#FF2D78', '#9b6bff', '#38d16f', '#f0516d']
@@ -164,6 +165,7 @@ const CSS = `
 `
 
 export default function ProjectsPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -295,7 +297,15 @@ export default function ProjectsPage() {
     }, 60)
   }
 
-  async function deleteStage(id) {
+  /* The check comes before the ask, so nobody confirms a delete that was
+     never going to happen anyway. */
+  function deleteStage(id) {
+    if (projects.some(p => p.stage_id === id)) { flash('Move its projects out first', 'err'); return }
+    confirm({ title: 'Delete this stage?', body: 'Your pipeline loses this column. This cannot be undone.', onConfirm: () => doDeleteStage(id) })
+  }
+
+
+  async function doDeleteStage(id) {
     if (projects.some(p => p.stage_id === id)) { flash('Move its projects out first', 'err'); return }
     setStages(prev => prev.filter(s => s.id !== id))
     await supabase.from('pipeline_stages').delete().eq('id', id)
@@ -342,6 +352,7 @@ export default function ProjectsPage() {
     if (!st) return null
     return (
       <div className="pop" style={{ top: menu.y, left: menu.x }} onClick={e => e.stopPropagation()}>
+        {confirmDialog}
         <div className="lbl">Colour</div>
         <div className="swatches">
           {COLORS.map(c => (

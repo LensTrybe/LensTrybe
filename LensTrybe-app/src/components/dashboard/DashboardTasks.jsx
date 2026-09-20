@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabaseClient'
 import { themeTokens } from '../../lib/dashboardTheme'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const FONT = "'Inter', sans-serif"
 
@@ -92,6 +93,7 @@ function FocusCard({ heading, tag, items, value, onInput, onAdd, onToggle, onDel
 }
 
 export default function DashboardTasks({ userId, avatarLabel = 'U', hideHeading = false, t: tProp }) {
+  const { confirm, confirmDialog } = useConfirm()
   const t = tProp || themeTokens(false)
   const [tasks, setTasks] = useState([])
   const [inputs, setInputs] = useState({ daily: '', weekly: '', todo: '', in_progress: '', in_review: '', done: '' })
@@ -123,7 +125,15 @@ export default function DashboardTasks({ userId, avatarLabel = 'U', hideHeading 
     setTasks((p) => p.map((x) => (x.id === task.id ? { ...x, done } : x)))
     await supabase.from('creative_tasks').update({ done, updated_at: new Date().toISOString() }).eq('id', task.id)
   }
-  async function del(task) {
+  /* Asks first. The delete itself is doDel below. */
+  function del(task) {
+    confirm({
+      title: 'Delete this task?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDel(task),
+    })
+  }
+  async function doDel(task) {
     setTasks((p) => p.filter((x) => x.id !== task.id))
     await supabase.from('creative_tasks').delete().eq('id', task.id)
   }
@@ -142,6 +152,7 @@ export default function DashboardTasks({ userId, avatarLabel = 'U', hideHeading 
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {confirmDialog}
       <div>
         {!hideHeading ? (
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 8 }}>

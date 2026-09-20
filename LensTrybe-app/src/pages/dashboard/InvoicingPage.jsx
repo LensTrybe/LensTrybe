@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { resolveDocTheme } from '../../lib/documentTemplate'
 import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -76,6 +77,7 @@ function StyleBlock() {
 }
 
 export default function InvoicingPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user, profile } = useAuth()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const invoicePrintRef = useRef(null)
@@ -217,7 +219,17 @@ export default function InvoicingPage() {
     await loadInvoices()
   }
 
-  async function deleteInvoice(id) {
+  /* Asks first. The delete itself is doDeleteInvoice below. */
+  function deleteInvoice(id) {
+    confirm({
+      title: 'Delete this invoice?',
+      body: 'If it has been sent or paid, you lose that record too. This cannot be undone.',
+      onConfirm: () => doDeleteInvoice(id),
+    })
+  }
+
+
+  async function doDeleteInvoice(id) {
     await supabase.from('invoices').delete().eq('id', id)
     await loadInvoices()
     setShowView(null); setEditingInvoice(false)
@@ -340,6 +352,7 @@ export default function InvoicingPage() {
 
   return (
     <>
+      {confirmDialog}
       <StyleBlock />
       <style>{`@keyframes ltiSlide { from { transform: translateY(16px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
 

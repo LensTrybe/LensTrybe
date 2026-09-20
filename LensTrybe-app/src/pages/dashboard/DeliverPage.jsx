@@ -8,6 +8,7 @@ import {
   partitionFilesByPortfolioImageModeration,
 } from '../../lib/moderateContent'
 import { getFeatures } from '../../lib/tierFeatures'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -125,6 +126,7 @@ function Pill({ children, color, bg }) {
 }
 
 export default function DeliverPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
@@ -277,7 +279,16 @@ export default function DeliverPage() {
     setSaving(false)
   }
 
-  async function deleteDelivery(id) {
+  /* Asks first. The delete itself is doDeleteDelivery below. */
+  function deleteDelivery(id) {
+    confirm({
+      title: 'Delete this gallery?',
+      body: 'The files are removed from storage as well, and the client link stops working. This cannot be undone.',
+      onConfirm: () => doDeleteDelivery(id),
+    })
+  }
+
+  async function doDeleteDelivery(id) {
     // The row used to be deleted on its own, which orphaned every file in the bucket
     // forever: nothing pointed at them any more, so nothing could ever find them again.
     // Remove the objects first, then the row. If the storage call fails we keep the row,
@@ -444,6 +455,7 @@ export default function DeliverPage() {
 
   return (
     <>
+      {confirmDialog}
       <StyleBlock />
       <div className="ltd-page">
         {toast && (

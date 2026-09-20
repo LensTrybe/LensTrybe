@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { useSubscription } from '../../context/SubscriptionContext'
 import { getFeatures } from '../../lib/tierFeatures'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -30,6 +31,7 @@ function StyleBlock() {
 }
 
 export default function TeamPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth < 768 : false)
   const { tier } = useSubscription()
@@ -90,7 +92,17 @@ export default function TeamPage() {
     await loadTeam()
   }
 
-  async function removeMember(id) {
+  /* Asks first. The delete itself is doRemoveMember below. */
+  function removeMember(id) {
+    confirm({
+      title: 'Remove this team member?',
+      body: 'They lose access to your account. You can invite them back later.',
+      onConfirm: () => doRemoveMember(id),
+    })
+  }
+
+
+  async function doRemoveMember(id) {
     await supabase.from('team_members').delete().eq('id', id)
     await loadTeam()
   }
@@ -115,6 +127,7 @@ export default function TeamPage() {
   if (!isElite) {
     return (
       <>
+        {confirmDialog}
         <StyleBlock />
         <div className="ltt-page">
           <div>

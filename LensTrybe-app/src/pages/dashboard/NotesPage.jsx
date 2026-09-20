@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { NOTE_COLORS } from '../../components/layout/NoteTaker'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 function prettyDate(d) {
   if (!d) return ''
@@ -67,6 +68,7 @@ const CSS = `
 const BLANK = { title: '', body: '', color: '', project_id: '', pinned: false }
 
 export default function NotesPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -123,7 +125,15 @@ export default function NotesPage() {
     await supabase.from('notes').update({ pinned: !n.pinned, updated_at: new Date().toISOString() }).eq('id', n.id)
     load()
   }
-  async function remove(n) {
+  /* Asks first. The delete itself is doRemove below. */
+  function remove(n) {
+    confirm({
+      title: 'Delete this note?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doRemove(n),
+    })
+  }
+  async function doRemove(n) {
     setNotes(prev => prev.filter(x => x.id !== n.id))
     await supabase.from('notes').delete().eq('id', n.id)
     flash('Note deleted')
@@ -132,6 +142,7 @@ export default function NotesPage() {
   function Card({ n }) {
     return (
       <div className="note">
+        {confirmDialog}
         {n.color && <span className="accent" style={{ background: n.color }} />}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ flex: 1, minWidth: 0, cursor: 'pointer' }} onClick={() => openEdit(n)}>

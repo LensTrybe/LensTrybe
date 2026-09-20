@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { resolveDocTheme } from '../../lib/documentTemplate'
 import { downloadDocumentPdf } from '../../lib/downloadDocumentPdf'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const GREEN = '#1DB954'
 const GREEN_DARK = '#04120a'
@@ -67,6 +68,7 @@ function StyleBlock() {
 }
 
 export default function QuotesPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user, profile } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -225,7 +227,17 @@ export default function QuotesPage() {
     setShowView(null); setEditingQuote(false)
   }
 
-  async function deleteQuote(id) {
+  /* Asks first. The delete itself is doDeleteQuote below. */
+  function deleteQuote(id) {
+    confirm({
+      title: 'Delete this quote?',
+      body: 'If the client has seen it, you lose that record too. This cannot be undone.',
+      onConfirm: () => doDeleteQuote(id),
+    })
+  }
+
+
+  async function doDeleteQuote(id) {
     await supabase.from('quotes').delete().eq('id', id)
     await loadQuotes()
     setShowView(null); setEditingQuote(false)
@@ -352,6 +364,7 @@ export default function QuotesPage() {
 
   return (
     <>
+      {confirmDialog}
       <StyleBlock />
       <style>{`@keyframes ltqSlide { from { transform: translateY(16px); opacity: 0 } to { transform: none; opacity: 1 } }`}</style>
 

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 function money(v) {
   const n = Number(v || 0)
@@ -216,6 +217,7 @@ const TABS = [
 ]
 
 export default function ProjectDetailPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { id } = useParams()
   const { user } = useAuth()
   const navigate = useNavigate()
@@ -327,7 +329,15 @@ export default function ProjectDetailPage() {
     setShowAddPart(false)
     flash('Participant added')
   }
-  async function removeParticipant(pid) {
+  /* Asks first. The delete itself is doRemoveParticipant below. */
+  function removeParticipant(pid) {
+    confirm({
+      title: 'Take this person off the project?',
+      body: 'They lose access to it. You can add them back later.',
+      onConfirm: () => doRemoveParticipant(pid),
+    })
+  }
+  async function doRemoveParticipant(pid) {
     setParticipants(prev => prev.filter(x => x.id !== pid))
     await supabase.from('project_participants').delete().eq('id', pid)
     flash('Participant removed')
@@ -403,7 +413,11 @@ export default function ProjectDetailPage() {
     setChecklists(prev => prev.map(c => c.id === cid ? { ...c, name: clean } : c))
     await supabase.from('project_checklists').update({ name: clean }).eq('id', cid)
   }
-  async function deleteChecklist(cid) {
+  /* Asks first. The delete itself is doDeleteChecklist below. */
+  function deleteChecklist(cid) {
+    confirm({ title: 'Delete this list?', body: 'Every item on it goes with it. This cannot be undone.', onConfirm: () => doDeleteChecklist(cid) })
+  }
+  async function doDeleteChecklist(cid) {
     setChecklists(prev => prev.filter(c => c.id !== cid))
     await supabase.from('project_checklists').delete().eq('id', cid)
     flash('Checklist deleted')
@@ -421,7 +435,15 @@ export default function ProjectDetailPage() {
     setChecklists(prev => prev.map(c => c.id === cid ? { ...c, items: c.items.map(x => x.id === it.id ? { ...x, done: !x.done } : x) } : c))
     await supabase.from('checklist_items').update({ done: !it.done }).eq('id', it.id)
   }
-  async function deleteChkItem(cid, it) {
+  /* Asks first. The delete itself is doDeleteChkItem below. */
+  function deleteChkItem(cid, it) {
+    confirm({
+      title: 'Delete this item?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDeleteChkItem(cid, it),
+    })
+  }
+  async function doDeleteChkItem(cid, it) {
     setChecklists(prev => prev.map(c => c.id === cid ? { ...c, items: c.items.filter(x => x.id !== it.id) } : c))
     await supabase.from('checklist_items').delete().eq('id', it.id)
   }
@@ -443,11 +465,27 @@ export default function ProjectDetailPage() {
     setShowTpl(false)
     flash('Checklist added from template')
   }
-  async function deleteTemplate(tid) {
+  /* Asks first. The delete itself is doDeleteTemplate below. */
+  function deleteTemplate(tid) {
+    confirm({
+      title: 'Delete this template?',
+      body: 'Lists already made from it are not affected. This cannot be undone.',
+      onConfirm: () => doDeleteTemplate(tid),
+    })
+  }
+  async function doDeleteTemplate(tid) {
     setChkTemplates(prev => prev.filter(t => t.id !== tid))
     await supabase.from('checklist_templates').delete().eq('id', tid)
   }
-  async function deleteMeeting(mid) {
+  /* Asks first. The delete itself is doDeleteMeeting below. */
+  function deleteMeeting(mid) {
+    confirm({
+      title: 'Delete this meeting?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDeleteMeeting(mid),
+    })
+  }
+  async function doDeleteMeeting(mid) {
     setMeetings(prev => prev.filter(x => x.id !== mid))
     await supabase.from('meetings').delete().eq('id', mid)
     flash('Meeting deleted')
@@ -508,6 +546,7 @@ export default function ProjectDetailPage() {
 
   return (
     <div className="ltw">
+      {confirmDialog}
       <style>{CSS}</style>
       <div className="inner">
         <button className="back" onClick={() => navigate('/dashboard/projects')}>

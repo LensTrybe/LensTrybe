@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { supabase } from '../../lib/supabaseClient'
 import { useAuth } from '../../context/AuthContext'
 import { CONTENT_CSS, PLATFORMS, PLATFORM_MAP, DEFAULT_CONTENT_STAGES } from '../../lib/contentShared'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const EXTRA = `
 .ltc .ideagrid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
@@ -17,6 +18,7 @@ const EXTRA = `
 const BLANK = { title: '', notes: '', platforms: [] }
 
 export default function ContentIdeasPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
@@ -51,7 +53,15 @@ export default function ContentIdeasPage() {
     if (error) { flash(error.message, 'err'); return }
     setShowModal(false); flash(editing ? 'Idea updated' : 'Idea saved'); load()
   }
-  async function remove(i) { await supabase.from('content_ideas').delete().eq('id', i.id); setIdeas(prev => prev.filter(x => x.id !== i.id)); flash('Idea deleted') }
+  /* Asks first. The delete itself is doRemove below. */
+  function remove(i) {
+    confirm({
+      title: 'Delete this idea?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doRemove(i),
+    })
+  }
+  async function doRemove(i) { await supabase.from('content_ideas').delete().eq('id', i.id); setIdeas(prev => prev.filter(x => x.id !== i.id)); flash('Idea deleted') }
 
   async function turnIntoPost(i) {
     // Find (or seed) the first content stage, create a post, mark the idea converted.
@@ -73,6 +83,7 @@ export default function ContentIdeasPage() {
 
   return (
     <div className="ltc">
+      {confirmDialog}
       <style>{CONTENT_CSS + EXTRA}</style>
       <div className="inner">
         <div className="phead">

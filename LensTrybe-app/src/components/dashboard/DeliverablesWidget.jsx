@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { FONT, TEXT, MUTED, FAINT, DANGER, AnalyticsTile, CenterModal } from './widgetKit'
 import { monthBuckets, monthKeyOf, trendPct, Sparkline } from './analyticsKit'
 import { isDemoMode, demoDeliverables } from '../../lib/demoMode'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const ACCENT = '#2dd4bf'
 const AMBER = '#f59e0b'
@@ -32,6 +33,7 @@ const inputStyle = { flex: 1, minWidth: 0, background: 'var(--lt-surface-2)', bo
 const secLabel = { fontSize: 11, fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', color: FAINT, fontFamily: FONT, margin: '16px 0 8px' }
 
 export default function DeliverablesWidget({ userId }) {
+  const { confirm, confirmDialog } = useConfirm()
   const [items, setItems] = useState([])
   const [open, setOpen] = useState(false)
   const [adding, setAdding] = useState(false)
@@ -69,7 +71,15 @@ export default function DeliverablesWidget({ userId }) {
     setItems((p) => p.map((x) => (x.id === item.id ? { ...x, ...patch } : x)))
     await supabase.from('deliverable_tasks').update(patch).eq('id', item.id)
   }
-  async function del(item) {
+  /* Asks first. The delete itself is doDel below. */
+  function del(item) {
+    confirm({
+      title: 'Delete this deliverable?',
+      body: 'This cannot be undone.',
+      onConfirm: () => doDel(item),
+    })
+  }
+  async function doDel(item) {
     setItems((p) => p.filter((x) => x.id !== item.id))
     await supabase.from('deliverable_tasks').delete().eq('id', item.id)
   }
@@ -78,6 +88,7 @@ export default function DeliverablesWidget({ userId }) {
 
   return (
     <>
+      {confirmDialog}
       <AnalyticsTile title="Deliverables" value={d.outstanding.length || '0'} sub={d.overdue.length ? `${d.overdue.length} overdue` : (d.outstanding.length ? 'to deliver' : 'all delivered')} trend={d.trend} accent={ACCENT} onClick={() => setOpen(true)}>
         <Sparkline data={d.series} color={ACCENT} />
       </AnalyticsTile>

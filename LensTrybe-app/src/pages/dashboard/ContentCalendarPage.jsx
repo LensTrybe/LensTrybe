@@ -8,6 +8,7 @@ import {
 } from '../../lib/contentShared'
 import { imageUrl } from '../../lib/imageUrl'
 import { resizeImage } from '../../lib/resizeImage'
+import { useConfirm } from '../../components/ui/useConfirm'
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -17,6 +18,7 @@ function ymd(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart
 const BLANK = { title: '', platforms: [], format: '', scheduled_date: '', scheduled_time: '', stage_id: '', caption: '', hashtags: '', notes: '', assigned_to: '' }
 
 export default function ContentCalendarPage() {
+  const { confirm, confirmDialog } = useConfirm()
   const { user } = useAuth()
   const { tier } = useSubscription()
   const canAssign = ['expert', 'elite'].includes((tier || '').toLowerCase())
@@ -130,7 +132,15 @@ export default function ContentCalendarPage() {
     flash(editing ? 'Post updated' : 'Post added')
     init()
   }
-  async function deleteCard() {
+  /* Asks first. The delete itself is doDeleteCard below. */
+  function deleteCard() {
+    confirm({
+      title: 'Delete this post?',
+      body: 'The post and everything on it goes. This cannot be undone.',
+      onConfirm: () => doDeleteCard(),
+    })
+  }
+  async function doDeleteCard() {
     if (!editing) return
     if (editing.media_path) await supabase.storage.from('content-media').remove([editing.media_path]).catch(() => {})
     await supabase.from('content_posts').delete().eq('id', editing.id)
@@ -178,7 +188,13 @@ export default function ContentCalendarPage() {
     if (i < 0 || j < 0 || j >= stages.length) return
     const arr = [...stages];[arr[i], arr[j]] = [arr[j], arr[i]]; setStages(arr); persistOrder(arr)
   }
-  async function deleteStage(id) {
+  /* The check comes before the ask, so nobody confirms a delete that was
+     never going to happen anyway. */
+  function deleteStage(id) {
+    if (posts.some(p => p.stage_id === id)) { flash('Move its posts out first', 'err'); return }
+    confirm({ title: 'Delete this column?', body: 'Your board loses this column. This cannot be undone.', onConfirm: () => doDeleteStage(id) })
+  }
+  async function doDeleteStage(id) {
     if (posts.some(p => p.stage_id === id)) { flash('Move its posts out first', 'err'); return }
     setStages(prev => prev.filter(s => s.id !== id))
     await supabase.from('content_stages').delete().eq('id', id)
@@ -214,6 +230,7 @@ export default function ContentCalendarPage() {
     const st = stages.find(s => s.id === menu.stageId); if (!st) return null
     return (
       <div className="pop" style={{ top: menu.y, left: menu.x }} onClick={e => e.stopPropagation()}>
+        {confirmDialog}
         <div className="lbl">Colour</div>
         <div className="swatches">{STAGE_COLORS.map(c => <span key={c} className={'sw' + (c === st.color ? ' sel' : '')} style={{ background: c }} onClick={() => { recolourStage(st.id, c); setMenu(null) }} />)}</div>
         <div className="sep" />
