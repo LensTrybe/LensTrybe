@@ -13,6 +13,15 @@
 
 begin;
 
+-- Notifications the document trigger raised for these rows. They carry the
+-- document's id in meta, so they are findable even though their own ids are not
+-- part of the dddddddd- set.
+delete from public.notifications
+ where coalesce(meta->>'id', '')         like 'dddddddd-%'
+    or coalesce(meta->>'booking_id', '') like 'dddddddd-%'
+    or coalesce(meta->>'thread_id', '')  like 'dddddddd-%'
+    or coalesce(meta->>'job_id', '')     like 'dddddddd-%';
+
 delete from public.job_applications where id::text like 'dddddddd-%';
 delete from public.job_listings     where id::text like 'dddddddd-%';
 delete from public.messages         where id::text like 'dddddddd-%';
@@ -39,7 +48,12 @@ union all select 'shot_lists',       count(*) from public.shot_lists       where
 union all select 'message_threads',  count(*) from public.message_threads  where id::text like 'dddddddd-%'
 union all select 'messages',         count(*) from public.messages         where id::text like 'dddddddd-%'
 union all select 'job_listings',     count(*) from public.job_listings     where id::text like 'dddddddd-%'
-union all select 'job_applications', count(*) from public.job_applications where id::text like 'dddddddd-%';
+union all select 'job_applications', count(*) from public.job_applications where id::text like 'dddddddd-%'
+union all select 'notifications',    count(*) from public.notifications
+  where coalesce(meta->>'id', '') like 'dddddddd-%'
+     or coalesce(meta->>'booking_id', '') like 'dddddddd-%'
+     or coalesce(meta->>'thread_id', '') like 'dddddddd-%'
+     or coalesce(meta->>'job_id', '') like 'dddddddd-%';
 
 commit;
 
