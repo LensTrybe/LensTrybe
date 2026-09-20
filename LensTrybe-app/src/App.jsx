@@ -77,6 +77,7 @@ const TrybeEditIssue01 = lazy(() => import('./pages/TrybeEditIssue01'))
 const ComingSoon = lazy(() => import('./pages/ComingSoon'))
 const CinematicIntro = lazy(() => import('./components/CinematicIntro'))
 const AccountPendingDeletionPage = lazy(() => import('./pages/AccountPendingDeletionPage'))
+import ErrorBoundary from './components/ErrorBoundary'
 import PublicPageShell from './components/layout/PublicPageShell'
 const DirectoryClosedPage = lazy(() => import('./pages/public/DirectoryClosedPage'))
 import { LiquidPill } from './components/ui/liquidGlass'
@@ -320,9 +321,9 @@ export default function App() {
   // at /waitlist, and the homepage carries its own waitlist capture.
 
   return (
-    <>
+    <ErrorBoundary>
       {routes}
       <CinematicIntro />
-    </>
+    </ErrorBoundary>
   )
 }
