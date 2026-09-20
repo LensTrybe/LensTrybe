@@ -375,13 +375,30 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
     return out
   }, [documents])
 
-  // A shoot that has happened, or been marked done, is one worth reviewing.
-  const reviewable = useCallback((b) => {
-    if (!user?.email) return false
-    if (reviewed.includes(b.creative_id)) return false
-    if (b.status === 'completed') return true
-    return b.status === 'confirmed' && Boolean(b.booking_date) && b.booking_date < today
-  }, [reviewed, today, user?.email])
+  // A shoot that has happened, or been marked done, is one worth reviewing. A
+  // review is about the creative rather than the booking, so only the most
+  // recent eligible shoot with each creative carries the prompt. Asking twice on
+  // the same page for the same person reads as a bug.
+  const reviewTargets = useMemo(() => {
+    if (!user?.email) return new Map()
+    const best = new Map()
+    for (const b of bookings) {
+      if (reviewed.includes(b.creative_id)) continue
+      const done = b.status === 'completed'
+        || (b.status === 'confirmed' && Boolean(b.booking_date) && b.booking_date < today)
+      if (!done) continue
+      const current = best.get(b.creative_id)
+      if (!current || String(b.booking_date || '') > String(current.date || '')) {
+        best.set(b.creative_id, { id: b.id, date: b.booking_date })
+      }
+    }
+    return best
+  }, [bookings, reviewed, today, user?.email])
+
+  const reviewable = useCallback(
+    (b) => reviewTargets.get(b.creative_id)?.id === b.id,
+    [reviewTargets],
+  )
 
   const reviewerName = clientAccount
     ? `${clientAccount.first_name ?? ''} ${clientAccount.last_name ?? ''}`.trim()
