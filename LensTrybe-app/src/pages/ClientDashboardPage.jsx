@@ -359,9 +359,13 @@ export default function ClientDashboardPage() {
     editIcon: { background: 'none', border: 'none', color: 'var(--lt-muted)', cursor: 'pointer', fontSize: '12px', fontWeight: 600, fontFamily: 'inherit', padding: '6px 8px', borderRadius: 8, textDecoration: 'underline' },
   }
 
+  /* A booking made through the profile form creates no message thread, so this
+   * used to do nothing at all: no navigation, no message, no error. Fall back to
+   * the creative's profile, which carries the enquiry form. */
   function goToCreativeThread(creativeId) {
     const thread = threads.find(t => t.creative_id === creativeId)
-    if (thread) { setSelected(thread); setView('messages') }
+    if (thread) { setSelected(thread); setView('messages'); return }
+    navigate(`/creatives/${creativeId}`)
   }
 
   return (
@@ -438,7 +442,7 @@ export default function ClientDashboardPage() {
           <button type="button" className="cd-nav" style={s.navItem(view === 'messages')} onClick={() => setView('messages')}>Messages {threads.length > 0 && `(${threads.length})`}</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'bookings')} onClick={() => setView('bookings')}>My Bookings</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'documents')} onClick={() => setView('documents')}>Documents</button>
-          <button type="button" className="cd-nav" style={s.navItem(view === 'creatives')} onClick={() => setView('creatives')}>My Creatives {creatives.length > 0 && `(${creatives.length})`}</button>
+          <button type="button" className="cd-nav" style={s.navItem(view === 'creatives')} onClick={() => setView('creatives')}>My Creatives</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'jobs')} onClick={() => setView('jobs')}>My Jobs {jobs.length > 0 && `(${jobs.length})`}</button>
           <button type="button" className="cd-nav" style={s.navItem(false)} onClick={() => navigate('/creatives')}>Find a Creative</button>
           <button type="button" className="cd-nav" style={s.navItem(false)} onClick={() => navigate('/jobs')}>Job Board</button>

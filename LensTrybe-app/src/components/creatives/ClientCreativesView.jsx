@@ -120,25 +120,53 @@ export default function ClientCreativesView({ userId, threadCreatives, onMessage
   const [bookings, setBookings] = useState([])
   const [documents, setDocuments] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   useEffect(() => {
     if (!userId) return undefined
     let ignore = false
 
     async function load() {
-      const [{ data: bk }, { data: docs }] = await Promise.all([
+      const [bkRes, docRes] = await Promise.all([
         supabase.rpc('my_client_bookings'),
         supabase.rpc('client_documents'),
       ])
+      if (bkRes.error) throw bkRes.error
+      if (docRes.error) throw docRes.error
       if (ignore) return
-      setBookings(bk ?? [])
-      setDocuments(docs || null)
+      setBookings(bkRes.data ?? [])
+      setDocuments(docRes.data || null)
       setLoading(false)
     }
 
-    load()
+    load().catch(() => {
+      if (ignore) return
+      setFailed(true)
+      setLoading(false)
+    })
     return () => { ignore = true }
-  }, [userId])
+  }, [userId, attempt])
+
+  if (failed) {
+    return (
+      <div style={{ padding: 24 }}>
+        <div style={{ fontSize: 14.5, color: 'var(--lt-text)' }}>
+          We could not load your creatives just then. Try again in a moment.
+        </div>
+        <button
+          type="button"
+          onClick={() => { setFailed(false); setLoading(true); setAttempt((n) => n + 1) }}
+          style={{
+            marginTop: 14, minHeight: 44, padding: '0 18px', borderRadius: 10, border: 'none',
+            background: '#1DB954', color: '#04120a', fontFamily: 'inherit', fontSize: 14, fontWeight: 700, cursor: 'pointer',
+          }}
+        >
+          Try again
+        </button>
+      </div>
+    )
+  }
 
   if (loading) {
     return <div style={{ padding: 24, fontSize: 14, color: 'var(--lt-muted)' }}>Loading…</div>

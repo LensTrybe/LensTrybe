@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext'
 import { bookingAction, bookingStatus, downloadBookingIcs, fmtDayLong, timeText, todayIso } from '../../lib/bookings'
 import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../../lib/moderateContent'
 import { imageUrl } from '../../lib/imageUrl'
+import { DOC_KINDS, describeDocument } from '../../lib/clientDocuments'
 
 /* The client's side of a booking.
  *
@@ -39,14 +40,6 @@ const btn = {
 
 const primaryBtn = { ...btn, background: '#1DB954', color: '#04120a', border: 'none' }
 const dangerBtn = { ...btn, color: PINK, borderColor: 'rgba(255,45,120,0.38)', background: 'transparent' }
-
-const DOC_KINDS = [
-  { key: 'quotes', label: 'Quote', href: (r) => (r.view_token ? `/doc/quote/${r.view_token}` : null) },
-  { key: 'invoices', label: 'Invoice', href: (r) => (r.view_token ? `/doc/invoice/${r.view_token}` : null) },
-  { key: 'contracts', label: 'Contract', href: (r) => (r.signing_token ? `/sign/${r.signing_token}` : r.contract_file_url || null) },
-  { key: 'deliveries', label: 'Gallery', href: (r) => (r.files_purged_at || !r.download_token ? null : `/deliver/${r.download_token}`) },
-  { key: 'shot_lists', label: 'Shot list', href: (r) => (r.client_token ? `/shot-list/${r.client_token}` : null) },
-]
 
 function StatusPill({ status }) {
   const m = bookingStatus(status)
@@ -305,6 +298,8 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
   const [documents, setDocuments] = useState(null)
   const [reviewed, setReviewed] = useState([])
   const [loading, setLoading] = useState(true)
+  const [failed, setFailed] = useState(false)
+  const [attempt, setAttempt] = useState(0)
 
   // Everything lands in one pass, and a response that arrives after the view has
   // gone is dropped rather than setting state on a component that is not there.
@@ -314,7 +309,8 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
     const email = (user?.email || '').toLowerCase()
 
     async function load() {
-      const { data } = await supabase.rpc('my_client_bookings')
+      const { data, error } = await supabase.rpc('my_client_bookings')
+      if (error) throw error
       const rows = data ?? []
       if (ignore) return
       setBookings(rows)
@@ -344,9 +340,13 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
       setLoading(false)
     }
 
-    load()
+    load().catch(() => {
+      if (ignore) return
+      setFailed(true)
+      setLoading(false)
+    })
     return () => { ignore = true }
-  }, [userId, user?.email])
+  }, [userId, attempt, user?.email])
 
   useEffect(() => {
     if (!highlightId || loading) return
@@ -362,14 +362,17 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
     return { active, past }
   }, [bookings, today])
 
-  // Paperwork lines up with a booking through the project they share.
+  // Paperwork lines up with a booking through the project they share. The chip
+  // asks the shared describer what the document means, so an expired gallery or
+  // an already signed contract reads the same here as it does in Documents.
   const docsFor = useCallback((booking) => {
     if (!documents || !booking.project_id) return []
     const out = []
     for (const kind of DOC_KINDS) {
-      for (const row of documents[kind.key] || []) {
+      for (const row of documents[kind.collection] || []) {
         if (row.project_id !== booking.project_id) continue
-        out.push({ id: `${kind.key}:${row.id}`, label: kind.label, href: kind.href(row) })
+        const d = describeDocument(kind.key, row)
+        out.push({ id: `${kind.key}:${row.id}`, label: kind.label, href: d.act?.href || null })
       }
     }
     return out
@@ -459,7 +462,20 @@ export default function ClientBookingsView({ userId, highlightId, onMessageCreat
           Requests you have sent, and bookings creatives have confirmed with you.
         </p>
 
-        {loading ? (
+        {failed ? (
+          <div style={{ ...card }}>
+            <div style={{ fontSize: 14.5, color: 'var(--lt-text)' }}>
+              We could not load your bookings just then. Try again in a moment.
+            </div>
+            <button
+              type="button"
+              style={{ ...primaryBtn, marginTop: 14 }}
+              onClick={() => { setFailed(false); setLoading(true); setAttempt((n) => n + 1) }}
+            >
+              Try again
+            </button>
+          </div>
+        ) : loading ? (
           <div style={{ color: 'var(--lt-muted)', fontSize: 14 }}>Loading…</div>
         ) : bookings.length === 0 ? (
           <div style={{ ...card, textAlign: 'center', padding: '32px 18px' }}>
