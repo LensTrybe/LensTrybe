@@ -49,6 +49,9 @@ export const DASH_TOKENS = `
           --lt-track: rgba(20,17,26,0.10);
           --lt-chart-grid: rgba(20,17,26,0.10);
           --lt-chart-axis: rgba(20,17,26,0.5);
+          --lt-green-text: #0E7C3A;
+          --lt-pink-text: #c11f5a;
+          --lt-amber-text: #9A5B00;
         }
         .lt-dash[data-theme="dark"] {
           --lt-text: rgba(255,255,255,0.92);
@@ -72,6 +75,9 @@ export const DASH_TOKENS = `
           --lt-track: rgba(255,255,255,0.08);
           --lt-chart-grid: rgba(255,255,255,0.08);
           --lt-chart-axis: rgba(255,255,255,0.45);
+          --lt-green-text: #1DB954;
+          --lt-pink-text: #FF2D78;
+          --lt-amber-text: #F5B544;
         }
 `
 

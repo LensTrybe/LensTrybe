@@ -17,6 +17,7 @@ import { useDashTheme } from '../components/layout/useDashTheme'
 import DownloadDataCard from '../components/account/DownloadDataCard'
 import NewsletterPreferenceCard from '../components/account/NewsletterPreferenceCard'
 import ClientBookingsView from '../components/bookings/ClientBookingsView'
+import ClientDocumentsView from '../components/documents/ClientDocumentsView.jsx'
 import NotificationBell from '../components/layout/NotificationBell'
 import BroadcastHost from '../components/broadcasts/BroadcastHost'
 import { imageUrl } from '../lib/imageUrl'
@@ -103,14 +104,14 @@ export default function ClientDashboardPage() {
   const [creatives, setCreatives] = useState([])
   // ?view=bookings&booking=<id> (from booking emails and notifications)
   const [view, setView] = useState(() => {
-    try { const v = new URLSearchParams(window.location.search).get('view'); return ['messages', 'bookings', 'creatives', 'jobs', 'account'].includes(v) ? v : 'messages' } catch { return 'messages' }
+    try { const v = new URLSearchParams(window.location.search).get('view'); return ['messages', 'bookings', 'documents', 'creatives', 'jobs', 'account'].includes(v) ? v : 'messages' } catch { return 'messages' }
   })
   const [highlightBooking, setHighlightBooking] = useState(() => { try { return new URLSearchParams(window.location.search).get('booking') || null } catch { return null } })
   const location = useLocation()
   useEffect(() => {
     const q = new URLSearchParams(location.search)
     const v = q.get('view')
-    if (v && ['messages', 'bookings', 'creatives', 'jobs', 'account'].includes(v)) setView(v)
+    if (v && ['messages', 'bookings', 'documents', 'creatives', 'jobs', 'account'].includes(v)) setView(v)
     if (q.get('booking')) setHighlightBooking(q.get('booking'))
   }, [location.search])
   const [editingNickname, setEditingNickname] = useState(false)
@@ -422,6 +423,7 @@ export default function ClientDashboardPage() {
           <div className="cd-sidehead" style={s.sidebarHeader}>Menu</div>
           <button type="button" className="cd-nav" style={s.navItem(view === 'messages')} onClick={() => setView('messages')}>Messages {threads.length > 0 && `(${threads.length})`}</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'bookings')} onClick={() => setView('bookings')}>My Bookings</button>
+          <button type="button" className="cd-nav" style={s.navItem(view === 'documents')} onClick={() => setView('documents')}>Documents</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'creatives')} onClick={() => setView('creatives')}>My Creatives {creatives.length > 0 && `(${creatives.length})`}</button>
           <button type="button" className="cd-nav" style={s.navItem(view === 'jobs')} onClick={() => setView('jobs')}>My Jobs {jobs.length > 0 && `(${jobs.length})`}</button>
           <button type="button" className="cd-nav" style={s.navItem(false)} onClick={() => navigate('/creatives')}>Find a Creative</button>
@@ -560,6 +562,7 @@ export default function ClientDashboardPage() {
           )}
 
           {view === 'bookings' && <ClientBookingsView userId={user?.id} highlightId={highlightBooking} />}
+          {view === 'documents' && <ClientDocumentsView onFindCreative={() => navigate('/creatives')} />}
 
           {view === 'jobs' && (
             <div style={s.content}>
