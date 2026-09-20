@@ -16,7 +16,6 @@ const AURORA_WRAP = {
   position: 'fixed', inset: 0, zIndex: 0, overflow: 'hidden', pointerEvents: 'none',
   background: 'radial-gradient(1200px 900px at 15% -12%, #100f20 0%, transparent 55%), radial-gradient(1000px 820px at 100% 116%, #0a1622 0%, transparent 55%), #07060c',
 }
-const auroraBlob = (c, o) => ({ position: 'absolute', borderRadius: '50%', background: c, filter: 'blur(100px)', mixBlendMode: 'screen', opacity: o })
 
 // Light mode: the same bright pastel mosaic as the hero, behind everything, with
 // a soft white wash on top so text and glass widgets stay readable.

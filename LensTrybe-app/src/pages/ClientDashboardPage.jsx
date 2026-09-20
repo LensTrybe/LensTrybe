@@ -286,8 +286,6 @@ export default function ClientDashboardPage() {
     ? `${clientAccount.first_name ?? ''} ${clientAccount.last_name ?? ''}`.trim()
     : user?.email ?? ''
 
-  const tierColor = { pro: '#ec4899', expert: '#a855f7', elite: '#f59e0b', basic: '#6b7280' }
-
   const GLASS = {
     background: 'var(--lt-glass-bg)',
     border: 'var(--lt-glass-border)',
