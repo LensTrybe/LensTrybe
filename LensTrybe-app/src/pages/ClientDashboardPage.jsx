@@ -12,7 +12,7 @@ import { moderateText, MODERATION_BLOCKED_USER_MESSAGE } from '../lib/moderateCo
 import { acceptJobApplication, declineJobApplication, isApplicationPending } from '../lib/posterJobApplicationActions'
 import DeleteAccountModal from '../components/account/DeleteAccountModal'
 import useIsMobile from '../hooks/useIsMobile'
-import DashSurface from '../components/layout/DashSurface'
+import DashSurface from '../components/layout/DashSurface.jsx'
 import { useDashTheme } from '../components/layout/useDashTheme'
 import DownloadDataCard from '../components/account/DownloadDataCard'
 import NewsletterPreferenceCard from '../components/account/NewsletterPreferenceCard'
