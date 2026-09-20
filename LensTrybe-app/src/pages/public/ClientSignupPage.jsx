@@ -80,9 +80,14 @@ export default function ClientSignupPage() {
         if (clientError) throw clientError
         navigate('/client-dashboard')
       } else {
-        // Email confirmation required: show message
-        setError('Please check your email and click the confirmation link to complete signup.')
-        setLoading(false)
+        // Email confirmation is on, so there is no session yet. This is the
+        // account being created successfully with one step left, not a
+        // failure, so it gets its own page rather than the form's red error
+        // box. The address travels in router state, never the URL.
+        navigate('/check-email', {
+          replace: true,
+          state: { email: form.email, backTo: '/join/client' },
+        })
       }
     } catch (err) {
       setError(err.message)

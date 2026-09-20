@@ -11,6 +11,7 @@ const SignupPage = lazy(() => import('./pages/public/SignupPage'))
 const OnboardingPage = lazy(() => import('./pages/public/OnboardingPage'))
 const JoinHubPage = lazy(() => import('./pages/public/JoinHubPage'))
 const ClientSignupPage = lazy(() => import('./pages/public/ClientSignupPage'))
+const CheckEmailPage = lazy(() => import('./pages/public/CheckEmailPage'))
 const MessagesPage = lazy(() => import('./pages/dashboard/MessagesPage'))
 const MeetingsPage = lazy(() => import('./pages/dashboard/MeetingsPage'))
 const InvoicingPage = lazy(() => import('./pages/dashboard/InvoicingPage'))
@@ -291,6 +292,7 @@ export default function App() {
       <Route path="/meeting/:token" element={<MeetingRespondPage />} />
       <Route path="/portfolio/:id" element={<PublicPortfolioPage />} />
       <Route path="/portal/:token" element={<PublicPortalPage />} />
+      <Route path="/check-email" element={<CheckEmailPage />} />
       <Route path="/deliver/:token" element={<DeliverDownloadPage />} />
       {/* Public link to one invoice or quote, sent in place of a PDF attachment. */}
       <Route path="/doc/:type/:token" element={<DocumentViewPage />} />
