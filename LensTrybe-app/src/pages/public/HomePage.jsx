@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient';
 import CinematicEntrance from '../../components/ui/CinematicEntrance';
 import { LIQUID_GLASS } from '../../lib/glassTokensLight';
 import { imageUrl } from '../../lib/imageUrl'
+import FoundingApplyModal from '../../components/founding/FoundingApplyModal';
 
 const CATEGORIES = [
   { key: 'photographer', value: 'Photographer', label: 'Photographers' },
@@ -400,6 +401,52 @@ function HeroWaitlist({ isMobile }) {
   );
 }
 
+/**
+ * The founding offer, on the hero.
+ *
+ * Sits under the pitch in the left column rather than beside the search, because the
+ * search is the right column's one job and a creative reading what LensTrybe is for is
+ * exactly who this is aimed at. The whole strip is the button, so it is a large target
+ * on a phone. It opens the application in a modal instead of sending them away.
+ */
+function FoundingStrip({ isMobile, onApply }) {
+  const [hover, setHover] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={onApply}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        ...LIQUID_GLASS,
+        display: 'flex', alignItems: 'center', gap: '10px 14px', flexWrap: 'wrap',
+        justifyContent: isMobile ? 'center' : 'flex-start',
+        width: '100%', maxWidth: isMobile ? '440px' : '560px', boxSizing: 'border-box',
+        margin: isMobile ? '0 auto' : 0,
+        padding: '14px 18px', cursor: 'pointer', fontFamily: FONT, textAlign: isMobile ? 'center' : 'left',
+        border: `1px solid ${hover ? 'rgba(255,45,120,0.45)' : 'rgba(255,45,120,0.25)'}`,
+        transform: hover ? 'translateY(-1px)' : 'none',
+        transition: 'transform 0.15s ease, border-color 0.15s ease',
+        position: 'relative', zIndex: 2,
+      }}
+    >
+      <span style={{
+        flexShrink: 0, borderRadius: '999px', padding: '5px 11px',
+        background: 'rgba(255,45,120,0.12)', color: '#c11f5a',
+        fontSize: '11px', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
+      }}>
+        Founding offer
+      </span>
+      <span style={{ flex: '1 1 200px', fontSize: '14.5px', color: TEXT_PRIMARY, lineHeight: 1.45 }}>
+        Expert free for up to a year, then $49 a month for life.
+      </span>
+      <span style={{ flexShrink: 0, fontSize: '14.5px', fontWeight: 700, color: '#0E7C3A', whiteSpace: 'nowrap' }}>
+        Apply for a place &rarr;
+      </span>
+    </button>
+  );
+}
+
 function HeroSolidButton({ onClick, children }) {
   const [hover, setHover] = useState(false);
   return (
@@ -636,6 +683,10 @@ export default function HomePage() {
   const [hRegion, setHRegion] = useState('');
   const [hName, setHName] = useState('');
 
+  // The founding offer application, opened from the hero.
+  const [foundingOpen, setFoundingOpen] = useState(false);
+  const closeFounding = useCallback(() => setFoundingOpen(false), []);
+
   const handleHeroSearch = (e) => {
     if (e) e.preventDefault();
     const p = new URLSearchParams();
@@ -763,6 +814,8 @@ export default function HomePage() {
             <p style={{ fontSize: isMobile ? '16px' : 'clamp(16px, 1.15vw, 21px)', color: TEXT_SECONDARY, maxWidth: isMobile ? '440px' : 'clamp(440px, 34vw, 560px)', lineHeight: 1.6, fontWeight: 400, margin: isMobile ? '0 auto 30px' : '0 0 30px', fontFamily: FONT }}>
               The home for South East Queensland's photographers and videographers, from the Sunshine Coast to the Gold Coast. Profile, invoicing, contracts, portfolio and client delivery in one subscription, and you keep 100% of what you earn. We are rolling out across Australia city by city.
             </p>
+
+            <FoundingStrip isMobile={isMobile} onApply={() => setFoundingOpen(true)} />
 
           </div>
 
@@ -904,6 +957,8 @@ export default function HomePage() {
         }
         * { box-sizing: border-box; }
       `}</style>
+
+      <FoundingApplyModal open={foundingOpen} onClose={closeFounding} isMobile={isMobile} />
     </div>
   );
 }

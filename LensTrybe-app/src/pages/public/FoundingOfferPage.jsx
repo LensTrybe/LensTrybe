@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabaseClient'
 import { TYPO, LIQUID_GLASS, LIQUID_GLASS_CARD, LIQUID_FIELD } from '../../lib/glassTokensLight'
 import { LiquidPill, LiquidSelect } from '../../components/ui/liquidGlass'
 import PublicPageShell from '../../components/layout/PublicPageShell'
+import FoundingApplyForm from '../../components/founding/FoundingApplyForm'
 
 // The Founding 100 offer, as one link Michael can send in a DM or put in a bio instead of
 // explaining the deal every time. The terms themselves live at /founding-agreement; this
@@ -41,18 +42,6 @@ const HOW = [
   ['Then build your profile', 'Your Founding Hub shows exactly what is left to do and how you are tracking.'],
 ]
 
-const CREATIVE_TYPES = [
-  'Photographer',
-  'Videographer',
-  'Drone pilot',
-  'Video editor',
-  'Photo editor',
-  'Social media manager',
-  'Hair and makeup artist',
-  'UGC creator',
-  'Something else',
-]
-
 function Card({ title, body }) {
   return (
     <div style={{ ...LIQUID_GLASS_CARD, borderRadius: '16px', padding: '20px' }}>
@@ -68,124 +57,6 @@ function SectionHeading({ title, lede, isMobile }) {
       <h2 style={{ fontSize: isMobile ? '26px' : '34px', margin: '0 0 8px', fontFamily: "'Inter', sans-serif", fontWeight: 600, letterSpacing: '-0.02em', lineHeight: 1.1, color: 'var(--text-primary)' }}>{title}</h2>
       {lede && <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', maxWidth: '64ch', ...TYPO.body }}>{lede}</p>}
     </>
-  )
-}
-
-// Module level on purpose. Defined inside FoundingOfferPage it would be a new component
-// type on every render, so React would throw the inputs away and the field you are typing
-// in would lose focus after each keystroke.
-function ApplyForm({ isMobile }) {
-  const [form, setForm] = useState({
-    name: '',
-    email: '',
-    creative_type: '',
-    region: '',
-    portfolio_url: '',
-  })
-  const [sending, setSending] = useState(false)
-  const [done, setDone] = useState(false)
-  const [err, setErr] = useState('')
-
-  const set = (key, value) => setForm((f) => ({ ...f, [key]: value }))
-
-  async function onSubmit(e) {
-    e.preventDefault()
-    if (sending) return
-    setErr('')
-    setSending(true)
-    try {
-      const { data, error } = await supabase.functions.invoke('founding-apply', { body: form })
-      if (error) {
-        // invoke() throws away the function's own message on a non-2xx, so read the body.
-        let msg = ''
-        try {
-          const parsed = await error.context.json()
-          msg = parsed && parsed.error ? parsed.error : ''
-        } catch {
-          msg = ''
-        }
-        throw new Error(msg || 'Something went wrong. Please try again.')
-      }
-      if (data && data.error) throw new Error(data.error)
-      setDone(true)
-    } catch (e2) {
-      setErr(e2.message || 'Something went wrong. Please try again.')
-    } finally {
-      setSending(false)
-    }
-  }
-
-  if (done) {
-    return (
-      <div style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
-        <div style={{ fontSize: '17px', marginBottom: '8px', color: GREEN_TEXT, ...TYPO.heading }}>Got it.</div>
-        <div style={{ color: 'var(--text-secondary)', fontSize: '15px', ...TYPO.body }}>
-          Your details are with me. I go through every application myself, so give it a few
-          days. If you are a fit, your code arrives by email from connect@lenstrybe.com.
-        </div>
-      </div>
-    )
-  }
-
-  const fieldStyle = { width: '100%', padding: '13px 14px', ...LIQUID_FIELD }
-  const labelStyle = { display: 'block', fontSize: '12.5px', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '6px', fontFamily: "'Inter', sans-serif" }
-  const twoUp = { display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px', marginBottom: '12px' }
-
-  return (
-    <form onSubmit={onSubmit} noValidate style={{ ...LIQUID_GLASS, position: 'relative', zIndex: 1, padding: isMobile ? '20px' : '26px' }}>
-      <div style={twoUp}>
-        <div>
-          <label style={labelStyle} htmlFor="fo-name">Your name</label>
-          <input id="fo-name" type="text" autoComplete="name" maxLength={120} value={form.name}
-            onChange={(e) => set('name', e.target.value)} placeholder="Jess Turner" style={fieldStyle} />
-        </div>
-        <div>
-          <label style={labelStyle} htmlFor="fo-email">Email</label>
-          <input id="fo-email" type="email" autoComplete="email" maxLength={254} value={form.email}
-            onChange={(e) => set('email', e.target.value)} placeholder="you@yourstudio.com.au" style={fieldStyle} />
-        </div>
-      </div>
-
-      <div style={twoUp}>
-        <div>
-          <span style={labelStyle}>What you do</span>
-          <LiquidSelect
-            value={form.creative_type}
-            onChange={(v) => set('creative_type', v)}
-            ariaLabel="What you do"
-            placeholder="Choose one"
-            style={{ flex: '1 1 100%' }}
-            options={[{ value: '', label: 'Choose one' }, ...CREATIVE_TYPES.map((t) => ({ value: t, label: t }))]}
-          />
-        </div>
-        <div>
-          <label style={labelStyle} htmlFor="fo-region">Where you work</label>
-          <input id="fo-region" type="text" maxLength={120} value={form.region}
-            onChange={(e) => set('region', e.target.value)} placeholder="Brisbane and the Sunshine Coast" style={fieldStyle} />
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '14px' }}>
-        <label style={labelStyle} htmlFor="fo-link">A link to your work</label>
-        <input id="fo-link" type="text" inputMode="url" maxLength={300} value={form.portfolio_url}
-          onChange={(e) => set('portfolio_url', e.target.value)} placeholder="@yourhandle or yourwebsite.com.au" style={fieldStyle} />
-        <p style={{ margin: '6px 0 0', fontSize: '12.5px', color: 'var(--text-muted)', ...TYPO.body }}>
-          Instagram, a website, a Drive folder. Whatever shows your work best.
-        </p>
-      </div>
-
-      {err && <p style={{ margin: '0 0 12px', fontSize: '13.5px', color: PINK_TEXT, ...TYPO.body }}>{err}</p>}
-
-      <LiquidPill type="submit" primary disabled={sending}
-        style={{ flex: '0 0 auto', display: 'inline-flex', padding: '14px 26px', opacity: sending ? 0.7 : 1 }}>
-        {sending ? 'Sending' : 'Apply for a place'}
-      </LiquidPill>
-
-      <p style={{ margin: '14px 0 0', fontSize: '12.5px', color: 'var(--text-muted)', ...TYPO.body }}>
-        No spam. Your details are only used to look at your application and send you a code.
-        Read our <Link to="/privacy" style={{ color: GREEN_TEXT, fontWeight: 600, textDecoration: 'none' }}>Privacy Policy</Link>.
-      </p>
-    </form>
   )
 }
 
@@ -292,7 +163,7 @@ export default function FoundingOfferPage() {
             lede="Tell me who you are and show me your work. I read every one of these myself, and if you are a fit I will send you a code."
             isMobile={isMobile}
           />
-          <ApplyForm isMobile={isMobile} />
+          <FoundingApplyForm isMobile={isMobile} />
         </section>
         </>
         )

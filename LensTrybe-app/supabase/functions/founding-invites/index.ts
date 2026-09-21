@@ -517,7 +517,7 @@ Deno.serve(async (req) => {
       // Applications from /founding, newest first. The panel groups them by status, so
       // sorting that out here would only be a second, weaker source of truth.
       const { data: applications } = await sb.from('founding_applications')
-        .select('id, name, email, creative_type, region, portfolio_url, status, created_at')
+        .select('id, name, business_name, email, creative_type, region, portfolio_url, status, created_at')
         .order('created_at', { ascending: false })
         .limit(300)
       return json({
@@ -629,7 +629,7 @@ Deno.serve(async (req) => {
       const { data, error } = await sb.from('founding_applications')
         .update({ status })
         .eq('id', appId)
-        .select('id, name, email, creative_type, region, portfolio_url, status, created_at')
+        .select('id, name, business_name, email, creative_type, region, portfolio_url, status, created_at')
         .maybeSingle()
       if (error) { console.error('founding-invites application update', error.message); return json({ error: 'Could not update that application.' }, 500) }
       if (!data) return json({ error: 'Application not found' }, 404)

@@ -284,11 +284,14 @@ function ApplicationRow({ app, busy, onInvite, onStatus }) {
           <span style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--lt-text)' }}>{app.name || 'No name'}</span>
           <Chip state={st} />
         </div>
+        {app.business_name && (
+          <div style={{ fontSize: 13.5, fontWeight: 600, color: 'var(--lt-text)', marginTop: 2 }}>{app.business_name}</div>
+        )}
         <div style={{ fontSize: 12.5, color: 'var(--lt-muted)', marginTop: 3 }}>{app.email}</div>
         <div style={{ fontSize: 12, color: 'var(--lt-faint)', marginTop: 2 }}>{meta.join(' · ')}</div>
         {link && (
           <a href={link} target="_blank" rel="noopener noreferrer nofollow"
-            style={{ fontSize: 12.5, color: GREEN, fontWeight: 600, textDecoration: 'none', marginTop: 3, display: 'inline-block', wordBreak: 'break-all' }}>
+            style={{ fontSize: 12.5, color: 'var(--lt-green-text)', fontWeight: 600, textDecoration: 'none', marginTop: 3, display: 'inline-block', wordBreak: 'break-all' }}>
             {link.replace(/^https?:\/\//i, '').replace(/\/$/, '')}
           </a>
         )}
