@@ -1,0 +1,40 @@
+/* The creative's website, drawn by SiteRender. Colours and fonts come in as inline vars from the brand kit. */
+.wsite{border-radius:var(--rad);overflow:hidden;font-size:14px;line-height:1.55;--mute:color-mix(in srgb,var(--pi) 62%,transparent);--line:color-mix(in srgb,var(--pi) 12%,transparent)}
+.wsite button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+.ws-nav{display:flex;align-items:center;gap:18px;padding:16px 28px;font-size:13px;color:var(--mute);border-bottom:1px solid var(--line)}
+.ws-brand{display:flex;align-items:center;gap:10px;font-size:17px;font-weight:500;color:var(--pi);margin-right:auto;letter-spacing:-.01em}
+.ws-brand img{height:26px;max-width:110px;object-fit:contain}.ws-brand .wmark{width:14px;height:14px;border-radius:50%;display:inline-block}
+.ws-nav>button{padding:0;font-size:13px;color:var(--mute)}.ws-nav>button.on,.ws-nav>button:hover{color:var(--pi)}
+.ws-nav .ws-cta{padding:8px 16px;font-weight:600;font-size:12.5px}
+.ws-hero{position:relative;aspect-ratio:16/7;min-height:260px;color:#fff}
+.ws-hero canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ws-hero .in{position:absolute;inset:0;padding:36px 32px;display:flex;flex-direction:column;justify-content:flex-end;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.62))}
+.ws-hero h2{font-size:clamp(28px,3.4vw,46px);font-weight:500;letter-spacing:-.03em;line-height:1.02;max-width:620px;margin:0}
+.ws-hero p{color:rgba(255,255,255,.75);font-size:15px;margin:10px 0 0;max-width:520px}
+.ws-heroask{display:flex;align-items:center;gap:12px;margin-top:18px;padding:6px 6px 6px 16px;background:rgba(255,255,255,.14);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.22);color:#fff;font-size:13px;max-width:560px;text-align:left}
+.ws-heroask b{margin-left:auto;padding:8px 14px;font-size:12.5px;font-weight:600;white-space:nowrap}
+.ws-body{padding:8px 32px 28px;display:flex;flex-direction:column;gap:26px}
+.ws-sec{padding-top:22px}.ws-sec+.ws-sec{border-top:1px solid var(--line)}
+.ws-sec>b{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute);font-weight:700;margin-bottom:12px}
+.ws-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}.ws-grid.six{grid-template-columns:repeat(3,1fr)}
+.ws-ph{display:block;aspect-ratio:4/3;overflow:hidden;position:relative}.ws-ph.tall{aspect-ratio:3/4}.ws-ph canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.ws-pk{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ws-pc{padding:16px 16px 14px;border:1.5px solid var(--line);display:flex;flex-direction:column;gap:3px}
+.ws-pc b{font-size:17px;font-weight:500}.ws-pc span{font-size:20px;font-weight:700;letter-spacing:-.02em}.ws-pc small{font-size:12px;color:var(--mute)}
+.ws-list{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:8px 20px}.ws-list li{display:flex;gap:8px;align-items:center;font-size:13.5px}
+.ws-faq details{border-bottom:1px solid var(--line);padding:10px 0}.ws-faq summary{cursor:pointer;font-weight:600;font-size:14px}.ws-faq p{margin:8px 0 0;color:var(--mute);font-size:13.5px}
+.ws-revs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.ws-rev{padding:14px;border:1px solid var(--line)}.ws-rev i{font-style:normal;font-size:12px;letter-spacing:.1em}.ws-rev p{margin:6px 0 8px;font-size:13px}.ws-rev small{color:var(--mute);font-size:11.5px}
+.ws-about{display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:start}.ws-about p{margin:0;font-size:14.5px;line-height:1.6}
+.ws-steps{display:flex;flex-wrap:wrap;gap:10px}.ws-steps span{display:flex;align-items:center;gap:8px;font-size:13px}.ws-steps i{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;font-weight:700;font-style:normal}
+.ws-p{margin:0;font-size:14px;max-width:560px}
+.ws-ask{display:flex;gap:6px;padding:6px;border:1px solid var(--line);background:color-mix(in srgb,var(--pi) 4%,transparent)}
+.ws-ask input{flex:1;font:inherit;font-size:14px;padding:10px 12px;border:0;background:none;color:inherit;outline:none;min-width:0}.ws-ask input::placeholder{color:var(--mute)}
+.ws-ask button{padding:10px 18px;font-weight:600;font-size:13px}
+.ws-fine{display:block;margin-top:8px;font-size:12px;color:var(--mute)}
+.ws-book{display:flex;align-items:center;gap:14px;padding:14px 16px;border:1px solid var(--line)}.ws-book span{color:var(--mute);font-size:13px}.ws-book b{font-size:22px;font-weight:500;margin-right:auto}.ws-book button{padding:9px 16px;font-weight:600;font-size:13px}
+.ws-bar{display:block;height:8px;border-radius:4px;background:var(--line);width:60%}
+.ws-foot{display:flex;justify-content:space-between;gap:12px;padding:16px 32px;border-top:1px solid var(--line);font-size:12px;color:var(--mute)}
+/* compact: the editor preview at half size */
+.wsite.compact{font-size:12px}.wsite.compact .ws-nav{padding:12px 20px;gap:12px}.wsite.compact .ws-hero{min-height:200px}.wsite.compact .ws-hero .in{padding:24px 20px}.wsite.compact .ws-hero h2{font-size:clamp(20px,2.4vw,30px)}.wsite.compact .ws-hero p{font-size:12.5px}.wsite.compact .ws-body{padding:4px 20px 20px;gap:16px}.wsite.compact .ws-sec{padding-top:14px}.wsite.compact .ws-foot{padding:12px 20px}.wsite.compact .ws-about{grid-template-columns:120px 1fr}.wsite.compact .ws-pc b{font-size:14px}.wsite.compact .ws-pc span{font-size:16px}
+@media (max-width:760px){.ws-nav{padding:12px 16px;gap:10px;flex-wrap:wrap}.ws-body,.ws-foot{padding-left:16px;padding-right:16px}.ws-grid,.ws-pk,.ws-revs{grid-template-columns:1fr 1fr}.ws-about{grid-template-columns:1fr}.ws-list{grid-template-columns:1fr}.ws-hero .in{padding:20px 16px}}

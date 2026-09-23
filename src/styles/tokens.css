@@ -1,0 +1,22 @@
+/* LensTrybe Next design tokens. Two surfaces: the public site (dark hero, light body)
+   and the workspace (light by default, dark on tap). Brand fixed points from the
+   September 2026 guide: Inter, green #1DB954, hot pink #FF2D78, brand black #0a0a0f. */
+:root{
+  --green:#1DB954;--green-ink:#04120a;--pink:#FF2D78;--amber:#f59e0b;--blue:#4A9EFF;
+  --mint:#9AC4C5;--neon:#8DF3D6;--neon-t:#A9F5DF;--rose:#D996BA;--lilac:#C6A5E5;--black:#0a0a0f;
+  --font:'Inter',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --serif:'Instrument Serif',Georgia,serif;
+  --ease:cubic-bezier(.2,.75,.15,1);--spring:cubic-bezier(.34,1.4,.4,1);
+  /* light surface */
+  --bg:#f6f5f3;--ink:#14111a;--ink-2:#5B5766;--ink-3:#8b8a9a;--line:rgba(20,17,26,.09);--line-2:rgba(20,17,26,.16);
+  --green-t:#0E7C3A;--pink-t:#c11f5a;--amber-t:#9A5B00;--blue-t:#1b5fb3;
+  --paper:rgba(255,255,255,.5);--paper-2:rgba(255,255,255,.72);--glass:rgba(255,255,255,.7);--glass-2:rgba(255,255,255,.72);--bg-2:#ffffff;
+  --lg-tint:rgba(255,255,255,.62);--lg-tint-2:rgba(255,255,255,.26);--lg-rim:#fff;--lg-rim-2:rgba(255,255,255,.75);--lg-shadow:rgba(31,38,90,.22);--lg-sheen:rgba(255,255,255,.7);--lg-spec:rgba(255,255,255,.5);
+}
+/* dark surface: the hero, and the workspace when toggled */
+.dark,:root[data-t="dark"]{
+  --bg:#07070b;--ink:#f4f2f7;--ink-2:rgba(244,242,247,.62);--ink-3:rgba(244,242,247,.42);--line:rgba(255,255,255,.09);--line-2:rgba(255,255,255,.16);
+  --green-t:#7cf0a5;--pink-t:#ff9dc2;--amber-t:#ffcf6b;--blue-t:#8cc2ff;
+  --paper:rgba(255,255,255,.05);--paper-2:rgba(255,255,255,.08);--glass:rgba(16,16,24,.55);--glass-2:rgba(255,255,255,.05);--bg-2:#0d0d14;
+  --lg-tint:rgba(255,255,255,.13);--lg-tint-2:rgba(255,255,255,.04);--lg-rim:rgba(255,255,255,.45);--lg-rim-2:rgba(255,255,255,.22);--lg-shadow:rgba(0,0,0,.75);--lg-sheen:rgba(255,255,255,.24);--lg-spec:rgba(255,255,255,.2);
+}

@@ -1,0 +1,65 @@
+/* The client portal: one thread, one link, on light glass. Green is a signal, never a surface. */
+.portal{min-height:100vh;padding:0 0 60px}
+.portal .phdr{position:sticky;top:12px;z-index:5;margin:12px auto 0;max-width:760px;border-radius:999px;padding:8px 18px 8px 12px;display:flex;align-items:center;gap:14px}
+.portal .plogo{display:flex;align-items:center;padding:0 8px 0 4px;border-right:1px solid rgba(20,17,26,.1);margin-right:2px}
+.portal .phdr .who{display:flex;align-items:center;gap:10px;flex:1;font-size:13px;min-width:0}
+.portal .phdr .who b{display:block;color:var(--ink)}.portal .phdr .who small{color:var(--ink-3);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.portal .pav{width:34px;height:34px;border-radius:50%;flex:none;position:relative;overflow:hidden;box-shadow:0 0 0 2px #fff,0 0 0 3px rgba(141,243,214,.6)}
+.portal .pav canvas{position:absolute;inset:0;width:100%;height:100%}
+.portal .plive{font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#0E7C3A;display:flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:rgba(29,185,84,.1)}
+.portal .plive i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 8px rgba(29,185,84,.7)}
+.portal .pwrap{max-width:760px;margin:20px auto 0;padding:0 16px}
+
+.portal .pjob{border-radius:28px;padding:clamp(20px,3vw,28px);display:flex;flex-direction:column;gap:18px}
+.portal .pjhead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.portal .pjob h1{font-size:clamp(28px,3.4vw,38px);font-weight:600;letter-spacing:-.03em;margin-top:6px;color:var(--ink)}
+.portal .pjob .sub{color:var(--ink-2);font-size:14px;margin-top:4px}
+.portal .pnext{display:grid;gap:2px;padding:12px 16px;border-radius:18px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,0 0 0 3px rgba(141,243,214,.16);min-width:220px}
+.portal .pnext small{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:#0E7C3A;font-weight:700}
+.portal .pnext b{font-size:15px;color:var(--ink)}
+.portal .pnext span{font-size:12.5px;color:var(--ink-3)}
+.portal .pstage{display:flex;gap:0;position:relative;overflow-x:auto;scrollbar-width:none;padding:2px 0}
+.portal .pstage span{display:flex;align-items:center;gap:7px;font-size:12px;color:var(--ink-3);padding:6px 10px;border-radius:999px;white-space:nowrap;position:relative}
+.portal .pstage span i{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;background:rgba(20,17,26,.08);color:#fff;flex:none}
+.portal .pstage span.d{color:var(--ink-2)}.portal .pstage span.d i{background:var(--green)}
+.portal .pstage span.c{color:var(--ink);font-weight:600;background:#fff;box-shadow:inset 0 0 0 1px rgba(141,243,214,.8),0 8px 20px -12px rgba(31,38,90,.35)}
+.portal .pstage span.c i{background:var(--neon);box-shadow:0 0 10px rgba(141,243,214,.7)}
+
+.portal .pthread2{display:flex;flex-direction:column;gap:10px;margin-top:16px;padding-bottom:12px}
+.portal .tm{max-width:78%;padding:11px 15px;border-radius:18px;font-size:14px;line-height:1.5;color:var(--ink)}
+.portal .tm.them{align-self:flex-start;background:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.95);box-shadow:inset 0 1px 0 #fff,0 10px 24px -16px rgba(31,38,90,.3);border-bottom-left-radius:6px}
+.portal .tm.me{align-self:flex-end;background:var(--ink);color:#fff;border-bottom-right-radius:6px;box-shadow:0 12px 28px -14px rgba(10,10,15,.6)}
+.portal .tm .w{display:block;font-size:11px;color:var(--ink-3);margin-top:4px}.portal .tm.me .w{color:rgba(255,255,255,.55)}
+.portal .tsys{align-self:center;font-size:12.5px;color:var(--ink-2);text-align:center;max-width:56ch;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.45);border:1px solid rgba(255,255,255,.8);margin:4px 0}
+
+.portal .pcard{align-self:stretch;border-radius:20px;padding:14px 16px;display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"pk body st" "pk body btn" "extra extra extra";gap:6px 12px;align-items:center;font-size:13.5px;background:linear-gradient(125deg,rgba(255,255,255,.72),rgba(255,255,255,.4));color:var(--ink)}
+.portal .pcard .pk{grid-area:pk;align-self:start;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(29,185,84,.14);color:#0E7C3A;font-style:normal;flex:none}
+.portal .pcard .pk.cal{background:rgba(141,243,214,.35);color:#0a0a0f}
+.portal .pcard>div{grid-area:body;min-width:0}
+.portal .pcard b{display:block;font-size:14.5px;color:var(--ink)}.portal .pcard small{display:block;color:var(--ink-3);font-size:12.5px;margin-top:2px}
+.portal .pcard .st{grid-area:st;align-self:start;padding:5px 10px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.portal .pcard .st.ok{background:rgba(29,185,84,.12);color:#0E7C3A}
+.portal .pcard .st.pink{background:rgba(255,45,120,.1);color:var(--pink-t)}
+.portal .pcard .st.live{background:var(--neon);color:#0a0a0f}
+.portal .pcard .pbtn{grid-area:btn;justify-self:end;align-self:end;height:32px;padding:0 14px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid rgba(20,17,26,.12);font-size:12.5px;font-weight:600;color:var(--ink);transition:box-shadow .25s,background .25s}
+.portal .pcard .pbtn:hover{background:#fff;box-shadow:0 0 0 2px rgba(141,243,214,.5),0 0 18px rgba(141,243,214,.3)}
+.portal .pcard.now{box-shadow:inset 0 1px 1px #fff,0 24px 60px -24px rgba(31,38,90,.28),0 0 0 1.5px rgba(141,243,214,.7),0 0 30px -8px rgba(141,243,214,.5)}
+.portal .pcard .ln{grid-area:extra;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.portal .pcard .ln span{padding:5px 10px;border-radius:999px;background:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.95);font-size:11.5px;color:var(--ink);font-weight:500}
+.portal .pcard .thumbs{grid-area:extra;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:4px}
+.portal .pcard .thumbs div{aspect-ratio:1;border-radius:12px;overflow:hidden;position:relative;background:#000}
+.portal .pcard.peek{grid-template-areas:"pk body st" "extra extra extra" "btn btn btn"}
+.portal .pcard.peek .btn{grid-area:btn;justify-self:start;margin-top:4px}
+.portal .pcard .btn.k:hover{box-shadow:0 0 0 2px rgba(141,243,214,.6),0 0 24px rgba(141,243,214,.4)}
+.portal .pcard .stars{grid-area:extra;display:flex;gap:2px;font-size:28px;color:rgba(20,17,26,.18)}
+.portal .pcard .stars button{font-size:28px;color:inherit;padding:0 3px;transition:transform .3s var(--spring),color .2s}
+.portal .pcard .stars button:hover{transform:scale(1.15)}
+.portal .pcard .stars button.on{color:var(--amber)}
+
+.portal .pcompose{position:sticky;bottom:16px;margin-top:6px;border-radius:999px;padding:6px 6px 6px 16px;display:flex;gap:10px;align-items:center;background:linear-gradient(125deg,rgba(255,255,255,.9),rgba(255,255,255,.7));box-shadow:0 24px 60px -20px rgba(31,38,90,.4),inset 0 1px 1px #fff}
+.portal .pcompose .lens{width:18px;height:18px;border-radius:50%;flex:none;background:conic-gradient(from 0deg,var(--mint),var(--rose),var(--lilac),var(--mint));position:relative}
+.portal .pcompose .lens::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
+.portal .pcompose input{flex:1;background:transparent;border:0;outline:none;font-size:14.5px;color:var(--ink);padding:10px 0}
+.portal .pcompose button{width:42px;height:42px;border-radius:50%;background:var(--ink);color:#fff;display:grid;place-items:center;transition:transform .3s var(--spring),box-shadow .3s}
+.portal .pcompose button:hover{transform:scale(1.05);box-shadow:0 0 0 2px rgba(141,243,214,.6),0 0 20px rgba(141,243,214,.4)}
+@media (max-width:600px){.portal .tm{max-width:88%}.portal .pnext{min-width:0;width:100%}.portal .plogo{display:none}}

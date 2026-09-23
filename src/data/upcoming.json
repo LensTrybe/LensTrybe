@@ -1,0 +1,449 @@
+{
+ "LAUNCH_SKILLS": [
+  {
+   "label": "Available now",
+   "colour": "#0E7C3A",
+   "bg": "rgba(29,185,84,0.12)",
+   "border": "rgba(29,185,84,0.35)"
+  },
+  {
+   "label": "In development",
+   "colour": "#9A5B00",
+   "bg": "rgba(234,179,8,0.14)",
+   "border": "rgba(234,179,8,0.42)"
+  },
+  {
+   "label": "Planned",
+   "colour": "#5B5766",
+   "bg": "rgba(20,17,26,0.05)",
+   "border": "rgba(20,17,26,0.14)"
+  },
+  {
+   "label": "Exploring",
+   "colour": "#c11f5a",
+   "bg": "rgba(255,45,120,0.1)",
+   "border": "rgba(255,45,120,0.32)"
+  },
+  {
+   "key": "live",
+   "text": "In the platform today."
+  },
+  {
+   "key": "building",
+   "text": "Being built right now."
+  },
+  {
+   "key": "planned",
+   "text": "We will build it. No date yet."
+  },
+  {
+   "key": "exploring",
+   "text": "An idea we are looking at. It may change, or it may not happen."
+  }
+ ],
+ "STATUS_ORDER": [
+  {
+   "key": "live",
+   "text": "In the platform today."
+  },
+  {
+   "key": "building",
+   "text": "Being built right now."
+  },
+  {
+   "key": "planned",
+   "text": "We will build it. No date yet."
+  },
+  {
+   "key": "exploring",
+   "text": "An idea we are looking at. It may change, or it may not happen."
+  }
+ ],
+ "LEGEND": [
+  {
+   "key": "live",
+   "text": "In the platform today."
+  },
+  {
+   "key": "building",
+   "text": "Being built right now."
+  },
+  {
+   "key": "planned",
+   "text": "We will build it. No date yet."
+  },
+  {
+   "key": "exploring",
+   "text": "An idea we are looking at. It may change, or it may not happen."
+  }
+ ],
+ "PLATFORM_FEATURES": [
+  {
+   "name": "Mobile app for iPhone and Android",
+   "status": "building",
+   "description": "Your whole LensTrybe business in your pocket. Take bookings, reply to clients, send invoices and check payments from your phone. In build now."
+  },
+  {
+   "name": "More creative disciplines",
+   "status": "planned",
+   "description": "LensTrybe opens with Photographers and Videographers. Drone Pilots, Video Editors, Photo Editors, Social Media Managers, Hair and Makeup Artists and UGC Creators follow after launch."
+  },
+  {
+   "name": "Two-way calendar sync",
+   "status": "planned",
+   "description": "Connect Google Calendar or Apple Calendar so your LensTrybe availability and your own diary stay in step in both directions. Stop double booking yourself."
+  },
+  {
+   "name": "Creative community feed",
+   "status": "building",
+   "description": "A place for creatives on LensTrybe to share work, ask questions and find people to collaborate with. Groups, mentions and collaboration posts are being built now."
+  }
+ ],
+ "SKILLS": [
+  {
+   "key": "photographer",
+   "label": "Photographer"
+  },
+  {
+   "key": "videographer",
+   "label": "Videographer"
+  },
+  {
+   "key": "drone_pilot",
+   "label": "Drone Pilot"
+  },
+  {
+   "key": "video_editor",
+   "label": "Video Editor"
+  },
+  {
+   "key": "photo_editor",
+   "label": "Photo Editor"
+  },
+  {
+   "key": "social_media_manager",
+   "label": "Social Media Manager"
+  },
+  {
+   "key": "hair_makeup_artist",
+   "label": "Hair and Makeup Artist"
+  },
+  {
+   "key": "ugc_creator",
+   "label": "UGC Creator"
+  }
+ ],
+ "per": {
+  "photographer": [
+   {
+    "name": "Shot list builder",
+    "status": "live",
+    "description": "Build a shot list on any job as a checklist, tick frames off as you get them, and keep prep lists and gear lists on the same project. Available in your project workspace today."
+   },
+   {
+    "name": "Location scouting notes",
+    "status": "planned",
+    "description": "Save GPS pins, lighting windows, parking and access instructions for every location, then reuse them on future shoots at the same spot."
+   },
+   {
+    "name": "Style questionnaire templates",
+    "status": "planned",
+    "description": "Send a branded pre shoot questionnaire to capture mood, styling and image references. Answers save against the booking so you arrive prepared."
+   },
+   {
+    "name": "Pass selects to a Photo Editor",
+    "status": "planned",
+    "description": "Send your approved selects straight to a Photo Editor on LensTrybe with your notes attached. Arrives once Photo Editors join the platform."
+   },
+   {
+    "name": "Culling tool",
+    "status": "exploring",
+    "description": "Review a full shoot in one workspace and mark each frame Keep, Maybe or Reject. Doing this properly in a browser is a serious piece of work, so we are looking at it rather than promising it."
+   },
+   {
+    "name": "Deposit and balance payment splits",
+    "status": "exploring",
+    "description": "Take a deposit at booking and the balance later, with LensTrybe chasing the second payment. Anything touching payments has to be right first time, so this one is under review."
+   },
+   {
+    "name": "Weather and light window",
+    "status": "planned",
+    "description": "Sunrise, sunset, golden hour and the forecast for the date and place you are shooting, on the booking itself. Stop working it out by hand the night before."
+   },
+   {
+    "name": "Travel and mileage",
+    "status": "planned",
+    "description": "Log the kilometres for a shoot and have them land in Expenses at the ATO rate, ready for your Tax Hub at the end of the financial year."
+   },
+   {
+    "name": "Watermarks and download controls",
+    "status": "planned",
+    "description": "Watermark a proofing gallery, cap how many times a set can be downloaded, and lift both once the client has paid. Proofing and favourites already work, this finishes them."
+   },
+   {
+    "name": "Mini sessions",
+    "status": "exploring",
+    "description": "Publish a day of fixed price, fixed length slots and let clients book and pay themselves. Christmas minis and headshot days without a single back and forth email."
+   },
+   {
+    "name": "Packages catalogue",
+    "status": "exploring",
+    "description": "Set a package up once, with its inclusions and price, then pull it into a quote, an invoice and your public profile. Stop rebuilding the same wedding package every time."
+   },
+   {
+    "name": "Book a second shooter",
+    "status": "exploring",
+    "description": "Need a second shooter for a wedding? Post the day, book another LensTrybe creative, and agree the split up front. The other photographers are already here, so it is a search rather than a group chat."
+   },
+   {
+    "name": "Model and property releases",
+    "status": "exploring",
+    "description": "Send a release to a subject or a venue and have it signed on the day, stored against the shoot. Commercial and stock work needs it, and chasing a signature afterwards never goes well."
+   }
+  ],
+  "videographer": [
+   {
+    "name": "Project timeline tracker",
+    "status": "live",
+    "description": "Move every job through stages you name yourself across pre production, production and post. See your whole slate and spot a schedule risk early. In your Projects board today."
+   },
+   {
+    "name": "Shot list builder",
+    "status": "live",
+    "description": "Build scene by scene shot lists as checklists on the project, with whatever detail the job needs. Available in your project workspace today."
+   },
+   {
+    "name": "Production brief and run sheet",
+    "status": "planned",
+    "description": "One shareable brief with call times, locations, contacts and logistics, published as a run sheet so the whole crew works from the same page on shoot day."
+   },
+   {
+    "name": "Revision round tracker",
+    "status": "planned",
+    "description": "Track each revision cycle with timestamps and change notes, so clients can see what was updated and agreed revision limits hold without an argument."
+   },
+   {
+    "name": "Music licensing log",
+    "status": "planned",
+    "description": "Record every track used on a project with licence type, source and expiry. A clear compliance record before anything is delivered."
+   },
+   {
+    "name": "Weather and light window",
+    "status": "planned",
+    "description": "Sunrise, sunset, golden hour and the forecast for your shoot date and location, on the booking itself, so you can plan the day around the light before you leave the house."
+   },
+   {
+    "name": "Travel and mileage",
+    "status": "planned",
+    "description": "Log the kilometres for a shoot and have them land in Expenses at the ATO rate, ready for your Tax Hub at the end of the financial year."
+   },
+   {
+    "name": "Watermarks and download controls",
+    "status": "planned",
+    "description": "Watermark a review cut, cap how many times a delivery can be downloaded, and lift both once the client has paid."
+   },
+   {
+    "name": "Packages catalogue",
+    "status": "exploring",
+    "description": "Set a package up once, with its inclusions and price, then pull it into a quote, an invoice and your public profile. Stop rebuilding the same production package every time."
+   },
+   {
+    "name": "Book crew for a shoot day",
+    "status": "exploring",
+    "description": "Need a second operator, a sound recordist or someone on lights? Post the day, book another LensTrybe creative, and agree the split up front."
+   },
+   {
+    "name": "Model and property releases",
+    "status": "exploring",
+    "description": "Send a release to talent or a venue and have it signed on the day, stored against the shoot. Commercial work needs it, and chasing a signature afterwards never goes well."
+   }
+  ],
+  "drone_pilot": [
+   {
+    "name": "Gear and battery register",
+    "status": "live",
+    "description": "Log every aircraft, controller and battery with serial numbers and values, track what the kit is worth for insurance, and check gear out to a job. In your Inventory today."
+   },
+   {
+    "name": "Flight log",
+    "status": "planned",
+    "description": "Capture date, site, weather, altitude, aircraft and duration for every mission, and keep a complete operating history you can export."
+   },
+   {
+    "name": "Pre flight checklist",
+    "status": "planned",
+    "description": "Run your own safety checklist against each booking so no step is missed, and keep the completed record attached to the job."
+   },
+   {
+    "name": "Battery cycle tracker",
+    "status": "planned",
+    "description": "Count charge cycles per battery and watch pack health over time, with a nudge when one is due for replacement."
+   },
+   {
+    "name": "Insurance and registration reminders",
+    "status": "planned",
+    "description": "Store policy and registration expiry dates and get reminded before they lapse, so you stay job ready without the last minute scramble."
+   },
+   {
+    "name": "No-fly zone notes",
+    "status": "exploring",
+    "description": "Flag airspace restrictions during planning. Getting this wrong has real consequences for a pilot, so we will only build it if we can do it accurately. Always check CASA yourself."
+   }
+  ],
+  "video_editor": [
+   {
+    "name": "Edit status board",
+    "status": "live",
+    "description": "Move jobs through stages you name yourself, rough cut to colour grade to sound mix to delivered, and see your workload and bottlenecks at a glance. In your Projects board today."
+   },
+   {
+    "name": "Handover checklist",
+    "status": "live",
+    "description": "Keep a final checklist on the project for exports, project files, fonts and proxies, so nothing is missed at signoff. In your project workspace today."
+   },
+   {
+    "name": "Revision round tracker",
+    "status": "planned",
+    "description": "Log every revision round and what changed in each pass, keeping scope clear and reducing arguments about extra edits."
+   },
+   {
+    "name": "Receive rough cut handoff from a Videographer",
+    "status": "planned",
+    "description": "Accept rough cuts from Videographers on LensTrybe with source links and notes attached, so you can start editing without chasing files."
+   },
+   {
+    "name": "Timestamp feedback",
+    "status": "exploring",
+    "description": "Clients leaving comments on exact timecodes in your cut. This needs proper video playback built into the platform, so it is an idea rather than a commitment."
+   }
+  ],
+  "photo_editor": [
+   {
+    "name": "Batch job tracker",
+    "status": "live",
+    "description": "Track every editing job through stages you name yourself, with deadlines and values, so you can prioritise by volume and due date. In your Projects board today."
+   },
+   {
+    "name": "Receive culled selects from a Photographer",
+    "status": "planned",
+    "description": "Get curated selects in one handoff with client instructions and references attached, so you start with the context you need."
+   },
+   {
+    "name": "Client approval workflow",
+    "status": "planned",
+    "description": "Send an edited set for approval with a clear approve or request changes flow, and only deliver once signoff is in."
+   },
+   {
+    "name": "Turnaround time estimator",
+    "status": "planned",
+    "description": "Work out a delivery date from image volume and your usual edit speed, so you set an expectation you can actually meet."
+   },
+   {
+    "name": "Style reference board",
+    "status": "planned",
+    "description": "Attach mood boards and visual references to a job so your look stays aligned with client direction the whole way through."
+   },
+   {
+    "name": "Retouching notes per image",
+    "status": "planned",
+    "description": "Leave precise instructions on individual images instead of one note for the whole job, which cuts repeat revisions."
+   }
+  ],
+  "social_media_manager": [
+   {
+    "name": "Content calendar",
+    "status": "live",
+    "description": "Plan posts by client, platform and campaign in a board or month view, move them through Idea, Draft, Scheduled and Posted, and store captions and hashtags on each one. Assign posts to your team on Expert and Elite."
+   },
+   {
+    "name": "Content ideas board",
+    "status": "live",
+    "description": "Park every idea as it comes to you with notes and platforms, then promote the good ones straight into the calendar. In your dashboard today."
+   },
+   {
+    "name": "Caption library",
+    "status": "planned",
+    "description": "Save your best captions as reusable templates across clients and campaigns. Captions already save on each post, this makes them a library you can pull from."
+   },
+   {
+    "name": "Content approval workflow",
+    "status": "planned",
+    "description": "Send drafts to the client for sign off before anything publishes, and track approvals and requested edits in one place."
+   },
+   {
+    "name": "Monthly reporting card",
+    "status": "planned",
+    "description": "Generate a clean monthly summary with the metrics and highlights that matter, ready to send without building a report by hand."
+   },
+   {
+    "name": "Receive finished gallery from a Photographer",
+    "status": "planned",
+    "description": "Accept delivered galleries from Photographers on LensTrybe and go straight to producing content, with no download and upload loop."
+   },
+   {
+    "name": "Platform performance dashboard",
+    "status": "exploring",
+    "description": "Follower growth, reach and engagement by client and platform in one view. This depends on approval from Meta and TikTok, which is not ours to promise, so it stays an idea for now."
+   }
+  ],
+  "hair_makeup_artist": [
+   {
+    "name": "Client records",
+    "status": "live",
+    "description": "Keep a record for every client with notes, contact details and booking history, so you walk into a repeat appointment knowing exactly what you did last time. In your CRM today."
+   },
+   {
+    "name": "Look book builder",
+    "status": "planned",
+    "description": "Build a visual mood board for each booking and share it before the day, so the look is agreed early and nothing changes at the last minute."
+   },
+   {
+    "name": "Skin and allergy profile",
+    "status": "planned",
+    "description": "Save skin type, sensitivities and product preferences against a client and carry them into every future appointment. Safer service, less asking twice."
+   },
+   {
+    "name": "Product kit log",
+    "status": "planned",
+    "description": "Record every product used on a look, down to shade and finish, so you can recreate it exactly for a follow up booking."
+   },
+   {
+    "name": "Trial and day-of booking flow",
+    "status": "planned",
+    "description": "Handle the trial and the event day as linked but separate appointments, keeping notes, timings and outcomes for both."
+   },
+   {
+    "name": "Artist call time sheet",
+    "status": "planned",
+    "description": "Coordinate several artists with clear call times and roles, so a big wedding or production runs to schedule."
+   }
+  ],
+  "ugc_creator": [
+   {
+    "name": "Brand deal tracker",
+    "status": "live",
+    "description": "Track every deal through stages you name yourself, with the brand in your CRM, deliverable dates and deal value in one place. In your Projects board today."
+   },
+   {
+    "name": "Rate card builder",
+    "status": "planned",
+    "description": "Build a shareable rate card link with packages, inclusions and pricing, so you answer a brand enquiry in one message."
+   },
+   {
+    "name": "Usage rights log",
+    "status": "planned",
+    "description": "Record the agreed usage window, platforms and licensing for each deal, and check your rights before you repost or repurpose anything."
+   },
+   {
+    "name": "Content brief builder",
+    "status": "planned",
+    "description": "Capture objectives, hooks, format requirements and calls to action in a structured brief, so scope is clear before you shoot."
+   },
+   {
+    "name": "Posting schedule tracker",
+    "status": "planned",
+    "description": "See which deliverables are live, scheduled or still pending across every active deal, and stay on top of your commitments."
+   }
+  ]
+ }
+}
