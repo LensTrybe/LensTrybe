@@ -1,6 +1,6 @@
 #!/bin/bash
 # Double-click to run the local preview. Installs once, then opens the browser.
-cd "$(dirname "$0")"
+cd "$(dirname "$0")/LensTrybe-app"
 echo "LensTrybe Next, local preview"
 echo "This folder is separate from the live site. Nothing here touches lenstrybe.com."
 echo
@@ -14,8 +14,8 @@ if [ ! -d node_modules ]; then
   npm install
 fi
 # Stop any earlier LensTrybe Next server still running from this folder.
-pkill -f "LensTrybe Next/node_modules/.bin/vite" 2>/dev/null
-pkill -f "LensTrybe Next/node_modules/vite/bin/vite.js" 2>/dev/null
+pkill -f "LensTrybe Next/LensTrybe-app/node_modules/.bin/vite" 2>/dev/null
+pkill -f "LensTrybe Next/LensTrybe-app/node_modules/vite/bin/vite.js" 2>/dev/null
 sleep 1
 # First free port from 5180 up. Your original site's dev server stays on 5173.
 PORT=5180
