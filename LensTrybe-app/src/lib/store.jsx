@@ -4,7 +4,7 @@ import { SEED } from '../data/seed'
 // One store for the whole workspace. Starts from the sample data, keeps every change in the browser
 // (localStorage) so what you do on one page shows up on every other page and survives a reload.
 // Later this is the layer that talks to Supabase; the pages will not need to change.
-const KEY = 'lt-store-v10'
+const KEY = 'lt-store-v11'
 const Ctx = createContext(null)
 const clone = o => JSON.parse(JSON.stringify(o))
 const load = () => {
@@ -15,7 +15,7 @@ const load = () => {
     return s
   } catch { return clone(SEED) }
 }
-const PREFIX = { cj: 'cj', cm: 'cm', listing: 'L', offer: 'o', review: 'rv', rq: 'rq', chan: 'ch', inv: 'INV-', q: 'Q-', c: 'C-', exp: 'EXP-', note: 'n', proj: 'p', ev: 'e', meet: 'm', post: 'po', gear: 'g', thread: 't', person: 'c', gal: 'gal', idea: 'i', page: 'pg', item: 'it', crew: 'cr', job: 'j', ref: 'r', any: 'x' }
+const PREFIX = { aw: 'aw', se: 'se', w: 'w', cj: 'cj', cm: 'cm', listing: 'L', offer: 'o', review: 'rv', rq: 'rq', chan: 'ch', inv: 'INV-', q: 'Q-', c: 'C-', exp: 'EXP-', note: 'n', proj: 'p', ev: 'e', meet: 'm', post: 'po', gear: 'g', thread: 't', person: 'c', gal: 'gal', idea: 'i', page: 'pg', item: 'it', crew: 'cr', job: 'j', ref: 'r', any: 'x' }
 const pad = (n, w) => String(n).padStart(w, '0')
 
 export function StoreProvider({ children }) {

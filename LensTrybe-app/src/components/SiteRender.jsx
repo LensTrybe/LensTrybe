@@ -3,6 +3,8 @@ import Still from './Still'
 import Icon from './Icon'
 import { fam, loadFont, onColour, paperOf } from '../lib/brand'
 import { fmt } from '../lib/format'
+import { nextOpen } from '../lib/avail'
+import { nice } from '../lib/store'
 import '../styles/site.css'
 
 // The creative's website, rendered from their pages, profile, brand kit, reviews and packages.
@@ -30,7 +32,8 @@ export default function SiteRender({ s, page, onPage, creative, compact = false,
     if (name === 'How I work') return <div key={name} className="ws-sec"><b>{name}</b><div className="ws-steps">{['You send a date', 'A quote the same day', 'Deposit holds it', 'The day, as it happens', 'Gallery in eight weeks'].map((x, i) => <span key={x}><i style={{ background: acc, color: onColour(acc) }}>{i + 1}</i>{x}</span>)}</div></div>
     if (name === 'Gear, for the nerds') return <div key={name} className="ws-sec"><b>{name}</b><p className="ws-p">Sony A1 × 2, 35mm and 85mm primes, a Mavic for the listings, and a second body that has been dropped in the Noosa River once.</p></div>
     if (name === 'Ask bar' || name === 'Ask in one sentence') return <div key={name} className="ws-sec"><b>{name === 'Ask bar' ? 'Ask' : name}</b><div className="ws-ask" style={{ borderRadius: rad }}><input value={msg} onChange={e => setMsg(e.target.value)} placeholder="A wedding at Maleny Manor on 7 November, about 90 guests" /><button style={{ background: acc, color: onColour(acc), borderRadius: rad }} onClick={() => onEnquire?.(msg)}>Send</button></div><small className="ws-fine">No fee to ask. {s.profile.n.split(' ')[0]} replies with a quote you can accept, sign and pay in one place.</small></div>
-    if (name === 'Booking link') return <div key={name} className="ws-sec"><b>Book a date</b><div className="ws-book" style={{ borderRadius: rad }}><span>Next open Saturday</span><b style={{ fontFamily: H }}>21 Nov</b><button style={{ background: acc, color: onColour(acc), borderRadius: rad }} onClick={() => onEnquire?.('Saturday 21 Nov')}>Hold it</button></div></div>
+    if (name === 'Booking link') { const A = s.avail || {}; const sat = nextOpen(s, 1, { sat: true })[0], more = A.pub?.show ? nextOpen(s, A.pub?.n || 3) : []; const inst = A.pub?.instant || []; return <div key={name} className="ws-sec"><b>Book a date</b><div className="ws-book" style={{ borderRadius: rad }}><span>{sat ? 'Next open Saturday' : 'Saturdays'}</span><b style={{ fontFamily: H }}>{sat ? nice(sat) : 'Booked out'}</b><button style={{ background: acc, color: onColour(acc), borderRadius: rad }} onClick={() => onEnquire?.(sat ? nice(sat, { weekday: 'long' }) : 'a date')}>{sat ? 'Hold it' : 'Join the waitlist'}</button></div>{more.length > 0 && <p className="ws-p ws-open">Also open {more.map(d => nice(d, { weekday: 'short' })).join(', ')}.{inst.length ? ' ' + inst.join(' and ') + ' can be booked straight away, no enquiry needed.' : ''}</p>}</div> }
+    if (name === 'Where I work') return <div key={name} className="ws-sec"><b>{name}</b><p className="ws-p">{s.profile.city}, and anywhere within {s.avail?.radius || 150} km at no extra cost. Brisbane, the Gold Coast and the hinterland every week.</p></div>
     if (name === 'Where I work') return <div key={name} className="ws-sec"><b>{name}</b><p className="ws-p">{s.profile.city}, and anywhere within 150 km at no extra cost. Brisbane, the Gold Coast and the hinterland every week.</p></div>
     return <div key={name} className="ws-sec"><b>{name}</b><span className="ws-bar" /></div>
   }

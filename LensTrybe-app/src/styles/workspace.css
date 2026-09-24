@@ -1674,3 +1674,36 @@
 .ws .jobs .tfilt button i{margin-left:5px;font-style:normal;font-size:10px;padding:1px 6px;border-radius:99px;background:var(--sig-bg);color:var(--sig)}
 .ws .jobs .tfilt button.on i{background:rgba(255,255,255,.18);color:inherit}
 .ws .jr small b.money{display:inline}
+
+/* ── Availability ─────────────────────────────────────────────────────────── */
+.ws .avkey{display:flex;gap:12px;font-size:11.5px;color:var(--ink-3);flex-wrap:wrap}
+.ws .avkey span{display:inline-flex;align-items:center;gap:5px}
+.ws .avkey i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.ws .avkey i.st-open{background:var(--sig-bg);border:1px solid var(--sig-rim)}.ws .avkey i.st-booked{background:var(--sig)}.ws .avkey i.st-held{background:transparent;border:1.5px dashed var(--sig)}
+.ws .avkey i.st-away{background:var(--line-2)}.ws .avkey i.st-rest{background:repeating-linear-gradient(135deg,var(--line-2) 0 2px,transparent 2px 5px)}.ws .avkey i.st-off{background:transparent;border:1px solid var(--line)}
+.ws .avwk{display:grid;grid-template-columns:44px repeat(7,1fr);gap:5px;margin-top:5px;align-items:stretch}
+.ws .avwk small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700;text-align:center;padding:2px 0 4px}
+.ws .avwk .avm{font-size:10.5px;font-weight:700;color:var(--ink-3);text-transform:uppercase;letter-spacing:.06em;display:flex;align-items:center}
+.ws .avd{min-height:46px;border-radius:11px;border:1px solid var(--line);background:var(--paper);display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;padding:5px 7px;gap:2px;text-align:left;cursor:pointer;transition:transform .2s var(--ease),box-shadow .25s;position:relative;overflow:hidden;color:var(--ink)}
+.ws .avd b{font-size:12.5px;font-variant-numeric:tabular-nums}
+.ws .avd small{font-size:10px;color:var(--ink-3);line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.ws .avd:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 0 0 3px var(--sig-bg)}
+.ws .avd.sel{box-shadow:0 0 0 2px var(--sig)}
+.ws .avd.today b{color:var(--sig)}.ws .avd.today::before{content:"";position:absolute;top:6px;right:6px;width:6px;height:6px;border-radius:50%;background:var(--sig);box-shadow:0 0 8px var(--sig-glow)}
+.ws .avd.past{opacity:.35;cursor:default}
+.ws .avd.st-open{background:var(--sig-bg);border-color:var(--sig-rim)}
+.ws .avd.st-soon{background:var(--sig-bg);border-color:var(--sig-rim);opacity:.7}
+.ws .avd.st-booked{background:var(--sig);border-color:var(--sig);color:var(--sig-ink)}.ws .avd.st-booked small{color:var(--sig-ink);opacity:.8}
+.ws .avd.st-held{border:1.5px dashed var(--sig);background:transparent}.ws .avd.st-held small{color:var(--sig)}
+.ws .avd.st-away{background:var(--line);border-color:transparent}
+.ws .avd.st-rest,.ws .avd.st-travel,.ws .avd.st-full,.ws .avd.st-closed{background:repeating-linear-gradient(135deg,var(--line) 0 3px,transparent 3px 8px);border-color:var(--line)}
+.ws .avd.st-off{background:transparent;border-style:dashed;opacity:.55}
+.ws .avsel{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px;padding:10px 12px;border-radius:12px;background:var(--paper-2);border:1px solid var(--line);font-size:12.5px;color:var(--ink-3)}
+.ws .avsel b{color:var(--ink)}.ws .avsel .avacts{margin-left:auto;display:flex;gap:6px}
+.ws .avsel2{height:30px;padding:0 26px 0 10px;border-radius:999px;border:1px solid var(--line-2);background:var(--paper-2) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 10px center;font-size:12.5px;font-weight:600;color:var(--ink);appearance:none;-webkit-appearance:none}
+.ws .avprev{margin-top:12px;padding:12px 14px;border-radius:12px;background:var(--sig-bg);border:1px solid var(--sig-rim);display:flex;flex-direction:column;gap:3px}
+.ws .avprev small{font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}
+.ws .avprev b{font-size:14px}.ws .avprev span{font-size:12px;color:var(--ink-2)}
+.ws .feedurl code{display:block;padding:12px 14px;border-radius:12px;background:var(--paper-2);border:1px solid var(--line-2);font-size:12.5px;word-break:break-all;margin-bottom:14px}
+.ws .feedhow{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:12.5px}.ws .feedhow b{white-space:nowrap}.ws .feedhow span{color:var(--ink-3)}
+@media (max-width:1100px){.ws .avwk{grid-template-columns:30px repeat(7,1fr)}.ws .avd small{display:none}}

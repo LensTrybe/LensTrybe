@@ -7,7 +7,8 @@ import { MOOD_NAMES } from '../../lib/stills'
 import { fmt } from '../../lib/format'
 import { useToast } from '../../components/Toast'
 import SiteRender from '../../components/SiteRender'
-import { useStore } from '../../lib/store'
+import { useStore, nice } from '../../lib/store'
+import { dayStatus, nextOpen } from '../../lib/avail'
 
 const SITE_PLANS = ['Expert', 'Elite']
 
@@ -18,7 +19,9 @@ export default function Creative() {
   const c = CREATIVES.find(x => x.id === id) || CREATIVES[0]
   const [tab, setTab] = useState(0); const [sel, setSel] = useState(14); const [msg, setMsg] = useState('')
   const [page, setPage] = useState('home')
-  const first = c.n.split(' ')[0], booked = [7, 8, 21, 28]
+  const first = c.n.split(' ')[0], live = c.id === 'mara'
+  const booked = live ? Array.from({ length: 30 }, (_, i) => i + 1).filter(d => dayStatus(s, '2026-11-' + String(d).padStart(2, '0')).st !== 'open') : [7, 8, 21, 28]
+  const A = s.avail, pubShow = live && A.pub?.show, nextSat = pubShow ? nextOpen(s, 1, { sat: true })[0] : null, nextAny = pubShow ? nextOpen(s, A.pub?.n || 3) : [], instant = live ? (A.pub?.instant || []) : []
   // Expert and Elite: the public profile is the creative's website, straight from their Website editor and brand kit.
   // Basic and Pro: the standard LensTrybe profile below.
   const mine = c.id === 'mara' && SITE_PLANS.includes(s.plan.name)
@@ -52,6 +55,8 @@ export default function Creative() {
         <aside className="enq lg" id="enq">
           <div className="fr">{c.pk[1][0]} from<br /><b>{fmt(c.pk[1][1])}</b> incl. GST</div>
           <div className="avail"><i />Responds in {c.resp}</div>
+          {pubShow && <div className="nextopen"><b>{nextSat ? 'Next open Saturday: ' + nice(nextSat) : 'Saturdays are booked out for now'}</b><span>{nextAny.length ? 'Also open ' + nextAny.map(d => nice(d, { weekday: 'short' })).join(', ') : ''}</span></div>}
+          {instant.length > 0 && <div className="instant"><Icon name="spark" size={13} />Book {instant.map(k => k.toLowerCase()).join(' and ')} instantly, no enquiry needed</div>}
           <div><p className="eb g" style={{ marginBottom: 8 }}>November 2026</p>
             <div className="mcal">{['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => <span key={'h' + i} className="h">{d}</span>)}{Array.from({ length: 6 }, (_, i) => <span key={'p' + i} className="h" />)}{Array.from({ length: 30 }, (_, i) => { const d = i + 1; const x = booked.includes(d); return <span key={d} className={(x ? 'x' : '') + (sel === d ? ' sel' : '')} onClick={() => { if (!x) { setSel(d); toast(`${d} Nov selected`) } }}>{d}</span> })}</div></div>
           <div className="field"><label htmlFor="e-type">Job type</label><select id="e-type">{c.pk.map(([n]) => <option key={n}>{n}</option>)}<option>Something else</option></select></div>
