@@ -3,6 +3,7 @@ import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../backend/AuthContext'
 import { supabase } from '../backend/supabaseClient'
 import { LIVE } from '../lib/mode'
+import PendingDeletion from '../pages/app/PendingDeletion'
 
 // Route guards for live mode. Demo has nobody signed in and everything open, so the guards pass.
 // A signed-out visitor is sent to log in and comes back to where they were afterwards.
@@ -25,6 +26,7 @@ export function RequireCreative({ children }) {
   if (!user) { remember(pathname); return <Navigate to="/login" replace /> }
   if (!profile && clientAccount) return <Navigate to="/portal" replace />
   if (!profile) return <Navigate to="/join" replace />
+  if (profile.pending_deletion) return <PendingDeletion />
   return children
 }
 
@@ -35,5 +37,6 @@ export function RequireClient({ children }) {
   if (!user) { remember(pathname); return <Navigate to="/login" replace /> }
   if (profile && !clientAccount) return <Navigate to="/app/today" replace />
   if (!clientAccount) return <Navigate to="/join/client" replace />
+  if (clientAccount.pending_deletion) return <PendingDeletion />
   return children
 }

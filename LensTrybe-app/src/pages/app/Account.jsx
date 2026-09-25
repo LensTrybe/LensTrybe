@@ -8,11 +8,17 @@ import { TODAY, nice, iso } from '../../lib/store'
 import { MOOD_NAMES } from '../../lib/stills'
 import SetupCard from './Setup'
 import { completeness } from '../../lib/complete'
+import DeleteAccount from './DeleteAccount'
+import { useAuth } from '../../backend/AuthContext'
+import { LIVE } from '../../lib/mode'
+import { changeEmail, downloadMyData, newsletterStatus, sendPasswordReset, setNewsletter } from '../../lib/account'
+import { signOut } from '../../lib/auth'
+import { useNavigate } from 'react-router-dom'
 
 const Tiles = ({ t }) => <div className="s12"><div className="kp">{t.map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 const Head = ({ h, p, children }) => <div className="vh"><div><h1>{h}</h1><p>{p}</p></div><div className="acts">{children}</div></div>
 const Sw = ({ on, set }) => <span className={'sw2' + (on ? ' on' : '')} role="switch" aria-checked={!!on} onClick={set}><i /></span>
-const Fld = ({ l, v, set, area, type = 'text' }) => <label className="bf"><span>{l}</span>{area ? <textarea className="ta" rows={3} value={v} onChange={e => set(e.target.value)} /> : <input type={type} value={v} onChange={e => set(e.target.value)} />}</label>
+const Fld = ({ l, v, set, area, type = 'text', readOnly }) => <label className="bf"><span>{l}</span>{area ? <textarea className="ta" rows={3} value={v} onChange={e => set(e.target.value)} /> : <input type={type} readOnly={readOnly} style={readOnly ? { opacity: .7 } : undefined} value={v} onChange={e => set(e.target.value)} />}</label>
 const read = (k, d) => { try { const v = localStorage.getItem(k); return v === null ? d : v === '1' } catch { return d } }
 
 /* Edit profile: what clients see on lenstrybe.com. Edit once, the website follows. */
@@ -184,7 +190,12 @@ export function Founding() {
 /* Settings: account, notifications, calendar sync and integrations. */
 export function Settings() {
   const F = useFlows(); const { s, toast } = F; const S = s.settings
+  const auth = useAuth(); const nav = useNavigate(); const email = LIVE ? (auth.user?.email || '') : S.email
   const [acc, setAcc] = useState({ email: S.email, phone: S.phone, biz: S.biz, abn: S.abn }), [dirty, setDirty] = useState(false)
+  const [delOpen, setDelOpen] = useState(false), [news, setNews] = useState(null)
+  useEffect(() => { let on = true; newsletterStatus().then(d => on && setNews(!!d.subscribed)).catch(() => on && setNews(false)); return () => { on = false } }, [])
+  const toggleNews = async () => { const next = !news; setNews(next); const r = await setNewsletter(next); if (r.error) { setNews(!next); toast(r.error) } else toast(next ? "You're on The Trybe Edit." : 'Unsubscribed. Emails about your own account still arrive.') }
+  const changeEmailSheet = () => F.open({ title: 'Change email', sub: 'A link goes to both addresses. The change lands once both are clicked.', cta: 'Send the links', center: true, fields: [{ k: 'cur', l: 'Current email', type: 'email', required: true, placeholder: email }, { k: 'next', l: 'New email', type: 'email', required: true }], submit: async v => { const r = await changeEmail(v.cur, v.next, email); if (r.error) { toast(r.error); return false } toast('Links sent to ' + v.cur + ' and ' + v.next + '. Click both to finish.') } })
   const [dark, setDark] = useState(() => read('lt-dark', true)), [dock, setDock] = useState(() => read('lt-dock', true))
   const set = k => v => { setAcc(a => ({ ...a, [k]: v })); setDirty(true) }
   const save = () => { F.patch('settings', acc); setDirty(false); toast('Saved.') }
@@ -193,22 +204,22 @@ export function Settings() {
   const DESC = { 'Google Calendar': 'Synced · ' + S.email, Xero: 'Synced nightly', Stripe: 'Card payments · payouts daily', Instagram: 'Connected', TikTok: 'Not connected', Dropbox: 'Not connected' }
   const connect = a => F.open({ title: 'Connect ' + a, sub: a + ' opens in a new tab to sign in. Come back here when it is done.', cta: 'Connect', body: <>{a === 'TikTok' ? 'Posts from the content calendar go to TikTok too.' : a === 'Dropbox' ? 'Galleries back up to a Dropbox folder as they upload.' : 'Two-way sync.'}</>, submit: () => { F.patch('settings', { ints: { ...S.ints, [a]: 1 } }); toast(a + ' connected.') } })
   const manage = a => F.open({ title: a, cta: 'Save', fields: [{ k: 'on', l: 'Connected', type: 'toggle', value: true, hint: 'Off disconnects it' }, ...(a === 'Google Calendar' ? [{ k: 'twoway', l: 'Two-way sync', type: 'toggle', value: true, hint: 'Busy time in Google blocks your LensTrybe calendar' }] : a === 'Xero' ? [{ k: 'nightly', l: 'Sync nightly', type: 'toggle', value: true }] : [])], submit: v => { if (!v.on) { F.patch('settings', { ints: { ...S.ints, [a]: 0 } }); toast(a + ' disconnected.') } else toast('Saved.') } })
-  const password = () => F.confirm({ title: 'Change password', body: <>A reset link goes to <b>{S.email}</b>. It works for one hour.</>, cta: 'Send the link', onYes: () => toast('Reset link sent to ' + S.email + '.') })
+  const password = () => F.confirm({ title: 'Change password', body: <>A reset link goes to <b>{email}</b>. It works for one hour, once.</>, cta: 'Send the link', onYes: async () => { const r = await sendPasswordReset(email); toast(r.error || 'Reset link sent to ' + email + '.') } })
   const twofa = () => F.open({ title: 'Two-factor', sub: 'On, with an authenticator app.', cta: 'Save', fields: [{ k: 'on', l: 'Two-factor on', type: 'toggle', value: S.twofa !== false }, { k: 'codes', l: 'Show backup codes', type: 'toggle', value: false }], submit: v => { F.patch('settings', { twofa: v.on }); toast(v.on ? 'Two-factor on.' : 'Two-factor off. We recommend keeping it on.') } })
-  const exportAll = () => { const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(s, null, 2)], { type: 'application/json' })); a.download = 'lenstrybe-export-' + TODAY + '.json'; a.click(); toast('Exported everything as JSON.') }
-  const del = () => F.open({ title: 'Delete your account', sub: 'Everything goes in 30 days: clients, threads, invoices, galleries. Type DELETE to confirm.', cta: 'Delete account', danger: true, fields: [{ k: 'c', l: 'Type DELETE', required: true }], submit: v => { if (v.c !== 'DELETE') { toast('Type DELETE in capitals to confirm.'); return false } toast('Confirmation email sent to ' + S.email + '. Nothing happens until you click it.') } })
+  const exportAll = async () => { try { await downloadMyData(s); toast(LIVE ? 'Your download has started: a ZIP of everything in the account.' : 'Exported everything as JSON.') } catch (e) { toast(e.message) } }
+  const del = () => setDelOpen(true)
   return (
     <section className="view">
       <Head h="Settings" p="Account, notifications, calendar sync and what's connected."><button className="btn g" onClick={F.resetAll}>Reset demo data</button><button className={'btn w' + (dirty ? '' : ' quiet')} onClick={save}>{dirty ? 'Save' : 'Saved'}</button></Head>
       <div className="grid">
         <div className="s6 side">
           <div className="card lg"><div className="h"><b>Account</b></div>
-            <div className="fields two"><Fld l="Email" v={acc.email} set={set('email')} type="email" /><Fld l="Phone" v={acc.phone} set={set('phone')} type="tel" /></div>
+            <div className="fields two">{LIVE ? <Fld l="Email" v={email} set={() => {}} type="email" readOnly /> : <Fld l="Email" v={acc.email} set={set('email')} type="email" />}<Fld l="Phone" v={acc.phone} set={set('phone')} type="tel" /></div>
             <div className="fields two"><Fld l="Business name" v={acc.biz} set={set('biz')} /><Fld l="ABN" v={acc.abn} set={set('abn')} /></div>
-            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}><button className="btn g sm" onClick={password}>Change password</button><button className="btn g sm" onClick={twofa}>Two-factor · {S.twofa === false ? 'off' : 'on'}</button></div>
+            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}><button className="btn g sm" onClick={changeEmailSheet}>Change email</button><button className="btn g sm" onClick={password}>Change password</button><button className="btn g sm" onClick={twofa}>Two-factor · {S.twofa === false ? 'off' : 'on'}</button></div>
           </div>
           <div className="card lg"><div className="h"><b>Notifications</b></div>
-            <div className="brows one">{[['enq', 'New enquiry', 'Push and email, straight away'], ['pay', 'Payment received', 'Push'], ['lumi', 'Lumi needs a yes', 'Push, batched at 7 am and 5 pm'], ['week', 'Weekly summary', 'Email, Monday 7 am'], ['mkt', 'LensTrybe news', 'Email, monthly']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span><Sw on={S.notif[k]} set={() => F.patch('settings', { notif: { ...S.notif, [k]: S.notif[k] ? 0 : 1 } })} /></label>)}</div>
+            <div className="brows one">{[['enq', 'New enquiry', 'Push and email, straight away'], ['pay', 'Payment received', 'Push'], ['lumi', 'Lumi needs a yes', 'Push, batched at 7 am and 5 pm'], ['week', 'Weekly summary', 'Email, Monday 7 am'], ['mkt', 'The Trybe Edit', 'The newsletter and occasional LensTrybe news']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span>{k === 'mkt' ? <Sw on={!!news} set={toggleNews} /> : <Sw on={S.notif[k]} set={() => F.patch('settings', { notif: { ...S.notif, [k]: S.notif[k] ? 0 : 1 } })} />}</label>)}</div>
           </div>
         </div>
         <div className="s6 side">
@@ -222,7 +233,8 @@ export function Settings() {
               <label className="brow"><span>Draft the deposit invoice when a quote is accepted<small>It waits in Invoicing; nothing is sent until you say</small></span><Sw on={S.autoDep !== false} set={() => F.patch('settings', { autoDep: S.autoDep === false })} /></label>
             </div>
           </div>
-          <div className="card lg"><div className="h"><b>Your data</b></div><p className="note2">Export everything: clients, threads, invoices, galleries. Or delete the account; data is gone in 30 days.</p><div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 10 }}><button className="btn g sm" onClick={exportAll}>Export</button><button className="lnk" onClick={del}>Delete account</button></div></div>
+          <div className="card lg"><div className="h"><b>Your data</b></div><p className="note2">Export everything: clients, threads, invoices, galleries. Or delete the account; data is gone in 30 days.</p><div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 10 }}><button className="btn g sm" onClick={exportAll}>Download my data</button><button className="lnk" onClick={del}>Delete account</button></div></div>
+          {delOpen && <DeleteAccount kind="creative" demoStore={s} onClose={() => setDelOpen(false)} onDeleted={async () => { setDelOpen(false); if (LIVE) { await auth.fetchUserData(auth.user.id) } else toast('Demo: the account would now be scheduled for deletion.') }} />}
         </div>
       </div>
     </section>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
+import { resubscribeToken, unsubscribeToken } from '../../lib/account'
 
 // Email preferences. With a token (the link at the bottom of every newsletter) the address is
 // unsubscribed on arrival, no login, with one click to undo. Without one it explains where the
@@ -8,8 +9,8 @@ import Icon from '../../components/Icon'
 export default function Unsubscribe() {
   const { token } = useParams(); const nav = useNavigate()
   const [st, setSt] = useState(token ? 'working' : 'info')
-  const [only, setOnly] = useState('all')
-  useEffect(() => { if (!token) return setSt('info'); setSt('working'); const t = setTimeout(() => setSt(token === 'bad' ? 'error' : 'done'), 700); return () => clearTimeout(t) }, [token])
+  useEffect(() => { if (!token) return setSt('info'); let on = true; setSt('working'); unsubscribeToken(token).then(() => on && setSt('done')).catch(() => on && setSt('error')); return () => { on = false } }, [token])
+  const back = async () => { try { await resubscribeToken(token); setSt('back') } catch { setSt('error') } }
   return (
     <main className="page"><div className="wrap unsw">
       <div className="lg unsc">
@@ -18,8 +19,7 @@ export default function Unsubscribe() {
         {st === 'done' && <>
           <h1>You're unsubscribed.</h1>
           <p>No more Trybe Edit or LensTrybe news to this address. Emails about your own bookings, quotes, invoices and account still arrive; those are the job, not marketing.</p>
-          <div className="unsopt">{[['all', 'Everything', 'No newsletter, no product news, no launch notes.'], ['news', 'Just the product news', 'Keep The Trybe Edit, stop the rest.'], ['edit', 'Just The Trybe Edit', 'Keep product news, stop the newsletter.']].map(([k, t, d]) => <button key={k} type="button" className={only === k ? 'on' : ''} onClick={() => setOnly(k)}><i /><div><b>{t}</b><span>{d}</span></div></button>)}</div>
-          <div className="row"><button className="btn g" onClick={() => setSt('back')}>Unsubscribed by mistake? Put me back</button><Link className="btn p" to="/">Back to LensTrybe <Icon name="arrow" size={14} /></Link></div>
+          <div className="row"><button className="btn g" onClick={back}>Unsubscribed by mistake? Put me back</button><Link className="btn p" to="/">Back to LensTrybe <Icon name="arrow" size={14} /></Link></div>
         </>}
         {st === 'back' && <>
           <h1>Welcome back.</h1>

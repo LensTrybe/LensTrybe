@@ -26,7 +26,9 @@ export function SheetProvider({ children }) {
     const miss = (sh.fields || []).filter(f => !f.when || f.when(v)).find(f => f.required && (v[f.k] === '' || v[f.k] == null || (Array.isArray(v[f.k]) && !v[f.k].length)))
     if (miss) { setErr(miss.k); first.current?.form?.querySelector(`[name="${miss.k}"]`)?.focus(); return }
     const out = {}; (sh.fields || []).forEach(f => { out[f.k] = ['number', 'money'].includes(f.type) ? Number(v[f.k] || 0) : v[f.k] })
-    const r = sh.submit?.(out); if (r !== false) close()
+    const r = sh.submit?.(out)
+    // an async submit keeps the sheet open until it resolves; resolving false keeps it open (an error the form should show)
+    if (r && typeof r.then === 'function') r.then(x => { if (x !== false) close() }); else if (r !== false) close()
   }
   const field = (f, i) => {
     const id = 'sf-' + f.k, val = v[f.k], bad = err === f.k, ref = i === 0 ? first : undefined
