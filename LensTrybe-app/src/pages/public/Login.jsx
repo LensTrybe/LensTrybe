@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
-import { homeFor, isEmail, signIn, signInWithGoogle } from '../../lib/auth'
+import { homeFor, isEmail, signIn, signInWithGoogle, signOut } from '../../lib/auth'
+import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 
 // Log in: the lens behind a single pane of dark glass. Creatives land in the workspace, clients in
@@ -12,6 +13,7 @@ export default function Login() {
   const nav = useNavigate()
   const cv = useRef(null)
   const [who, setWho] = useState('creative')
+  const auth = useAuth(); const already = LIVE && auth.user ? { email: auth.user.email, kind: auth.profile ? 'creative' : auth.clientAccount ? 'client' : null } : null
   const [email, setEmail] = useState(''), [pw, setPw] = useState(''), [show, setShow] = useState(false), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const next = (() => { try { const n = sessionStorage.getItem('returnTo') || ''; return n.startsWith('/') && !n.startsWith('//') ? n : '' } catch { return '' } })()
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
@@ -39,7 +41,8 @@ export default function Login() {
           <button type="button" role="tab" aria-selected={who === 'client'} className={who === 'client' ? 'on' : ''} onClick={() => setWho('client')}>I'm a client</button>
         </div>
         <p className="hint">{who === 'creative' ? 'Straight to your workspace: today, threads, money and Lumi.' : 'Straight to your portal: your booking, documents and files, one link.'}</p>
-        <form onSubmit={go} className="lform">
+        {already && <div className="lalready"><b>You're already logged in as {already.email}.</b><div><button type="button" className="btn w" onClick={() => nav(homeFor(already.kind))}>{already.kind === 'client' ? 'Open my portal' : 'Open my workspace'} <Icon name="arrow" size={14} /></button><button type="button" className="alt" onClick={async () => { await signOut(); setErr('') }}>Log out and use another account</button></div></div>}
+        <form onSubmit={go} className="lform" style={already ? { opacity: .45, pointerEvents: 'none' } : undefined}>
           <label className="lf"><span>Email</span><input type="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }} placeholder="you@studio.com.au" autoComplete="email" inputMode="email" autoCapitalize="none" /></label>
           <label className="lf"><span>Password <span><button type="button" className="forgot" onClick={() => setShow(v => !v)} style={{ marginRight: 10 }}>{show ? 'Hide' : 'Show'}</button><Link to="/forgot-password" className="forgot">Forgot it?</Link></span></span><input type={show ? 'text' : 'password'} value={pw} onChange={e => { setPw(e.target.value); setErr('') }} placeholder="Your password" autoComplete="current-password" /></label>
           {err && <p className="jerr">{err}</p>}

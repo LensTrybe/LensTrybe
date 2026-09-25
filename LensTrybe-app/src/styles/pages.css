@@ -899,3 +899,7 @@
 .pub .chrow span{font-size:13px;color:var(--ink-2)}
 .pub .chrow em{font-style:normal;font-size:12px;font-weight:600;color:var(--green-t)}
 .pub .chw .fine a{color:var(--green-t);font-weight:600}
+.pub .lalready{display:flex;flex-direction:column;gap:10px;padding:14px;border-radius:16px;background:rgba(141,243,214,.1);border:1px solid rgba(141,243,214,.35)}
+.pub .lalready b{font-size:13.5px;color:#fff}
+.pub .lalready>div{display:flex;flex-direction:column;gap:6px}
+.pub .lalready .alt{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);padding:6px}

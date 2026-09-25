@@ -6,6 +6,9 @@ import Icon from '../../components/Icon'
 import { SheetProvider, useSheet } from '../../components/Sheet'
 import { useStore, nice } from '../../lib/store'
 import { useSpecular } from '../../lib/useSpecular'
+import { signOut } from '../../lib/auth'
+import { useAuth } from '../../backend/AuthContext'
+import { LIVE } from '../../lib/mode'
 import Today from './Today'
 import Threads from './Threads'
 import Thread from './Thread'
@@ -93,7 +96,7 @@ export default function Shell() {
           {GROUPS.map(group)}
           <div className="sep" />
           <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && <span className="dot" aria-hidden="true" />}</NavLink>
-          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{s.plan.name}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button></div>
+          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{s.plan.name}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button><button className="tg" onClick={async () => { await signOut(); nav('/login', { replace: true }) }} aria-label="Log out" title="Log out"><Icon name="out" size={15} /></button></div>
         </aside>
         <header className="top">
           <CommandBar />
