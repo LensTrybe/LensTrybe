@@ -5,6 +5,7 @@ import Logo from '../../components/Logo'
 import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { useStore, TODAY } from '../../lib/store'
+import { outside, waitlistTo } from '../../lib/region'
 import '../../styles/public.css'
 import '../../styles/pages.css'
 import './onboard.css'
@@ -19,7 +20,7 @@ export default function Onboard() {
   const first = p.get('first') || '', last = p.get('last') || '', email = p.get('email') || '', disc0 = p.get('disc') || 'Photographer', code = (p.get('code') || p.get('founding') || '').toUpperCase()
   const founding = /^LT-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code)
   const [plan, setPlan] = useState(founding ? 'Expert' : p.get('plan') || 'Pro'), [agree, setAgree] = useState(false), [err, setErr] = useState('')
-  useEffect(() => { if (!first || !email) nav('/join' + (code ? '?code=' + encodeURIComponent(code) : ''), { replace: true }) }, [first, email, code, nav])
+  useEffect(() => { if (outside()) return nav(waitlistTo(), { replace: true }); if (!first || !email) nav('/join' + (code ? '?code=' + encodeURIComponent(code) : ''), { replace: true }) }, [first, email, code, nav])
   const name = (first + ' ' + last).trim()
   const go = () => {
     if (!agree) return setErr('Have a read of the terms first, then tick the box.')

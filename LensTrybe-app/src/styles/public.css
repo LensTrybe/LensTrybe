@@ -605,3 +605,8 @@
 .pub .postjob:hover{color:#fff}
 .pub .postjob svg{transition:transform .25s}.pub .postjob:hover svg{transform:translateX(3px)}
 .pub .ask.live .postjob{margin-top:6px;font-size:12.5px}
+
+/* Area bar: shown to visitors outside the launch area on every page but the waitlist */
+.pub .areabar{position:fixed;left:0;right:0;bottom:0;z-index:49;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:10px clamp(16px,3vw,36px);background:rgba(10,10,15,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:13px;line-height:1.45}
+.pub .areabar a{flex:none;display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;background:var(--neon);color:#0a0a0f;font-weight:600;font-size:12.5px;text-decoration:none}
+@media (max-width:640px){.pub .areabar{font-size:12px;gap:8px;padding:10px 16px}}

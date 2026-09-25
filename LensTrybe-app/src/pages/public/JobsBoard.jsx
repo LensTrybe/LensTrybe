@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams, Navigate } from 'react-router-dom'
+import { outside, waitlistTo } from '../../lib/region'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
 import Icon from '../../components/Icon'
@@ -19,6 +20,7 @@ const ago = d => { const n = daysBetween(d, TODAY); return n <= 0 ? 'today' : n 
 
 export default function JobsBoard() {
   const { id } = useParams()
+  if (!id && outside()) return <Navigate to={waitlistTo('client')} replace />
   return id ? <ClientJob id={id} /> : <PostJob />
 }
 

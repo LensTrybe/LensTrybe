@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
+import { outside, waitlistTo } from '../../lib/region'
 
 const WHY = {
   creative: [
@@ -19,6 +20,7 @@ const WHY = {
 // Join: the lens, the reasons on the left, one pane of dark glass on the right.
 export default function Join() {
   const nav = useNavigate(); const [p] = useSearchParams(); const { pathname } = useLocation()
+  if (outside()) return <Navigate to={waitlistTo(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : '')} replace />
   const cv = useRef(null)
   const [kind, setKind] = useState(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : 'creative')
   const [code, setCode] = useState(p.get('founding') || p.get('code') ? (p.get('founding') || p.get('code')).toUpperCase() : null)

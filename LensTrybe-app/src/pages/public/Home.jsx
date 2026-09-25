@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { inSEQ, isOutside, regionCookie } from '../../lib/region'
+import { outside, waitlistTo } from '../../lib/region'
 import Ask from './Ask'
 import ProfilePanel from './ProfilePanel'
 
@@ -9,8 +9,7 @@ import ProfilePanel from './ProfilePanel'
 // in-app links to / do not slip past the area check.
 export default function Home() {
   const [open, setOpen] = useState(null)
-  const region = regionCookie()
-  if (!inSEQ() && isOutside(region)) return <Navigate to={'/waitlist?region=' + encodeURIComponent(region)} replace />
+  if (outside()) return <Navigate to={waitlistTo()} replace />
   return (
     <>
       <Ask onOpen={setOpen} />
