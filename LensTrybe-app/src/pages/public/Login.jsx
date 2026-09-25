@@ -26,7 +26,7 @@ export default function Login() {
         {!magic ? (
           <form onSubmit={go} className="lform">
             <label className="lf"><span>Email</span><input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@studio.com.au" autoComplete="email" /></label>
-            <label className="lf"><span>Password <Link to="/login" className="forgot" onClick={e => { e.preventDefault(); setMagic(true) }}>Forgot it?</Link></span><input type="password" placeholder="••••••••" autoComplete="current-password" /></label>
+            <label className="lf"><span>Password <Link to="/forgot-password" className="forgot">Forgot it?</Link></span><input type="password" placeholder="••••••••" autoComplete="current-password" /></label>
             <button type="submit" className="btn w lg">Log in <Icon name="arrow" size={14} /></button>
             <button type="button" className="alt" onClick={() => setMagic(true)}>Email me a magic link instead</button>
           </form>
@@ -38,7 +38,7 @@ export default function Login() {
             <button type="button" className="alt" onClick={() => setMagic(false)}>Use a password instead</button>
           </form>
         )}
-        <p className="lfoot">New here? <Link to="/join">Join as a creative</Link> or <Link to="/join">book as a client</Link>. Demo mode: any details open the preview.</p>
+        <p className="lfoot">New here? <Link to="/join">Join as a creative</Link> or <Link to="/join/client">make a client account</Link>. Demo mode: any details open the preview.</p>
       </div>
     </section>
   )

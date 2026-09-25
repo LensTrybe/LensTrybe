@@ -13,7 +13,7 @@ import '../../styles/pages.css'
 export default function PublicLayout() {
   const { pathname } = useLocation()
   const home = pathname === '/'
-  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/support', '/upcoming'].includes(pathname) || pathname.startsWith('/edit')
+  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/waitlist', '/support', '/upcoming'].includes(pathname) || pathname.startsWith('/edit')
   const [lite, setLite] = useState(!darkTop)
   const [menu, setMenu] = useState(false)
   useEffect(() => {

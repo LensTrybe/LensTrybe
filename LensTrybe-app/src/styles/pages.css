@@ -800,3 +800,83 @@
 .pub .nextopen b{font-size:13px;color:var(--ink)}.pub .nextopen span{font-size:12px;color:var(--ink-2)}
 .pub .instant{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--green-t);font-weight:600;margin-bottom:12px}
 .pub .jerr{font-size:13px;color:#ffb3c6;background:rgba(255,45,120,.12);border:1px solid rgba(255,45,120,.3);padding:9px 12px;border-radius:12px;margin:0}
+
+/* ============================================================
+   FOUNDING. The offer, the counter, the three asks, the application.
+   ============================================================ */
+.pub .fdp .fdhero{max-width:760px;margin:0 auto 28px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:16px}
+.pub .fdp .fdhero h1{font-size:clamp(38px,5.4vw,72px);font-weight:500;letter-spacing:-.045em;line-height:1;color:var(--ink)}
+.pub .fdp .fdhero h1 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink-3)}
+.pub .fdp .fdhero .sub{color:var(--ink-2);font-size:clamp(15px,1.25vw,18px);max-width:60ch}
+.pub .fdp .ctas{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:4px}
+.pub .fdcount{width:min(360px,100%);border-radius:20px;padding:16px 20px;display:flex;flex-direction:column;gap:10px;text-align:left}
+.pub .fdcount .n{display:flex;align-items:baseline;gap:9px;justify-content:center}
+.pub .fdcount .n b{font-size:34px;font-weight:700;letter-spacing:-.03em;color:var(--green-t);font-variant-numeric:tabular-nums}
+.pub .fdcount .n span{font-size:14px;color:var(--ink-2)}
+.pub .fdcount .bar{height:6px;border-radius:999px;background:rgba(20,17,26,.09);overflow:hidden}
+.pub .fdcount .bar i{display:block;height:100%;background:var(--green);border-radius:inherit;transition:width 1s var(--ease)}
+.pub .fdcount small{font-size:11.5px;color:var(--ink-3);line-height:1.45;text-align:center}
+.pub .fdredeem{border-radius:22px;padding:18px 22px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;margin-bottom:56px}
+.pub .fdredeem>div:first-child{display:flex;flex-direction:column;gap:4px}
+.pub .fdredeem b{font-size:16px;font-weight:600}
+.pub .fdredeem span{font-size:13.5px;color:var(--ink-2);line-height:1.5;max-width:60ch}
+.pub .fdcode{display:flex;gap:8px}
+.pub .fdcode input{width:200px;height:44px;padding:0 14px;border-radius:12px;border:1px solid var(--line-2);background:rgba(255,255,255,.7);font-size:15px;font-family:var(--mono,ui-monospace,monospace);letter-spacing:.06em;text-transform:uppercase;outline:none}
+.pub .fdcode input:focus{border-color:var(--ink)}
+.pub .fderr{grid-column:1/-1;font-size:13px;color:var(--pink-t);background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.25);padding:9px 12px;border-radius:12px;margin:0}
+.pub .fdsec{margin-bottom:56px}
+.pub .fdsec h2,.pub .fdah h2{font-size:clamp(26px,3vw,34px);font-weight:600;letter-spacing:-.03em;line-height:1.1;margin-bottom:8px;color:var(--ink)}
+.pub .fdsec .lede,.pub .fdah .lede{color:var(--ink-2);font-size:15.5px;max-width:64ch;margin-bottom:20px;line-height:1.55}
+.pub .fdgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.pub .fdgrid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.pub .fdcard{border-radius:18px;padding:20px;display:flex;flex-direction:column;gap:8px}
+.pub .fdcard i{font-style:normal;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;background:var(--green);color:var(--green-ink);margin-bottom:4px}
+.pub .fdcard b{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.pub .fdcard p{font-size:14px;color:var(--ink-2);line-height:1.55}
+.pub .fdsec .fine{margin-top:14px;font-size:13.5px;max-width:68ch}
+.pub .fdsec .fine a,.pub .fdform .fine a{color:var(--green-t);font-weight:600}
+.pub .fdapply{max-width:680px;margin:0 auto;scroll-margin-top:100px}
+.pub .fdform{border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:14px}
+.pub .fdform .field label small{font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-3);margin-left:6px}
+.pub .fdform .row,.pub .fdsent .row{display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.pub .fdform .row .fine{flex:1;min-width:200px}
+.pub .fdform textarea{resize:vertical;min-height:84px;font-family:inherit}
+.pub .fdsent{border-radius:24px;padding:28px;display:flex;flex-direction:column;gap:10px;align-items:flex-start}
+.pub .fdsent i{width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:var(--green-ink)}
+.pub .fdsent b{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.pub .fdsent p{font-size:15px;color:var(--ink-2);line-height:1.55}
+.pub .fdsent .row{margin-top:8px}
+@media (max-width:900px){.pub .fdgrid,.pub .fdgrid.three{grid-template-columns:1fr}.pub .fdredeem{grid-template-columns:1fr}.pub .fdcode input{flex:1;width:auto}}
+
+/* ============================================================
+   WAITLIST. Countdown on the left, the pane on the right.
+   ============================================================ */
+.pub .wlcount{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px;border-radius:20px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);width:min(420px,100%)}
+.pub .wlcount div{display:flex;flex-direction:column;align-items:center;padding:12px 6px;border-radius:14px}
+.pub .wlcount b{font-size:clamp(26px,3vw,36px);font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1;color:#fff}
+.pub .wlcount span{font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);margin-top:6px}
+.pub .wl .lpane h1{margin-bottom:2px}
+.pub .lf input[readonly]{font-family:var(--mono,ui-monospace,monospace);letter-spacing:.08em;color:var(--neon-t)}
+.pub .lform .btn.soc{text-decoration:none}
+.pub .ltick{display:flex;gap:10px;align-items:flex-start;font-size:12.5px;color:rgba(255,255,255,.62);line-height:1.5;cursor:pointer;padding:2px 0}
+.pub .ltick input{margin-top:2px;width:16px;height:16px;accent-color:var(--neon)}
+.pub .lform .alt.left{text-align:left}
+
+/* ============================================================
+   UNSUBSCRIBE. One card, four states.
+   ============================================================ */
+.pub .unsw{max-width:640px}
+.pub .unsc{border-radius:26px;padding:clamp(24px,3vw,36px);display:flex;flex-direction:column;gap:14px}
+.pub .unsc h1{font-size:clamp(28px,3.4vw,40px);font-weight:600;letter-spacing:-.035em;line-height:1.05;color:var(--ink)}
+.pub .unsc>p{font-size:15px;color:var(--ink-2);line-height:1.55}
+.pub .unsc .row{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.pub .unsc .fine{font-size:12.5px}
+.pub .unsopt{display:grid;gap:8px}
+.pub .unsopt button{display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 14px;border-radius:14px;border:1px solid var(--line-2);background:rgba(255,255,255,.5);transition:all .2s}
+.pub .unsopt button i{flex:none;width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-2);margin-top:2px;transition:all .2s}
+.pub .unsopt button.on{border-color:var(--green);background:rgba(141,243,214,.14)}
+.pub .unsopt button.on i{border-color:var(--green);background:var(--green);box-shadow:inset 0 0 0 3px #fff}
+.pub .unsopt b{display:block;font-size:14px;font-weight:600}
+.pub .unsopt span{font-size:12.5px;color:var(--ink-2)}
+.pub .dots::after{content:"…";animation:blink 1.2s steps(3) infinite}
+@keyframes blink{to{opacity:.2}}

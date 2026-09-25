@@ -12,6 +12,10 @@ import Pricing from './pages/public/Pricing'
 import Founding from './pages/public/Founding'
 import Join from './pages/public/Join'
 import Login from './pages/public/Login'
+import Reset from './pages/public/Reset'
+import CheckEmail from './pages/public/CheckEmail'
+import Waitlist from './pages/public/Waitlist'
+import Unsubscribe from './pages/public/Unsubscribe'
 import Upcoming from './pages/public/Upcoming'
 import Legal from './pages/public/Legal'
 import Support from './pages/public/Support'
@@ -41,7 +45,16 @@ export default function App() {
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/founding" element={<Founding />} />
           <Route path="/join" element={<Join />} />
+          <Route path="/join/creative" element={<Join />} />
+          <Route path="/join/client" element={<Join />} />
+          <Route path="/signup" element={<Navigate to="/join" replace />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<Reset />} />
+          <Route path="/reset-password" element={<Reset />} />
+          <Route path="/check-email" element={<CheckEmail />} />
+          <Route path="/waitlist" element={<Waitlist />} />
+          <Route path="/unsubscribe" element={<Unsubscribe />} />
+          <Route path="/unsubscribe/:token" element={<Unsubscribe />} />
           <Route path="/upcoming" element={<Upcoming />} />
           <Route path="/support" element={<Support />} />
           <Route path="/legal/:doc" element={<Legal />} />
