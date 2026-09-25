@@ -2,10 +2,13 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
+import { STATE_OF, claimSEQ, inSEQ, isOutside, regionCookie, regionName } from '../../lib/region'
 
-// The waitlist: the page the site pointed at before launch, kept for the next state to open in.
-// A countdown to the launch date, one pane to leave an email, and a share link afterwards.
-// Once the date passes it says so and sends people to Join instead of collecting names.
+// The waitlist, two jobs. Before 1 October it is the pre-launch page for South East Queensland:
+// a countdown, one pane to leave an email, a share link afterwards; once the date passes it sends
+// people to Join. For everyone outside the south east (the front door, middleware.js, sends them
+// here with ?region=) it is the list for their area, open until that area launches: the copy
+// names the place, the state is preselected, and a link lets anyone the geo got wrong through.
 export const LAUNCH = new Date('2026-10-01T09:00:00+10:00')
 const STATES = ['QLD', 'NSW', 'VIC', 'ACT', 'SA', 'WA', 'TAS', 'NT']
 const DISC = ['Photographer', 'Videographer', 'Both', 'Drone operator', 'Editor', 'Content creator']
@@ -20,11 +23,12 @@ export default function Waitlist() {
   const cv = useRef(null)
   const [now, setNow] = useState(() => Date.now())
   const [who, setWho] = useState(p.get('as') === 'client' ? 'client' : 'creative')
-  const [f, setF] = useState({ email: '', disc: '', st: '', ref: (p.get('ref') || '').toUpperCase() }), [err, setErr] = useState(''), [done, setDone] = useState(null), [copied, setCopied] = useState(false)
+  const region = (p.get('region') || (!inSEQ() ? regionCookie() : '') || '').toUpperCase(), outside = isOutside(region), place = regionName(region)
+  const [f, setF] = useState({ email: '', disc: '', st: STATE_OF[region] || '', ref: (p.get('ref') || '').toUpperCase() }), [err, setErr] = useState(''), [done, setDone] = useState(null), [copied, setCopied] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
   useEffect(() => { const t = setInterval(() => setNow(Date.now()), 1000); return () => clearInterval(t) }, [])
-  const ms = LAUNCH - now, open = ms <= 0
+  const ms = LAUNCH - now, open = ms <= 0 && !outside
   const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60, s = Math.floor(ms / 1000) % 60
   const go = e => {
     e.preventDefault()
@@ -39,10 +43,10 @@ export default function Waitlist() {
       <canvas className="gl" ref={cv} aria-hidden="true" />
       <div className="jgrid">
         <div className="jpitch">
-          <p className="eb">{open ? 'We are open' : 'Launching 1 October 2026'}</p>
-          <h1>{open ? <>The doors <em>are open.</em></> : who === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>The right person, <em>found in a sentence.</em></>}</h1>
-          <p className="sub">{open ? 'LensTrybe is live on the east coast, starting in South East Queensland. Creatives join in a minute; clients search free.' : 'A home for Australian photographers and videographers where you keep everything you earn. Leave an email and you are first through the door, with three months free on any paid plan.'}</p>
-          {!open && <div className="wlcount" aria-label="Time until launch">{[[d, 'days'], [h, 'hours'], [m, 'min'], [s, 'sec']].map(([v, l]) => <div key={l}><b>{two(v)}</b><span>{l}</span></div>)}</div>}
+          <p className="eb">{open ? 'We are open' : outside ? 'Opening area by area' : 'Launching 1 October 2026'}</p>
+          <h1>{open ? <>The doors <em>are open.</em></> : outside ? (region === 'INTL' ? <>Australia first, <em>then the world.</em></> : <>{place[0].toUpperCase() + place.slice(1)} <em>is next.</em></>) : who === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>The right person, <em>found in a sentence.</em></>}</h1>
+          <p className="sub">{open ? 'LensTrybe is live on the east coast, starting in South East Queensland. Creatives join in a minute; clients search free.' : outside ? (region === 'INTL' ? 'LensTrybe is built for Australian photographers and videographers and opens there first, starting in South East Queensland on 1 October. Leave an email and you hear the moment it goes wider.' : 'LensTrybe opens in South East Queensland on 1 October, then ' + place + ' as soon as enough creatives there have profiles ready. Leave an email: you count toward opening it, you are first in when it does, and you get three months free on any paid plan.') : 'A home for Australian photographers and videographers where you keep everything you earn. Leave an email and you are first through the door, with three months free on any paid plan.'}</p>
+          {!open && !outside && <div className="wlcount" aria-label="Time until launch">{[[d, 'days'], [h, 'hours'], [m, 'min'], [s, 'sec']].map(([v, l]) => <div key={l}><b>{two(v)}</b><span>{l}</span></div>)}</div>}
           <div className="why">{WHY[who].map(([t, d]) => <div key={t}><i><Icon name="check" size={13} /></i><div><b>{t}</b><span>{d}</span></div></div>)}</div>
         </div>
         <div className="lpane lg d">
@@ -52,7 +56,7 @@ export default function Waitlist() {
             <div className="lform"><Link className="btn w lg" to="/join">Join as a creative <Icon name="arrow" size={14} /></Link><Link className="btn soc" to="/creatives">Find a creative</Link></div>
           </> : done ? <>
             <p className="eb">You are on the list</p><h1>Number <em>{done.pos.toLocaleString()}.</em></h1>
-            <p className="hint">An invite lands at <b style={{ color: '#fff' }}>{done.email}</b> on launch morning with your code. Every friend who joins from your link moves you up fifty places.</p>
+            <p className="hint">{outside ? <>You are on the {place} list. An email lands at <b style={{ color: '#fff' }}>{done.email}</b> the day it opens, with your code. Every creative who joins from your link brings that day closer.</> : <>An invite lands at <b style={{ color: '#fff' }}>{done.email}</b> on launch morning with your code. Every friend who joins from your link moves you up fifty places.</>}</p>
             <div className="lform">
               <label className="lf"><span>Your code</span><input readOnly value={done.code} onFocus={e => e.target.select()} /></label>
               <button type="button" className="btn w lg" onClick={share}>{copied ? 'Copied' : 'Copy my invite link'} <Icon name="arrow" size={14} /></button>
@@ -71,11 +75,11 @@ export default function Waitlist() {
               </div>
               <label className="lf"><span>Referral or invite code <em className="opt">optional</em></span><input value={f.ref} onChange={e => u('ref', e.target.value.toUpperCase())} placeholder="LT-XXXX-XXXX" spellCheck={false} /></label>
               {err && <p className="jerr">{err}</p>}
-              <button type="submit" className="btn w lg">Put me on the list <Icon name="arrow" size={14} /></button>
+              <button type="submit" className="btn w lg">{outside && region !== 'INTL' ? 'Put me on the ' + (STATE_OF[region] || 'AU') + ' list' : 'Put me on the list'} <Icon name="arrow" size={14} /></button>
               <p className="tiny">By joining you agree to launch updates and The Trybe Edit. One click to leave. <Link to="/legal/privacy" style={{ color: 'var(--neon-t)', fontWeight: 600 }}>Privacy</Link>.</p>
             </form>
           </>}
-          <p className="lfoot">Have a founding code already? <Link to="/founding">Redeem it now</Link>. Already in? <Link to="/login">Log in</Link>.</p>
+          <p className="lfoot">{outside && <>In South East Queensland after all? <a href="/?seq=1" onClick={e => { e.preventDefault(); claimSEQ(); nav('/') }}>Go to the site</a>. </>}Have a founding code already? <Link to="/founding">Redeem it now</Link>. Already in? <Link to="/login">Log in</Link>.</p>
         </div>
       </div>
     </section>
