@@ -6,16 +6,20 @@ import { TODAY, nice, dow, parse, addDays } from '../../lib/store'
 import { fmt } from '../../lib/format'
 import { occurrences, line as evLine, ampm } from '../../lib/cal'
 import Chart from './Chart'
+import SetupCard from './Setup'
+import { completeness } from '../../lib/complete'
 
-const BRIEF = "One shoot today at 10 for Coastline Realty, three listings in Noosa Heads, leave by 9:20. Two quotes are waiting on you. Blackwood paid overnight, so nothing is overdue. Ruby and Sol enquired about March 2027 and a reply is drafted. And 23 November to 6 December is empty, which last year was four family sessions."
-const HI = /(One shoot today at 10|nothing is overdue|Ruby and Sol enquired|23 November to 6 December is empty)/
+const BRIEF0 = "One shoot today at 10 for Coastline Realty, three listings in Noosa Heads, leave by 9:20. Two quotes are waiting on you. Blackwood paid overnight, so nothing is overdue. Ruby and Sol enquired about March 2027 and a reply is drafted. And 23 November to 6 December is empty, which last year was four family sessions."
+const HI = /(One shoot today at 10|nothing is overdue|Ruby and Sol enquired|23 November to 6 December is empty|a photo, a line about you and one kind of work)/
 
 // Today: what is on, what needs a yes, and how the month is going. Everything here is one tap
 // from the thing itself, and every button changes a real record in the store.
 export default function Today() {
   const F = useFlows(); const { s, nav } = F
   const [txt, setTxt] = useState('')
-  useEffect(() => { let i = 0, t; const step = () => { if (i <= BRIEF.length) { setTxt(BRIEF.slice(0, i)); i += 3; t = setTimeout(step, 16) } }; step(); return () => clearTimeout(t) }, [])
+  const comp = completeness(s); const showSetup = !comp.complete && !s.setup?.hidden
+  const BRIEF = s.setup?.joined ? 'Welcome in, ' + s.profile.n.split(' ')[0] + '. Your workspace is open, with sample bookings, quotes and clients in it so you can see how everything fits together; they clear the moment your first real enquiry lands. Your profile goes live once it has a photo, a line about you and one kind of work. The checklist above walks you through it, and I will draft the bio from your answers.' : BRIEF0
+  useEffect(() => { let i = 0, t; const step = () => { if (i <= BRIEF.length) { setTxt(BRIEF.slice(0, i)); i += 3; t = setTimeout(step, 16) } }; step(); return () => clearTimeout(t) }, [BRIEF])
   const parts = txt.split(HI)
   const need = s.threads.filter(t => t.need)
   const h = new Date().getHours(), greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening'
@@ -50,6 +54,7 @@ export default function Today() {
       </div>
 
       <div className="grid">
+        {showSetup && <div className="s12"><SetupCard onHide={() => { F.patch('setup', { hidden: 1 }); F.toast('Hidden. It is always on Edit profile.') }} /></div>}
         <div className="card lg brief s12">
           <span className="lm" aria-hidden="true" />
           <div>

@@ -93,7 +93,7 @@ export default function Shell() {
           {GROUPS.map(group)}
           <div className="sep" />
           <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && <span className="dot" aria-hidden="true" />}</NavLink>
-          <div className="me lg"><span className="av" /><div><b>Mara Okafor</b><small>Expert · Founding</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button></div>
+          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{s.plan.name}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button></div>
         </aside>
         <header className="top">
           <CommandBar />

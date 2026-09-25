@@ -26,3 +26,29 @@
 .ob .prevcard .in{position:absolute;inset:auto 0 0 0;padding:18px;background:linear-gradient(0deg,rgba(0,0,0,.75),transparent);display:flex;flex-direction:column;gap:4px}
 .ob .prevcard .in b{font-size:20px}.ob .prevcard .in small{color:rgba(255,255,255,.75)}.ob .prevcard .in .st{width:max-content;margin-top:6px}
 @media (max-width:560px){.ob .pick3,.ob .pk3{grid-template-columns:1fr}}
+.ob .obs span{cursor:default}.ob .obs span.d{cursor:pointer}
+.ob .plans4{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.ob .plans4 button{padding:14px 12px;border-radius:16px;border:1px solid var(--line-2);background:var(--paper);text-align:left;display:flex;flex-direction:column;gap:3px;transition:box-shadow .2s}
+.ob .plans4 button b{font-size:14.5px}.ob .plans4 button span{font-size:18px;font-weight:600;letter-spacing:-.02em}.ob .plans4 button small{font-size:11.5px;color:var(--ink-3);line-height:1.4;min-height:2.8em}.ob .plans4 button em{font-style:normal;font-size:11px;font-weight:700;color:var(--green-t);margin-top:4px}
+.ob .plans4 button.on{border-color:var(--green);box-shadow:0 0 0 1px var(--green);background:rgba(29,185,84,.08)}
+.ob .plans4 button:disabled{opacity:.45}
+.ob .field label small{font-weight:400;color:var(--ink-3);margin-left:6px;text-transform:none;letter-spacing:0}
+.ob .okline{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--green-t);font-weight:600;margin-top:6px}
+.ob .oberr{font-size:13px;color:#9a1d3a;background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.25);padding:9px 12px;border-radius:12px;margin:0}
+.ob .obdows{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}
+.ob .obdows button{height:40px;border-radius:12px;background:var(--paper);border:1px solid var(--line-2);font-size:13px;color:var(--ink-3)}
+.ob .obdows button.on{color:var(--ink);border-color:var(--green);background:rgba(29,185,84,.1);font-weight:600}
+.ob .pc2 input{border:0;background:transparent;font:inherit;color:inherit;width:100%;outline:none;border-bottom:1px dashed transparent}.ob .pc2 input:focus{border-bottom-color:var(--green)}
+.ob .pc2 .pcn{font-weight:600;font-size:13.5px}.ob .pc2 span{display:flex;align-items:baseline;font-size:22px;font-weight:600;letter-spacing:-.03em;margin-top:4px}.ob .pc2 .pcv{font-size:22px;font-weight:600;letter-spacing:-.03em;width:100%;-moz-appearance:textfield}.ob .pc2 .pcv::-webkit-inner-spin-button{display:none}.ob .pc2 .pch{font-size:12px;color:var(--ink-3)}
+.ob .obav{display:flex;align-items:center;gap:14px;padding:12px 14px;border-radius:16px;border:1px solid var(--line-2);background:var(--paper);cursor:pointer}
+.ob .obav>*:first-child{width:56px;height:56px;border-radius:50%;flex:none;overflow:hidden;position:relative;object-fit:cover}.ob .obav canvas{position:absolute;inset:0;width:100%;height:100%}
+.ob .obav b{display:block;font-size:14px}.ob .obav small{font-size:12px;color:var(--ink-3)}
+.ob .drop{cursor:pointer}
+.ob .obreview{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;padding:14px 16px;border-radius:16px;background:var(--paper);border:1px solid var(--line)}
+.ob .obreview small{display:block;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-3);font-weight:700}.ob .obreview b{font-size:13.5px;font-weight:600}
+.ob .obagree{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;color:var(--ink-2);cursor:pointer}.ob .obagree input{margin-top:3px;accent-color:var(--green);width:16px;height:16px}.ob .obagree a{color:var(--green-t);font-weight:600}
+.ob .obnext{display:grid;gap:8px}
+.ob .obnext a{display:grid;grid-template-columns:1fr auto;grid-template-areas:"t i" "d i";align-items:center;gap:2px 12px;padding:12px 14px;border-radius:14px;border:1px solid var(--line-2);background:var(--paper);color:inherit;text-decoration:none;transition:border-color .2s}
+.ob .obnext a:hover{border-color:var(--green)}.ob .obnext a b{grid-area:t;font-size:14px}.ob .obnext a span{grid-area:d;font-size:12.5px;color:var(--ink-3)}.ob .obnext a svg{grid-area:i}
+.ob .lnk{font-size:13px;color:var(--ink-3);background:none;padding:0 8px}
+@media (max-width:700px){.ob .plans4{grid-template-columns:1fr 1fr}.ob .obreview{grid-template-columns:1fr}}

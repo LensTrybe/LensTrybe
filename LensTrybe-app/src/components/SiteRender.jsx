@@ -16,7 +16,7 @@ export default function SiteRender({ s, page, onPage, creative, compact = false,
   const b = s.brand, P = paperOf(b.paper), acc = b.accent, pages = s.pages.filter(p => p.on), pg = pages.find(p => p.id === page) || pages[0]
   const [msg, setMsg] = useState('')
   useEffect(() => { loadFont(b.head); loadFont(b.body) }, [b.head, b.body])
-  const c = creative || {}, pk = c.pk || [['Elopement', 1400, '3 hours · 120 photos'], ['Full day', 3200, '10 hours · 400+ photos'], ['Weekend', 4900, '2 days · second shooter']]
+  const c = creative || {}, pk = (s.packages && s.packages.length ? s.packages : c.pk) || [['Elopement', 1400, '3 hours · 120 photos'], ['Full day', 3200, '10 hours · 400+ photos'], ['Weekend', 4900, '2 days · second shooter']]
   const revs = (s.reviews || []).filter(r => r.n >= 4).slice(0, 3)
   const H = fam(b.head), Bf = fam(b.body), rad = (b.radius ?? 12) + 'px'
   const logo = dark => (dark ? (b.logoLight || b.logo || b.mark) : (b.logo || b.mark)) ? <img src={dark ? (b.logoLight || b.logo || b.mark) : (b.logo || b.mark)} alt="" /> : <span className="wmark" style={{ background: acc }} />

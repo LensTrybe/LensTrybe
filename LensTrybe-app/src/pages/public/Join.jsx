@@ -20,10 +20,17 @@ const WHY = {
 export default function Join() {
   const nav = useNavigate(); const [p] = useSearchParams()
   const cv = useRef(null)
-  const [kind, setKind] = useState('creative')
-  const [code, setCode] = useState(p.get('founding') ? '' : null)
+  const [kind, setKind] = useState(p.get('as') === 'client' ? 'client' : 'creative')
+  const [code, setCode] = useState(p.get('founding') || p.get('code') ? (p.get('founding') || p.get('code')).toUpperCase() : null)
+  const [f, setF] = useState({ first: '', last: '', email: '', pw: '', disc: 'Photographer' }); const [err, setErr] = useState('')
+  const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
-  const go = e => { e.preventDefault(); nav(kind === 'creative' ? '/onboarding' : '/creatives') }
+  const go = e => { e.preventDefault(); if (kind !== 'creative') return nav('/creatives')
+    if (!f.first.trim() || !f.last.trim()) return setErr('Your name, so clients know who they are talking to.')
+    if (!/.+@.+\..+/.test(f.email)) return setErr('A real email, it is how you log in.')
+    if (f.pw.length < 8) return setErr('A password of at least eight characters.')
+    if (code && code.trim() && !/^LT-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code.trim())) return setErr('That code does not look right. They read LT-XXXX-XXXX.')
+    const q = new URLSearchParams({ first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc, ...(code && code.trim() ? { code: code.trim() } : {}) }); nav('/onboarding?' + q) }
   return (
     <section className="hiw join dark darkhero">
       <canvas className="gl" ref={cv} aria-hidden="true" />
@@ -31,7 +38,7 @@ export default function Join() {
         <div className="jpitch">
           <p className="eb">{p.get('founding') ? 'Founding application' : 'Join'}</p>
           <h1>{kind === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>Find the right person, <em>fast.</em></>}</h1>
-          <p className="sub">{kind === 'creative' ? 'Photographers and videographers at launch, six more disciplines after. Set up takes about ten minutes and you are live the same day.' : 'Say what you need in a sentence, or browse everyone. Booking, signing and paying happen in one thread you can open from any phone.'}</p>
+          <p className="sub">{kind === 'creative' ? 'Photographers and videographers at launch, six more disciplines after. Sign up takes a minute; your profile goes live as soon as it has a photo and a line about you.' : 'Say what you need in a sentence, or browse everyone. Booking, signing and paying happen in one thread you can open from any phone.'}</p>
           <div className="why">{WHY[kind].map(([t, d]) => <div key={t}><i><Icon name="check" size={13} /></i><div><b>{t}</b><span>{d}</span></div></div>)}</div>
         </div>
         <div className="lpane lg d">
@@ -40,13 +47,14 @@ export default function Join() {
             <button type="button" role="tab" aria-selected={kind === 'client'} className={kind === 'client' ? 'on' : ''} onClick={() => setKind('client')}>I'm hiring</button>
           </div>
           <form onSubmit={go} className="lform">
-            <div className="two"><label className="lf"><span>First name</span><input placeholder="Mara" autoComplete="given-name" /></label><label className="lf"><span>Last name</span><input placeholder="Okafor" autoComplete="family-name" /></label></div>
-            <label className="lf"><span>Email</span><input type="email" placeholder="you@studio.com.au" autoComplete="email" /></label>
-            {kind === 'creative' && <label className="lf"><span>What you do</span><div className="lsel"><select defaultValue="Photographer"><option>Photographer</option><option>Videographer</option><option>Both</option></select><Icon name="back" size={14} /></div></label>}
+            <div className="two"><label className="lf"><span>First name</span><input value={f.first} onChange={e => u('first', e.target.value)} placeholder="Mara" autoComplete="given-name" /></label><label className="lf"><span>Last name</span><input value={f.last} onChange={e => u('last', e.target.value)} placeholder="Okafor" autoComplete="family-name" /></label></div>
+            <div className="two"><label className="lf"><span>Email</span><input type="email" value={f.email} onChange={e => u('email', e.target.value)} placeholder="you@studio.com.au" autoComplete="email" /></label>{kind === 'creative' && <label className="lf"><span>Password</span><input type="password" value={f.pw} onChange={e => u('pw', e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" /></label>}</div>
+            {kind === 'creative' && <label className="lf"><span>What you do</span><div className="lsel"><select value={f.disc} onChange={e => u('disc', e.target.value)}><option>Photographer</option><option>Videographer</option><option>Both</option></select><Icon name="back" size={14} /></div></label>}
             {kind === 'creative' && (code === null
               ? <button type="button" className="alt left" onClick={() => setCode('')}>Have a founding code? <b>Add it</b></button>
               : <label className="lf"><span>Founding code <button type="button" className="forgot" onClick={() => setCode(null)}>Remove</button></span><input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="LT-XXXX-XXXX" autoFocus /></label>)}
-            <button type="submit" className="btn w lg">{kind === 'creative' ? 'Create my profile' : 'Start searching'} <Icon name="arrow" size={14} /></button>
+            {err && <p className="jerr">{err}</p>}
+            <button type="submit" className="btn w lg">{kind === 'creative' ? 'Continue, pick a plan' : 'Start searching'} <Icon name="arrow" size={14} /></button>
             <div className="lor"><span>or</span></div>
             <div className="two"><button type="button" className="btn soc"><Icon name="google" size={16} />Google</button><button type="button" className="btn soc"><Icon name="apple" size={16} />Apple</button></div>
           </form>

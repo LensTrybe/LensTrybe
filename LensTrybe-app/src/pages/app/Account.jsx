@@ -6,6 +6,8 @@ import { useFlows } from '../../lib/flows'
 import { PLANS } from '../../data/workspace'
 import { TODAY, nice, iso } from '../../lib/store'
 import { MOOD_NAMES } from '../../lib/stills'
+import SetupCard from './Setup'
+import { completeness } from '../../lib/complete'
 
 const Tiles = ({ t }) => <div className="s12"><div className="kp">{t.map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 const Head = ({ h, p, children }) => <div className="vh"><div><h1>{h}</h1><p>{p}</p></div><div className="acts">{children}</div></div>
@@ -16,14 +18,17 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 /* Edit profile: what clients see on lenstrybe.com. Edit once, the website follows. */
 export function EditProfile() {
   const F = useFlows(); const { s, toast } = F
-  const [p, setP] = useState(s.profile), [dirty, setDirty] = useState(false); const file = useRef()
+  const [p, setP] = useState(s.profile), [dirty, setDirty] = useState(false); const file = useRef(), avf = useRef()
+  const [pk, setPk] = useState(s.packages || [])
   useEffect(() => { if (!dirty) setP(s.profile) }, [s.profile, dirty])
   const set = k => v => { setP(x => ({ ...x, [k]: v })); setDirty(true) }
   const tog = p.tog || {}
   const ALL = ['Weddings', 'Elopements', 'Real estate', 'Events', 'Brand', 'Headshots', 'Family', 'Food', 'Drone']
   const shots = p.shots || [0, 1, 2, 3, 4, 5, 6, 7]
-  const strength = Math.min(100, 60 + (p.bio ? 10 : 0) + (p.h ? 5 : 0) + (shots.length >= 6 ? 10 : 0) + (p.film ? 10 : 0) + (p.kinds.length ? 5 : 0))
-  const publish = () => { F.set('profile', { ...p, strength }); F.upd('pages', 'home', { h: p.h, p: p.bio.split('. ')[0] + '.' }); setDirty(false); toast('Published. Profile and website updated.') }
+  const strength = completeness({ ...s, profile: p, packages: pk }).pct
+  const publish = () => { F.set('profile', { ...p, shots, strength }); F.set('packages', pk.filter(x => x[0].trim())); if (p.h || p.bio) F.upd('pages', 'home', { h: p.h, p: (p.bio.split('. ')[0] || '') + (p.bio ? '.' : '') }); setDirty(false); toast('Published. Profile and website updated.') }
+  const pickAvatar = e => { const x = e.target.files?.[0]; if (!x) return; const r = new FileReader(); r.onload = () => set('avatar')(r.result); r.readAsDataURL(x); e.target.value = '' }
+  const setPkAt = (i, j, v) => { setPk(a => a.map((x, k) => k === i ? x.map((y, l) => l === j ? v : y) : x)); setDirty(true) }
   const addPhotos = () => { file.current.onchange = e => { const n = e.target.files.length; if (!n) return; set('shots')([...shots, ...Array.from({ length: n }, (_, i) => shots.length + i + 20)]); toast(n + (n === 1 ? ' photo' : ' photos') + ' added. Publish when happy.'); e.target.value = '' }; file.current.click() }
   const addFilm = () => F.open({ title: 'Add a film', sub: 'From a delivered gallery, or a link.', cta: 'Add', fields: [{ k: 'from', l: 'Film', type: 'select', value: '', options: [['', 'Paste a link instead'], ...s.galleries.filter(g => g.films).map(g => [g.id, g.n + ' · ' + g.films + (g.films > 1 ? ' films' : ' film')])] }, { k: 'url', l: 'Link', placeholder: 'vimeo.com/…', when: v => !v.from }], submit: v => { set('film')(v.from || v.url); toast('Film added. Publish when happy.') } })
   const removeShot = i => set('shots')(shots.filter((_, j) => j !== i))
@@ -37,21 +42,25 @@ export function EditProfile() {
             <div className="strip2">{shots.map((sd, i) => <span key={sd + '-' + i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>
           </div>
           <div className="card lg"><div className="h"><b>About you</b></div>
-            <div className="fields two"><Fld l="Name" v={p.n} set={set('n')} /><Fld l="Where" v={p.city} set={set('city')} /></div>
+            <div className="avrow"><span className="avbig" onClick={() => avf.current?.click()}>{p.avatar && p.avatar !== 'seed' ? <img src={p.avatar} alt="" /> : <Still seed={3} mood="golden" />}</span><div><b>{p.avatar ? 'Profile photo' : 'Add a profile photo'}</b><small>Square works best. It shows in search, on your card and on the home page.</small><button className="act2" onClick={() => avf.current?.click()}>{p.avatar ? 'Change' : 'Choose a photo'}</button><input ref={avf} type="file" accept="image/*" hidden onChange={pickAvatar} /></div></div>
+            <div className="fields two"><Fld l="Name" v={p.n} set={set('n')} /><Fld l="Where (suburb, state)" v={p.city} set={set('city')} /></div>
+            <div className="bf"><span>What you do</span><div className="chips2">{['Photographer', 'Videographer', 'Both'].map(d => <button key={d} type="button" className={p.disc === d ? 'on' : ''} onClick={() => set('disc')(d)}>{d}</button>)}</div></div>
             <Fld l="One line clients see first" v={p.h} set={set('h')} />
             <Fld l="Bio" v={p.bio} set={set('bio')} area />
-            <div className="fields two"><Fld l="From price, full day" v={p.from} set={set('from')} /><Fld l="Instagram" v={p.ig} set={set('ig')} /></div>
+            <div className="fields two"><Fld l="Phone" v={p.ph || ''} set={set('ph')} /><Fld l="Website" v={p.web || ''} set={set('web')} /></div>
+            <div className="fields two"><Fld l="Instagram" v={p.ig} set={set('ig')} /><Fld l="From price, shown on your card" v={p.from} set={set('from')} /></div>
+          </div>
+          <div className="card lg"><div className="h"><b>Packages</b><small className="lumi-by">Lumi quotes from these · clients see "from" the lowest</small></div>
+            <div className="pkrows">{pk.map((x, i) => <div key={i} className="pkrow"><input value={x[0]} placeholder="Full day" onChange={e => setPkAt(i, 0, e.target.value)} /><span>$<input type="number" value={x[1]} placeholder="3200" onChange={e => setPkAt(i, 1, Number(e.target.value) || 0)} /></span><input value={x[2]} placeholder="10 hours · 400+ photos" onChange={e => setPkAt(i, 2, e.target.value)} /><button className="ic2" aria-label="Remove" onClick={() => { setPk(a => a.filter((_, k) => k !== i)); setDirty(true) }}><Icon name="x" size={12} /></button></div>)}</div>
+            {pk.length < 5 && <button className="lnk" onClick={() => { setPk(a => [...a, ['', 0, '']]); setDirty(true) }}>Add a package</button>}
+            {!pk.length && <p className="note2">Three is plenty: a short one, your main one, and a big one. Prices stay private until you send a quote.</p>}
           </div>
           <div className="card lg"><div className="h"><b>What you shoot</b><small className="lumi-by">Shown on your card, used by the ask bar</small></div>
             <div className="chips2">{ALL.map(k => <button key={k} type="button" className={p.kinds.includes(k) ? 'on' : ''} onClick={() => { set('kinds')(p.kinds.includes(k) ? p.kinds.filter(x => x !== k) : [...p.kinds, k]) }}>{k}</button>)}</div>
           </div>
         </div>
         <div className="s5 side sticky">
-          <div className="card lg"><div className="h"><b>Profile strength</b><b style={{ color: 'var(--sig)' }}>{strength}%</b></div>
-            <div className="bar2"><i style={{ width: strength + '%' }} /></div>
-            <p className="note2" style={{ marginTop: 10 }}>{p.film ? 'Film added. Profiles with a film get 2.3× the enquiries.' : 'Add a portfolio film to reach 100%. Profiles with a film get 2.3× the enquiries.'}</p>
-            {!p.film && <button className="lnk" style={{ marginTop: 8 }} onClick={addFilm}>Add a film</button>}
-          </div>
+          <SetupCard compact />
           <div className="card lg"><div className="h"><b>What clients can do</b></div>
             <div className="brows one">
               {[['enquiry', 'Instant enquiry', 'Message you without an account'], ['price', 'Show from-price', '"Full day from $' + p.from + '" on your card'], ['avail', 'Live availability', 'Open dates show before they ask'], ['book', 'Book and pay a deposit directly', 'Skip the quote for fixed packages'], ['badge', 'Founding creative badge', 'Permanent, on your card and profile']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span><Sw on={tog[k]} set={() => set('tog')({ ...tog, [k]: tog[k] ? 0 : 1 })} /></label>)}

@@ -4,6 +4,7 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { TODAY, nice, parse, addDays, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
+import { completeness } from '../../lib/complete'
 
 // Insights: the whole business as numbers you can act on. Where enquiries come from, what they turn
 // into, what a booking is worth, how fast you reply and what that does to bookings, which months are
@@ -58,8 +59,7 @@ export default function Insights() {
   const LINE = useMemo(() => { const b = days <= 90 ? 1 : 7; const out = []; for (let i = 0; i < V.length; i += b) { const c = V.slice(i, i + b); out.push({ d: c[0].d, p: sum(c, v => v.profile), w: sum(c, v => v.site), q: sum(c, v => v.search), a: sum(c, v => v.ask) }) } return out }, [V, days])
   const lmax = Math.max(...LINE.map(x => x.p + x.w), 1)
   // profile strength, worked out from what is actually set up
-  const CHECK = [['Bio and headline', !!(s.profile.bio && s.profile.h), '/app/profile'], ['Logo in the brand kit', !!(s.brand.logo || s.brand.name), '/app/brand-kit'], ['Three or more public reviews', RV.filter(r => r.st === 'public').length >= 3, '/app/reviews'], ['Packages with prices', (s.items || []).some(i => i.on) || !!s.profile.from, '/app/profile'], ['Availability set', (s.avail?.days || []).some(Boolean), '/app/availability'], ['A social channel connected', (s.channels || []).some(c => c.on), '/app/channels'], ['Website live', !!s.site?.live, '/app/website'], ['Enquiries switched on', !!s.profile.tog?.enquiry, '/app/profile']]
-  const strength = Math.round(CHECK.filter(c => c[1]).length / CHECK.length * 100)
+  const COMP = completeness(s); const CHECK = COMP.items.map(i => [i.label, i.done, i.to]); const strength = COMP.pct
   // Lumi: the sentences worth acting on, from the numbers above
   const bestSrc = SRC.filter(x => x.n >= 8).sort((a, b) => b.rate - a.rate)[0], bigSrc = SRC[0]
   const fast = SPEED[0], slow = SPEED[3]
