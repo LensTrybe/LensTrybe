@@ -5,6 +5,9 @@ import { useFlows } from '../../lib/flows'
 import { TODAY, nice, addDays } from '../../lib/store'
 import { Ed, money } from './DocEditor'
 import { brandFor, fam, loadFont, paperOf } from '../../lib/brand'
+import { LIVE } from '../../lib/mode'
+import { useAuth } from '../../backend/AuthContext'
+import * as live from '../../lib/live'
 
 // The contract, on screen, as the client will read it on their phone. Parties and the job sit at the top
 // so the clauses can stay in plain, generic English ("the Photographer", "the Client"). Start from one
@@ -17,7 +20,9 @@ export default function ContractEditor() {
   const { id } = useParams(); const { state } = useLocation(); const nav = useNavigate(); const F = useFlows(); const { s, toast } = F
   const T = s.contractTemplates, D = s.settings.invoice || {}, base = '/app/contracts'
   const existing = id ? s.ledger.find(r => r.id === id) : null
-  const from = () => ({ biz: s.settings.biz, n: s.profile.n, abn: s.settings.abn, em: s.settings.email, ph: s.settings.phone, addr: s.settings.addr || s.profile.city })
+  const auth = useAuth(); const P = LIVE ? (auth.profile || {}) : null; const raw = LIVE ? existing?.live : null
+  const [busy, setBusy] = useState('')
+  const from = () => LIVE ? { biz: P.business_name || '', n: [P.first_name, P.last_name].filter(Boolean).join(' ') || auth.user?.email || '', abn: P.abn || '', em: P.business_email || auth.user?.email || '', ph: P.phone || '', addr: [P.city, P.state].filter(Boolean).join(', ') } : { biz: s.settings.biz, n: s.profile.n, abn: s.settings.abn, em: s.settings.email, ph: s.settings.phone, addr: s.settings.addr || s.profile.city }
   const toOf = p => p ? { n: p.n, co: p.co !== p.n ? p.co : '', em: p.em || '', ph: p.ph || '', addr: p.addr || '' } : { n: '', co: '', em: '', ph: '', addr: '' }
   const blank = () => {
     const t = T.find(x => x.id === state?.tpl) || T.find(x => (state?.d || '').toLowerCase().includes(x.n.split(' ')[0].toLowerCase())) || T[0]
@@ -26,7 +31,9 @@ export default function ContractEditor() {
   }
   // seeded contracts have no saved doc yet: build one from the row so it opens like the rest
   const fromRow = r => { const t = T.find(x => r.d.toLowerCase().includes(x.n.split(' ')[0].toLowerCase())) || T[0]; const p = s.people.find(x => x.id === r.t); const pj = s.projects.find(x => x.t === r.t); return { ...blank(), no: r.id, issued: r.date, client: r.t || '', template: t.id, title: t.title, for: pj ? pj.n.split(' · ').slice(1).join(' · ') || pj.n : r.d, d: isoish(pj?.d) ? pj.d : '', where: pj?.at || '', fee: r.v || '', to: toOf(p), clauses: t.clauses.map(clauseObj), sig: { me: r.st !== 'grey' ? r.date : '', them: r.st === 'pink' ? r.date : '' } } }
-  const [c, setC] = useState(() => existing ? (existing.doc || fromRow(existing)) : blank())
+  // live: a saved contract row back into clauses. The preamble (parties, job) is rebuilt on send.
+  const fromRaw = r => { const blocks = String(r.content || '').split(/\n{2,}/); const first = blocks.findIndex(b => /^\d+\.\s/.test(b)); const cl = (first >= 0 ? blocks.slice(first) : blocks).filter(Boolean).map(b => { const m = /^(?:\d+\.\s+)?(.*)\n([\s\S]*)$/.exec(b); return m && /^\d+\.\s/.test(b) ? { h: m[1], b: m[2] } : { h: '', b: b } }); const th = s.threads.find(x => x.id === existing.t); return { ...blank(), no: existing.id, issued: String(r.created_at || TODAY).slice(0, 10), client: existing.t || '', template: '', title: r.title || 'Contract', for: r.project_name || '', d: r.project_date || '', to: { n: r.client_name || '', co: '', em: r.client_email || th?.email || '', ph: '', addr: '' }, clauses: cl.length ? cl : [{ h: '', b: '' }], notes: r.notes || '', sig: { me: r.status !== 'draft' ? String(r.created_at || '').slice(0, 10) : '', them: r.signed_at ? String(r.signed_at).slice(0, 10) : '' } } }
+  const [c, setC] = useState(() => raw ? fromRaw(raw) : existing ? (existing.doc || fromRow(existing)) : blank())
   const [dirty, setDirty] = useState(false)
   const paper = useRef()
   const up = fn => { setC(x => typeof fn === 'function' ? fn(x) : { ...x, ...fn }); setDirty(true) }
@@ -34,17 +41,34 @@ export default function ContractEditor() {
   const upCl = (i, k, v) => up(x => ({ ...x, clauses: x.clauses.map((cl, j) => j === i ? { ...cl, [k]: v } : cl) }))
   const moveCl = (i, d) => up(x => { const a = x.clauses.slice(); const j = i + d; if (j < 0 || j >= a.length) return x; [a[i], a[j]] = [a[j], a[i]]; return { ...x, clauses: a } })
   // the client's project (or thread) fills the job details too, all still editable
-  const pickClient = cid => { const p = s.people.find(x => x.id === cid); const pj = s.projects.find(x => x.t === cid && x.k !== 'done') || s.projects.find(x => x.t === cid); const th = s.threads.find(x => x.id === cid); const ev = s.events.find(e => e.t === cid && e.k !== 'x'); up(x => ({ ...x, client: cid, to: p ? toOf(p) : x.to, for: x.for || (pj ? pj.n.split(' · ').slice(1).join(' · ') || pj.n : th?.j || ''), d: x.d || (isoish(pj?.d) ? pj.d : isoish(ev?.d) ? ev.d : isoish(th?.d) ? th.d : ''), where: x.where || pj?.at || ev?.where || '', fee: x.fee || pj?.v || th?.v || '' })) }
+  const pickClient = cid => { if (LIVE) { const th = s.threads.find(x => x.id === cid); up(x => ({ ...x, client: cid, to: th ? { ...x.to, n: th.n, em: th.email || '' } : x.to, for: x.for || th?.j || '', fee: x.fee || th?.v || '' })); return } const p = s.people.find(x => x.id === cid); const pj = s.projects.find(x => x.t === cid && x.k !== 'done') || s.projects.find(x => x.t === cid); const th = s.threads.find(x => x.id === cid); const ev = s.events.find(e => e.t === cid && e.k !== 'x'); up(x => ({ ...x, client: cid, to: p ? toOf(p) : x.to, for: x.for || (pj ? pj.n.split(' · ').slice(1).join(' · ') || pj.n : th?.j || ''), d: x.d || (isoish(pj?.d) ? pj.d : isoish(ev?.d) ? ev.d : isoish(th?.d) ? th.d : ''), where: x.where || pj?.at || ev?.where || '', fee: x.fee || pj?.v || th?.v || '' })) }
   useEffect(() => { if (!existing && state?.client) pickClient(state.client) }, []) // eslint-disable-line
   const applyTemplate = tid => { const t = T.find(x => x.id === tid); if (!t) return; up(x => ({ ...x, template: tid, title: t.title || x.title, clauses: t.clauses.map(clauseObj) })); toast(t.n + ' applied. Change any word.') }
   const fee = Number(c.fee) || 0, dep = Math.round(fee * (Number(c.depPct) || 0)) / 100, bal = fee - dep
-  const client = s.people.find(p => p.id === c.client)
+  const client = LIVE ? (s.threads.find(t => t.id === c.client) ? { id: c.client, n: s.threads.find(t => t.id === c.client).n, em: s.threads.find(t => t.id === c.client).email } : null) : s.people.find(p => p.id === c.client)
   const status = existing?.stt || 'Draft'
+  // ── live: the contracts table, send-contract, the real signing link ──
+  const contentText = () => [c.title, 'Between ' + (c.from.biz || c.from.n) + ' ("the Photographer") and ' + c.to.n + ' ("the Client").', [c.for ? 'Job: ' + c.for : null, isoish(c.d) ? 'Date: ' + nice(c.d, { year: 'numeric' }) : null, c.where ? 'Where: ' + c.where : null, fee ? 'Fee: ' + money(fee) + ' incl. GST' : null, fee && Number(c.depPct) ? 'Deposit: ' + c.depPct + '% (' + money(dep) + ') to book, balance ' + money(bal) + ' due ' + c.balDays + ' days before' : null].filter(Boolean).join(' · '), ...c.clauses.filter(cl => cl.h || cl.b).map((cl, i) => (cl.h ? (i + 1) + '. ' + cl.h + '\n' : '') + cl.b)].filter(Boolean).join('\n\n')
+  const liveSave = async sendIt => {
+    if (busy) return
+    if (!c.to.n.trim()) return toast('Type who it is for.')
+    if (sendIt && !/\S+@\S+\.\S+/.test(c.to.em || '')) return toast('An email address to send it to.')
+    if (!c.clauses.some(cl => cl.b.trim())) return toast('Add at least one clause.')
+    setBusy(sendIt ? 'send' : 'save')
+    try {
+      const row = await live.saveContractLive({ to: c.to, title: c.title, project: c.for, date: isoish(c.d) ? c.d : null, content: contentText(), notes: c.notes }, F.me, raw)
+      if (sendIt) await live.sendDocLive('c', row.id)
+      setDirty(false); await F.refreshLive()
+      toast(sendIt ? 'Contract sent to ' + c.to.n + ' at ' + c.to.em + '. They sign on their phone.' : 'Contract saved as a draft.')
+      nav(sendIt ? base : '/app/contract/C-' + String(row.id).slice(0, 8).toUpperCase(), { replace: true })
+    } catch (e) { toast(e.message) } finally { setBusy('') }
+  }
   const tpl = T.find(t => t.id === c.template)
   // ── save / send / sign ──
   const record = st => ({ k: 'c', who: c.to.n || client?.n || 'Client', d: (tpl?.n || c.title) + (c.for ? ' · ' + c.for : ''), date: isoish(c.d) ? c.d : c.issued, st: st === 'Sent' ? 'sent' : st === 'Signed' ? 'pink' : 'grey', stt: st, v: Math.round(fee), t: c.client || existing?.t, doc: c })
-  const save = (st = status) => { if (existing) F.upd('ledger', existing.id, record(st)); else F.add('ledger', { id: c.no, ...record(st) }, 'c'); setDirty(false); return c.no }
+  const save = (st = status) => { if (LIVE) return liveSave(false); if (existing) F.upd('ledger', existing.id, record(st)); else F.add('ledger', { id: c.no, ...record(st) }, 'c'); setDirty(false); return c.no }
   const send = () => {
+    if (LIVE) return liveSave(true)
     if (!c.to.n && !client) return toast('Pick a client, or type who it is for.')
     if (!c.clauses.length) return toast('Add at least one clause.')
     const signed = { ...c, sig: { ...c.sig, me: c.sig.me || TODAY } }; setC(signed)
@@ -53,10 +77,10 @@ export default function ContractEditor() {
     if (tid) { F.upd('threads', tid, t => ({ docs: [...t.docs.filter(d => !d[0].includes(no)), ['Contract #' + no, 'sent', 'Sent']], line: [...t.line.filter(m => !m.doc?.includes(no)), { doc: 'Contract #' + no + (c.for ? ' · ' + c.for : ''), d: c.clauses.length + ' clauses · plain English · ' + (fee ? money(fee) + ' · ' : '') + 'sign on your phone', st: 'sent', stt: 'Sent' }], last: 'Contract ' + no + ' sent', need: false, next: 'Contract sent, waiting on signature', stage: Math.max(t.stage, 2) })) }
     toast('Contract ' + no + ' sent to ' + (c.to.n || client.n) + (c.to.em ? ' at ' + c.to.em : '') + '. They sign on their phone.'); nav(base)
   }
-  const signed = () => { save(status); F.markSigned(existing.id); setC(x => ({ ...x, sig: { ...x.sig, them: TODAY } })) }
-  const copyLink = () => { navigator.clipboard?.writeText('https://lenstrybe.com/sign/' + c.no.toLowerCase())?.catch(() => {}); toast('Signing link copied. Paste it anywhere.') }
+  const signed = async () => { if (LIVE) { if (!raw || busy) return; setBusy('sign'); try { await live.setDocStatus('c', raw.id, 'signed', { signed_at: new Date().toISOString() }); await F.refreshLive(); toast('Marked signed.'); nav(base) } catch (e) { toast(e.message) } finally { setBusy('') } return } save(status); F.markSigned(existing.id); setC(x => ({ ...x, sig: { ...x.sig, them: TODAY } })) }
+  const copyLink = () => { const link = LIVE ? (raw?.signing_token ? location.origin + '/sign/' + raw.signing_token : '') : 'https://lenstrybe.com/sign/' + c.no.toLowerCase(); if (!link) return toast('Save the contract first.'); navigator.clipboard?.writeText(link)?.catch(() => {}); toast('Signing link copied · ' + link) }
   const print = () => { const w = window.open('', '_blank'); if (!w) return; w.document.write('<html><head><title>Contract ' + c.no + '</title><style>body{font-family:Inter,-apple-system,sans-serif;color:#14111a;padding:40px;max-width:720px;margin:auto;line-height:1.55}input,textarea{border:0;background:none;font:inherit;color:inherit;padding:0;resize:none;width:100%}.rm,.addcl,.hint,.pick,.ctl,.chip{display:none}.ptop{display:flex;justify-content:space-between}.parties,.sigs{display:grid;grid-template-columns:1fr 1fr;gap:24px}.job{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin:18px 0;padding:14px;background:#f6f5f3;border-radius:10px}.cl{margin:0 0 14px}.cl .ch{font-weight:700}textarea{height:auto}</style></head><body>' + paper.current.innerHTML + '</body></html>'); w.document.close(); setTimeout(() => w.print(), 300) }
-  const del = () => F.confirm({ title: 'Delete ' + c.no + '?', body: 'It comes out of the ledger and the thread.', cta: 'Delete', danger: true, onYes: () => { if (existing) F.removeDoc(existing.id); nav(base) } })
+  const del = () => F.confirm({ title: 'Delete ' + c.no + '?', body: 'It comes out of the ledger and the thread.', cta: 'Delete', danger: true, onYes: async () => { if (LIVE && raw) { try { await live.deleteDocLive('c', raw.id); await F.refreshLive() } catch (e) { return toast(e.message) } } else if (existing) F.removeDoc(existing.id); nav(base) } })
   const B = brandFor(s.brand, 'c'), acc = B.accent || '#8DF3D6', PP = paperOf(B.paper); useEffect(() => { loadFont(B.head); loadFont(B.body) }, [B.head, B.body])
   const chip = status === 'Signed' ? 'ok' : status === 'Sent' ? 'sent' : 'grey'
   return (
@@ -64,11 +88,11 @@ export default function ContractEditor() {
       <div className="vh">
         <div><Link to={base} className="lnk back"><Icon name="back" size={13} />Contracts</Link><h1>{existing ? 'Contract' : 'New contract'} <em>{c.no}</em></h1><p>{status === 'Draft' ? 'This is what the client reads and signs. Tap any word to change it.' : status === 'Sent' ? 'Sent ' + nice(existing.date) + ' · waiting on a signature' : 'Signed' + (c.sig.them ? ' ' + nice(c.sig.them) : '')}</p></div>
         <div className="acts">
-          {existing && status === 'Sent' && <button className="btn g" onClick={signed}><Icon name="sign" size={15} />Mark signed</button>}
+          {existing && status === 'Sent' && <button className="btn g" onClick={signed} disabled={!!busy}><Icon name="sign" size={15} />Mark signed</button>}
           {existing && status !== 'Draft' && <button className="btn g" onClick={copyLink}><Icon name="globe" size={15} />Signing link</button>}
           <button className="btn g" onClick={print}><Icon name="deliver" size={15} />PDF</button>
-          {status !== 'Signed' && <button className={'btn g' + (dirty ? '' : ' quiet')} onClick={() => { save(); toast('Saved.') }}>{dirty ? 'Save draft' : 'Saved'}</button>}
-          {status !== 'Signed' && <button className="btn w" onClick={send}><Icon name="arrow" size={15} />{status === 'Sent' ? 'Send again' : 'Send for signing'}</button>}
+          {status !== 'Signed' && <button className={'btn g' + (dirty ? '' : ' quiet')} onClick={() => { if (LIVE) return liveSave(false); save(); toast('Saved.') }} disabled={!!busy}>{busy === 'save' ? 'Saving' : dirty ? 'Save draft' : 'Saved'}</button>}
+          {status !== 'Signed' && <button className="btn w" onClick={send} disabled={!!busy}><Icon name="arrow" size={15} />{busy === 'send' ? 'Sending' : status === 'Sent' ? 'Send again' : 'Send for signing'}</button>}
         </div>
       </div>
       <div className="grid">
@@ -100,7 +124,7 @@ export default function ContractEditor() {
               </div>
               <div className="party to">
                 <small>And</small>
-                <div className="pick"><select value={c.client} onChange={e => pickClient(e.target.value)}><option value="">Pick from Contacts…</option>{s.people.map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
+                <div className="pick"><select value={c.client} onChange={e => pickClient(e.target.value)}><option value="">{LIVE ? 'Pick a client thread…' : 'Pick from Contacts…'}</option>{(LIVE ? s.threads.map(t => ({ id: t.id, n: t.n })) : s.people).map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
                 <Ed v={c.to.n} set={v => upTo('n', v)} ph="Client name" cls="big" />
                 <Ed v={c.to.co} set={v => upTo('co', v)} ph="Contact or company" cls="sm" />
                 <Ed v={c.to.addr} set={v => upTo('addr', v)} ph="Address" cls="sm" />

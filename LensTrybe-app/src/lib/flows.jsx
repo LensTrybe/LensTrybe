@@ -100,7 +100,7 @@ export function useFlows() {
     open({
       title: opts.title || 'Reply to ' + t.n, sub: opts.sub || (draft ? 'Lumi drafted this in your words. Change anything, then send.' : t.j), cta: opts.cta || 'Send',
       lumi: opts.lumi, fields: [{ k: 'msg', l: 'Message', type: 'textarea', rows: 7, value: draft, required: true }],
-      submit: v => { say(tid, 'me', v.msg); upd('threads', tid, { need: false, next: opts.next || 'Replied, waiting on ' + t.n.split(' ')[0] }); opts.then?.(v); toast(opts.done || 'Sent to ' + t.n + '.') },
+      submit: async v => { if (LIVE) { const ok = await sendMessage(tid, v.msg); if (!ok) return false } else say(tid, 'me', v.msg); upd('threads', tid, { need: false, next: opts.next || 'Replied, waiting on ' + t.n.split(' ')[0] }); opts.then?.(v); toast(opts.done || 'Sent to ' + t.n + '.') },
     })
   }
   const nudge = (tid, opts = {}) => { const t = s.threads.find(x => x.id === tid); if (!t) return; const q = s.ledger.find(r => r.t === tid && r.k === 'q' && r.st !== 'ok'); reply(tid, `${s.brand.voice?.greet || 'Hi'} ${t.n.split(' ')[0]}, just checking you saw the quote${q ? ' (' + q.id + ')' : ''}. Happy to tweak anything, and the date is pencilled for you until Friday.${s.brand.voice?.signoff ? '\n\n' + s.brand.voice.signoff : ''}`, { title: 'Nudge ' + t.n, cta: 'Send nudge', next: 'Nudged, waiting on ' + t.n.split(' ')[0], done: 'Nudge sent to ' + t.n + ', in your words.', then: () => { if (q) upd('ledger', q.id, { stt: 'Nudged' }); if (tid === 'coastline') tick(2); opts.then?.() } }) }
@@ -248,7 +248,7 @@ export function useFlows() {
   })
   const editTemplate = id => { const t = s.contractTemplates.find(x => x.id === id); if (!t) return; open({ title: 'Template', cta: 'Save', fields: [{ k: 'n', l: 'Name', required: true, value: t.n }, { k: 'sub', l: 'One line about it', value: t.sub || '' }, { k: 'title', l: 'Title on the contract', value: t.title || '' }], alt: { l: 'Delete template', on: () => { if (s.contractTemplates.length === 1) { toast('Keep at least one template.'); return false } del('contractTemplates', id); toast('Template deleted.') } }, submit: v => { upd('contractTemplates', id, v); toast('Saved.') } }) }
   const receipt = id => { const r = s.ledger.find(x => x.id === id); if (!r) return; if (r.k === 'exp') return editExpense(id); if (r.t) say(r.t, 'sys', 'Receipt for ' + r.id + ' sent to ' + r.who); toast('Receipt for ' + r.id + ' sent to ' + r.who + '.') }
-  const invoiceFromQuote = id => { const q = s.ledger.find(x => x.id === id); if (!q) return; const drafted = s.ledger.find(x => x.k === 'inv' && x.fromQ === id); if (drafted) return nav('/app/invoice/' + drafted.id); nav('/app/invoice/new', { state: { client: q.t, d: q.doc?.for || q.d, items: q.doc?.items || [{ d: q.d, q: 1, r: q.v }] } }) }
+  const invoiceFromQuote = id => { const q = s.ledger.find(x => x.id === id); if (!q) return; const drafted = s.ledger.find(x => x.k === 'inv' && x.fromQ === id); if (drafted) return nav('/app/invoice/' + drafted.id); nav('/app/invoice/new', { state: { client: q.t, d: q.doc?.for || (q.live ? '' : q.d), items: q.live ? live.fromLiveItems(q.live.items) : q.doc?.items || [{ d: q.d, q: 1, r: q.v }] } }) }
   // ── expenses: the sheet, the categories, the receipt ────────────────────
   const PAY = ['Card', 'Bank transfer', 'Cash', 'PayPal', 'Direct debit', 'Other']
   const expCatNames = () => s.expCats.map(c => c[0])
@@ -270,12 +270,15 @@ export function useFlows() {
   const removeDoc = id => { const r = s.ledger.find(x => x.id === id); if (!r) return; confirm({ title: 'Delete ' + r.id + '?', body: <>{r.who} · {fmt(Math.abs(r.v))}. It comes out of the ledger and the thread. This cannot be undone.</>, cta: 'Delete', danger: true, onYes: () => { del('ledger', id); if (r.t) upd('threads', r.t, t => ({ docs: t.docs.filter(d => !d[0].includes(id)), line: t.line.filter(m => !m.doc?.includes(id)) })); toast(r.id + ' deleted.') } }) }
   // one entry point for the row button on the ledger
   const docAction = r => {
+    if (LIVE && r.k === 'c' && r.st === 'grey') return openContract(r.id)
+    if (LIVE && r.k === 'inv' && r.st === 'grey') return openInvoice(r.id)
+    if (LIVE && r.k === 'q' && r.st === 'grey') return openQuote(r.id)
     if (r.k === 'inv') return r.st === 'ok' ? receipt(r.id) : chase(r.id)
     if (r.k === 'q') return r.st === 'ok' ? invoiceFromQuote(r.id) : nudge(r.t)
     if (r.k === 'c') return r.st === 'pink' ? receipt(r.id) : r.st === 'grey' ? sendDoc(r.id) : nudge(r.t)
     return editExpense(r.id)
   }
-  const docActionLabel = r => r.k === 'inv' ? (r.st === 'ok' ? 'Receipt' : 'Chase') : r.k === 'q' ? (r.st === 'ok' ? 'Invoice' : 'Nudge') : r.k === 'c' ? (r.st === 'pink' ? 'Copy' : r.st === 'grey' ? 'Send' : 'Nudge') : 'Edit'
+  const docActionLabel = r => (LIVE && r.st === 'grey' && r.k !== 'exp') ? 'Open' : r.k === 'inv' ? (r.st === 'ok' ? 'Receipt' : 'Chase') : r.k === 'q' ? (r.st === 'ok' ? 'Invoice' : 'Nudge') : r.k === 'c' ? (r.st === 'pink' ? 'Copy' : r.st === 'grey' ? 'Send' : 'Nudge') : 'Edit'
   const sendContract = tid => { const c = s.ledger.find(r => r.t === tid && r.k === 'c' && r.st === 'grey'); if (c) sendDoc(c.id); else newDoc('c', { client: tid }) }
   const exportCsv = (rows, name = 'ledger') => { const head = 'id,kind,who,description,date,status,amount\n'; const body = rows.map(r => [r.id, r.k, r.who, r.d, r.date, r.stt, r.v].map(x => '"' + String(x ?? '').replace(/"/g, '""') + '"').join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([head + body], { type: 'text/csv' })); a.download = name + '-' + TODAY + '.csv'; a.click(); toast('Exported ' + rows.length + ' rows as CSV.') }
 

@@ -291,3 +291,53 @@ export async function submitReview(creativeId, f) {
   if (data?.id) supabase.functions.invoke('notify-review', { body: { review_id: data.id } }).catch(() => {})
   return data
 }
+
+// ── Money documents from the workspace: quotes, invoices, contracts ──────────────────────────
+// Same tables and functions as the live site. items = [{ description, quantity, rate }], amount = total.
+// The editor's shape is { items:[{d,q,r}], to:{n,em,ph,addr}, for, notes, terms, balDue, dep } and
+// these two helpers translate. Tier gating is the database's (guard_tier_feature); we say it nicely.
+const TABLE = { q: 'quotes', inv: 'invoices', c: 'contracts' }
+const NAMES = { q: 'Quotes', inv: 'Invoicing', c: 'Contracts' }
+export const docError = (e, kind) => { const m = String(e?.message || e || ''); if (/TIER_REQUIRED/i.test(m)) return NAMES[kind] + ' are on the Expert plan and above. Upgrade in Account to send them.'; return m || 'Could not save. Try again.' }
+export const toLiveItems = items => (items || []).filter(it => it.d || Number(it.r)).map(it => ({ description: String(it.d || ''), quantity: Number(it.q) || 1, rate: Number(it.r) || 0 }))
+export const fromLiveItems = items => { const a = Array.isArray(items) ? items : []; return a.length ? a.map(it => ({ d: it.description || it.name || it.title || '', q: it.quantity ?? it.qty ?? 1, r: it.rate ?? it.price ?? it.amount ?? '' })) : [{ d: '', q: 1, r: '' }] }
+
+// Save a quote or invoice (draft). raw = the existing row to update, or null to insert. Returns the row.
+export async function saveMoneyDoc(kind, inv, total, me, raw) {
+  const notes = [inv.notes, inv.terms].filter(x => x && x.trim()).join('\n\n') || null
+  const row = { client_name: (inv.to.n || '').trim() || 'Client', client_email: (inv.to.em || '').trim().toLowerCase() || null, client_phone: (inv.to.ph || '').trim() || null, client_address: (inv.to.addr || '').trim() || null, notes, items: toLiveItems(inv.items), amount: Math.round(total * 100) / 100 }
+  if (kind === 'q') { row.valid_until = inv.balDue || null; row.due_date = inv.balDue || null } else { row.due_date = inv.dep?.on ? (inv.dep.due || inv.balDue || null) : (inv.balDue || null) }
+  if (inv.for && inv.for.trim()) row.notes = ['For: ' + inv.for.trim(), row.notes].filter(Boolean).join('\n\n')
+  const text = [row.client_name, ...row.items.map(i => i.description), row.notes].filter(Boolean).join('\n')
+  const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be sent.')
+  if (raw?.id) {
+    const { data, error } = await supabase.from(TABLE[kind]).update(row).eq('id', raw.id).select().single()
+    if (error) throw new Error(docError(error, kind)); return data
+  }
+  const { data, error } = await supabase.from(TABLE[kind]).insert({ ...row, creative_id: me.id, status: 'draft', download_token: crypto.randomUUID() }).select().single()
+  if (error) throw new Error(docError(error, kind)); return data
+}
+// Email it to the client (send-quote / send-invoice / send-contract) and mark it sent.
+export async function sendDocLive(kind, id) {
+  const fn = kind === 'q' ? 'send-quote' : kind === 'inv' ? 'send-invoice' : 'send-contract'
+  const key = kind === 'q' ? 'quote_id' : kind === 'inv' ? 'invoice_id' : 'contract_id'
+  const { data, error } = await supabase.functions.invoke(fn, { body: { [key]: id } })
+  if (error || data?.error) throw new Error(typeof data?.error === 'string' && data.error.length < 120 ? data.error : 'Could not send the email. The document is saved as a draft; try Send again.')
+  await supabase.from(TABLE[kind]).update({ status: 'sent' }).eq('id', id)
+}
+export async function setDocStatus(kind, id, status, extra = {}) {
+  const { error } = await supabase.from(TABLE[kind]).update({ status, ...extra }).eq('id', id)
+  if (error) throw new Error(docError(error, kind))
+}
+export async function deleteDocLive(kind, id) {
+  const { error } = await supabase.from(TABLE[kind]).delete().eq('id', id)
+  if (error) throw new Error(docError(error, kind))
+}
+// Contracts: title, project, date, the text, notes. contract_type 'written'; the signing link is the row's token.
+export async function saveContractLive(c, me, raw) {
+  const row = { client_name: (c.to?.n || c.client_name || '').trim() || 'Client', client_email: (c.to?.em || c.client_email || '').trim().toLowerCase() || null, title: (c.title || 'Contract').trim(), project_name: c.project || null, project_date: c.date || null, content: c.content || '', notes: c.notes || null, contract_type: 'written' }
+  const mod = await moderateText([row.title, row.content, row.notes].filter(Boolean).join('\n')); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be sent.')
+  if (raw?.id) { const { data, error } = await supabase.from('contracts').update(row).eq('id', raw.id).select().single(); if (error) throw new Error(docError(error, 'c')); return data }
+  const { data, error } = await supabase.from('contracts').insert({ ...row, creative_id: me.id, status: 'draft', download_token: crypto.randomUUID() }).select().single()
+  if (error) throw new Error(docError(error, 'c')); return data
+}
