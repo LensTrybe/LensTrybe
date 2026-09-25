@@ -351,3 +351,22 @@ export const SEED = {
   counters: { job: 11, inv: 222, q: 420, c: 422, exp: 93, note: 6, proj: 9, ev: 15, meet: 7, post: 14, review: 7, rq: 5, listing: 9, offer: 2, cj: 6, cm: 3, crew: 4, team: 4, passed: 3, gear: 13 },
 }
 export { PLANS }
+
+// Live mode starts here: no sample records at all, only the reference lists a workspace needs
+// (pipeline stages, templates, categories, meeting types, the brand defaults). Everything else is
+// hydrated from the project (threads, ledger, events) or filled in by the creative.
+const EMPTY = ['threads', 'actions', 'events', 'ledger', 'people', 'projects', 'notes', 'gear', 'galleries', 'meetings', 'posts', 'insights', 'enquiries', 'listings', 'savedListings', 'offers', 'ideas', 'reviews', 'reviewRequests', 'items', 'crew', 'crewJobs', 'crewMsgs', 'passed', 'team', 'jobs', 'referrals', 'pages', 'brandHistory', 'waitlist', 'tickets', 'packages']
+export const LIVE_SEED = (() => {
+  const s = JSON.parse(JSON.stringify(SEED))
+  for (const k of EMPTY) s[k] = []
+  s.profile = { ...s.profile, n: '', h: '', bio: '', kinds: [], from: '', city: '', ig: '', web: '', ph: '', disc: '', avatar: '', shots: [], film: '', strength: 0 }
+  s.brand = { ...s.brand, name: '', tag: '', logo: '' }
+  s.settings = { ...s.settings, email: '', phone: '', biz: '', abn: '', addr: '', ints: Object.fromEntries(Object.keys(s.settings.ints || {}).map(k => [k, 0])) }
+  s.plan = { name: 'Basic', annual: false, founding: 0, since: '' }
+  s.site = { live: false, domain: '' }
+  s.avail = { ...s.avail, touched: 0 }
+  s.channels = (s.channels || []).map(c => ({ ...c, on: 0, followers: 0, grow: 0 }))
+  s.setup = { hidden: 0 }
+  s.counters = {}
+  return s
+})()

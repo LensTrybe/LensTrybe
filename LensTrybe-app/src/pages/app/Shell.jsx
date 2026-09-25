@@ -65,8 +65,23 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 // and can be put away: the workspace does everything on its own, Lumi just does it faster.
 // Live mode: load the real threads, documents and bookings into the store when the workspace
 // opens, again whenever the tab comes back, and every minute while it is open.
+// Live: the real account's identity into the store (name, plan, business details, brand), then the
+// data. Runs again whenever the profile changes (a save in Settings, a plan change).
 function LiveSync() {
-  const F = useFlows()
+  const F = useFlows(); const { profile, user } = useAuth()
+  useEffect(() => {
+    if (!LIVE || !profile) return
+    const P = profile
+    const name = P.business_name || [P.first_name, P.last_name].filter(Boolean).join(' ') || user?.email?.split('@')[0] || 'You'
+    const tier = String(P.subscription_tier || 'basic').toLowerCase(); const plan = tier === 'vip' ? 'Elite' : tier.charAt(0).toUpperCase() + tier.slice(1)
+    F.hydrate({
+      profile: { ...F.s.profile, n: name, h: P.tagline || '', bio: P.bio || '', kinds: F.s.profile.kinds?.length ? F.s.profile.kinds : [].concat(P.specialties || []), from: P.starting_price || F.s.profile.from || '', city: [P.city, P.state].filter(Boolean).join(', ') || P.location || '', ig: P.instagram_url || '', web: P.website || '', ph: P.phone || '', disc: (P.skill_types || [])[0] || '', avatar: P.avatar_url || '', years: P.years_experience || '' },
+      settings: { ...F.s.settings, email: P.business_email || user?.email || '', phone: P.phone || '', biz: P.business_name || '', abn: P.abn || '', addr: [P.city, P.state].filter(Boolean).join(', ') },
+      plan: { name: plan, annual: false, founding: P.founding_member ? 1 : 0, since: String(P.founding_member_since || P.created_at || '').slice(0, 10), status: P.subscription_status || '' },
+      brand: { ...F.s.brand, name: F.s.brand.name || P.business_name || '', tag: F.s.brand.tag || P.tagline || '', logo: F.s.brand.logo || P.brand_logo_url || '', accent: P.brand_primary_color || F.s.brand.accent },
+      site: { live: !!P.portfolio_website_active, domain: P.custom_domain || (P.portfolio_website_vanity_url ? P.portfolio_website_vanity_url + '.lenstrybe.com' : '') },
+    })
+  }, [profile?.id, profile?.business_name, profile?.subscription_tier, profile?.avatar_url, profile?.tagline, profile?.bio, profile?.city, profile?.phone, profile?.abn, profile?.brand_logo_url, profile?.founding_member]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!LIVE) return
     let on = true; const run = () => { if (on && document.visibilityState === 'visible') F.refreshLive() }
