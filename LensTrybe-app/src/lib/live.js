@@ -156,3 +156,64 @@ export async function portalRespondQuote(token, quoteId, action) {
 }
 export const isUuid = s => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(s || ''))
 export { when, nice, money, today }
+
+// ── Public side: the directory, a profile, an enquiry ────────────────────────────────────────
+// Shaped into the same object the sample creatives use, so Directory, Ask and Creative render either.
+const TAG = { Photographer: 'photo', Videographer: 'video', 'Drone Operator': 'drone', 'Video Editor': 'edit', 'Content Creator': 'content', 'Social Media Manager': 'social' }
+const spec = s => { const l = low(s); return l.includes('wedding') || l.includes('elope') ? 'wedding' : l.includes('real estate') ? 'realestate' : l.includes('event') || l.includes('corporate') || l.includes('conference') ? 'event' : l.includes('portrait') || l.includes('headshot') || l.includes('family') ? 'portrait' : l.includes('brand') || l.includes('product') || l.includes('commercial') || l.includes('food') ? 'brand' : null }
+export function shapeProfile(p, extra = {}) {
+  const skills = p.skill_types || [], specs = [].concat(p.specialties || [], ...Object.values(p.specialties_by_type || {}).flat())
+  const t = [...new Set([...skills.map(s => TAG[s] || low(s)), ...specs.map(spec).filter(Boolean)])]
+  const services = (extra.services || []).map(s => [s.name, Number(s.price) || 0, s.description || ''])
+  const rv = extra.reviews || [], r = rv.length ? Math.round(rv.reduce((a, x) => a + (x.rating || 0), 0) / rv.length * 10) / 10 : 0
+  const from = services.length ? Math.min(...services.map(s => s[1]).filter(Boolean)) : 0
+  return {
+    id: p.id, live: true, n: p.business_name || 'Creative', d: p.tagline || skills.join(' and '), short: skills[0] || 'Creative', c: p.city || p.location || '', state: p.state || 'QLD', p: from, r, rv: rv.length, t,
+    mood: ['golden', 'dusk', 'cool', 'forest', 'night', 'rose'][hash(p.id) % 6], seed: (hash(p.id) % 40) + 1, free: p.is_available !== false, found: !!(p.founding_member && p.show_founding_badge !== false), resp: 'about a day',
+    why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
+    photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported' })),
+    busy: extra.busy || [],
+  }
+}
+const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, website, site_service_areas, created_at'
+export async function loadCreatives() {
+  const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).order('created_at', { ascending: false }).limit(200)
+  if (error) throw error
+  const ids = (data || []).map(p => p.id)
+  let rvBy = {}
+  if (ids.length) { const { data: rv } = await supabase.from('reviews').select('creative_id, rating').in('creative_id', ids).eq('hidden', false); for (const x of rv || []) (rvBy[x.creative_id] = rvBy[x.creative_id] || []).push(x) }
+  return (data || []).map(p => shapeProfile(p, { reviews: rvBy[p.id] || [] }))
+}
+export async function loadCreative(id) {
+  const { data: p, error } = await supabase.from('profiles').select(PUB).eq('id', id).maybeSingle()
+  if (error || !p) return null
+  const [items, services, reviews, busy] = await Promise.all([
+    supabase.rpc('get_public_portfolio_items', { p_creative_id: id }).then(r => r.data || []),
+    supabase.from('portfolio_services').select('id, name, description, price, sort_order, image_url').eq('creative_id', id).order('sort_order').then(r => r.data || []),
+    supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type').eq('creative_id', id).eq('hidden', false).order('created_at', { ascending: false }).then(r => r.data || []),
+    supabase.rpc('creative_unavailable_dates', { p_creative: id }).then(r => (r.data || []).map(x => x.date)),
+  ])
+  return shapeProfile(p, { items, services, reviews, busy })
+}
+// An enquiry from the profile page. Signed in as a client: the thread + message are inserted and
+// send-enquiry notifies the creative and makes the portal (the live site's path). Anyone else:
+// site-enquiry, the rate-limited anonymous function. Returns { portal } when one was made.
+export async function sendEnquiry(creativeId, f, user) {
+  const message = String(f.message || '').trim(); if (!message) throw new Error('Say what you need first, one sentence is enough.')
+  const mod = await moderateText((f.subject || '') + '\n' + message); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.')
+  if (user) {
+    const name = String(f.name || '').trim() || user.user_metadata?.first_name || user.email
+    const contact = [f.name && 'Name: ' + f.name.trim(), f.phone && 'Phone: ' + f.phone.trim()].filter(Boolean).join('\n')
+    const { data: t, error } = await supabase.from('message_threads').insert({ creative_id: creativeId, client_user_id: user.id, client_name: name, client_email: user.email, subject: f.subject || 'Enquiry' }).select().single()
+    if (error) throw new Error(error.message)
+    const { error: e2 } = await supabase.from('messages').insert({ thread_id: t.id, sender_type: 'client', sender_name: name, body: contact ? message + '\n\nMy contact details:\n' + contact : message })
+    if (e2) throw new Error(e2.message)
+    await supabase.functions.invoke('send-enquiry', { body: { thread_id: t.id } }).catch(() => {})
+    return { thread: t.id }
+  }
+  const name = String(f.name || '').trim(), email = String(f.email || '').trim()
+  if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Your name and a real email, so the reply can find you.')
+  const { data, error } = await supabase.functions.invoke('site-enquiry', { body: { creativeId, name, email, phone: f.phone || null, message: (f.subject ? 'Subject: ' + f.subject + '\n\n' : '') + message, website: f.website || '' } })
+  if (error || data?.error) throw new Error(data?.error || 'Something went wrong. Try again.')
+  return { ok: true }
+}

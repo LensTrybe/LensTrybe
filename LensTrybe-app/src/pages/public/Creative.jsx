@@ -9,13 +9,22 @@ import { useToast } from '../../components/Toast'
 import SiteRender from '../../components/SiteRender'
 import { useStore, nice } from '../../lib/store'
 import { dayStatus, nextOpen } from '../../lib/avail'
+import CreativeLive from './CreativeLive'
+import { isUuid } from '../../lib/live'
+import { LIVE } from '../../lib/mode'
 
 const SITE_PLANS = ['Expert', 'Elite']
 
 const TITLES = ['Harper and Leo, Maleny', 'First look, Noosa', 'Sunshine Beach', 'Rehearsal dinner', 'Getting ready', 'Golden hour, Coolum', 'The speeches', 'Last dance, Montville', 'Elopement, Glass House']
-// A creative's public profile, and the enquiry that starts a thread.
+// A creative's public profile, and the enquiry that starts a thread. A real id (a UUID) is a
+// real profile from the project; the named sample creatives stay for the demo.
 export default function Creative() {
-  const { id } = useParams(); const toast = useToast(); const { s } = useStore()
+  const { id } = useParams()
+  if (LIVE && isUuid(id)) return <CreativeLive id={id} />
+  return <CreativeDemo id={id} />
+}
+function CreativeDemo({ id }) {
+  const toast = useToast(); const { s } = useStore()
   const c = CREATIVES.find(x => x.id === id) || CREATIVES[0]
   const [tab, setTab] = useState(0); const [sel, setSel] = useState(14); const [msg, setMsg] = useState('')
   const [page, setPage] = useState('home')

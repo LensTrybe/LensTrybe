@@ -7,6 +7,8 @@ import Still from '../../components/Still'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { CREATIVES, freeOn } from '../../data/creatives'
+import { LIVE } from '../../lib/mode'
+import { loadCreatives } from '../../lib/live'
 import DatePicker, { fmtDate } from '../../components/DatePicker'
 import SpecialtyPicker from '../../components/SpecialtyPicker'
 import { matchesSpecialty, TAG_FOR } from '../../lib/specialties'
@@ -48,17 +50,20 @@ export default function Directory() {
     const ro = new ResizeObserver(on); ro.observe(b); ro.observe(document.body)
     return () => { removeEventListener('scroll', on); removeEventListener('resize', on); ro.disconnect(); cancelAnimationFrame(raf) }
   }, [])
+  // Live: every listed profile (a photo, a tagline and a skill), from the real project
+  const [all, setAll] = useState(LIVE ? null : CREATIVES)
+  useEffect(() => { if (!LIVE) return; let on = true; loadCreatives().then(l => on && setAll(l)).catch(() => on && setAll([])); return () => { on = false } }, [])
   const list = useMemo(() => {
-    let l = CREATIVES.filter(x => disc === 'all' || x.t.includes(disc))
+    let l = (all || []).filter(x => disc === 'all' || x.t.includes(disc))
     if (spec.size) l = l.filter(x => [...spec].some(s => matchesSpecialty(x, s)))
-    l = l.filter(x => x.p <= budget)
+    l = l.filter(x => !x.p || x.p <= budget)
     if (date) l = l.filter(x => freeOn(x, date))
     if (found) l = l.filter(x => x.found)
     if (place) l = l.filter(x => (x.c + ' ' + x.state).toLowerCase().includes(place.toLowerCase()) || (place === 'Sunshine Coast' && ['Noosa', 'Sunshine Beach', 'Maroochydore', 'Maleny'].includes(x.c)) || (place === 'Brisbane' && ['Brisbane', 'West End', 'Fortitude Valley'].includes(x.c)))
     if (sort === 'price') l = [...l].sort((a, b) => a.p - b.p)
     if (sort === 'rating') l = [...l].sort((a, b) => b.r - a.r || b.rv - a.rv)
     return l
-  }, [disc, spec, budget, date, found, place, sort])
+  }, [all, disc, spec, budget, date, found, place, sort])
   const active = spec.size + (budget < 8000) + (date ? 1 : 0) + found + (place ? 1 : 0) + (disc !== 'all')
   const clear = () => { setDisc('all'); setSpec(new Set()); setBudget(8000); setDate(null); setFound(false); setPlace('') }
   const ask = e => { e.preventDefault(); if (q.trim()) nav('/?q=' + encodeURIComponent(q.trim() + (date && !/\d/.test(q) ? ' on ' + fmtDate(date) : ''))) }
@@ -122,13 +127,13 @@ export function Card({ x, i = 0, date = null }) {
   const kind = x.t.includes('video') && !x.t.includes('photo') ? 'Videographer' : x.t.includes('video') ? 'Photo + video' : 'Photographer'
   return (
     <Link className="ccard lg" to={'/creatives/' + x.id} style={{ '--i': i }}>
-      <div className="img"><Still seed={x.seed + 40} mood={x.mood} />
-        <div className="tp"><span className="tag">{kind}</span><span className={'av' + (free ? '' : ' busy')}><i />{free ? 'Free ' + when : 'Booked ' + when}</span></div>
+      <div className="img">{x.live && (x.cover || x.avatar) ? <img src={x.cover || x.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <Still seed={x.seed + 40} mood={x.mood} />}
+        <div className="tp"><span className="tag">{kind}</span>{!x.live && <span className={'av' + (free ? '' : ' busy')}><i />{free ? 'Free ' + when : 'Booked ' + when}</span>}</div>
       </div>
       <div className="bot">
         <div className="row"><b>{x.n}</b>{x.found && <span className="fb">Founding</span>}</div>
         <small>{x.d} · {x.c}</small>
-        <div className="row2"><span className="stars"><i>★</i>{x.r} · {x.rv} reviews</span><span className="pr">From <b>{fmt(x.p)}</b></span></div>
+        <div className="row2"><span className="stars">{x.rv ? <><i>★</i>{x.r} · {x.rv} reviews</> : 'New on LensTrybe'}</span>{x.p > 0 && <span className="pr">From <b>{fmt(x.p)}</b></span>}</div>
       </div>
     </Link>
   )
