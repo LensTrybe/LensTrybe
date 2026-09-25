@@ -8,6 +8,7 @@ import { moderateText } from '../backend/moderateContent'
 import { STAGES } from '../data/workspace'
 import { threadOwnerTierContactSharingRestricted, messageBodyContainsContactDetails, MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE } from '../backend/messagingContactPolicy'
 import { isMonthlyMessageLimitError, MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE } from '../backend/messageMonthlyLimit'
+import { uploadAttachment } from './attachments'
 
 const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 const today = () => iso(new Date())
@@ -59,13 +60,13 @@ export function shapeClient(c, me) {
   const value = quote?.amount || c.invoices.reduce((s, i) => s + Number(i.amount || 0), 0) || 0
   // the timeline: every message across the client's threads, in order, with documents dropped in where they happened
   const msgs = []
-  for (const t of c.threads) for (const m of t.messages || []) msgs.push({ at: m.created_at, who: m.sender_type === 'creative' ? 'me' : 'them', text: m.body, id: m.id, thread: t.id })
+  for (const t of c.threads) for (const m of t.messages || []) msgs.push({ at: m.created_at, who: m.sender_type === 'creative' ? 'me' : 'them', text: m.body || '', id: m.id, thread: t.id, att: Array.isArray(m.attachments) && m.attachments.length ? m.attachments : undefined })
   const docs = []
   for (const q of c.quotes) { const [st, stt] = docStatus('q', q.status); docs.push({ at: q.created_at, doc: 'Quote ' + short(q.id) + (firstItem(q.items) ? ' · ' + firstItem(q.items) : ''), d: money(q.amount) + ' incl. GST', st, stt, ref: { k: 'q', id: q.id } }) }
   for (const x of c.contracts) { const [st, stt] = docStatus('c', x.status); docs.push({ at: x.created_at, doc: 'Contract ' + (x.title || short(x.id)), d: x.project_name || x.contract_type || '', st, stt, ref: { k: 'c', id: x.id } }) }
   for (const i of c.invoices) { const [st, stt] = docStatus('inv', i.status); docs.push({ at: i.created_at, doc: 'Invoice ' + short(i.id) + (firstItem(i.items) ? ' · ' + firstItem(i.items) : ''), d: money(i.amount) + (i.due_date ? ' · due ' + nice(i.due_date) : ''), st, stt, ref: { k: 'inv', id: i.id } }) }
   for (const dl of c.deliveries) docs.push({ at: dl.created_at, doc: 'Gallery · ' + (dl.title || 'Delivery'), d: (Array.isArray(dl.files) ? dl.files.length : 0) + ' files' + (dl.downloaded_at ? ' · downloaded' : dl.opened_at ? ' · opened' : ''), st: dl.downloaded_at ? 'ok' : 'sent', stt: dl.downloaded_at ? 'Downloaded' : 'Sent' })
-  const line = [...msgs.map(m => ({ [m.who]: m.text, w: when(m.at), at: m.at, mid: m.id, thread: m.thread })), ...docs.map(x => ({ doc: x.doc, d: x.d, st: x.st, stt: x.stt, at: x.at, ref: x.ref }))].sort((a, b) => (a.at || '') < (b.at || '') ? -1 : 1)
+  const line = [...msgs.map(m => ({ [m.who]: m.text, w: when(m.at), at: m.at, mid: m.id, thread: m.thread, att: m.att })), ...docs.map(x => ({ doc: x.doc, d: x.d, st: x.st, stt: x.stt, at: x.at, ref: x.ref }))].sort((a, b) => (a.at || '') < (b.at || '') ? -1 : 1)
   if (!line.length) line.push({ sys: 'Thread opened' })
   const last = msgs[msgs.length - 1]
   const unread = c.threads.reduce((s, t) => s + (t.unread_count || 0), 0)
@@ -107,9 +108,10 @@ export async function loadThreads(me) {
 
 // Send a message to a client as the creative: moderation, insert, notify. Creates the thread if the
 // client has none yet (a client we only have a booking or quote with). Returns the new message row.
-export async function sendMessage(thread, text, me) {
-  const body = String(text || '').trim(); if (!body) throw new Error('Nothing to send.')
-  const mod = await moderateText(body); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.')
+// files: File objects to attach (uploaded here, into the thread's private folder, before the insert).
+export async function sendMessage(thread, text, me, files = [], onFile) {
+  const body = String(text || '').trim(); if (!body && !files.length) throw new Error('Nothing to send.')
+  if (body) { const mod = await moderateText(body); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.') }
   let threadId = thread.live?.threads?.[0]
   if (!threadId) {
     const { data: cid } = await supabase.rpc('find_client_account_id', { p_email: thread.email }).catch(() => ({ data: null }))
@@ -117,10 +119,12 @@ export async function sendMessage(thread, text, me) {
     if (error) throw error
     threadId = t.id
   }
-  const { data: m, error } = await supabase.from('messages').insert({ thread_id: threadId, sender_type: 'creative', sender_name: me.label, body, creative_id: me.id }).select('id, created_at').single()
+  const attachments = []
+  for (let i = 0; i < files.length; i++) { attachments.push(await uploadAttachment(files[i], { threadId })); onFile?.(i) }
+  const { data: m, error } = await supabase.from('messages').insert({ thread_id: threadId, sender_type: 'creative', sender_name: me.label, body, creative_id: me.id, attachments }).select('id, created_at').single()
   if (error) throw new Error(isMonthlyMessageLimitError(error) ? MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE : error.message)
   try { await supabase.functions.invoke('send-message-notification', { body: { message_id: m.id } }) } catch { /* the message is saved; the email is best effort */ }
-  return { id: m.id, at: m.created_at, thread: threadId }
+  return { id: m.id, at: m.created_at, thread: threadId, attachments }
 }
 
 // Mark a client's threads read (the bell and the "needs me" count)
@@ -140,11 +144,15 @@ export async function loadPortal(token) {
 }
 // The client sends. Same two rules as the live portal: moderation, and on a Basic-plan creative's
 // thread no phone numbers or emails in the body (the plan's messaging stays inside LensTrybe).
-export async function portalSend(token, threadId, text, creativeTier) {
-  const body = String(text || '').trim(); if (!body) throw new Error('Nothing to send.')
-  const mod = await moderateText(body); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.')
-  if (threadOwnerTierContactSharingRestricted(creativeTier) && messageBodyContainsContactDetails(body)) throw new Error(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
-  const { data, error } = await supabase.rpc('portal_send_message', { p_token: token, p_thread_id: threadId, p_body: body })
+export async function portalSend(token, threadId, text, creativeTier, files = [], onFile) {
+  const body = String(text || '').trim(); if (!body && !files.length) throw new Error('Nothing to send.')
+  if (body) {
+    const mod = await moderateText(body); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.')
+    if (threadOwnerTierContactSharingRestricted(creativeTier) && messageBodyContainsContactDetails(body)) throw new Error(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
+  }
+  const attachments = []
+  for (let i = 0; i < files.length; i++) { attachments.push(await uploadAttachment(files[i], { threadId, token })); onFile?.(i) }
+  const { data, error } = await supabase.rpc('portal_send_message_v2', { p_token: token, p_thread_id: threadId, p_body: body, p_attachments: attachments })
   if (error) throw new Error('Could not send your message. Try again.')
   return data
 }

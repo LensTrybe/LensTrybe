@@ -9,6 +9,7 @@ import { dayStatus, nextOpen, label as dlabel } from './avail'
 import { LIVE } from './mode'
 import { useAuth } from '../backend/AuthContext'
 import * as live from './live'
+import { uploadAttachment } from './attachments'
 
 // The flows every page shares. A button on Today, Calendar or Finance that says "New booking"
 // opens the same sheet and writes the same records, so nothing is wired twice and the result shows
@@ -25,14 +26,17 @@ export function useFlows() {
   const auth = useAuth()
   const me = LIVE ? { id: auth.user?.id, label: auth.profile?.business_name || auth.user?.email || 'Creative' } : null
   // Send a message in a thread. Demo: the timeline. Live: the real insert + notification email, then the timeline.
-  const sendMessage = async (tid, text) => {
+  // files: File objects from the paperclip; onFile(i) fires as each one lands.
+  const sendMessage = async (tid, text, files = [], onFile) => {
     const t = s.threads.find(x => x.id === tid)
     if (LIVE && t) {
-      try { const r = await live.sendMessage(t, text, me); say(tid, 'me', text, { at: live.when(r.at), mid: r.id }); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0], live: { ...tt.live, threads: tt.live?.threads?.length ? tt.live.threads : [r.thread] } })) }
+      try { const r = await live.sendMessage(t, text, me, files, onFile); say(tid, 'me', text, { at: live.when(r.at), mid: r.id, att: r.attachments.length ? r.attachments : undefined, thread: r.thread }); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0], live: { ...tt.live, threads: tt.live?.threads?.length ? tt.live.threads : [r.thread] } })) }
       catch (e) { toast(e.message || 'Could not send.'); return false }
       return true
     }
-    say(tid, 'me', text); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
+    const att = []
+    for (let i = 0; i < files.length; i++) { att.push(await uploadAttachment(files[i], { threadId: tid })); onFile?.(i) }
+    say(tid, 'me', text, att.length ? { att } : {}); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
   }
   // Live: pull every thread, document and booking for this creative into the store
   const refreshLive = async () => { if (!LIVE) return; try { const d = await live.loadThreads(me); hydrate({ threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...s.events.filter(e => !String(e.id).startsWith('b-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }

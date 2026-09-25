@@ -36,7 +36,7 @@ Status: `design` = screen exists on the sample store · `wired` = runs on the li
 | Live route | Next route | Status | Notes |
 |---|---|---|---|
 | `/client-dashboard` | `/portal` (client home) | pending | `my_client_bookings`, `link_my_client_threads` |
-| `/portal/:token` | `/portal/:slug` | design | `portal_load`, `portal_send_message`, `portal_thread_messages` |
+| `/portal/:token` | `/portal/:token` | live | `portal_load_v2`, `portal_send_message_v2` (attachments), `portal_thread_messages`, `respond-quote`, `message-attachments` (new: private uploads + signed links, both sides) |
 | `/sign/:token` | inside the thread | design | `contract_for_signing`, `sign_contract`, `notify-contract-signed` |
 | `/meeting/:token` | inside the thread | design | `meeting-respond` |
 | `/deliver/:token` | inside the thread | design | `deliver`, `delivery_events` |
@@ -52,7 +52,7 @@ Status: `design` = screen exists on the sample store · `wired` = runs on the li
 | Live | Next | Status | Notes |
 |---|---|---|---|
 | `/dashboard` | `today` | design | |
-| `clients/messages` | `threads`, `thread/:id` | design | `message_threads`, `messages`, `send-message-notification` |
+| `clients/messages` | `threads`, `thread/:id` | live | `my_threads`, `message_threads`, `messages` (+ `attachments`), `send-message-notification`, `message-attachments` |
 | `my-work/my-bookings` | `bookings` | design | `bookings` function, `calendar_events`, `calendar-feed` |
 | `projects`, `projects/:id` | `projects`, `project/:id` | design | `projects`, `pipeline_stages`, `project_checklists`, `creative_tasks` |
 | `inventory` | `inventory` | design | `inventory_*` |

@@ -6,6 +6,7 @@ import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { loadPortal, portalSend, portalRespondQuote, stageOf, when, nice, money } from '../../lib/live'
 import { downloadDocumentPdf } from '../../backend/downloadDocumentPdf'
+import { AttachButton, Attachments, Pending, useAttach } from '../../components/Attach'
 import { imageUrl } from '../../backend/imageUrl'
 import { STAGES } from '../../data/workspace'
 import '../../styles/public.css'
@@ -23,11 +24,12 @@ const av = url => { try { return imageUrl(url) || url } catch { return url } }
 
 export default function PortalLive({ token }) {
   useSpecular([])
-  const [p, setP] = useState(undefined), [v, setV] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(''), [ok, setOk] = useState('')
+  const [p, setP] = useState(undefined), [v, setV] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(''), [ok, setOk] = useState(''), [prog, setProg] = useState({})
   const end = useRef(null)
+  const att = useAttach(m => setErr(m))
   const load = async () => { try { setP(await loadPortal(token)) } catch { setP(null) } }
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [p])
+  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); const k = setTimeout(() => end.current?.scrollIntoView({ block: 'end' }), 600); return () => clearTimeout(k) }, [p])
   if (p === undefined) return <div className="pub pub-light portal"><Aurora /><main className="pwrap"><p className="fine" style={{ textAlign: 'center', paddingTop: 120 }}>Opening your thread.</p></main></div>
   if (p === null) return <div className="pub pub-light portal"><Aurora /><main className="pwrap"><div className="pjob lg" style={{ marginTop: 100 }}><p className="eb p">Link not recognised</p><h1>That link is not one of ours.</h1><p className="sub">It may have been trimmed by your email app. Open the newest email from your creative and tap the button in it, or ask them to send the link again.</p><Link className="btn p" to="/" style={{ marginTop: 14 }}>LensTrybe home</Link></div></main></div>
 
@@ -37,7 +39,7 @@ export default function PortalLive({ token }) {
   const upcoming = p.bookings.filter(b => b.booking_date && b.booking_date >= today && !b.cancelled_at).sort((a, b) => a.booking_date < b.booking_date ? -1 : 1)[0]
   const owed = p.invoices.filter(i => !['paid', 'draft'].includes(low(i.status))).reduce((s, i) => s + Number(i.amount || 0), 0)
   const items = []
-  for (const t of p.threads) for (const m of t.messages || []) items.push({ at: m.created_at, k: m.sender_type === 'creative' ? 'them' : 'me', text: m.body, id: m.id })
+  for (const t of p.threads) for (const m of t.messages || []) items.push({ at: m.created_at, k: m.sender_type === 'creative' ? 'them' : 'me', text: m.body, id: m.id, att: Array.isArray(m.attachments) && m.attachments.length ? m.attachments : null, thread: t.id })
   for (const q of p.quotes) items.push({ at: q.created_at, k: 'quote', q })
   for (const x of p.contracts) items.push({ at: x.created_at, k: 'contract', x })
   for (const i of p.invoices) items.push({ at: i.created_at, k: 'invoice', i })
@@ -47,10 +49,10 @@ export default function PortalLive({ token }) {
   items.sort((a, b) => (a.at || '') < (b.at || '') ? -1 : 1)
   const threadId = p.threads[0]?.id
   const send = async () => {
-    const x = v.trim(); if (!x || busy) return
+    const x = v.trim(); if ((!x && !att.files.length) || busy) return
     if (!threadId) return setErr('Messages open once ' + (c.business_name || 'your creative') + ' has replied to your enquiry.')
-    setBusy('send'); setErr('')
-    try { await portalSend(token, threadId, x, c.subscription_tier); setV(''); await load() } catch (e) { setErr(e.message) } finally { setBusy('') }
+    setBusy('send'); setErr(''); setProg({})
+    try { await portalSend(token, threadId, x, c.subscription_tier, att.files, i => setProg(q => ({ ...q, [i]: 1 }))); setV(''); att.clear(); await load() } catch (e) { setErr(e.message) } finally { setBusy('') }
   }
   const respond = async (q, action) => { setBusy(q.id); setErr(''); try { await portalRespondQuote(token, q.id, action); setOk(action === 'accept' ? 'Quote accepted. ' + (c.business_name || 'Your creative') + ' has been told.' : 'Quote declined.'); await load() } catch (e) { setErr(e.message) } finally { setBusy('') } }
   const pdf = async (type, id) => { setBusy(id); setErr(''); try { await downloadDocumentPdf({ type, id, portalToken: token }) } catch (e) { setErr(e.message || 'Could not make the PDF.') } finally { setBusy('') } }
@@ -65,7 +67,7 @@ export default function PortalLive({ token }) {
         <div className="pthread2">
           {!items.length && <div className="tsys">Nothing here yet. Your enquiry is with {c.business_name || 'your creative'}.</div>}
           {items.map((it, n) => {
-            if (it.k === 'me' || it.k === 'them') return <div key={it.id || n} className={'tm ' + it.k}>{it.text}<span className="w">{when(it.at)}</span></div>
+            if (it.k === 'me' || it.k === 'them') return <div key={it.id || n} className={'tm ' + it.k}>{it.text}{it.att && <Attachments items={it.att} ctx={{ threadId: it.thread, token }} />}<span className="w">{when(it.at)}</span></div>
             if (it.k === 'quote') { const q = it.q, [st, stt] = qst(q), open = !['accepted', 'declined'].includes(low(q.status)); return <div key={q.id} className={'pcard lg' + (open ? ' now' : '')}><i className="pk"><Icon name={open ? 'doc' : 'check'} size={13} /></i><div><b>Quote{firstItem(q.items) ? ' · ' + firstItem(q.items) : ''}</b><small>{money(q.amount)} incl. GST{q.valid_until ? ' · valid until ' + nice(q.valid_until) : ''}</small>{open && <div className="ln" style={{ marginTop: 8, display: 'flex', gap: 8 }}><button className="btn p sm" disabled={busy === q.id} onClick={() => respond(q, 'accept')}>Accept quote</button><button className="pbtn" disabled={busy === q.id} onClick={() => respond(q, 'decline')}>Decline</button></div>}</div><span className={'st ' + st}>{stt}</span><button className="pbtn" disabled={busy === q.id} onClick={() => pdf('quote', q.id)}>PDF</button></div> }
             if (it.k === 'contract') { const x = it.x, s = low(x.status), done = s === 'signed' || s === 'completed'; return <div key={x.id} className={'pcard lg' + (!done ? ' now' : '')}><i className="pk"><Icon name={done ? 'check' : 'sign'} size={13} /></i><div><b>Contract{x.title ? ' · ' + x.title : ''}</b><small>{done ? 'Signed ' + when(x.signed_at) : 'Ready for your signature'}</small></div><span className={'st ' + (done ? 'pink' : 'live')}>{done ? 'Signed' : 'To sign'}</span>{!done && x.signing_token ? <Link className="pbtn" to={'/sign/' + x.signing_token}>Read and sign</Link> : <button className="pbtn" disabled={busy === x.id} onClick={() => pdf('contract', x.id)}>PDF</button>}</div> }
             if (it.k === 'invoice') { const i = it.i, s = low(i.status); return <div key={i.id} className={'pcard lg' + (!['paid'].includes(s) ? ' now' : '')}><i className="pk"><Icon name={s === 'paid' ? 'check' : 'money'} size={13} /></i><div><b>Invoice{firstItem(i.items) ? ' · ' + firstItem(i.items) : ''}</b><small>{money(i.amount)}{i.due_date ? ' · due ' + nice(i.due_date) : ''}{s === 'paid' ? ' · paid, thank you' : ''}</small></div><span className={'st ' + (s === 'paid' ? 'ok' : s === 'overdue' ? 'pink' : 'live')}>{s === 'paid' ? 'Paid' : s === 'overdue' ? 'Overdue' : 'Due'}</span><button className="pbtn" disabled={busy === i.id} onClick={() => pdf('invoice', i.id)}>PDF</button></div> }
@@ -79,7 +81,9 @@ export default function PortalLive({ token }) {
           {err && <div className="tsys" style={{ color: 'var(--pink-t)' }}>{err}</div>}
           <div ref={end} />
         </div>
-        <div className="pcompose lg"><span className="lens" aria-hidden="true" /><input value={v} onChange={e => { setV(e.target.value); setErr('') }} onKeyDown={e => e.key === 'Enter' && send()} placeholder={'Message ' + (c.business_name || 'your creative')} disabled={busy === 'send'} /><button onClick={send} aria-label="Send" disabled={busy === 'send'}><Icon name="arrow" /></button></div>
+        <div className="pcbox"><Pending files={att.files} onRemove={att.remove} busy={busy === 'send'} progress={prog} />
+        <div className="pcompose lg"><span className="lens" aria-hidden="true" /><AttachButton onFiles={att.add} count={att.files.length} disabled={busy === 'send'} /><input value={v} onChange={e => { setV(e.target.value); setErr('') }} onKeyDown={e => e.key === 'Enter' && send()} placeholder={att.files.length ? 'Add a note, or just send the files' : 'Message ' + (c.business_name || 'your creative')} disabled={busy === 'send'} /><button onClick={send} aria-label="Send" disabled={busy === 'send'}><Icon name="arrow" /></button></div></div>
+        <p className="fine" style={{ textAlign: 'center', marginTop: 10 }}>Photos, PDFs and files up to 50 MB each, straight from your phone or computer. Only you and {c.business_name || 'your creative'} can open them.</p>
         <p className="fine" style={{ textAlign: 'center', marginTop: 18 }}>This link is yours. No account, no password. Lose it and {c.business_name || 'your creative'} can resend it in a tap. <Link to="/" style={{ color: 'var(--green-t)' }}>lenstrybe.com</Link></p>
       </main>
     </div>

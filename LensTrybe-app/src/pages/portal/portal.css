@@ -56,7 +56,8 @@
 .portal .pcard .stars button:hover{transform:scale(1.15)}
 .portal .pcard .stars button.on{color:var(--amber)}
 
-.portal .pcompose{position:sticky;bottom:16px;margin-top:6px;border-radius:999px;padding:6px 6px 6px 16px;display:flex;gap:10px;align-items:center;background:linear-gradient(125deg,rgba(255,255,255,.9),rgba(255,255,255,.7));box-shadow:0 24px 60px -20px rgba(31,38,90,.4),inset 0 1px 1px #fff}
+.portal .pcbox{position:sticky;bottom:16px;margin-top:6px}
+.portal .pcompose{border-radius:999px;padding:6px 6px 6px 16px;display:flex;gap:10px;align-items:center;background:linear-gradient(125deg,rgba(255,255,255,.9),rgba(255,255,255,.7));box-shadow:0 24px 60px -20px rgba(31,38,90,.4),inset 0 1px 1px #fff}
 .portal .pcompose .lens{width:18px;height:18px;border-radius:50%;flex:none;background:conic-gradient(from 0deg,var(--mint),var(--rose),var(--lilac),var(--mint));position:relative}
 .portal .pcompose .lens::after{content:"";position:absolute;inset:4px;border-radius:50%;background:#fff}
 .portal .pcompose input{flex:1;background:transparent;border:0;outline:none;font-size:14.5px;color:var(--ink);padding:10px 0}

@@ -6,6 +6,7 @@ import { STAGES } from '../../data/workspace'
 import { fmt } from '../../lib/format'
 import { LIVE } from '../../lib/mode'
 import * as live from '../../lib/live'
+import { AttachButton, Attachments, Pending, useAttach } from '../../components/Attach'
 
 const FILTERS = [['need', 'Needs me', t => t.need], ['active', 'Active', t => t.stage < 6], ['quoted', 'Quoted', t => t.stage === 1], ['delivered', 'Delivered', t => t.stage >= 6], ['all', 'All', () => true]]
 
@@ -46,8 +47,10 @@ export default function Threads() {
 }
 
 function ThreadPane({ t, F }) {
-  const { s, toast, say } = F; const [v, setV] = useState(''), [info, setInfo] = useState(false); const end = useRef(null)
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [t.line.length])
+  const { s, toast, say } = F; const [v, setV] = useState(''), [info, setInfo] = useState(false), [sending, setSending] = useState(false), [prog, setProg] = useState({}); const end = useRef(null)
+  const att = useAttach(toast)
+  const ctx = useMemo(() => ({ threadId: LIVE ? t.live?.threads?.[0] : t.id }), [t.id, t.live?.threads?.[0]]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); const k = setTimeout(() => end.current?.scrollIntoView({ block: 'end' }), 600); return () => clearTimeout(k) }, [t.line.length])
   useEffect(() => { if (LIVE && t.unread) { live.markRead(t); F.upd('threads', t.id, { unread: 0 }) } }, [t.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const first = t.n.split(' ')[0]
   const docs = s.ledger.filter(r => r.t === t.id)
@@ -65,12 +68,16 @@ function ThreadPane({ t, F }) {
     if (l === 'edit') return F.reply(t.id, '', { cta: 'Send' })
     toast(a + ': done')
   }
-  const send = () => {
-    const x = v.trim(); if (!x) return
+  const send = async () => {
+    const x = v.trim(); if (sending || (!x && !att.files.length)) return
     if (x.startsWith('/')) { const c = x.slice(1).split(' ')[0].toLowerCase(); const map = { quote: 'Quote', invoice: 'Invoice', contract: 'Contract', callsheet: 'Call sheet', meeting: 'Meeting', gallery: 'Gallery', review: 'Review' }; if (map[c]) { quick(map[c]); setV(''); return } toast('Try /quote, /invoice, /contract, /callsheet, /meeting, /gallery or /review'); return }
     // stay on this thread even when the reply takes it off the "Needs me" list
     if (location.pathname !== '/app/thread/' + t.id) F.nav('/app/thread/' + t.id, { replace: true })
-    setV(''); F.sendMessage(t.id, x).then(ok => { if (!ok) setV(x) })
+    const files = att.files
+    setV(''); setSending(true); setProg({})
+    const ok = await F.sendMessage(t.id, x, files, i => setProg(p => ({ ...p, [i]: 1 })))
+    setSending(false)
+    if (ok) att.clear(); else setV(x)
   }
   return (
     <div className="tp lg">
@@ -86,7 +93,7 @@ function ThreadPane({ t, F }) {
       <div className="stages">{STAGES.map((st, i) => <button type="button" key={st} className={i < t.stage ? 'd' : i === t.stage ? 'c' : ''} onClick={() => { F.upd('threads', t.id, { stage: i }); toast('Stage: ' + st) }} title={'Set stage to ' + st}><i />{st}</button>)}</div>
       <div className={'tpb' + (info ? ' info' : '')}>
         <div className="tline">
-          {t.line.map((m, i) => m.them ? <div key={i} className="tm them">{m.them}<span className="w">{m.w || m.at}</span></div> : m.me ? <div key={i} className="tm me">{m.me}<span className="w">{m.w || m.at}</span></div> : m.sys ? <div key={i} className="tsys">{m.sys}</div> : m.doc ? <div key={i} className="tdoc"><span className="ic"><Icon name="doc" /></span><div><b>{m.doc}</b><small>{m.d}</small></div><span className={'st ' + m.st}>{m.stt}</span></div> : <div key={i} className="tlumi"><span className="lm" /><div>{m.lumi}{m.acts && <div className="acts">{m.acts.map((a, j) => <button key={a} className={j ? '' : 'y'} onClick={() => lumiAct(a)}>{a}</button>)}</div>}</div></div>)}
+          {t.line.map((m, i) => 'them' in m ? <div key={i} className="tm them">{m.them}{m.att && <Attachments items={m.att} ctx={m.thread ? { threadId: m.thread } : ctx} />}<span className="w">{m.w || m.at}</span></div> : 'me' in m ? <div key={i} className="tm me">{m.me}{m.att && <Attachments items={m.att} ctx={m.thread ? { threadId: m.thread } : ctx} />}<span className="w">{m.w || m.at}</span></div> : m.sys ? <div key={i} className="tsys">{m.sys}</div> : m.doc ? <div key={i} className="tdoc"><span className="ic"><Icon name="doc" /></span><div><b>{m.doc}</b><small>{m.d}</small></div><span className={'st ' + m.st}>{m.stt}</span></div> : <div key={i} className="tlumi"><span className="lm" /><div>{m.lumi}{m.acts && <div className="acts">{m.acts.map((a, j) => <button key={a} className={j ? '' : 'y'} onClick={() => lumiAct(a)}>{a}</button>)}</div>}</div></div>)}
           <div ref={end} />
         </div>
         <aside className="tinfo">
@@ -96,7 +103,8 @@ function ThreadPane({ t, F }) {
           <div className="blk"><b>Client</b><Link className="lnk" to="/app/clients" onClick={() => { try { sessionStorage.setItem('lt-client', t.id) } catch {} }}>Open contact <Icon name="arrow" size={12} /></Link></div>
         </aside>
       </div>
-      <div className="compose"><span className="lm" aria-hidden="true" /><input value={v} onChange={e => setV(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder={`Message ${first}, or type / for a quote, invoice, contract or call sheet`} /><button onClick={send} aria-label="Send"><Icon name="arrow" /></button></div>
+      <Pending files={att.files} onRemove={att.remove} busy={sending} progress={prog} />
+      <div className={'compose' + (att.files.length ? ' hasatt' : '')}><span className="lm" aria-hidden="true" /><AttachButton onFiles={att.add} count={att.files.length} disabled={sending} /><input value={v} onChange={e => setV(e.target.value)} onKeyDown={e => e.key === 'Enter' && send()} placeholder={att.files.length ? 'Add a note, or just send the files' : `Message ${first}, or type / for a quote, invoice, contract or call sheet`} disabled={sending} /><button onClick={send} aria-label="Send" disabled={sending}><Icon name="arrow" /></button></div>
     </div>
   )
 }
