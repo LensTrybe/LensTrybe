@@ -49,3 +49,8 @@ p{margin:0}
 .rv{transition:transform 1s var(--ease),opacity 1s var(--ease)}
 .rv.pre{transform:translateY(28px);opacity:.001}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}html{scroll-behavior:auto}}
+
+/* Build mode pill, bottom left, until launch */
+.modebadge{position:fixed;left:14px;bottom:14px;z-index:60;height:26px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(10,10,15,.8);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer}
+.modebadge.live.ok,.modebadge.live.signed-in{color:#0a0a0f;background:var(--neon)}
+.modebadge.live.error{color:#fff;background:#c11f5a}

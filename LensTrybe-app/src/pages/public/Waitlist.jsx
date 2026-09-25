@@ -9,7 +9,8 @@ import { STATE_OF, claimSEQ, inSEQ, isOutside, regionCookie, regionName } from '
 // people to Join. For everyone outside the south east (the front door, middleware.js, sends them
 // here with ?region=) it is the list for their area, open until that area launches: the copy
 // names the place, the state is preselected, and a link lets anyone the geo got wrong through.
-export const LAUNCH = new Date('2026-10-01T09:00:00+10:00')
+import { LAUNCH_DATE } from '../../backend/launch'
+export const LAUNCH = LAUNCH_DATE
 const STATES = ['QLD', 'NSW', 'VIC', 'ACT', 'SA', 'WA', 'TAS', 'NT']
 const DISC = ['Photographer', 'Videographer', 'Both', 'Drone operator', 'Editor', 'Content creator']
 const WHY = {

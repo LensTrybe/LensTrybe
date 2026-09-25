@@ -1,0 +1,134 @@
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from './supabaseClient'
+
+const AuthContext = createContext(null)
+
+/** Set on LoginPage immediately before `signInWithOAuth({ provider: 'google' })`; cleared in `fetchUserData`. */
+export const LT_GOOGLE_OAUTH_PENDING_KEY = 'lt_google_oauth'
+
+/** One-shot message for JoinHubPage after Google OAuth when the user has no app account yet. */
+export const LT_JOIN_FLASH_KEY = 'lt_join_flash'
+
+/** Post-OAuth / magic-link: optional `sessionStorage.returnTo`, never hijack portal or deliver links. */
+function consumeOAuthReturnRedirect() {
+  if (typeof window === 'undefined') return
+  const path = window.location.pathname
+  if (path.startsWith('/portal/') || path.startsWith('/deliver/')) return
+  const returnTo = sessionStorage.getItem('returnTo')
+  if (returnTo && !returnTo.startsWith('/portal') && !returnTo.startsWith('/deliver')) {
+    sessionStorage.removeItem('returnTo')
+    window.location.href = returnTo
+  }
+}
+
+export function AuthProvider({ children }) {
+  const [user, setUser] = useState(null)
+  const [profile, setProfile] = useState(null)
+  const [clientAccount, setClientAccount] = useState(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    // Demo mode: no client, nobody signed in, nothing to wait for.
+    if (!supabase) { setLoading(false); return undefined }
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        consumeOAuthReturnRedirect()
+        fetchUserData(session.user.id)
+      } else setLoading(false)
+    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null)
+      if (session?.user) {
+        if (event === 'SIGNED_IN') consumeOAuthReturnRedirect()
+        fetchUserData(session.user.id)
+      } else { setProfile(null); setClientAccount(null); setLoading(false) }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  // opts.silent: refresh profile in place without flipping `loading` (which unmounts
+  // protected routes). Used after in-page changes like an admin plan switch.
+  async function fetchUserData(userId, opts = {}) {
+    if (!opts.silent) setLoading(true)
+    const { data: profileRow } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+
+    // Bank details and credential document links live in the owner-only
+    // profile_private table (they are no longer on the publicly readable profile).
+    let profileData = profileRow
+    if (profileRow) {
+      const { data: priv } = await supabase.from('profile_private').select('*').eq('id', userId).maybeSingle()
+      if (priv) {
+        const { id: _pid, updated_at: _pu, ...privFields } = priv
+        profileData = { ...profileRow, ...privFields }
+      }
+    }
+
+    const { data: clientData } = await supabase
+      .from('client_accounts')
+      .select('*')
+      .eq('id', userId)
+      .maybeSingle()
+
+    // Link any message threads that were created with this client's email but no client_user_id
+    if (clientData) {
+      try { await supabase.rpc('link_my_client_threads') } catch { /* best effort */ }
+    }
+
+    setProfile(profileData)
+    setClientAccount(clientData)
+    setLoading(false)
+
+    if (typeof window === 'undefined') return
+    let googleOAuthReturn = false
+    try {
+      googleOAuthReturn = sessionStorage.getItem(LT_GOOGLE_OAUTH_PENDING_KEY) === '1'
+      if (googleOAuthReturn) sessionStorage.removeItem(LT_GOOGLE_OAUTH_PENDING_KEY)
+    } catch {
+      /* ignore */
+    }
+
+    if (googleOAuthReturn && !profileData && !clientData) {
+      if (window.location.pathname !== '/onboarding') {
+        window.location.replace(`${window.location.origin}/onboarding`)
+      }
+      return
+    }
+
+    if (googleOAuthReturn && profileData && window.location.pathname === '/') {
+      window.location.replace(`${window.location.origin}/dashboard`)
+      return
+    }
+
+    // Email and password signups get their profile built by the handle_new_user trigger,
+    // so the check above never fires for them and they used to skip setup entirely. Catch
+    // them on the way into the dashboard instead. Only the dashboard: bouncing someone off
+    // the pricing or support page because they have not finished setup would be rude, and
+    // the wizard itself has an escape hatch so nobody can be locked out.
+    if (profileData && !profileData.onboarded_at && window.location.pathname.startsWith('/dashboard')) {
+      window.location.replace(`${window.location.origin}/onboarding`)
+    }
+  }
+
+  const isCreative = !!profile
+  const isClient = !!clientAccount && !profile
+  const tier = profile?.subscription_tier ?? 'basic'
+
+  return (
+    <AuthContext.Provider value={{ user, profile, clientAccount, loading, isCreative, isClient, tier, fetchUserData }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}

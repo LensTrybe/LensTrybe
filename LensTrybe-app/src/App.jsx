@@ -1,6 +1,9 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { ToastProvider } from './components/Toast'
 import { StoreProvider } from './lib/store'
+import { AuthProvider } from './backend/AuthContext'
+import { SubscriptionProvider } from './backend/SubscriptionContext'
+import ModeBadge from './components/ModeBadge'
 import RefractFilter from './components/RefractFilter'
 import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
@@ -27,10 +30,12 @@ import LeaveReview from './pages/public/LeaveReview'
 import Shell from './pages/app/Shell'
 
 // Every route in the next LensTrybe. Public site, onboarding, the client portal
-// and the creative workspace. Demo mode: no backend, sample data throughout.
+// and the creative workspace. Two modes (src/lib/mode.js): demo runs on the sample store with
+// nobody signed in; live puts the real Supabase session, profile and plan behind useAuth() and
+// useSubscription(), the same contract the live app's pages are written against.
 export default function App() {
   return (
-    <StoreProvider><ToastProvider>
+    <AuthProvider><SubscriptionProvider><StoreProvider><ToastProvider>
       <RefractFilter />
       <Routes>
         <Route element={<PublicLayout />}>
@@ -66,6 +71,7 @@ export default function App() {
         <Route path="/app/*" element={<Shell />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-    </ToastProvider></StoreProvider>
+      <ModeBadge />
+    </ToastProvider></StoreProvider></SubscriptionProvider></AuthProvider>
   )
 }
