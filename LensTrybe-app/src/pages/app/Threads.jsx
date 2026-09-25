@@ -4,6 +4,8 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { STAGES } from '../../data/workspace'
 import { fmt } from '../../lib/format'
+import { LIVE } from '../../lib/mode'
+import * as live from '../../lib/live'
 
 const FILTERS = [['need', 'Needs me', t => t.need], ['active', 'Active', t => t.stage < 6], ['quoted', 'Quoted', t => t.stage === 1], ['delivered', 'Delivered', t => t.stage >= 6], ['all', 'All', () => true]]
 
@@ -46,6 +48,7 @@ export default function Threads() {
 function ThreadPane({ t, F }) {
   const { s, toast, say } = F; const [v, setV] = useState(''), [info, setInfo] = useState(false); const end = useRef(null)
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [t.line.length])
+  useEffect(() => { if (LIVE && t.unread) { live.markRead(t); F.upd('threads', t.id, { unread: 0 }) } }, [t.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const first = t.n.split(' ')[0]
   const docs = s.ledger.filter(r => r.t === t.id)
   const quick = x => { if (x === 'Quote') F.newDoc('q', { client: t.id }); else if (x === 'Invoice') F.newDoc('inv', { client: t.id }); else if (x === 'Contract') F.newDoc('c', { client: t.id }); else if (x === 'Call sheet') callSheet(); else if (x === 'Meeting') F.newMeeting({ client: t.id }); else if (x === 'Gallery') F.newGallery({ client: t.id, d: t.j }); else if (x === 'Review') F.askReview(t.id) }
@@ -65,7 +68,9 @@ function ThreadPane({ t, F }) {
   const send = () => {
     const x = v.trim(); if (!x) return
     if (x.startsWith('/')) { const c = x.slice(1).split(' ')[0].toLowerCase(); const map = { quote: 'Quote', invoice: 'Invoice', contract: 'Contract', callsheet: 'Call sheet', meeting: 'Meeting', gallery: 'Gallery', review: 'Review' }; if (map[c]) { quick(map[c]); setV(''); return } toast('Try /quote, /invoice, /contract, /callsheet, /meeting, /gallery or /review'); return }
-    say(t.id, 'me', x); F.upd('threads', t.id, { need: false, next: 'Waiting on ' + first }); setV('')
+    // stay on this thread even when the reply takes it off the "Needs me" list
+    if (location.pathname !== '/app/thread/' + t.id) F.nav('/app/thread/' + t.id, { replace: true })
+    setV(''); F.sendMessage(t.id, x).then(ok => { if (!ok) setV(x) })
   }
   return (
     <div className="tp lg">
@@ -74,7 +79,7 @@ function ThreadPane({ t, F }) {
         <div className="tx"><h2>{t.n}</h2><p>{t.s}</p></div>
         <div className="acts">
           <button className="ic2" title="Job details" aria-label="Job details" aria-pressed={info} onClick={() => setInfo(i => !i)}><Icon name="doc" size={15} /></button>
-          <button className="ic2" title="Copy client link" aria-label="Copy client link" onClick={() => { const link = 'https://' + t.id + '.lenstrybe.com'; try { navigator.clipboard?.writeText(link)?.catch(() => {}) } catch {} toast('Client link copied · ' + link) }}><Icon name="globe" size={15} /></button>
+          <button className="ic2" title="Copy client link" aria-label="Copy client link" onClick={() => { const link = LIVE ? (t.live?.portal_token ? location.origin + '/portal/' + t.live.portal_token : '') : 'https://' + t.id + '.lenstrybe.com'; if (!link) return toast('No client link yet. It is made when you first reply.'); try { navigator.clipboard?.writeText(link)?.catch(() => {}) } catch {} toast('Client link copied · ' + link) }}><Icon name="globe" size={15} /></button>
           <button className="btn w sm" onClick={() => { const e = s.events.find(e => e.t === t.id && e.d >= '2026-09-22'); if (e) F.nav('/app/bookings'); else F.newBooking('', { client: t.id, what: t.j, v: t.v }) }}><Icon name="cal" size={14} />{t.d}</button>
         </div>
       </div>

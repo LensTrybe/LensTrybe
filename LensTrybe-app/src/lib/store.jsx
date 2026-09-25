@@ -1,10 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { SEED } from '../data/seed'
+import { LIVE } from './mode'
 
 // One store for the whole workspace. Starts from the sample data, keeps every change in the browser
 // (localStorage) so what you do on one page shows up on every other page and survives a reload.
 // Later this is the layer that talks to Supabase; the pages will not need to change.
-const KEY = 'lt-store-v11'
+// Live mode keeps its own key: what a real account loads must never mix with the sample data,
+// and clearing the demo must not touch a real session's cached view.
+const KEY = LIVE ? 'lt-live-v1' : 'lt-store-v11'
 const Ctx = createContext(null)
 const clone = o => JSON.parse(JSON.stringify(o))
 const load = () => {
@@ -43,7 +46,9 @@ export function StoreProvider({ children }) {
     // Append to a thread's timeline. who: 'me' | 'them' | 'lumi' | 'sys'
     const say = (tid, who, text, extra = {}) => setS(st => ({ ...st, threads: st.threads.map(t => t.id === tid ? { ...t, line: [...t.line, { [who]: text, at: 'Just now', ...extra }], last: text, when: 'now' } : t) }))
     const reset = () => { try { localStorage.removeItem(KEY) } catch {} setS(clone(SEED)) }
-    return { set, patch, add, upd, del, find, say, next, reset }
+    // Live mode: replace whole collections with what the project returned, in one render
+    const hydrate = cols => setS(st => ({ ...st, ...cols }))
+    return { set, patch, add, upd, del, find, say, next, reset, hydrate }
   }, [s])
 
   const value = useMemo(() => ({ s, ...api }), [s, api])
@@ -52,8 +57,9 @@ export function StoreProvider({ children }) {
 export const useStore = () => useContext(Ctx)
 
 // Date helpers shared by the pages
-export const TODAY = '2026-09-22'
 export const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
+// The sample store lives on a fixed day so its dates make sense; live mode is today
+export const TODAY = LIVE ? iso(new Date()) : '2026-09-22'
 export const parse = s => { const [y, m, d] = s.split('-').map(Number); return new Date(y, m - 1, d) }
 export const nice = (s, o = {}) => parse(s).toLocaleDateString('en-AU', { day: 'numeric', month: 'short', ...o })
 export const dow = s => parse(s).toLocaleDateString('en-AU', { weekday: 'short' })

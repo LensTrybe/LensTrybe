@@ -5,6 +5,7 @@ import Aurora from '../../components/Aurora'
 import Icon from '../../components/Icon'
 import { SheetProvider, useSheet } from '../../components/Sheet'
 import { useStore, nice } from '../../lib/store'
+import { useFlows } from '../../lib/flows'
 import { useSpecular } from '../../lib/useSpecular'
 import { signOut } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
@@ -62,6 +63,19 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 
 // The creative's workspace. Dark glass by default, light on tap. Lumi sits in a dock on the right
 // and can be put away: the workspace does everything on its own, Lumi just does it faster.
+// Live mode: load the real threads, documents and bookings into the store when the workspace
+// opens, again whenever the tab comes back, and every minute while it is open.
+function LiveSync() {
+  const F = useFlows()
+  useEffect(() => {
+    if (!LIVE) return
+    let on = true; const run = () => { if (on && document.visibilityState === 'visible') F.refreshLive() }
+    run(); const t = setInterval(run, 60000); addEventListener('visibilitychange', run); addEventListener('lt-refresh', run)
+    return () => { on = false; clearInterval(t); removeEventListener('visibilitychange', run); removeEventListener('lt-refresh', run) }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return null
+}
+
 export default function Shell() {
   const [dark, setDark] = useState(() => read('lt-dark', true))
   const [dock, setDock] = useState(() => read('lt-dock', typeof innerWidth === 'undefined' || innerWidth > 1600)), [dockM, setDockM] = useState(false)
@@ -86,7 +100,7 @@ export default function Shell() {
     </div>
   )
   return (
-    <div className={'ws' + (dark ? ' dark' : '')}><SheetProvider>
+    <div className={'ws' + (dark ? ' dark' : '')}><SheetProvider><LiveSync />
       <Aurora />
       <div className={'shell' + (dock ? '' : ' nodock') + (dockM ? ' dockopen' : '')}>
         <aside className="rail lg" aria-label="Workspace navigation">

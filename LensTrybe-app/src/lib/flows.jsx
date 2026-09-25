@@ -6,6 +6,9 @@ import { useStore, TODAY, nice, dow, addDays, parse, daysBetween } from './store
 import { fmt } from './format'
 import { DURS, REPS, line as evLine, ics } from './cal'
 import { dayStatus, nextOpen, label as dlabel } from './avail'
+import { LIVE } from './mode'
+import { useAuth } from '../backend/AuthContext'
+import * as live from './live'
 
 // The flows every page shares. A button on Today, Calendar or Finance that says "New booking"
 // opens the same sheet and writes the same records, so nothing is wired twice and the result shows
@@ -17,8 +20,22 @@ const DOC = { q: ['Quote', 'q', 'file'], inv: ['Invoice', 'inv', 'dollar'], c: [
 const shortDate = d => dow(d) + ' ' + nice(d)
 
 export function useFlows() {
-  const { s, add, upd, del, say, patch, set, next, reset } = useStore()
+  const { s, add, upd, del, say, patch, set, next, reset, hydrate } = useStore()
   const { open, confirm, close } = useSheet(); const toast = useToast(); const nav = useNavigate()
+  const auth = useAuth()
+  const me = LIVE ? { id: auth.user?.id, label: auth.profile?.business_name || auth.user?.email || 'Creative' } : null
+  // Send a message in a thread. Demo: the timeline. Live: the real insert + notification email, then the timeline.
+  const sendMessage = async (tid, text) => {
+    const t = s.threads.find(x => x.id === tid)
+    if (LIVE && t) {
+      try { const r = await live.sendMessage(t, text, me); say(tid, 'me', text, { at: live.when(r.at), mid: r.id }); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0], live: { ...tt.live, threads: tt.live?.threads?.length ? tt.live.threads : [r.thread] } })) }
+      catch (e) { toast(e.message || 'Could not send.'); return false }
+      return true
+    }
+    say(tid, 'me', text); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
+  }
+  // Live: pull every thread, document and booking for this creative into the store
+  const refreshLive = async () => { if (!LIVE) return; try { const d = await live.loadThreads(me); hydrate({ threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...s.events.filter(e => !String(e.id).startsWith('b-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
 
   // ── people and threads ──────────────────────────────────────────────────
   const clientField = (k = 'client', extra = {}) => ({ k, l: 'Client', type: 'select', required: true, options: [...s.people.map(p => [p.id, p.n]), ['__new', 'New client…']], ...extra })
@@ -53,7 +70,17 @@ export function useFlows() {
     submit: v => { const r = ensure({ client: '__new', newName: v.n, newEmail: v.em, newPhone: v.ph, notes: v.notes }, v.kind + ' · new', 'TBC', v.kind); upd('people', r.pid, { co: v.co || v.n, social: socialOf(v) }); toast(v.n + ' added. A thread is open with them.'); after?.(r) },
   })
 
-  const newThread = () => open({
+  // Live: a new thread is a real message thread with a first message, made the way the live site's
+  // Messages page does it (find_client_account_id, message_threads insert, messages insert, notify).
+  const newThreadLive = () => open({
+    title: 'New thread', sub: 'One thread per client. They get an email with their link and see the same thread on their phone.', cta: 'Send and open', center: true,
+    fields: [{ k: 'name', l: 'Their name', half: true, required: true, placeholder: 'Harper and Leo' }, { k: 'email', l: 'Email', half: true, type: 'email', required: true, placeholder: 'name@email.com' }, { k: 'job', l: 'The job', required: true, placeholder: 'Wedding · Maleny Manor' }, { k: 'first', l: 'First message', type: 'textarea', rows: 4, required: true, placeholder: 'Hi Harper, lovely to hear from you. The 7th is open and I would love to.' }],
+    submit: async v => {
+      try { await live.sendMessage({ n: v.name.trim(), email: v.email.trim().toLowerCase(), j: v.job.trim(), live: {} }, v.first, me); await refreshLive(); toast('Sent. ' + v.name.trim() + ' has the link.'); nav('/app/thread/' + encodeURIComponent(v.email.trim().toLowerCase())) }
+      catch (e) { toast(e.message || 'Could not open the thread.'); return false }
+    },
+  })
+  const newThread = () => LIVE ? newThreadLive() : open({
     title: 'New thread', sub: 'One thread per job, from enquiry to review. The client sees the same thread on their phone.', cta: 'Open thread',
     fields: [clientField(), ...newNameFields(), { k: 'job', l: 'The job', required: true, placeholder: 'Wedding · Maleny Manor' }, { k: 'when', l: 'When', half: true, type: 'date', min: TODAY }, { k: 'kind', l: 'Kind', half: true, type: 'select', value: 'Wedding', options: KINDS }, { k: 'first', l: 'First message', type: 'textarea', rows: 3, placeholder: 'Optional. Sent to the client when the thread opens.' }],
     submit: v => {
@@ -501,5 +528,5 @@ export function useFlows() {
   const askReview = tid => { const t = s.threads.find(x => x.id === tid); if (!t) return; reply(tid, `Hi ${t.n.split(' ')[0]}, I loved working on this with you. If you have two minutes, a review on my LensTrybe profile helps more than you know: maraokafor.lenstrybe.com/review`, { title: 'Ask ' + t.n + ' for a review', cta: 'Ask', done: 'Review request sent to ' + t.n + '.', next: 'Review requested', then: () => bump(tid, 7) }) }
   const resetAll = () => confirm({ title: 'Start the demo again?', body: 'Everything you have added or changed in this browser goes back to the sample data.', cta: 'Reset', danger: true, onYes: () => { reset(); toast('Back to the sample workspace.') } })
 
-  return { s, add, upd, del, say, patch, set, next, open, confirm, toast, nav, ensure, newClient, SOCIAL, socialFields, socialOf, newThread, reply, nudge, wait, replyRuby, offerGap, gapOffered, newBooking, blockDay, editEvent, moveEvent, openDay, confirmEvent, releaseEvent, newDoc, markPaid, markAccepted, sendDoc, markSigned, chase, receipt, openInvoice, openQuote, openContract, openDoc, uploadContract, openUpload, downloadUpload, saveTemplate, editTemplate, invoiceFromQuote, editExpense, openReceipt, editExpCat, removeDoc, docAction, docActionLabel, sendContract, exportCsv, newNote, newProject, editStage, moveStage, setProjectStage, newGear, catFields, catOf, editGearCat, newMeeting, newPost, newIdea, connectChannel, disconnectChannel, publishPost, schedulePost, unschedulePost, bestTime, syncInsights, CHN, newGallery, newPage, newItem, ROLES, SEES, seatLimit, editSeat, acceptSeat, CROLES, addCrew, editCrew, feeOf, crewReply, cancelCrewJob, messageCrew, payCrew, passJob, takePassed, declinePassed, MCATS, MCOND, sellFromKit, postListing, editListing, removeListing, markSold, relist, saveListing, contactSeller, makeOffer, proposeSwap, replyOffer, acceptOffer, invite, askCrew, replyReview, askReview, draftReply, featureReview, shareReview, flagReview, unflagReview, publishReview, removeReview, addPastReview, requestReview, remindReview, cancelRequest, reviewLink, resetAll, KINDS_A, setAvail, addAway, removeAway, unblockDay, editSeason, extendHold, offerDate, removeWait, addWait, calFeed, dayStatus, nextOpen, dlabel, JOB_KINDS, canReply, jobDate, daysLeft, fitOf, replyJob, askJob, hideJob, unhideJob, saveJob, withdrawReply, nudgeReply, passOnJob, takeDownJob, jobAlerts, clientAccept, clientDecline, postClientJob }
+  return { s, add, upd, del, say, patch, set, next, open, confirm, toast, nav, me, sendMessage, refreshLive, ensure, newClient, SOCIAL, socialFields, socialOf, newThread, reply, nudge, wait, replyRuby, offerGap, gapOffered, newBooking, blockDay, editEvent, moveEvent, openDay, confirmEvent, releaseEvent, newDoc, markPaid, markAccepted, sendDoc, markSigned, chase, receipt, openInvoice, openQuote, openContract, openDoc, uploadContract, openUpload, downloadUpload, saveTemplate, editTemplate, invoiceFromQuote, editExpense, openReceipt, editExpCat, removeDoc, docAction, docActionLabel, sendContract, exportCsv, newNote, newProject, editStage, moveStage, setProjectStage, newGear, catFields, catOf, editGearCat, newMeeting, newPost, newIdea, connectChannel, disconnectChannel, publishPost, schedulePost, unschedulePost, bestTime, syncInsights, CHN, newGallery, newPage, newItem, ROLES, SEES, seatLimit, editSeat, acceptSeat, CROLES, addCrew, editCrew, feeOf, crewReply, cancelCrewJob, messageCrew, payCrew, passJob, takePassed, declinePassed, MCATS, MCOND, sellFromKit, postListing, editListing, removeListing, markSold, relist, saveListing, contactSeller, makeOffer, proposeSwap, replyOffer, acceptOffer, invite, askCrew, replyReview, askReview, draftReply, featureReview, shareReview, flagReview, unflagReview, publishReview, removeReview, addPastReview, requestReview, remindReview, cancelRequest, reviewLink, resetAll, KINDS_A, setAvail, addAway, removeAway, unblockDay, editSeason, extendHold, offerDate, removeWait, addWait, calFeed, dayStatus, nextOpen, dlabel, JOB_KINDS, canReply, jobDate, daysLeft, fitOf, replyJob, askJob, hideJob, unhideJob, saveJob, withdrawReply, nudgeReply, passOnJob, takeDownJob, jobAlerts, clientAccept, clientDecline, postClientJob }
 }

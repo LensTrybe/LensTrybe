@@ -10,10 +10,19 @@ import { MOOD_NAMES } from '../../lib/stills'
 import '../../styles/public.css'
 import '../../styles/pages.css'
 import './portal.css'
+import PortalLive from './PortalLive'
+import { isUuid } from '../../lib/live'
+import { LIVE } from '../../lib/mode'
 
 // The client's side of the same thread. One link, no login, everything in order.
+// A real portal token (a UUID, from the email) opens the live thread; anything else is the demo.
 export default function ClientThread() {
-  const { slug } = useParams(); const toast = useToast(); useSpecular([])
+  const { slug } = useParams()
+  if (LIVE && isUuid(slug)) return <PortalLive token={slug} />
+  return <ClientThreadDemo />
+}
+function ClientThreadDemo() {
+  const toast = useToast(); useSpecular([])
   const [msgs, setMsgs] = useState([]); const [v, setV] = useState(''); const [stars, setStars] = useState(0)
   const send = () => { if (!v.trim()) return; setMsgs(m => [...m, v.trim()]); setV('') }
   return (

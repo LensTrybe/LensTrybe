@@ -11,14 +11,15 @@ import '../../styles/public.css'
 import '../../styles/pages.css'
 
 // The client's front door once signed in: every booking as a thread link, and the ask for a new
-// one. Phase 3 grows this into the full portal; for now it is real (my_client_bookings) and honest.
+// one. Each row is a real portal link (my_portals), the same one the emails carry.
 export default function ClientHome() {
   const { user, clientAccount } = useAuth(); const nav = useNavigate()
   const [rows, setRows] = useState(null)
   useEffect(() => {
     if (!LIVE) { setRows([{ id: 'harper-leo', title: 'Wedding, Noosa', with: 'Mara Okafor', when: '14 Nov 2026', st: 'Quote accepted' }]); return }
     let on = true
-    supabase.rpc('my_client_bookings').then(({ data }) => { if (on) setRows((data || []).map(b => ({ id: b.id, title: b.service || 'Booking', with: b.location || '', when: b.booking_date ? new Date(b.booking_date + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '', st: b.status || '' }))) }).catch(() => on && setRows([]))
+    // one row per creative this client has a thread with; the row opens the same portal link the emails carry
+    supabase.rpc('my_portals').then(({ data }) => { if (!on) return; setRows((data || []).map(r => { const nb = r.next_booking; return { id: r.token, title: r.creative?.business_name || 'Your creative', with: nb ? [nb.service, nb.location].filter(Boolean).join(' · ') : r.creative?.city || '', when: nb?.booking_date ? new Date(nb.booking_date + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '', st: r.open_quotes > 0 ? 'Quote waiting' : nb ? (nb.status || 'Booked') : r.last_message_at ? 'In conversation' : 'Enquiry sent' } })) }).catch(() => on && setRows([]))
     return () => { on = false }
   }, [])
   const first = clientAccount?.first_name || (user?.user_metadata?.first_name) || ''
