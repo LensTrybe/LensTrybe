@@ -1733,3 +1733,6 @@
 .ws .pkrow input:focus{border-color:var(--sig-rim);box-shadow:0 0 0 3px var(--sig-bg)}
 .ws .pkrow span{display:flex;align-items:center;gap:4px;font-size:13px;color:var(--ink-3)}.ws .pkrow span input{-moz-appearance:textfield}.ws .pkrow span input::-webkit-inner-spin-button{display:none}
 @media (max-width:900px){.ws .pkrow{grid-template-columns:1fr 100px auto}.ws .pkrow>input:nth-child(3){grid-column:1/-1}}
+
+/* Two-column fields: the bf+bf spacing rule must not push the second column down */
+.ws .fields.two .bf+.bf{margin-top:0}

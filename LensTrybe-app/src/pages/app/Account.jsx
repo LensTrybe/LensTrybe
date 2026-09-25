@@ -234,7 +234,7 @@ export function Settings() {
             </div>
           </div>
           <div className="card lg"><div className="h"><b>Your data</b></div><p className="note2">Export everything: clients, threads, invoices, galleries. Or delete the account; data is gone in 30 days.</p><div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 10 }}><button className="btn g sm" onClick={exportAll}>Download my data</button><button className="lnk" onClick={del}>Delete account</button></div></div>
-          {delOpen && <DeleteAccount kind="creative" demoStore={s} onClose={() => setDelOpen(false)} onDeleted={async () => { setDelOpen(false); if (LIVE) { await auth.fetchUserData(auth.user.id) } else toast('Demo: the account would now be scheduled for deletion.') }} />}
+          {delOpen && <DeleteAccount kind="creative" demoStore={s} onClose={() => setDelOpen(false)} onDeleted={async () => { setDelOpen(false); if (LIVE) { await signOut(); nav('/login', { replace: true, state: { note: 'Your account is scheduled for deletion. Log in any time before the date to reactivate it.' } }) } else toast('Demo: the account would now be scheduled for deletion.') }} />}
         </div>
       </div>
     </section>

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { homeFor, isEmail, signIn, signInWithGoogle, signOut } from '../../lib/auth'
@@ -10,7 +10,7 @@ import { LIVE } from '../../lib/mode'
 // their portal. Live: password or Google, the same two ways as the live site (no magic link there,
 // so none here). A wrong email or password sends you to Join with the email carried across, as live.
 export default function Login() {
-  const nav = useNavigate()
+  const nav = useNavigate(); const { state } = useLocation()
   const cv = useRef(null)
   const [who, setWho] = useState('creative')
   const auth = useAuth(); const already = LIVE && auth.user ? { email: auth.user.email, kind: auth.profile ? 'creative' : auth.clientAccount ? 'client' : null } : null
@@ -41,6 +41,7 @@ export default function Login() {
           <button type="button" role="tab" aria-selected={who === 'client'} className={who === 'client' ? 'on' : ''} onClick={() => setWho('client')}>I'm a client</button>
         </div>
         <p className="hint">{who === 'creative' ? 'Straight to your workspace: today, threads, money and Lumi.' : 'Straight to your portal: your booking, documents and files, one link.'}</p>
+        {state?.note && <div className="lalready"><b>{state.note}</b></div>}
         {already && <div className="lalready"><b>You're already logged in as {already.email}.</b><div><button type="button" className="btn w" onClick={() => nav(homeFor(already.kind))}>{already.kind === 'client' ? 'Open my portal' : 'Open my workspace'} <Icon name="arrow" size={14} /></button><button type="button" className="alt" onClick={async () => { await signOut(); setErr('') }}>Log out and use another account</button></div></div>}
         <form onSubmit={go} className="lform" style={already ? { opacity: .45, pointerEvents: 'none' } : undefined}>
           <label className="lf"><span>Email</span><input type="email" value={email} onChange={e => { setEmail(e.target.value); setErr('') }} placeholder="you@studio.com.au" autoComplete="email" inputMode="email" autoCapitalize="none" /></label>
