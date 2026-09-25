@@ -30,6 +30,9 @@ import JobsBoard from './pages/public/JobsBoard'
 import BrandPage from './pages/public/BrandPage'
 import LeaveReview from './pages/public/LeaveReview'
 import Shell from './pages/app/Shell'
+import SignLive from './pages/portal/SignLive'
+import MeetingLive from './pages/portal/MeetingLive'
+import DeliverLive from './pages/portal/DeliverLive'
 
 // Every route in the next LensTrybe. Public site, onboarding, the client portal
 // and the creative workspace. Two modes (src/lib/mode.js): demo runs on the sample store with
@@ -71,6 +74,9 @@ export default function App() {
         <Route path="/portal/:slug" element={<ClientThread />} />
         <Route path="/brand/:slug" element={<BrandPage />} />
         <Route path="/review/:slug" element={<LeaveReview />} />
+        <Route path="/sign/:token" element={<SignLive />} />
+        <Route path="/meeting/:token" element={<MeetingLive />} />
+        <Route path="/deliver/:token" element={<DeliverLive />} />
         <Route path="/app/*" element={<RequireCreative><Shell /></RequireCreative>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -5,11 +5,18 @@ import Still from '../../components/Still'
 import { useStore, TODAY, nice } from '../../lib/store'
 import { paperOf, fam, loadFont, onColour } from '../../lib/brand'
 import '../../styles/public.css'
+import ReviewLive from '../portal/ReviewLive'
+import { isUuid } from '../../lib/live'
 
 // The client's side of a review: the link the creative sends. Stars, a few words, an optional photo,
 // done on a phone in a minute. Under four stars goes to the creative privately first when their rules say so.
 const GR = ['linear-gradient(135deg,#2c3a5e,#7fa8e8)', 'linear-gradient(135deg,#1c452f,#7fd0aa)', 'linear-gradient(135deg,#472657,#c6a5e5)', 'linear-gradient(135deg,#3d2450,#e8a0c0)']
 export default function LeaveReview() {
+  const { slug } = useParams()
+  if (isUuid(slug)) return <ReviewLive id={slug} />
+  return <LeaveReviewDemo />
+}
+function LeaveReviewDemo() {
   const { slug } = useParams(); const { s, add, upd } = useStore(); const b = s.brand, P = paperOf(b.paper)
   const [n, setN] = useState(0), [hov, setHov] = useState(0), [who, setWho] = useState(''), [em, setEm] = useState(''), [job, setJob] = useState('Wedding'), [t, setT] = useState(''), [done, setDone] = useState(null)
   useEffect(() => { loadFont(b.head); loadFont(b.body); document.title = 'Review ' + b.name }, [b])

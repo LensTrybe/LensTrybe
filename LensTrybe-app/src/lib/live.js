@@ -225,3 +225,69 @@ export async function sendEnquiry(creativeId, f, user) {
   if (error || data?.error) throw new Error(data?.error || 'Something went wrong. Try again.')
   return { ok: true }
 }
+
+// ── Token pages: sign, meeting, gallery, review ───────────────────────────────────────────────
+// Each link in a client email is a token. The token is the key, checked server side, no login.
+const fnErr = (error, data, fallback) => { if (error) return new Error(fallback); if (data?.error) return new Error(typeof data.error === 'string' && data.error.length < 80 && !/^[a-z_]+$/.test(data.error) ? data.error : fallback); return null }
+
+// Contract signing: contract_for_signing → { contract, business_name }; the file (if any) through contract-file.
+export async function loadSigning(token) {
+  const { data, error } = await supabase.rpc('contract_for_signing', { p_token: token })
+  if (error || !data?.contract) return null
+  const c = data.contract
+  let fileUrl = null
+  if (c.contract_file_url) { try { const { data: f } = await supabase.functions.invoke('contract-file', { body: { token } }); fileUrl = f?.url || null } catch { /* text still renders */ } }
+  let creative = null
+  try { const { data: p } = await supabase.from('profiles').select('id, business_name, avatar_url, tagline, city').eq('id', c.creative_id).maybeSingle(); creative = p } catch { /* optional */ }
+  return { contract: c, business: data.business_name || creative?.business_name || 'Your creative', creative, fileUrl }
+}
+export async function signContract(token, contractId) {
+  const { data, error } = await supabase.rpc('sign_contract', { p_token: token })
+  if (error) throw new Error(error.message || 'Could not sign right now. Try again.')
+  try { await supabase.functions.invoke('notify-contract-signed', { body: { contract_id: contractId } }) } catch { /* best effort */ }
+  return data
+}
+
+// Meeting request: meeting-respond get / respond
+export async function loadMeeting(token) {
+  const { data, error } = await supabase.functions.invoke('meeting-respond', { body: { action: 'get', token } })
+  if (error || !data?.meeting) return null
+  return data.meeting
+}
+export async function respondMeeting(token, response, extra = {}) {
+  const { data, error } = await supabase.functions.invoke('meeting-respond', { body: { action: 'respond', token, response, proposed_date: extra.date || null, proposed_time: extra.time || null, message: extra.message || null } })
+  const e = fnErr(error, data, 'Could not save your response. Try again.'); if (e) throw e
+  return data
+}
+
+// Gallery: the deliver function does everything (signed file links, password, tracking, favourites)
+export async function loadDelivery(token) {
+  const { data, error } = await supabase.functions.invoke('deliver', { body: { action: 'load', token } })
+  if (error || !data || data.error) return null
+  return data
+}
+export async function unlockDelivery(token, password) {
+  const { data, error } = await supabase.functions.invoke('deliver', { body: { action: 'unlock', token, password } })
+  if (error || !data?.ok) throw new Error(data?.error === 'too_many_attempts' ? 'Too many tries. Wait a few minutes and try again.' : 'That password is not right.')
+  return data
+}
+export function trackDownload(token, name, password) { supabase.functions.invoke('deliver', { body: { action: 'track', token, file_name: name, password: password || undefined } }).catch(() => {}) }
+export async function sendFavourites(token, favourites, password) {
+  const { data, error } = await supabase.functions.invoke('deliver', { body: { action: 'favourites', token, favourites, password: password || undefined } })
+  if (error || !data?.ok) throw new Error('Could not send your picks. Try again.')
+  return data
+}
+
+// Review: a client posting to a creative's profile (reviews insert, anon allowed; notify-review emails the creative)
+export async function loadCreativeLite(id) {
+  const { data } = await supabase.from('profiles').select('id, business_name, avatar_url, tagline, city, skill_types, is_listed').eq('id', id).maybeSingle()
+  return data || null
+}
+export async function submitReview(creativeId, f) {
+  const text = [f.name, f.body].filter(Boolean).join('\n')
+  const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That review cannot be posted.')
+  const { data, error } = await supabase.from('reviews').insert({ creative_id: creativeId, reviewer_name: f.name, reviewer_email: f.email, client_name: f.name, rating: f.rating, body: f.body, comment: f.body, source: 'platform', project_type: f.job || null }).select('id').single()
+  if (error) throw new Error(/already reviewed/i.test(error.message) ? 'You have already reviewed this creative recently.' : /too many/i.test(error.message) ? 'Too many reviews right now. Try again later.' : 'Could not post your review. Try again.')
+  if (data?.id) supabase.functions.invoke('notify-review', { body: { review_id: data.id } }).catch(() => {})
+  return data
+}
