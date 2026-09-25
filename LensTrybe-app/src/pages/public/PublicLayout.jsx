@@ -16,7 +16,7 @@ export default function PublicLayout() {
   const home = pathname === '/'
   // outside the launch area: read anything, but every action points at the waitlist for the area
   const away = outside(), wl = pathname === '/waitlist'
-  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/waitlist', '/support', '/upcoming'].includes(pathname) || pathname.startsWith('/edit')
+  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/waitlist', '/support', '/upcoming'].includes(pathname) || pathname.startsWith('/edit') || pathname.startsWith('/jobs')
   const [lite, setLite] = useState(!darkTop)
   const [menu, setMenu] = useState(false)
   useEffect(() => {
