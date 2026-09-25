@@ -13,6 +13,7 @@ import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import { changeEmail, downloadMyData, newsletterStatus, sendPasswordReset, setNewsletter } from '../../lib/account'
 import { signOut } from '../../lib/auth'
+import * as live from '../../lib/live'
 import { useNavigate } from 'react-router-dom'
 
 const Tiles = ({ t }) => <div className="s12"><div className="kp">{t.map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
@@ -23,32 +24,41 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 
 /* Edit profile: what clients see on lenstrybe.com. Edit once, the website follows. */
 export function EditProfile() {
-  const F = useFlows(); const { s, toast } = F
+  const F = useFlows(); const { s, toast } = F; const auth = useAuth(); const uid = auth.user?.id
   const [p, setP] = useState(s.profile), [dirty, setDirty] = useState(false); const file = useRef(), avf = useRef()
-  const [pk, setPk] = useState(s.packages || [])
+  const [pk, setPk] = useState(s.packages || []), [items, setItems] = useState([]), [busy, setBusy] = useState('')
   useEffect(() => { if (!dirty) setP(s.profile) }, [s.profile, dirty])
+  // live: the real portfolio and packages
+  useEffect(() => { if (!LIVE || !uid) return; let on = true; live.loadMyProfileExtras(uid).then(x => { if (!on) return; setItems(x.items); setPk(x.packages); F.set('packages', x.packages.map(y => y.slice(0, 3))); F.patch('profile', { shots: Array(x.items.length).fill(0) }) }).catch(() => {}); return () => { on = false } }, [uid]) // eslint-disable-line react-hooks/exhaustive-deps
+  const livePublish = async () => {
+    if (busy) return; setBusy('pub')
+    try { await live.saveProfileLive(uid, p, pk); F.set('profile', { ...p, strength }); F.set('packages', pk.filter(x => String(x[0] || '').trim()).map(y => y.slice(0, 3))); setDirty(false); await auth.fetchUserData?.(uid, { silent: true }); toast('Published. Your profile is updated.') } catch (e) { toast(e.message) } finally { setBusy('') }
+  }
+  const liveAvatar = async x => { setBusy('av'); try { const url = await live.uploadAvatar(uid, x); set('avatar')(url); toast('Photo uploaded. Publish when happy.') } catch (e) { toast(e.message) } finally { setBusy('') } }
+  const liveAddPhotos = async fs => { setBusy('shots'); try { const added = await live.addPortfolioPhotos(uid, fs, items.length); setItems(a => [...a, ...added]); F.set('profile', { ...s.profile, shots: Array(items.length + added.length).fill(0) }); toast(added.length + (added.length === 1 ? ' photo' : ' photos') + ' added to your portfolio.') } catch (e) { toast(e.message) } finally { setBusy('') } }
+  const liveRemove = it => F.open({ title: 'This photo', sub: it.featured ? 'This one is your cover.' : 'Make it the cover, or take it out of your portfolio.', cta: 'Remove photo', danger: true, fields: [], alt: it.featured ? undefined : { l: 'Make it the cover', on: async () => { try { await live.setCoverPhoto(uid, it.id); setItems(a => a.map(x => ({ ...x, featured: x.id === it.id }))); toast('Cover set.') } catch (e) { toast(e.message) } } }, submit: async () => { try { await live.removePortfolioPhoto(it.id); setItems(a => a.filter(x => x.id !== it.id)); toast('Removed.') } catch (e) { toast(e.message) } } })
   const set = k => v => { setP(x => ({ ...x, [k]: v })); setDirty(true) }
   const tog = p.tog || {}
   const ALL = ['Weddings', 'Elopements', 'Real estate', 'Events', 'Brand', 'Headshots', 'Family', 'Food', 'Drone']
   const shots = p.shots || [0, 1, 2, 3, 4, 5, 6, 7]
   const strength = completeness({ ...s, profile: p, packages: pk }).pct
-  const publish = () => { F.set('profile', { ...p, shots, strength }); F.set('packages', pk.filter(x => x[0].trim())); if (p.h || p.bio) F.upd('pages', 'home', { h: p.h, p: (p.bio.split('. ')[0] || '') + (p.bio ? '.' : '') }); setDirty(false); toast('Published. Profile and website updated.') }
-  const pickAvatar = e => { const x = e.target.files?.[0]; if (!x) return; const r = new FileReader(); r.onload = () => set('avatar')(r.result); r.readAsDataURL(x); e.target.value = '' }
+  const publish = () => { if (LIVE) return livePublish(); F.set('profile', { ...p, shots, strength }); F.set('packages', pk.filter(x => x[0].trim())); if (p.h || p.bio) F.upd('pages', 'home', { h: p.h, p: (p.bio.split('. ')[0] || '') + (p.bio ? '.' : '') }); setDirty(false); toast('Published. Profile and website updated.') }
+  const pickAvatar = e => { const x = e.target.files?.[0]; if (!x) return; if (LIVE) { e.target.value = ''; return liveAvatar(x) } const r = new FileReader(); r.onload = () => set('avatar')(r.result); r.readAsDataURL(x); e.target.value = '' }
   const setPkAt = (i, j, v) => { setPk(a => a.map((x, k) => k === i ? x.map((y, l) => l === j ? v : y) : x)); setDirty(true) }
-  const addPhotos = () => { file.current.onchange = e => { const n = e.target.files.length; if (!n) return; set('shots')([...shots, ...Array.from({ length: n }, (_, i) => shots.length + i + 20)]); toast(n + (n === 1 ? ' photo' : ' photos') + ' added. Publish when happy.'); e.target.value = '' }; file.current.click() }
+  const addPhotos = () => { file.current.onchange = e => { const n = e.target.files.length; if (!n) return; if (LIVE) { const fs = Array.from(e.target.files); e.target.value = ''; return liveAddPhotos(fs) } set('shots')([...shots, ...Array.from({ length: n }, (_, i) => shots.length + i + 20)]); toast(n + (n === 1 ? ' photo' : ' photos') + ' added. Publish when happy.'); e.target.value = '' }; file.current.click() }
   const addFilm = () => F.open({ title: 'Add a film', sub: 'From a delivered gallery, or a link.', cta: 'Add', fields: [{ k: 'from', l: 'Film', type: 'select', value: '', options: [['', 'Paste a link instead'], ...s.galleries.filter(g => g.films).map(g => [g.id, g.n + ' · ' + g.films + (g.films > 1 ? ' films' : ' film')])] }, { k: 'url', l: 'Link', placeholder: 'vimeo.com/…', when: v => !v.from }], submit: v => { set('film')(v.from || v.url); toast('Film added. Publish when happy.') } })
   const removeShot = i => set('shots')(shots.filter((_, j) => j !== i))
   return (
     <section className="view">
       <input ref={file} type="file" multiple accept="image/*" style={{ display: 'none' }} aria-hidden="true" />
-      <Head h="Edit profile" p="What clients see on lenstrybe.com. Edit once and your website follows."><Link className="btn g" to="/app/view-profile"><Icon name="eye" size={15} />View as a client</Link><button className={'btn w' + (dirty ? '' : ' quiet')} onClick={publish}>{dirty ? 'Publish changes' : 'Published'}</button></Head>
+      <Head h="Edit profile" p="What clients see on lenstrybe.com. Edit once and your website follows.">{LIVE && uid ? <Link className="btn g" to={'/creatives/' + uid} target="_blank"><Icon name="eye" size={15} />View as a client</Link> : <Link className="btn g" to="/app/view-profile"><Icon name="eye" size={15} />View as a client</Link>}<button className={'btn w' + (dirty ? '' : ' quiet')} onClick={publish} disabled={busy === 'pub'}>{busy === 'pub' ? 'Publishing' : dirty ? 'Publish changes' : 'Published'}</button></Head>
       <div className="grid">
         <div className="s7 side">
-          <div className="card lg"><div className="h"><b>Portfolio</b><small className="lumi-by">Tap a photo to remove · {shots.length} of 40 on {s.plan.name}</small></div>
-            <div className="strip2">{shots.map((sd, i) => <span key={sd + '-' + i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>
+          <div className="card lg"><div className="h"><b>Portfolio</b><small className="lumi-by">{LIVE ? (busy === 'shots' ? 'Uploading' : 'Tap a photo for cover or remove · ' + items.length + ' so far') : 'Tap a photo to remove · ' + shots.length + ' of 40 on ' + s.plan.name}</small></div>
+            {LIVE ? <div className="strip2">{items.map(it => <span key={it.id} className="sg" style={{ cursor: 'pointer' }} onClick={() => liveRemove(it)} title={it.featured ? 'Cover' : 'Cover or remove'}><img src={it.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />{it.featured && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos} disabled={busy === 'shots'}><Icon name="plus" size={16} /></button></div> : <div className="strip2">{shots.map((sd, i) => <span key={sd + '-' + i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>}
           </div>
           <div className="card lg"><div className="h"><b>About you</b></div>
-            <div className="avrow"><span className="avbig" onClick={() => avf.current?.click()}>{p.avatar && p.avatar !== 'seed' ? <img src={p.avatar} alt="" /> : <Still seed={3} mood="golden" />}</span><div><b>{p.avatar ? 'Profile photo' : 'Add a profile photo'}</b><small>Square works best. It shows in search, on your card and on the home page.</small><button className="act2" onClick={() => avf.current?.click()}>{p.avatar ? 'Change' : 'Choose a photo'}</button><input ref={avf} type="file" accept="image/*" hidden onChange={pickAvatar} /></div></div>
+            <div className="avrow"><span className="avbig" onClick={() => avf.current?.click()}>{p.avatar && p.avatar !== 'seed' ? <img src={p.avatar} alt="" /> : <Still seed={3} mood="golden" />}</span><div><b>{p.avatar ? 'Profile photo' : 'Add a profile photo'}</b><small>Square works best. It shows in search, on your card and on the home page.</small><button className="act2" onClick={() => avf.current?.click()} disabled={busy === 'av'}>{busy === 'av' ? 'Uploading' : p.avatar ? 'Change' : 'Choose a photo'}</button><input ref={avf} type="file" accept="image/*" hidden onChange={pickAvatar} /></div></div>
             <div className="fields two"><Fld l="Name" v={p.n} set={set('n')} /><Fld l="Where (suburb, state)" v={p.city} set={set('city')} /></div>
             <div className="bf"><span>What you do</span><div className="chips2">{['Photographer', 'Videographer', 'Both'].map(d => <button key={d} type="button" className={p.disc === d ? 'on' : ''} onClick={() => set('disc')(d)}>{d}</button>)}</div></div>
             <Fld l="One line clients see first" v={p.h} set={set('h')} />
@@ -72,7 +82,7 @@ export function EditProfile() {
               {[['enquiry', 'Instant enquiry', 'Message you without an account'], ['price', 'Show from-price', '"Full day from $' + p.from + '" on your card'], ['avail', 'Live availability', 'Open dates show before they ask'], ['book', 'Book and pay a deposit directly', 'Skip the quote for fixed packages'], ['badge', 'Founding creative badge', 'Permanent, on your card and profile']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span><Sw on={tog[k]} set={() => set('tog')({ ...tog, [k]: tog[k] ? 0 : 1 })} /></label>)}
             </div>
           </div>
-          {!p.bioRewritten && <div className="tlumi"><span className="lm" /><div>Your bio mentions weddings four times and real estate once, but real estate is 40% of your income. Want a version that says both?<div className="acts"><button className="y" onClick={() => { set('bio')('Documentary weddings and twilight real estate, from Noosaville across the Sunshine Coast. Eight years, four hundred weddings, a monthly run of listings, and one camera bag that is always too heavy.'); set('bioRewritten')(1); toast('Bio rewritten. Publish when happy.') }}>Rewrite it</button><button onClick={() => { F.patch('profile', { bioRewritten: 1 }); toast('Kept.') }}>Keep mine</button></div></div></div>}
+          {!LIVE && !p.bioRewritten && <div className="tlumi"><span className="lm" /><div>Your bio mentions weddings four times and real estate once, but real estate is 40% of your income. Want a version that says both?<div className="acts"><button className="y" onClick={() => { set('bio')('Documentary weddings and twilight real estate, from Noosaville across the Sunshine Coast. Eight years, four hundred weddings, a monthly run of listings, and one camera bag that is always too heavy.'); set('bioRewritten')(1); toast('Bio rewritten. Publish when happy.') }}>Rewrite it</button><button onClick={() => { F.patch('profile', { bioRewritten: 1 }); toast('Kept.') }}>Keep mine</button></div></div></div>}
         </div>
       </div>
     </section>

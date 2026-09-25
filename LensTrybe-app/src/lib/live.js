@@ -199,7 +199,7 @@ export async function loadCreative(id) {
     supabase.rpc('get_public_portfolio_items', { p_creative_id: id }).then(r => r.data || []),
     supabase.from('portfolio_services').select('id, name, description, price, sort_order, image_url').eq('creative_id', id).order('sort_order').then(r => r.data || []),
     supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type').eq('creative_id', id).eq('hidden', false).order('created_at', { ascending: false }).then(r => r.data || []),
-    supabase.rpc('creative_unavailable_dates', { p_creative: id }).then(r => (r.data || []).map(x => x.date)),
+    supabase.rpc('creative_busy_times', { p_creative: id, p_to: iso(new Date(Date.now() + 400 * 864e5)) }).then(r => [...new Set((r.data || []).filter(x => x.all_day || x.source === 'booked').map(x => x.date))]),
   ])
   return shapeProfile(p, { items, services, reviews, busy })
 }
@@ -341,3 +341,103 @@ export async function saveContractLive(c, me, raw) {
   const { data, error } = await supabase.from('contracts').insert({ ...row, creative_id: me.id, status: 'draft', download_token: crypto.randomUUID() }).select().single()
   if (error) throw new Error(docError(error, 'c')); return data
 }
+
+// ── The creative's own profile: edit, photo, portfolio, packages ───────────────────────────────
+// Same rows the live site edits: profiles (text fields, skill_types, specialties, avatar_url),
+// portfolio_items in the portfolio bucket, portfolio_services for packages. Uploads go to the
+// creative's own folder (<uid>/...) which storage RLS allows; every image is moderated first.
+export async function loadMyProfileExtras(uid) {
+  const [items, services] = await Promise.all([
+    supabase.from('portfolio_items').select('id, image_url, file_url, file_type, featured, sort_order, headline, title, alt_text').eq('creative_id', uid).order('sort_order').then(r => r.data || []),
+    supabase.from('portfolio_services').select('id, name, description, price, sort_order').eq('creative_id', uid).order('sort_order').then(r => r.data || []),
+  ])
+  return { items: items.filter(i => i.file_type !== 'video').map(i => ({ id: i.id, url: i.image_url || i.file_url, featured: !!i.featured })), packages: services.map(s => [s.name || '', Number(s.price) || 0, s.description || '', s.id]) }
+}
+const splitPlace = s => { const [a, ...b] = String(s || '').split(','); return { city: a.trim(), state: (b.join(',').trim() || 'QLD').toUpperCase().slice(0, 3) } }
+export async function saveProfileLive(uid, p, packages) {
+  const text = [p.n, p.h, p.bio, ...packages.map(x => x[0] + ' ' + x[2])].filter(Boolean).join('\n')
+  const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be published.')
+  const { city, state } = splitPlace(p.city)
+  const skills = p.disc === 'Both' ? ['Photographer', 'Videographer'] : p.disc ? [p.disc] : []
+  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: (p.web || '').trim() || null, instagram_url: (p.ig || '').trim() ? (/^https?:/.test(p.ig.trim()) ? p.ig.trim() : 'https://instagram.com/' + p.ig.trim().replace(/^@/, '')) : null, skill_types: skills, specialties: p.kinds || [], avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
+  const { error } = await supabase.from('profiles').update(row).eq('id', uid)
+  if (error) throw new Error(error.message)
+  // packages: replace the set (small list, keeps order exact)
+  const keep = packages.filter(x => String(x[0] || '').trim())
+  const { data: old } = await supabase.from('portfolio_services').select('id').eq('creative_id', uid)
+  const oldIds = (old || []).map(x => x.id), keepIds = keep.map(x => x[3]).filter(Boolean)
+  const gone = oldIds.filter(id => !keepIds.includes(id)); if (gone.length) await supabase.from('portfolio_services').delete().in('id', gone)
+  for (let i = 0; i < keep.length; i++) {
+    const [name, price, description, id] = keep[i]; const rec = { creative_id: uid, name: name.trim(), price: price ? String(price) : null, description: (description || '').trim() || null, sort_order: i }
+    if (id) await supabase.from('portfolio_services').update(rec).eq('id', id); else await supabase.from('portfolio_services').insert(rec)
+  }
+}
+// One image into the creative's folder of a public bucket; returns its public URL.
+async function putImage(uid, file, bucket, prefix) {
+  const { moderateImage } = await import('../backend/moderateContent'); const { resizeImage } = await import('../backend/resizeImage')
+  const r = await moderateImage(file); if (r?.blocked) throw new Error('That image cannot be used here.')
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
+  const path = `${uid}/${prefix}${Date.now()}.${ext}`
+  const { error } = await supabase.storage.from(bucket).upload(path, await resizeImage(file), { upsert: false, contentType: file.type || undefined })
+  if (error) throw new Error('Could not upload ' + file.name + '.')
+  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
+}
+export const uploadAvatar = (uid, file) => putImage(uid, file, 'avatars', 'avatar-')
+export async function addPortfolioPhotos(uid, files, startOrder = 0) {
+  const out = []
+  for (let i = 0; i < files.length; i++) {
+    const url = await putImage(uid, files[i], 'portfolio', 'p-')
+    const { data, error } = await supabase.from('portfolio_items').insert({ creative_id: uid, user_id: uid, image_url: url, file_url: url, file_type: 'image', sort_order: startOrder + i, featured: false }).select('id').single()
+    if (error) throw new Error(error.message)
+    out.push({ id: data.id, url, featured: false })
+  }
+  return out
+}
+export async function removePortfolioPhoto(id) { const { error } = await supabase.from('portfolio_items').delete().eq('id', id); if (error) throw new Error(error.message) }
+export async function setCoverPhoto(uid, id) { await supabase.from('portfolio_items').update({ featured: false }).eq('creative_id', uid); await supabase.from('portfolio_items').update({ featured: true }).eq('id', id) }
+
+// ── Bookings and blocked days from the workspace ──────────────────────────────────────────────
+// The live `bookings` function does the work (clash check, client account link, confirmation
+// email); the calendar reads bookings back through my_threads. Blocked days are availability rows.
+const bookErr = (error, data, fallback) => { if (data?.conflict) { const c = data.clashes || []; const e = new Error('That clashes with ' + (c[0] ? (c[0].client_name || 'a booking') + (c[0].service ? ' · ' + c[0].service : '') : 'another booking') + '.'); e.conflict = true; return e } return new Error(data?.error || (error ? 'Could not save the booking. Try again.' : fallback)) }
+async function bookings(body) {
+  const { data, error } = await supabase.functions.invoke('bookings', { body })
+  if (error) { try { const j = await error.context?.json?.(); if (j) return { data: j, error } } catch { /* fall through */ } }
+  return { data, error }
+}
+export async function createBooking(v, force = false) {
+  const { data, error } = await bookings({ action: 'create', clientName: v.name, clientEmail: v.email || '', clientPhone: v.phone || '', service: v.service, location: v.location || '', notes: v.notes || '', date: v.date, allDay: !!v.allDay, startTime: v.start || '', endTime: v.end || '', notifyClient: !!v.notify, force })
+  if (error || !data?.ok) throw bookErr(error, data, 'Could not save the booking.')
+  return data.booking
+}
+export async function rescheduleBooking(id, v, force = false) {
+  const { data, error } = await bookings({ action: 'reschedule', bookingId: id, date: v.date, allDay: !!v.allDay, startTime: v.start || '', endTime: v.end || '', location: v.location, service: v.service, note: v.note || '', notifyClient: v.notify !== false, force })
+  if (error || !data?.ok) throw bookErr(error, data, 'Could not move the booking.')
+  return data.booking
+}
+export async function cancelBooking(id, reason = '') {
+  const { data, error } = await bookings({ action: 'cancel', bookingId: id, reason })
+  if (error || !data?.ok) throw bookErr(error, data, 'Could not cancel the booking.')
+  return data.booking
+}
+export async function respondBooking(id, accept, note = '', force = false) {
+  const { data, error } = await bookings({ action: 'respond', bookingId: id, decision: accept ? 'accept' : 'decline', note, force })
+  if (error || !data?.ok) throw bookErr(error, data, 'Could not answer the request.')
+  return data.booking
+}
+export async function completeBooking(id) {
+  const { data, error } = await bookings({ action: 'complete', bookingId: id })
+  if (error || !data?.ok) throw bookErr(error, data, 'Could not mark it done.')
+  return data.booking
+}
+// Blocked days (availability rows with is_available false). Read for the calendar, write from Block a day.
+export async function loadBlocked(uid) {
+  const { data } = await supabase.from('availability').select('id, date, notes, all_day, start_time, end_time').eq('creative_id', uid).eq('is_available', false).order('date')
+  return (data || []).map(b => ({ id: 'x-' + b.id, d: b.date, k: 'x', n: b.notes || 'Blocked', s: b.all_day === false && b.start_time ? String(b.start_time).slice(0, 5) + ' to ' + String(b.end_time || '').slice(0, 5) : 'All day', dur: b.all_day === false ? undefined : 'day', v: 0, live: b }))
+}
+export async function blockDates(uid, dates, note) {
+  const rows = dates.map(d => ({ creative_id: uid, date: d, is_available: false, all_day: true, notes: note || null }))
+  const { error } = await supabase.from('availability').insert(rows)
+  if (error) throw new Error(error.message)
+}
+export async function unblockDate(id) { const { error } = await supabase.from('availability').delete().eq('id', id); if (error) throw new Error(error.message) }
