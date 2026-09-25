@@ -74,7 +74,7 @@ export default function Waitlist() {
                 {who === 'creative' && <label className="lf"><span>What you do <em className="opt">optional</em></span><div className="lsel"><select value={f.disc} onChange={e => u('disc', e.target.value)}><option value="">Choose</option>{DISC.map(x => <option key={x}>{x}</option>)}</select><Icon name="back" size={14} /></div></label>}
                 <label className="lf"><span>{who === 'creative' ? 'Your state' : 'Hiring in'} <em className="opt">optional</em></span><div className="lsel"><select value={f.st} onChange={e => u('st', e.target.value)}><option value="">Choose</option>{STATES.map(x => <option key={x}>{x}</option>)}</select><Icon name="back" size={14} /></div></label>
               </div>
-              <label className="lf"><span>Referral or invite code <em className="opt">optional</em></span><input value={f.ref} onChange={e => u('ref', e.target.value.toUpperCase())} placeholder="LT-XXXX-XXXX" spellCheck={false} /></label>
+              <label className="lf"><span>Referral or invite code <em className="opt">optional</em></span><input value={f.ref} onChange={e => u('ref', e.target.value.toUpperCase())} placeholder="From an invite or a friend" spellCheck={false} /></label>
               {err && <p className="jerr">{err}</p>}
               <button type="submit" className="btn w lg">{outside && region !== 'INTL' ? 'Put me on the ' + (STATE_OF[region] || 'AU') + ' list' : 'Put me on the list'} <Icon name="arrow" size={14} /></button>
               <p className="tiny">By joining you agree to launch updates and The Trybe Edit. One click to leave. <Link to="/legal/privacy" style={{ color: 'var(--neon-t)', fontWeight: 600 }}>Privacy</Link>.</p>

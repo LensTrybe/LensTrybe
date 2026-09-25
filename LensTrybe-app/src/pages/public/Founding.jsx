@@ -33,7 +33,7 @@ export default function Founding() {
   const [code, setCode] = useState(''), [cerr, setCerr] = useState('')
   const [f, setF] = useState({ name: '', biz: '', email: '', link: '', disc: '', region: '', note: '' }), [err, setErr] = useState(''), [sent, setSent] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
-  const redeem = e => { e.preventDefault(); const c = code.trim().toUpperCase(); if (!/^LT-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(c)) return setCerr('Codes read LT-XXXX-XXXX. Check the email it came in.'); nav('/join?code=' + encodeURIComponent(c)) }
+  const redeem = e => { e.preventDefault(); const c = code.trim().toUpperCase(); if (!/^[A-Z0-9][A-Z0-9-]{2,62}[A-Z0-9]$/.test(c)) return setCerr('That does not look like a code. Copy it from your invite email.'); nav('/join?code=' + encodeURIComponent(c)) }
   const apply = e => {
     e.preventDefault()
     if (!f.name.trim()) return setErr('Your name, so the reply can start with it.')
@@ -54,7 +54,7 @@ export default function Founding() {
 
       <form className="fdredeem lg rv" onSubmit={redeem}>
         <div><b>Have a code?</b><span>It is filled into the signup for you. Expert is chosen, the founding price is on the plan page, and nothing is charged for a year.</span></div>
-        <div className="fdcode"><input id="fcode" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setCerr('') }} placeholder="LT-XXXX-XXXX" aria-label="Founding code" autoComplete="off" spellCheck={false} /><button type="submit" className="btn p">Redeem <Icon name="arrow" size={14} /></button></div>
+        <div className="fdcode"><input id="fcode" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setCerr('') }} placeholder="Your invite code" aria-label="Founding code" autoComplete="off" spellCheck={false} /><button type="submit" className="btn p">Redeem <Icon name="arrow" size={14} /></button></div>
         {cerr && <p className="fderr">{cerr}</p>}
       </form>
 

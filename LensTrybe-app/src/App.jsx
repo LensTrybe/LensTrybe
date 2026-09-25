@@ -24,6 +24,8 @@ import Legal from './pages/public/Legal'
 import Support from './pages/public/Support'
 import Onboard from './pages/onboarding/Onboard'
 import ClientThread from './pages/portal/ClientThread'
+import ClientHome from './pages/portal/ClientHome'
+import { RequireCreative, RequireClient } from './components/Guard'
 import JobsBoard from './pages/public/JobsBoard'
 import BrandPage from './pages/public/BrandPage'
 import LeaveReview from './pages/public/LeaveReview'
@@ -65,10 +67,11 @@ export default function App() {
           <Route path="/legal/:doc" element={<Legal />} />
         </Route>
         <Route path="/onboarding" element={<Onboard />} />
+        <Route path="/portal" element={<RequireClient><ClientHome /></RequireClient>} />
         <Route path="/portal/:slug" element={<ClientThread />} />
         <Route path="/brand/:slug" element={<BrandPage />} />
         <Route path="/review/:slug" element={<LeaveReview />} />
-        <Route path="/app/*" element={<Shell />} />
+        <Route path="/app/*" element={<RequireCreative><Shell /></RequireCreative>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ModeBadge />

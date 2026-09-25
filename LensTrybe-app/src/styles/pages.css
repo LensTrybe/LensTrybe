@@ -880,3 +880,22 @@
 .pub .unsopt span{font-size:12.5px;color:var(--ink-2)}
 .pub .dots::after{content:"…";animation:blink 1.2s steps(3) infinite}
 @keyframes blink{to{opacity:.2}}
+
+/* Client home (/portal) and the guard wait */
+.guardwait{min-height:100svh;background:var(--bg,#0a0a0f)}
+.pub.chome .obh{display:flex;justify-content:space-between;align-items:center;padding:22px clamp(16px,3vw,36px);position:relative;z-index:2}
+.pub .chw{max-width:720px}
+.pub .chw h1{font-size:clamp(34px,4.6vw,56px);font-weight:500;letter-spacing:-.04em;line-height:1;color:var(--ink);margin:10px 0 12px}
+.pub .chw .sub{color:var(--ink-2);font-size:16px;max-width:56ch;margin-bottom:22px}
+.pub .chlist{border-radius:22px;padding:8px;display:flex;flex-direction:column;gap:4px;margin-bottom:16px}
+.pub .chlist>.fine{padding:14px}
+.pub .chempty{padding:26px 22px;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.pub .chempty b{font-size:18px;font-weight:600}
+.pub .chempty p{color:var(--ink-2);font-size:14.5px;max-width:48ch;margin-bottom:6px}
+.pub .chrow{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:16px;text-decoration:none;color:var(--ink);transition:background .2s}
+.pub .chrow:hover{background:rgba(255,255,255,.55)}
+.pub .chrow>div{flex:1;display:flex;flex-direction:column;gap:2px;min-width:0}
+.pub .chrow b{font-size:15px;font-weight:600}
+.pub .chrow span{font-size:13px;color:var(--ink-2)}
+.pub .chrow em{font-style:normal;font-size:12px;font-weight:600;color:var(--green-t)}
+.pub .chw .fine a{color:var(--green-t);font-weight:600}

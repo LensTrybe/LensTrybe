@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
+import { checkFoundingCode, foundingReason, isEmail, PASSWORD_MIN, signInWithGoogle, signUpClient } from '../../lib/auth'
+import { LIVE } from '../../lib/mode'
 import { outside, waitlistTo } from '../../lib/region'
 
 const WHY = {
@@ -19,21 +21,34 @@ const WHY = {
 
 // Join: the lens, the reasons on the left, one pane of dark glass on the right.
 export default function Join() {
-  const nav = useNavigate(); const [p] = useSearchParams(); const { pathname } = useLocation()
+  const nav = useNavigate(); const [p] = useSearchParams(); const { pathname, state } = useLocation()
   if (outside()) return <Navigate to={waitlistTo(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : '')} replace />
   const cv = useRef(null)
   const [kind, setKind] = useState(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : 'creative')
   const [code, setCode] = useState(p.get('founding') || p.get('code') ? (p.get('founding') || p.get('code')).toUpperCase() : null)
-  const [f, setF] = useState({ first: '', last: '', email: '', pw: '', disc: 'Photographer', co: '', news: true }); const [err, setErr] = useState('')
+  const saved = (() => { try { return JSON.parse(sessionStorage.getItem('lt_join') || 'null') } catch { return null } })()
+  const [f, setF] = useState({ first: saved?.first || '', last: saved?.last || '', email: state?.email || p.get('email') || saved?.email || '', pw: '', disc: saved?.disc || 'Photographer', co: '', news: true }); const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
-  const go = e => { e.preventDefault()
+  const go = async e => { e.preventDefault(); if (busy) return
     if (!f.first.trim() || !f.last.trim()) return setErr(kind === 'creative' ? 'Your name, so clients know who they are talking to.' : 'Your name, so creatives know who is asking.')
-    if (!/.+@.+\..+/.test(f.email)) return setErr('A real email, it is how you log in.')
-    if (f.pw.length < 8) return setErr('A password of at least eight characters.')
-    if (kind !== 'creative') return nav('/check-email?' + new URLSearchParams({ as: 'client', email: f.email.trim() }))
-    if (code && code.trim() && !/^LT-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(code.trim())) return setErr('That code does not look right. They read LT-XXXX-XXXX.')
-    const q = new URLSearchParams({ first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc, ...(code && code.trim() ? { code: code.trim() } : {}) }); nav('/onboarding?' + q) }
+    if (!isEmail(f.email)) return setErr('A real email, it is how you log in.')
+    if (f.pw.length < PASSWORD_MIN) return setErr('A password of at least eight characters.')
+    setBusy(true)
+    try {
+      if (kind !== 'creative') {
+        const r = await signUpClient({ first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), password: f.pw, co: f.co.trim(), news: f.news })
+        if (r.error) return setErr(r.error)
+        return nav(r.needsConfirm ? '/check-email' : '/portal', { replace: true, state: { email: f.email.trim(), as: 'client' } })
+      }
+      let fc = null
+      if (code && code.trim()) { const r = await checkFoundingCode(code); if (!r.valid) return setErr(foundingReason(r.reason)); fc = r }
+      const fields = { first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc }
+      try { sessionStorage.setItem('lt_join', JSON.stringify(fields)) } catch { /* ignore */ }
+      nav('/onboarding', { state: { ...fields, password: f.pw, news: f.news, code: fc ? fc.code : '', codeTier: fc ? fc.tier : '' } })
+    } finally { setBusy(false) }
+  }
+  const google = async () => { const r = await signInWithGoogle(kind === 'creative' ? '/onboarding' : '/portal'); if (r.error) setErr(r.error); else if (!LIVE) nav(kind === 'creative' ? '/onboarding' : '/portal/harper-leo') }
   return (
     <section className="hiw join dark darkhero">
       <canvas className="gl" ref={cv} aria-hidden="true" />
@@ -57,12 +72,12 @@ export default function Join() {
             {kind === 'creative' && <label className="lf"><span>What you do</span><div className="lsel"><select value={f.disc} onChange={e => u('disc', e.target.value)}><option>Photographer</option><option>Videographer</option><option>Both</option></select><Icon name="back" size={14} /></div></label>}
             {kind === 'creative' && (code === null
               ? <button type="button" className="alt left" onClick={() => setCode('')}>Have a founding code? <b>Add it</b></button>
-              : <label className="lf"><span>Founding code <button type="button" className="forgot" onClick={() => setCode(null)}>Remove</button></span><input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="LT-XXXX-XXXX" autoFocus /></label>)}
+              : <label className="lf"><span>Founding code <button type="button" className="forgot" onClick={() => setCode(null)}>Remove</button></span><input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="The code from your invite email" autoFocus spellCheck={false} /></label>)}
             {err && <p className="jerr">{err}</p>}
-            <button type="submit" className="btn w lg">{kind === 'creative' ? 'Continue, pick a plan' : 'Create my account'} <Icon name="arrow" size={14} /></button>
+            <button type="submit" className="btn w lg" disabled={busy} style={busy ? { opacity: .6 } : undefined}>{busy ? 'One moment' : kind === 'creative' ? 'Continue, pick a plan' : 'Create my account'} <Icon name="arrow" size={14} /></button>
             {kind === 'client' && <button type="button" className="alt" onClick={() => nav('/creatives')}>Just browsing? Find a creative without an account</button>}
             <div className="lor"><span>or</span></div>
-            <div className="two"><button type="button" className="btn soc"><Icon name="google" size={16} />Google</button><button type="button" className="btn soc"><Icon name="apple" size={16} />Apple</button></div>
+            <button type="button" className="btn soc" onClick={google}><Icon name="google" size={16} />Continue with Google</button>
           </form>
           <p className="lfoot">{kind === 'client' && <>Free, always: clients never pay to enquire, book or message. </>}By continuing you agree to the <Link to="/legal/terms">terms</Link> and <Link to="/legal/privacy">privacy policy</Link>. Already have an account? <Link to="/login">Log in</Link>.</p>
         </div>
