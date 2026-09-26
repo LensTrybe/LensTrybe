@@ -28,8 +28,9 @@ export default function ReviewLive({ id }) {
   if (c === null) return <NotOurs what="review link" />
   const name = c.business_name || 'this creative', first = name.split(' ')[0]
   const u = (k, v) => { setF(x => ({ ...x, [k]: v })); setErr('') }
-  const ok = n > 0 && f.body.trim().length >= 10 && f.name.trim() && /\S+@\S+\.\S+/.test(f.email)
-  const post = async e => { e.preventDefault(); if (!ok || busy) return; setBusy(true); setErr(''); try { await submitReview(id, { name: f.name.trim(), email: f.email.trim(), rating: n, body: f.body.trim(), job: f.job }); setDone(true) } catch (x) { setErr(x.message) } finally { setBusy(false) } }
+  const missing = !n ? 'Tap the stars to pick a rating.' : f.body.trim().length < 3 ? 'Write a few words about working with ' + first + '.' : !f.name.trim() ? 'Add your name.' : !/^\S+@\S+\.\S+$/.test(f.email.trim()) ? 'Add your email. It is only used to confirm it is you, never shown.' : ''
+  const ok = !missing
+  const post = async e => { e.preventDefault(); if (busy) return; if (!ok) return setErr(missing); setBusy(true); setErr(''); try { await submitReview(id, { name: f.name.trim(), email: f.email.trim(), rating: n, body: f.body.trim(), job: f.job }); setDone(true) } catch (x) { setErr(x.message) } finally { setBusy(false) } }
   return (
     <TokenShell creative={c} sub="Leave a review">
       <div className="pjob lg tdoc">
@@ -40,7 +41,7 @@ export default function ReviewLive({ id }) {
           <div className="two"><div className="field"><label htmlFor="rv-n">Your name</label><input id="rv-n" value={f.name} onChange={e => u('name', e.target.value)} placeholder="Harper E." maxLength={120} /></div><div className="field"><label htmlFor="rv-e">Email</label><input id="rv-e" type="email" value={f.email} onChange={e => u('email', e.target.value)} placeholder="Never shown" /></div></div>
           <div className="field"><label htmlFor="rv-j">What was shot</label><select id="rv-j" value={f.job} onChange={e => u('job', e.target.value)}><option value="">Choose</option>{JOBS.map(x => <option key={x}>{x}</option>)}</select></div>
           {err && <p className="fine" style={{ color: 'var(--pink-t)' }}>{err}</p>}
-          <div className="trow"><button className="btn p" type="submit" disabled={!ok || busy}>{busy ? 'Posting' : 'Post review'} <Icon name="arrow" size={14} /></button></div>
+          <div className="trow"><button className="btn p" type="submit" disabled={busy} style={ok ? undefined : { opacity: .6 }}>{busy ? 'Posting' : 'Post review'} <Icon name="arrow" size={14} /></button></div>
           <p className="fine">Reviews are public on {first}'s LensTrybe profile. Your email is used once to confirm it is you and is not kept with the review. Nothing is edited.</p>
         </form>}
       </div>
