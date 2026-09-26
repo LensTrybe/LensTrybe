@@ -884,6 +884,7 @@ const APP_COLS = 'id, job_id, creative_id, creative_name, price, includes, descr
 export const jobStateOf = loc => (String(loc || '').toUpperCase().match(/\b(ACT|NSW|NT|QLD|SA|TAS|VIC|WA)\b/) || [])[1] || ''
 export const budgetOf = b => { const m = String(b || '').replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? Number(m[0]) : 0 }
 const dayOf = t => { const d = new Date(t); return isNaN(d) ? '' : iso(d) }
+export const dayOfIso = dayOf
 // only our own messages (raised in the job guards and functions) reach the screen, never raw database errors
 const dbMsg = (error, fallback) => new Error(['P0001', '42501'].includes(error?.code) && error.message && !/permission denied|violates|relation|column/i.test(error.message) ? error.message : fallback)
 const shapeApp = a => ({ id: a.id, job: a.job_id, cid: a.creative_id, n: a.creative_name || 'A creative', price: Number(a.price) || 0, incl: a.includes || '', msg: a.description || a.message || '', st: a.status || 'pending', at: dayOf(a.created_at), who: a.creative || null })

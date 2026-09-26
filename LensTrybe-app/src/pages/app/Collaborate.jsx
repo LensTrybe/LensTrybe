@@ -175,7 +175,7 @@ function CollabLive() {
               {cur.dir === 'out' && cur.st === 'accepted' && cur.thread && <button className="btn w sm" onClick={() => reply(cur)}>Message {cur.other.n.split(' ')[0]}</button>}
               {!inCrew(cur.other.id) && <button className="btn g sm" disabled={!!busy} onClick={() => crewToggle(cur.other)}>Add to crew</button>}
             </div>
-            {cur.dir === 'out' && cur.conv && <div className="mthread" style={{ marginTop: 12 }}>{cur.conv.msgs.map(m => <div key={m.id} className={'om' + (m.me ? ' me' : '')}><small>{m.me ? 'You' : cur.other.n.split(' ')[0]} · {nice(String(m.at).slice(0, 10))}</small><p style={{ whiteSpace: 'pre-line' }}>{m.body}</p></div>)}</div>}
+            {cur.dir === 'out' && cur.conv && <div className="mthread" style={{ marginTop: 12 }}>{cur.conv.msgs.map(m => <div key={m.id} className={'om' + (m.me ? ' me' : '')}><small>{m.me ? 'You' : cur.other.n.split(' ')[0]} · {nice(live.dayOfIso(m.at))}</small><p style={{ whiteSpace: 'pre-line' }}>{m.body}</p></div>)}</div>}
           </div>}
         </div>}
       </div>

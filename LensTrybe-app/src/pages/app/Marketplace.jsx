@@ -95,7 +95,7 @@ const LSORT = [['new', 'Newest'], ['lo', 'Price, low to high'], ['hi', 'Price, h
 const LIMIT = { Basic: 0, Pro: 5, Expert: 15, Elite: Infinity }
 const KIT_CAT = { Bodies: 'Camera bodies', Lenses: 'Lenses', Lights: 'Lighting', Drones: 'Drones', Audio: 'Audio', Support: 'Bags and tripods', Cards: 'Miscellaneous' }
 const LPhoto = ({ l, w = 480 }) => l.photos[0] ? <img src={imageUrl(l.photos[0], w)} alt="" loading="lazy" /> : <Still seed={(l.t.charCodeAt(0) || 3) % 24} mood="golden" />
-const ago = iso => { if (!iso) return ''; const d = daysBetween(iso.slice(0, 10), TODAY); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' d ago' }
+const ago = iso => { if (!iso) return ''; const d = daysBetween(live.dayOfIso(iso) || String(iso).slice(0, 10), TODAY); return d <= 0 ? 'today' : d === 1 ? 'yesterday' : d + ' d ago' }
 function MarketLive() {
   const F = useFlows(); const { s, toast } = F; const { profile: P, user } = useAuth()
   const plan = s.plan.name, limit = LIMIT[plan] ?? 0
@@ -199,7 +199,7 @@ function MarketLive() {
         </div>}
         {conv && <div className="s4 side">
           <div className="card lg"><div className="h"><b>{conv.t}</b><small className="lumi-by">with {conv.sn}</small></div>
-            <div className="mthread">{conv.msgs.map(m => <div key={m.id} className={'om' + (m.me ? ' me' : '')}><small>{m.me ? 'You' : conv.sn.split(' ')[0]} · {nice(String(m.at).slice(0, 10))}</small><p style={{ whiteSpace: 'pre-line' }}>{m.body}</p></div>)}</div>
+            <div className="mthread">{conv.msgs.map(m => <div key={m.id} className={'om' + (m.me ? ' me' : '')}><small>{m.me ? 'You' : conv.sn.split(' ')[0]} · {nice(live.dayOfIso(m.at))}</small><p style={{ whiteSpace: 'pre-line' }}>{m.body}</p></div>)}</div>
             <div style={{ display: 'flex', gap: 6, marginTop: 10 }}><button className="btn w sm" onClick={() => replyConv(conv)}>Reply</button><Link className="btn g sm" to={'/creatives/' + conv.seller} target="_blank" rel="noopener noreferrer">Their profile</Link></div>
           </div>
         </div>}
