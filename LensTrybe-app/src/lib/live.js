@@ -195,13 +195,14 @@ export async function loadCreatives() {
 export async function loadCreative(id) {
   const { data: p, error } = await supabase.from('profiles').select(PUB).eq('id', id).maybeSingle()
   if (error || !p) return null
-  const [items, services, reviews, busy] = await Promise.all([
+  const [items, services, reviews, busy, site] = await Promise.all([
     supabase.rpc('get_public_portfolio_items', { p_creative_id: id }).then(r => r.data || []),
     supabase.from('portfolio_services').select('id, name, description, price, sort_order, image_url').eq('creative_id', id).order('sort_order').then(r => r.data || []),
     supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type, reply, featured, flag_status').eq('creative_id', id).eq('hidden', false).order('created_at', { ascending: false }).then(r => r.data || []),
     supabase.rpc('creative_busy_times', { p_creative: id, p_to: iso(new Date(Date.now() + 400 * 864e5)) }).then(r => [...new Set((r.data || []).filter(x => x.all_day || x.source === 'booked').map(x => x.date))]),
+    supabase.from('site_pages').select('page_type').eq('creative_id', id).limit(1).then(r => (r.data || []).length > 0).catch(() => false),
   ])
-  return shapeProfile(p, { items, services, reviews, busy })
+  return { ...shapeProfile(p, { items, services, reviews, busy }), site }
 }
 // An enquiry from the profile page. Signed in as a client: the thread + message are inserted and
 // send-enquiry notifies the creative and makes the portal (the live site's path). Anyone else:
@@ -606,7 +607,7 @@ export async function importContacts(uid, list, tag) {
 }
 
 // ── The workspace's own settings (no live-site table): one jsonb row per creative ──────────────
-export const SYNC_KEYS = ['avail', 'meetingTypes', 'contractTemplates', 'expCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
+export const SYNC_KEYS = ['avail', 'meetingTypes', 'contractTemplates', 'expCats', 'reviewRules', 'reviewRequests', 'waitlist', 'pages', 'settings', 'setup']
 export async function loadWorkspaceState(uid) {
   const { data } = await supabase.from('workspace_state').select('data').eq('creative_id', uid).maybeSingle()
   return data?.data || null
@@ -711,3 +712,57 @@ export async function saveFinanceSettings(uid, patch) {
   const { error } = await supabase.from('finance_settings').upsert({ creative_id: uid, ...patch, updated_at: new Date().toISOString() })
   if (error) throw new Error('Could not save that. Try again.')
 }
+
+// ── Website: site_pages (one row per page type, the live site's shape) + the public /site/<address> ──
+// Five pages on Expert and Elite, Home and Contact on Pro. The page text lives in content under the
+// keys the live site reads (headline/subheadline/hero_image on Home, heading/body/portrait_image on
+// About, heading/blurb elsewhere), plus the workspace's section switches.
+export const SITE_PAGES = [['home', 'Home'], ['gallery', 'Work'], ['about', 'About'], ['services', 'Pricing'], ['contact', 'Contact']]
+const SITE_SECS = { home: [['Hero', 1], ['Recent work', 1], ['What clients say', 1], ['Ask in one sentence', 1]], gallery: [['All work', 1]], about: [['Portrait and story', 1], ['What clients say', 0]], services: [['Packages', 1], ['Ask in one sentence', 1]], contact: [['Ask bar', 1], ['Booking link', 1], ['Where I work', 1]] }
+export const sitePagesFor = plan => /elite|expert/i.test(plan || '') ? SITE_PAGES.map(p => p[0]) : /pro/i.test(plan || '') ? ['home', 'contact'] : []
+const pageText = (id, c) => id === 'home' ? [c.headline, c.subheadline || c.intro] : id === 'about' ? [c.heading, c.body] : [c.heading, c.blurb]
+const pageImg = (id, c) => c.image || (id === 'home' ? c.hero_image : id === 'about' ? c.portrait_image : '') || ''
+export function shapeSitePages(rows, prof = {}) {
+  const by = Object.fromEntries((rows || []).map(r => [r.page_type, r]))
+  const first = String(prof.business_name || 'me').split(' ')[0]
+  const DEF = { home: [prof.tagline || prof.business_name || 'Welcome', prof.bio ? String(prof.bio).split('\n')[0].slice(0, 180) : ''], gallery: ['Recent work', 'A few favourites.'], about: ['Hi, I\'m ' + first + '.', ''], services: ['Packages and prices', 'Prices include GST.'], contact: ['Say what you need.', 'One sentence is enough. I reply within a day.'] }
+  return SITE_PAGES.map(([id, n]) => { const r = by[id], c = r?.content || {}; const [h, p] = pageText(id, c); const secs = Array.isArray(c.secs) && c.secs.length ? SITE_SECS[id].map(([k, on]) => { const s = c.secs.find(x => x[0] === k); return [k, s ? (s[1] ? 1 : 0) : on] }) : SITE_SECS[id]; return { id, n, on: r ? (r.visible !== false ? 1 : 0) : 1, h: h ?? DEF[id][0], p: p ?? DEF[id][1], img: pageImg(id, c), secs, saved: !!r } })
+}
+export async function loadSitePages(uid) {
+  const { data, error } = await supabase.from('site_pages').select('*').eq('creative_id', uid)
+  if (error) throw new Error(error.message)
+  return data || []
+}
+export async function publishSitePages(uid, pages, rows, allowed) {
+  const by = Object.fromEntries((rows || []).map(r => [r.page_type, r]))
+  const out = pages.filter(p => allowed.includes(p.id)).map(p => {
+    const old = by[p.id]?.content || {}, h = String(p.h || '').slice(0, 200), t = String(p.p || '').slice(0, 4000)
+    const text = p.id === 'home' ? { headline: h, subheadline: t, hero_image: p.img || null } : p.id === 'about' ? { heading: h, body: t, portrait_image: p.img || null } : { heading: h, blurb: t }
+    return { creative_id: uid, page_type: p.id, template: by[p.id]?.template || 't1', content: { ...old, ...text, image: p.img || null, secs: p.secs }, visible: !!p.on, position: SITE_PAGES.findIndex(x => x[0] === p.id), updated_at: new Date().toISOString() }
+  })
+  const { error } = await supabase.from('site_pages').upsert(out, { onConflict: 'creative_id,page_type' })
+  if (error) throw new Error('Could not publish. Try again.')
+}
+export const uploadSiteImage = (uid, file) => putImage(uid, file, 'portfolio-website', 'site-')
+const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{1,38}[a-z0-9])$/
+export async function setSiteAddress(uid, slug) {
+  const s = String(slug || '').trim().toLowerCase()
+  if (!SLUG_RE.test(s) || isUuid(s)) throw new Error('Use 3 to 40 letters, numbers or dashes, starting and ending with a letter or number.')
+  const { error } = await supabase.from('profiles').update({ custom_domain: s }).eq('id', uid)
+  if (error) throw new Error(/duplicate|unique/i.test(error.message) ? 'That address is taken. Try another.' : 'Could not save the address. Try again.')
+  return s
+}
+const SITE_PROF = PUB + ', custom_domain, brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin'
+// Public: /site/<address or id>. Returns null when there is no such site or the plan has no website.
+export async function loadSite(slug) {
+  const s = String(slug || '').trim().toLowerCase(); if (!s) return null
+  const q = supabase.from('profiles').select(SITE_PROF)
+  const { data: p } = isUuid(s) ? await q.eq('id', s).maybeSingle() : await q.eq('custom_domain', s).maybeSingle()
+  if (!p || p.is_admin) return null
+  const allowed = sitePagesFor(p.subscription_tier)
+  if (!allowed.length) return { profile: p, none: true }
+  const [c, rows] = await Promise.all([loadCreative(p.id), loadSitePages(p.id).catch(() => [])])
+  if (!c) return null
+  return { profile: p, c, pages: shapeSitePages(rows, p).filter(x => allowed.includes(x.id)), brand: siteBrand(p) }
+}
+export const siteBrand = p => ({ name: p.business_name || 'Creative', tag: p.tagline || '', accent: p.site_primary_color || p.brand_primary_color || '#1DB954', logo: p.site_logo_url || p.brand_logo_url || '', head: p.site_heading_font || 'Instrument Serif', body: p.site_body_font || 'Inter', paper: 'white', radius: 12, foot: 'Thank you for visiting' })

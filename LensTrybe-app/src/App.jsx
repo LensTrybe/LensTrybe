@@ -12,6 +12,7 @@ import { EditHome, EditIssue } from './pages/public/Edit'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
 import Pricing from './pages/public/Pricing'
+import SiteLive from './pages/public/SiteLive'
 import Founding from './pages/public/Founding'
 import Join from './pages/public/Join'
 import Login from './pages/public/Login'
@@ -74,6 +75,7 @@ export default function App() {
         <Route path="/portal/:slug" element={<ClientThread />} />
         <Route path="/brand/:slug" element={<BrandPage />} />
         <Route path="/review/:slug" element={<LeaveReview />} />
+        <Route path="/site/:slug" element={<SiteLive />} />
         <Route path="/sign/:token" element={<SignLive />} />
         <Route path="/meeting/:token" element={<MeetingLive />} />
         <Route path="/deliver/:token" element={<DeliverLive />} />

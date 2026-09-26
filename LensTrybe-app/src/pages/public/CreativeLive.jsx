@@ -48,7 +48,7 @@ export default function CreativeLive({ id }) {
         {hero ? <img src={img(hero, 1600)} alt="" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} /> : <Still seed={c.seed} mood={c.mood} />}
         <div className="in">
           <div className="who"><div className="avx" style={c.avatar ? { backgroundImage: 'url(' + img(c.avatar, 240) + ')', backgroundSize: 'cover' } : undefined} /><div><h1>{c.n}</h1><div className="meta"><span>{c.d}</span>{c.c && <><span>·</span><span>{c.c}, {c.state}</span></>}{c.found && <span className="fb">Founding creative</span>}{c.rv > 0 && <span className="stars"><i>★★★★★</i> {c.r} · {c.rv} reviews</span>}</div></div></div>
-          <div className="ctas"><button className="btn g" onClick={() => toast('Saved to your shortlist')}>Save</button><a className="btn p" href="#enq">Enquire <Icon name="arrow" size={14} /></a></div>
+          <div className="ctas">{c.site && /pro|expert|elite/i.test(c.tier || '') && <a className="btn g" href={'/site/' + c.id}>Website</a>}<button className="btn g" onClick={() => toast('Saved to your shortlist')}>Save</button><a className="btn p" href="#enq">Enquire <Icon name="arrow" size={14} /></a></div>
         </div>
       </div>
       <div className="plyt">

@@ -1,16 +1,21 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Still from '../../components/Still'
 import SiteRender from '../../components/SiteRender'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
+import { LIVE } from '../../lib/mode'
+import { useAuth } from '../../backend/AuthContext'
+import * as live from '../../lib/live'
 
 // Website: your site, built from your profile and brand kit. Five pages on Expert, your own domain on Elite.
 // Pages on the left, the site on the right, publish when it looks right.
 const LIMIT = { Basic: 0, Pro: 0, Expert: 5, Elite: 99 }
 const SITE_PLANS = ['Expert', 'Elite']
 
-export default function Website() {
+export default function Website() { return LIVE ? <WebsiteLive /> : <WebsiteDemo /> }
+
+function WebsiteDemo() {
   const F = useFlows(); const { s, toast } = F; const pages = s.pages, live = s.site.live
   const PLAN = { name: s.plan.name, pages: LIMIT[s.plan.name] ?? 5, domain: s.plan.name === 'Elite', site: SITE_PLANS.includes(s.plan.name) }
   const profileUrl = '/creatives/mara'
@@ -102,5 +107,91 @@ function StandardProfile({ s, F }) {
         <p className="note2" style={{ marginTop: 10 }}>The standard profile, exactly as clients see it. <Link className="lnk" to="/creatives/mara" target="_blank">Open it</Link>.</p>
       </div>
     </div>
+  )
+}
+
+// ── Live: pages in site_pages, published by the button. Drafts are kept with the workspace so an
+// unpublished edit survives a reload. Pro gets Home and Contact, Expert and Elite all five.
+const PIC = { home: 'globe', gallery: 'image', about: 'user', services: 'dollar', contact: 'chat' }
+const pub = pages => JSON.stringify(pages.map(p => [p.id, p.on ? 1 : 0, p.h || '', p.p || '', p.img || '', p.secs]))
+function WebsiteLive() {
+  const F = useFlows(); const { s, toast } = F; const { profile: P } = useAuth()
+  const plan = s.plan.name, allowed = live.sitePagesFor(plan)
+  const [rows, setRows] = useState(null), [c, setC] = useState(null), [sel, setSel] = useState('home'), [busy, setBusy] = useState(false), [upBusy, setUpBusy] = useState(false), [addr, setAddr] = useState(P?.custom_domain || '')
+  const file = useRef()
+  const load = async () => { const [r, cr] = await Promise.all([live.loadSitePages(P.id), live.loadCreative(P.id)]); setRows(r); setC(cr); return r }
+  useEffect(() => { if (!P?.id) return; load().then(r => { const draft = s.pages.length && s.pages.every(p => 'saved' in p) ? s.pages : null; F.set('pages', draft || live.shapeSitePages(r, P)) }).catch(() => { setRows([]); toast('Could not load your website. Reload to try again.') }) }, [P?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setAddr(P?.custom_domain || '') }, [P?.custom_domain])
+  const pages = s.pages.filter(p => allowed.includes(p.id)), pg = pages.find(p => p.id === sel) || pages[0]
+  const published = rows ? live.shapeSitePages(rows, P || {}).filter(p => allowed.includes(p.id)) : []
+  const dirty = rows && (pub(pages) !== pub(published) || !rows.length)
+  const upd = (k, v) => F.upd('pages', pg.id, { [k]: v })
+  const slug = addr || P?.id, siteUrl = '/site/' + slug
+  const publish = async () => { if (busy) return; setBusy(true); try { await live.publishSitePages(P.id, pages, rows, allowed); const r = await load(); F.set('pages', live.shapeSitePages(r, P)); toast('Published. Your site is up to date.') } catch (e) { toast(e.message) } finally { setBusy(false) } }
+  const discard = () => F.confirm({ title: 'Undo your changes?', body: 'The pages go back to what is published now.', cta: 'Undo changes', danger: true, onYes: () => F.set('pages', live.shapeSitePages(rows, P)) })
+  const pickImg = async e => { const fl = e.target.files?.[0]; e.target.value = ''; if (!fl) return; if (!/^image\//.test(fl.type)) return toast('Pick a photo.'); if (fl.size > 20e6) return toast('That photo is over 20 MB.'); setUpBusy(true); try { const url = await live.uploadSiteImage(P.id, fl); upd('img', url); toast('Photo added. Publish to put it live.') } catch (x) { toast(x.message) } finally { setUpBusy(false) } }
+  const changeAddr = () => F.open({ title: 'Your website address', sub: 'Letters, numbers and dashes. Old links to the previous address stop working.', cta: 'Save address', working: 'Saving', fields: [{ k: 'a', l: 'Address', required: true, value: addr || '', placeholder: 'your-name', hint: 'lenstrybe.com/site/your-name' }], submit: async v => { try { const a = await live.setSiteAddress(P.id, v.a); setAddr(a); toast('Your site is now at lenstrybe.com/site/' + a) } catch (e) { toast(e.message); return false } } })
+  const copy = () => { const u = window.location.origin + siteUrl; try { navigator.clipboard?.writeText(u)?.catch(() => {}) } catch {} toast('Copied: ' + u) }
+  if (!allowed.length) return (
+    <section className="view">
+      <div className="vh"><div><h1>Website</h1><p>On {plan} your public profile is the standard LensTrybe page. Pro adds a two page website, Expert a five page one.</p></div>
+        <div className="acts"><a className="btn g" href={'/creatives/' + P?.id} target="_blank" rel="noopener noreferrer">View profile <Icon name="arrow" size={14} /></a><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
+      <div className="grid"><div className="card lg s7"><div className="h"><b>Your public profile</b></div><p className="note2">Clients find you in the directory and see your profile: cover photo, work, packages, reviews and the enquiry form. It updates from your profile on its own.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/profile">Edit profile</Link></div></div></div>
+    </section>)
+  return (
+    <section className="view">
+      <div className="vh">
+        <div><h1>Website</h1><p>{allowed.length > 2 ? 'Five pages' : 'Home and Contact'} on {plan}, built from your profile, photos, packages and reviews. Edit on the left, publish when it looks right.</p></div>
+        <div className="acts">
+          <span className={'syncb' + (rows && rows.length ? '' : ' off')}><i />{rows && rows.length ? 'Live · lenstrybe.com/site/' + slug : 'Not published yet'}</span>
+          <a className="btn g" href={siteUrl} target="_blank" rel="noopener noreferrer">View site <Icon name="arrow" size={14} /></a>
+          <button className={'btn w' + (dirty ? '' : ' quiet')} onClick={publish} disabled={busy || !rows}>{busy ? <><span className="spin" />Publishing</> : dirty ? 'Publish changes' : 'Published'}</button>
+        </div>
+      </div>
+      <div className="grid">
+        <div className="s5 side">
+          <div className="card lg">
+            <div className="h"><b>Pages</b><small className="lumi-by">{pages.filter(p => p.on).length} of {allowed.length} on</small></div>
+            <div className="pglist">
+              {pages.map(p => <div key={p.id} className={'pgrow' + (pg?.id === p.id ? ' on' : '') + (p.on ? '' : ' off')}>
+                <button type="button" className="pgn" onClick={() => setSel(p.id)}><Icon name={PIC[p.id] || 'globe'} size={15} /><span>{p.n}</span><small>{p.id === 'home' ? 'first page' : ''}</small></button>
+                {p.id !== 'home' && <span className={'sw2' + (p.on ? ' on' : '')} role="switch" aria-checked={!!p.on} title={p.on ? 'Showing' : 'Hidden'} onClick={() => F.upd('pages', p.id, { on: p.on ? 0 : 1 })}><i /></span>}
+              </div>)}
+            </div>
+            {dirty && rows?.length > 0 && <button className="lnk" style={{ marginTop: 10, opacity: .7 }} onClick={discard}>Undo unpublished changes</button>}
+            {allowed.length < 5 && <p className="note2" style={{ marginTop: 10 }}>Work, About and Pricing pages come with Expert. <Link className="lnk" to="/app/subscription">See plans</Link></p>}
+          </div>
+          {pg && <div className="card lg">
+            <div className="h"><b>{pg.n}</b><small className="lumi-by">Changes show on the right</small></div>
+            <label className="bf"><span>Headline</span><input value={pg.h} maxLength={200} onChange={e => upd('h', e.target.value)} /></label>
+            <label className="bf"><span>{pg.id === 'about' ? 'Your story' : 'Under it'}</span><textarea className="ta" rows={pg.id === 'about' ? 6 : 3} maxLength={4000} value={pg.p} onChange={e => upd('p', e.target.value)} /></label>
+            {pg.id === 'about' && <p className="note2" style={{ marginTop: 4 }}>The About section also shows the bio from your profile.</p>}
+            <div className="h" style={{ margin: '14px 0 6px' }}><b style={{ fontSize: 12.5 }}>{pg.id === 'about' ? 'Portrait' : 'Big photo at the top'}</b></div>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              {pg.img && <img src={pg.img} alt="" style={{ width: 64, height: 44, objectFit: 'cover', borderRadius: 8 }} />}
+              <input ref={file} type="file" accept="image/*" hidden onChange={pickImg} />
+              <button className="btn g sm" onClick={() => file.current?.click()} disabled={upBusy}>{upBusy ? <><span className="spin" />Uploading</> : pg.img ? 'Change photo' : 'Choose a photo'}</button>
+              {pg.img && <button className="lnk" onClick={() => upd('img', '')}>Use a portfolio photo instead</button>}
+            </div>
+            {!pg.img && <p className="note2" style={{ marginTop: 6 }}>Without one, a photo from your portfolio is used.</p>}
+            <div className="h" style={{ margin: '14px 0 6px' }}><b style={{ fontSize: 12.5 }}>Sections</b></div>
+            <div className="brows one">{pg.secs.filter(([n]) => n !== 'Hero').map(([n, v]) => <label key={n} className="brow"><span>{n}</span><span className={'sw2' + (v ? ' on' : '')} role="switch" aria-checked={!!v} onClick={() => upd('secs', pg.secs.map(x => x[0] === n ? [x[0], x[1] ? 0 : 1] : x))}><i /></span></label>)}</div>
+            <p className="note2" style={{ marginTop: 8 }}>Photos come from your <Link className="lnk" to="/app/profile">profile portfolio</Link>, packages from your profile packages, reviews from <Link className="lnk" to="/app/reviews">Reviews</Link>.</p>
+          </div>}
+          <div className="card lg">
+            <div className="h"><b>Address</b></div>
+            <div className="kv"><span>Your site</span><b>lenstrybe.com/site/{slug.length > 24 ? slug.slice(0, 8) + '…' : slug}</b></div>
+            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}><button className="btn g sm" onClick={changeAddr}>{addr ? 'Change address' : 'Choose an address'}</button><button className="btn g sm" onClick={copy}>Copy link</button></div>
+            {/elite/i.test(plan) ? <p className="note2" style={{ marginTop: 10 }}>Want your own domain name, like yourname.com? <Link className="lnk" to="/app/support">Ask us</Link> and we will connect it.</p> : <p className="note2" style={{ marginTop: 10 }}>Your own domain name comes with Elite.</p>}
+          </div>
+        </div>
+        <div className="s7 side sticky">
+          <div className="card lg sitep">
+            <div className="chrome"><span /><span /><span /><i>lenstrybe.com/site/{slug}{pg && pg.id !== 'home' ? ' · ' + pg.n : ''}</i></div>
+            {c ? <SiteRender s={{ brand: live.siteBrand(P || {}), pages }} page={pg?.id} onPage={setSel} compact live={{ c }} /> : <div className="tempty" style={{ padding: 40 }}>Loading your site.</div>}
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }
