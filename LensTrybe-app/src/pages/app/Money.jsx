@@ -4,12 +4,13 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { TODAY, nice } from '../../lib/store'
 import { fmt } from '../../lib/format'
-import Chart from './Chart'
+import Chart, { monthsTo } from './Chart'
+import { LIVE } from '../../lib/mode'
 
 // One ledger, five doors. Finance hub shows all of it; Invoicing, Quotes, Contracts and Expenses
 // are the same ledger with one kind in focus, so nothing lives in two places.
 const KIND = {
-  money: { h: 'Finance hub', p: 'Everything in and out, one ledger. GST handled, Xero synced nightly.', kinds: null, tabs: [['all', 'All'], ['inv', 'Invoices'], ['q', 'Quotes'], ['c', 'Contracts'], ['exp', 'Expenses']], cta: 'New quote', mk: 'q' },
+  money: { h: 'Finance hub', p: LIVE ? 'Everything in and out, one ledger, ready for tax time.' : 'Everything in and out, one ledger. GST handled, Xero synced nightly.', kinds: null, tabs: [['all', 'All'], ['inv', 'Invoices'], ['q', 'Quotes'], ['c', 'Contracts'], ['exp', 'Expenses']], cta: 'New quote', mk: 'q' },
   invoicing: { h: 'Invoicing', p: 'Invoices from quotes, branded, paid by card or transfer, chased on their own.', kinds: ['inv'], tabs: [['all', 'All'], ['open', 'Open'], ['paid', 'Paid']], cta: 'New invoice', mk: 'inv' },
   quotes: { h: 'Quotes', p: 'Quotes from your packages that clients accept on their phone.', kinds: ['q'], tabs: [['all', 'All'], ['open', 'Waiting'], ['accepted', 'Accepted']], cta: 'New quote', mk: 'q' },
   contracts: { h: 'Contracts', p: 'Plain English contracts from your templates, signed on their phone. Your own paper files here too.', kinds: ['c'], tabs: [['all', 'All'], ['draft', 'Drafts'], ['sent', 'Waiting'], ['signed', 'Signed'], ['uploaded', 'Uploaded'], ['templates', 'Templates']], cta: 'New contract', mk: 'c' },
@@ -18,6 +19,7 @@ const KIND = {
 const IC = { inv: 'dollar', q: 'file', c: 'fileCheck', exp: 'receipt' }
 const month = TODAY.slice(0, 7)
 const FY0 = Number(TODAY.slice(0, 4)) - (Number(TODAY.slice(5, 7)) >= 7 ? 0 : 1) // Australian financial year starts 1 July
+const FY0s = FY0 + '-07-01', FY0e = (FY0 + 1) + '-06-30'
 const fyOf = y => ({ a: y + '-07-01', b: (y + 1) + '-06-30', l: 'FY ' + y + '–' + String(y + 1).slice(2) })
 
 export default function Money({ kind = 'money' }) {
@@ -52,7 +54,24 @@ export default function Money({ kind = 'money' }) {
     : kind === 'invoicing' ? [['Paid this month', fmt(paid), paidRows.length + 2 + ' invoices · ▲ 18% on August', ''], ['Owed to you', fmt(sum(owed)), nextDue ? 'due ' + nice(nextDue.date) : 'nothing open', owed.length ? 'w' : ''], ['Average days to paid', '3.2', 'down from 6 in August', ''], ['Chased by Lumi', String(L.filter(r => r.stt === 'Chased').length + 2), 'both paid within a day', 'n']]
     : kind === 'quotes' ? [['Waiting', fmt(sum(quoted)), quoted.length + ' quotes', quoted.length ? 'w' : ''], ['Accepted this quarter', fmt(9226 + sum(L.filter(r => r.k === 'q' && r.st === 'ok'))), (5 + L.filter(r => r.k === 'q' && r.st === 'ok').length) + ' of ' + (7 + L.filter(r => r.k === 'q').length - 2) + ' sent', ''], ['Acceptance rate', '71%', 'up from 60%', ''], ['Average to accept', '1.8 days', 'viewed within an hour', 'n']]
     : kind === 'contracts' ? [['Signed this year', String(9 + signed.length), 'all on a phone', ''], ['Drafts', String(drafts.length), drafts[0] ? drafts[0].who + ', ready to send' : 'none waiting', drafts.length ? 'w' : ''], ['Templates', String(TPL.length), TPL.slice(0, 3).map(t => t.n.split(' ·')[0].split(',')[0]).join(' · '), 'n'], ['Average to sign', '4 hours', 'sent with the quote', '']]
-    : [['Total spend', fmt(Math.round(fySpend)), FY.l, '', 'rose'], ['GST paid', fmt(Math.round(fyGst)), 'claimable on BAS', '', 'amber'], ['Deductible', fmt(Math.round(fyDed)), 'reduces taxable income', '', 'green'], ['Logged', String(fyExps.length), fyExps.length === 1 ? 'expense this year' : 'expenses this year', '', 'blue']]
+    : [['Total spend', fmt(Math.round(fySpend)), FY.l, '', 'rose'], ['GST paid', fmt(Math.round(fyGst)), LIVE && !s.settings.gstReg ? 'claimable once registered for GST' : 'claimable on BAS', '', 'amber'], ['Deductible', fmt(Math.round(fyDed)), 'reduces taxable income', '', 'green'], ['Logged', String(fyExps.length), fyExps.length === 1 ? 'expense this year' : 'expenses this year', '', 'blue']]
+  // live: every tile from real rows, nothing made up
+  const liveTiles = () => {
+    const fyRows = L.filter(r => r.date >= FY0s && r.date <= FY0e), inv = L.filter(r => r.k === 'inv'), qs = L.filter(r => r.k === 'q'), cs = L.filter(r => r.k === 'c')
+    const paidM = inv.filter(r => r.st === 'ok' && String(r.date).startsWith(month)), paidFy = fyRows.filter(r => r.k === 'inv' && r.st === 'ok')
+    const overdue = owed.filter(r => r.st !== 'grey' && r.due && r.due < TODAY), sentQ = qs.filter(r => r.st !== 'grey'), accQ = qs.filter(r => r.st === 'ok'), accFy = fyRows.filter(r => r.k === 'q' && r.st === 'ok')
+    const rate = s.settings.setAside || 30, gst = s.settings.gstReg
+    const n = (a, one, many) => a.length + ' ' + (a.length === 1 ? one : many)
+    if (kind === 'money') return [['Paid this month', fmt(sum(paidM)), n(paidM, 'invoice', 'invoices'), ''], ['Owed to you', fmt(sum(owed.filter(r => r.st !== 'grey'))), owed.filter(r => r.st !== 'grey').length ? n(owed.filter(r => r.st !== 'grey'), 'invoice', 'invoices') + (overdue.length ? ', ' + overdue.length + ' overdue' : '') : 'nothing open', overdue.length ? 'w' : ''], ['Quoted, waiting', fmt(sum(quoted.filter(r => r.st !== 'grey'))), n(quoted.filter(r => r.st !== 'grey'), 'quote', 'quotes') + ' open', 'n'], [gst ? 'GST in this year' : 'Set aside this year', fmt(Math.round(gst ? sum(paidFy) / 11 : sum(paidFy) * rate / 100)), gst ? 'a tenth of what was paid, for the BAS' : rate + '% of ' + fmt(sum(paidFy)) + ' paid', '']]
+    if (kind === 'invoicing') return [['Paid this month', fmt(sum(paidM)), n(paidM, 'invoice', 'invoices'), ''], ['Owed to you', fmt(sum(owed.filter(r => r.st !== 'grey'))), nextDue?.due ? 'next due ' + nice(nextDue.due) : owed.length ? owed.length + (owed.length === 1 ? ' invoice' : ' invoices') : 'nothing open', owed.length ? 'w' : ''], ['Overdue', String(overdue.length), overdue.length ? fmt(sum(overdue)) + ' past due' : 'none', overdue.length ? 'w' : 'n'], ['Paid this year', fmt(sum(paidFy)), n(paidFy, 'invoice', 'invoices') + ' · ' + fyOf(FY0).l, '']]
+    if (kind === 'quotes') return [['Waiting', fmt(sum(quoted.filter(r => r.st !== 'grey'))), n(quoted.filter(r => r.st !== 'grey'), 'quote', 'quotes'), quoted.length ? 'w' : ''], ['Accepted this year', fmt(sum(accFy)), n(accFy, 'quote', 'quotes'), ''], ['Acceptance rate', sentQ.length ? Math.round(accQ.length / sentQ.length * 100) + '%' : '—', accQ.length + ' of ' + sentQ.length + ' sent', ''], ['Drafts', String(qs.filter(r => r.st === 'grey').length), 'not sent yet', 'n']]
+    if (kind === 'contracts') return [['Signed this year', String(fyRows.filter(r => r.k === 'c' && r.st === 'pink').length), n(signed, 'signed in all', 'signed in all'), ''], ['Drafts', String(drafts.length), drafts[0] ? drafts[0].who + ', ready to send' : 'none waiting', drafts.length ? 'w' : ''], ['Waiting to sign', String(cs.filter(r => r.st === 'sent').length), 'sent, not signed yet', 'n'], ['Templates', String(TPL.length), TPL.slice(0, 3).map(t => t.n.split(' ·')[0].split(',')[0]).join(' · ') || 'none yet', '']]
+    return null
+  }
+  const liveT = LIVE ? liveTiles() : null
+  const shown = liveT || tiles
+  const m12 = useMemo(() => { const [y, m] = TODAY.slice(0, 7).split('-').map(Number); return Array.from({ length: 12 }, (_, i) => { const d = new Date(y, m - 1 - (11 - i), 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') }) }, [])
+  const series = useMemo(() => LIVE ? { paid: m12.map(k => L.filter(r => r.k === 'inv' && r.st === 'ok' && String(r.date || '').startsWith(k)).reduce((t, r) => t + r.v, 0)), quoted: m12.map(k => L.filter(r => r.k === 'q' && String(r.date || '').startsWith(k)).reduce((t, r) => t + r.v, 0)), months: monthsTo(TODAY.slice(0, 7)) } : {}, [L, m12])
   return (
     <section className="view">
       <div className="vh">
@@ -60,7 +79,7 @@ export default function Money({ kind = 'money' }) {
         <div className="acts">{kind === 'expenses' && <div className="fypick"><button type="button" aria-label="Previous year" onClick={() => setFy(fy - 1)}><Icon name="back" size={13} /></button><span>{FY.l}</span><button type="button" aria-label="Next year" disabled={fy >= FY0} onClick={() => setFy(fy + 1)}><Icon name="chev" size={13} /></button></div>}<button className="btn g" onClick={() => F.exportCsv(rows, kind)}><Icon name="deliver" size={15} />Export</button>{kind === 'contracts' && <><input ref={file} type="file" accept=".pdf,.doc,.docx,.png,.jpg,.jpeg" hidden onChange={e => { const fl = e.target.files?.[0]; e.target.value = ''; if (fl) F.uploadContract(fl) }} /><button className="btn g" onClick={() => file.current?.click()}><Icon name="folder" size={15} />Upload contract</button></>}{kind !== 'money' && <button className="btn w" onClick={() => F.newDoc(K.mk)}><Icon name="plus" size={15} />{K.cta}</button>}</div>
       </div>
       <div className="grid">
-        <div className="s12"><div className="kp">{tiles.map(([l, v, e, w, c]) => <div key={l} className={'k lg' + (c ? ' acc ' + c : '')}>{c && <i className="accb" />}<small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
+        <div className="s12"><div className="kp">{shown.map(([l, v, e, w, c]) => <div key={l} className={'k lg' + (c ? ' acc ' + c : '')}>{c && <i className="accb" />}<small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 
         <div className="card lg s8">
           <div className="h">
@@ -97,15 +116,15 @@ export default function Money({ kind = 'money' }) {
         </div>
 
         <div className="s4 side">
-          {kind === 'money' && <div className="card lg"><div className="h"><b>Money this year</b><Link to="/app/tax">Tax hub <Icon name="arrow" size={12} /></Link></div><Chart id="m" /></div>}
+          {kind === 'money' && <div className="card lg"><div className="h"><b>Money this year</b><Link to="/app/tax">Tax hub <Icon name="arrow" size={12} /></Link></div><Chart id="m" {...series} /></div>}
           <div className="card lg"><div className="h"><b>{kind === 'expenses' ? 'Where your money went' : 'Owed to you'}</b>{kind === 'expenses' ? <span className="mute">{FY.l}</span> : <Link to="/app/invoicing">Invoices <Icon name="arrow" size={12} /></Link>}</div>
             {kind === 'expenses' ? <div className="went">{went.map(x => <button type="button" key={x.n} className={'wr' + (f === x.n ? ' on' : '')} onClick={() => setF(f === x.n ? 'all' : x.n)}><span className="wl"><i className={'cdot ' + x.c} />{x.n}</span><b>{fmt(Math.round(x.v))}</b><span className="bar"><i className={x.c} style={{ width: (x.v / wentMax * 100) + '%' }} /></span></button>)}{!went.length && <p className="tempty">Nothing logged in {FY.l} yet.</p>}</div>
               : <div className="tl">{owed.map(r => <div key={r.id} className="e" onClick={() => nav('/app/thread/' + r.t)}><span className="t">{nice(r.date)}</span><div><b>{r.who}</b><small>{r.id} · {r.d}{r.sched?.length > 1 && <> · deposit {fmt(r.sched[0][1])} {nice(r.sched[0][2])}, balance {nice(r.sched[1][2])}</>}</small></div><span className="st sent">{fmt(r.v)}</span></div>)}{!owed.length && <p className="tempty">Nothing outstanding.</p>}</div>}
           </div>
           {kind === 'expenses'
-            ? <div className="tlumi"><span className="lm" /><div>{fyExps.filter(r => !r.rcpt).length ? fyExps.filter(r => !r.rcpt).length + ' of ' + fyExps.length + ' expenses this year have no receipt. Snap them on your phone and I file them against the right one.' : 'Every expense this year has its receipt. Tax time will be quick.'}{fyExps.some(r => !r.rcpt) && <div className="acts"><button className="y" onClick={() => F.editExpense(fyExps.find(r => !r.rcpt).id)}>Attach one now</button></div>}</div></div>
+            ? <div className="tlumi"><span className="lm" /><div>{fyExps.filter(r => !r.rcpt).length ? fyExps.filter(r => !r.rcpt).length + ' of ' + fyExps.length + ' expenses this year have no receipt. ' + (LIVE ? 'Open one and attach a photo or PDF.' : 'Snap them on your phone and I file them against the right one.') : 'Every expense this year has its receipt. Tax time will be quick.'}{fyExps.some(r => !r.rcpt) && <div className="acts"><button className="y" onClick={() => F.editExpense(fyExps.find(r => !r.rcpt).id)}>Attach one now</button></div>}</div></div>
             : quoted.some(r => r.stt?.startsWith('Viewed')) ? <div className="tlumi"><span className="lm" /><div>{owed.length ? '' : 'Nothing is overdue. '}{quoted.find(r => r.stt?.startsWith('Viewed')).who}'s quote has been viewed without a reply. Want a friendly nudge in your words?<div className="acts"><button className="y" onClick={() => F.nudge(quoted.find(r => r.stt?.startsWith('Viewed')).t)}>Send nudge</button><button onClick={() => F.wait(quoted.find(r => r.stt?.startsWith('Viewed')).t)}>Leave it</button></div></div></div>
-            : <div className="tlumi"><span className="lm" /><div>Nothing needs you here. {owed.length ? 'I chase from day 3, in your words.' : 'Nothing is overdue.'}</div></div>}
+            : <div className="tlumi"><span className="lm" /><div>Nothing needs you here. {owed.length ? (LIVE ? 'Chase from the invoice if one runs late.' : 'I chase from day 3, in your words.') : 'Nothing is overdue.'}</div></div>}
         </div>
       </div>
     </section>

@@ -46,9 +46,9 @@ export function SheetProvider({ children }) {
         : <><b>{f.cta || '+ Click to select files'}</b><small>{f.hint2 || 'Photos, videos, ZIPs or any file type. The first photo becomes the cover.'}</small></>}
     </label>
     else if (f.type === 'file') inp = <div className="sfile">
-      <input id={id} name={f.k} type="file" accept={f.accept || 'image/*,.pdf'} hidden onChange={e => { const fl = e.target.files?.[0]; e.target.value = ''; if (!fl) return; if (fl.size > 2.5e6) { set(f.k, { name: fl.name, type: fl.type, size: fl.size, data: '' }); return } const rd = new FileReader(); rd.onload = () => set(f.k, { name: fl.name, type: fl.type, size: fl.size, data: rd.result }); rd.readAsDataURL(fl) }} />
+      <input id={id} name={f.k} type="file" accept={f.accept || 'image/*,.pdf'} hidden onChange={e => { const fl = e.target.files?.[0]; e.target.value = ''; if (!fl) return; if (fl.size > 2.5e6) { set(f.k, { name: fl.name, type: fl.type, size: fl.size, data: '', file: fl }); return } const rd = new FileReader(); rd.onload = () => set(f.k, { name: fl.name, type: fl.type, size: fl.size, data: rd.result, file: fl }); rd.readAsDataURL(fl) }} />
       {val?.data && val.type?.startsWith('image/') && <img src={val.data} alt="" />}
-      <div className="ft">{val ? <><b>{val.name}</b><small>{Math.round(val.size / 1024)} KB{val.data ? '' : ' · over 2.5 MB, details kept only'}</small></> : <small>{f.hint2 || 'A photo or a PDF'}</small>}</div>
+      <div className="ft">{val ? <><b>{val.name}</b><small>{val.size ? (val.size > 1e6 ? (val.size / 1e6).toFixed(1) + ' MB' : Math.round(val.size / 1024) + ' KB') : 'Saved with this one'}{val.data || val.file || !val.size ? '' : ' · over 2.5 MB, details kept only'}</small></> : <small>{f.hint2 || 'A photo or a PDF'}</small>}</div>
       <label htmlFor={id} className="btn g sm">{val ? 'Change' : (f.cta || 'Attach')}</label>{val && <button type="button" className="lnk" onClick={() => set(f.k, '')}>Remove</button>}
     </div>
     else if (f.type === 'money') inp = <span className="money"><i>$</i><input ref={ref} id={id} name={f.k} type="number" inputMode="decimal" min={f.min ?? 0} step={f.step || 1} value={val} placeholder={f.placeholder || '0'} onChange={e => set(f.k, e.target.value)} /></span>

@@ -647,3 +647,66 @@ export async function requestReviewLive(name, email, message) {
   if (error) { let m = ''; try { m = (await error.context?.json())?.error } catch { /* */ } throw new Error(m || 'Could not send the review request. Try again.') }
   return data
 }
+
+// ── Expenses: expenses table + private receipts bucket (<uid>/...). Categories are stored as the
+// live site's keys where one matches, so both sites read the same rows; custom ones keep their name.
+const EXP_KEYS = { equipment: 'Gear', software: 'Software', travel: 'Travel', home_office: 'Home office', marketing: 'Marketing', education: 'Education', insurance: 'Insurance', wardrobe: 'Props and wardrobe', contractors: 'Contractors', fees: 'Fees', phone: 'Phone and internet', other: 'Other' }
+const EXP_BY_NAME = Object.fromEntries(Object.entries(EXP_KEYS).map(([k, n]) => [n.toLowerCase(), k]))
+export const expCatName = k => EXP_KEYS[k] || (k ? String(k) : 'Other')
+const expCatKey = n => EXP_BY_NAME[String(n || '').toLowerCase()] || String(n || 'other').trim().slice(0, 60)
+export function shapeExpense(e) {
+  return { id: 'EXP-' + short(e.id), k: 'exp', live: e, who: e.merchant || e.description || 'Expense', d: e.description || '', date: e.expense_date || String(e.created_at || '').slice(0, 10), v: -(Number(e.amount) || 0), cat: expCatName(e.category), proj: e.project_id || '', pay: e.payment_method || 'Card', gst: e.has_gst !== false, ded: e.is_deductible !== false, rcpt: e.receipt_path ? { name: e.receipt_path.split('/').pop(), path: e.receipt_path } : e.receipt_url ? { name: 'Receipt', url: e.receipt_url } : null, notes: e.notes || '', st: 'grey', stt: 'Logged' }
+}
+export async function loadExpenses(uid) {
+  const { data, error } = await supabase.from('expenses').select('*').eq('creative_id', uid).order('expense_date', { ascending: false }).limit(2000)
+  if (error) throw new Error(error.message)
+  return (data || []).map(shapeExpense)
+}
+const RCPT_OK = t => /^image\//.test(t || '') || t === 'application/pdf'
+export async function saveExpense(uid, v, existing) {
+  const amount = Math.round(Math.abs(Number(v.v) || 0) * 100) / 100
+  if (!amount) throw new Error('Enter an amount.')
+  let receipt_path = existing?.receipt_path || null, oldPath = null
+  if (v.rcpt?.file) {
+    const fl = v.rcpt.file
+    if (!RCPT_OK(fl.type)) throw new Error('Receipts can be a photo or a PDF.')
+    if (fl.size > 15e6) throw new Error('That receipt is over 15 MB. Try a smaller photo.')
+    const ext = ((fl.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || (fl.type === 'application/pdf' ? 'pdf' : 'jpg')).slice(0, 5)
+    const path = `${uid}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+    const up = await supabase.storage.from('receipts').upload(path, fl, { upsert: false, contentType: fl.type })
+    if (up.error) throw new Error('The receipt did not upload. Try again.')
+    oldPath = receipt_path; receipt_path = path
+  } else if (!v.rcpt && receipt_path) { oldPath = receipt_path; receipt_path = null }
+  const row = {
+    expense_date: v.date || new Date().toISOString().slice(0, 10), merchant: (v.who || '').trim().slice(0, 200) || null, description: (v.d || '').trim().slice(0, 500) || null,
+    category: expCatKey(v.cat), amount, has_gst: !!v.gst, gst_amount: v.gst ? Math.round(amount / 11 * 100) / 100 : 0, is_deductible: !!v.ded,
+    payment_method: v.pay || null, project_id: v.proj || null, notes: (v.notes || '').trim().slice(0, 2000) || null, receipt_path, updated_at: new Date().toISOString(),
+  }
+  const q = existing ? supabase.from('expenses').update(row).eq('id', existing.id) : supabase.from('expenses').insert({ ...row, creative_id: uid })
+  const { error } = await q
+  if (error) { if (v.rcpt?.file && receipt_path) supabase.storage.from('receipts').remove([receipt_path]).catch(() => {}); throw new Error('Could not save the expense. Try again.') }
+  if (oldPath && oldPath !== receipt_path) supabase.storage.from('receipts').remove([oldPath]).catch(() => {})
+}
+export async function deleteExpense(e) {
+  const { error } = await supabase.from('expenses').delete().eq('id', e.id)
+  if (error) throw new Error('Could not remove it. Try again.')
+  if (e.receipt_path) supabase.storage.from('receipts').remove([e.receipt_path]).catch(() => {})
+}
+export async function receiptLink(path) {
+  const { data, error } = await supabase.storage.from('receipts').createSignedUrl(path, 600)
+  if (error || !data?.signedUrl) throw new Error('Could not open the receipt.')
+  return data.signedUrl
+}
+export async function recategorise(uid, from, to) {
+  const { error } = await supabase.from('expenses').update({ category: expCatKey(to) }).eq('creative_id', uid).eq('category', expCatKey(from))
+  if (error) throw new Error('Could not move those expenses. Try again.')
+}
+// finance_settings: GST registration, set-aside rate
+export async function loadFinanceSettings(uid) {
+  const { data } = await supabase.from('finance_settings').select('gst_registered, set_aside_percent, fy_start_month').eq('creative_id', uid).maybeSingle()
+  return data || null
+}
+export async function saveFinanceSettings(uid, patch) {
+  const { error } = await supabase.from('finance_settings').upsert({ creative_id: uid, ...patch, updated_at: new Date().toISOString() })
+  if (error) throw new Error('Could not save that. Try again.')
+}

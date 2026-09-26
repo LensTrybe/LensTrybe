@@ -95,7 +95,7 @@ function LiveSync() {
   useEffect(() => {
     if (!LIVE || !profile?.id || !loaded.current) return
     clearTimeout(timer.current)
-    timer.current = setTimeout(() => { const { email, phone, biz, abn, addr, ...settings } = F.s.settings || {}; live.saveWorkspaceState(profile.id, { ...Object.fromEntries(live.SYNC_KEYS.map(k => [k, F.s[k]])), settings }).catch(() => {}) }, 1200)
+    timer.current = setTimeout(() => { const { email, phone, biz, abn, addr, setAside, gstReg, ...settings } = F.s.settings || {}; live.saveWorkspaceState(profile.id, { ...Object.fromEntries(live.SYNC_KEYS.map(k => [k, F.s[k]])), settings }).catch(() => {}) }, 1200)
     return () => clearTimeout(timer.current)
   }, [snap]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
