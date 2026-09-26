@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { TokenShell, TokenState, Loading } from './TokenShell'
 import { useAuth } from '../../backend/AuthContext'
@@ -9,7 +9,7 @@ import { signOut } from '../../lib/auth'
 // /team/accept/<token>: someone invited to a studio's team. Signed in as the invited email, one tap
 // joins. Otherwise they make their account here (or give the password of the one they already have).
 export default function TeamAccept() {
-  const { token } = useParams(); const nav = useNavigate(); const { user } = useAuth()
+  const { token } = useParams(); const { user } = useAuth()
   const [inv, setInv] = useState(undefined), [f, setF] = useState({ first: '', last: '', business: '', password: '', confirm: '' }), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [done, setDone] = useState(false)
   useEffect(() => { let on = true; getTeamInvitation(token).then(r => on && setInv(r)).catch(() => on && setInv(null)); return () => { on = false } }, [token])
   if (inv === undefined) return <Loading />
@@ -22,7 +22,7 @@ export default function TeamAccept() {
     e?.preventDefault(); if (busy) return
     if (!matches) { if (!f.first.trim()) return setErr('Add your first name.'); if (f.password.length < 8) return setErr('Your password needs at least 8 characters.'); if (f.password !== f.confirm) return setErr('The two passwords do not match.') }
     setBusy(true); setErr('')
-    try { await joinTeam(token, matches ? {} : { ...f, business: f.business.trim() || [f.first, f.last].join(' ').trim() }); setDone(true); setTimeout(() => nav('/app'), 2500) } catch (x) { setErr(x.message) } finally { setBusy(false) }
+    try { await joinTeam(token, matches ? {} : { ...f, business: f.business.trim() || [f.first, f.last].join(' ').trim() }); setDone(true); setTimeout(() => window.location.assign('/app'), 2000) } catch (x) { setErr(x.message) } finally { setBusy(false) }
   }
   if (done) return <TokenShell creative={studio} sub="Team invitation"><div className="pjob lg tdoc"><div className="tdone"><span className="tick"><Icon name="check" size={16} /></span><div><b>You're on the team.</b><small>Taking you to your workspace.</small></div></div></div></TokenShell>
   return (
