@@ -828,3 +828,47 @@ export async function uploadContentMedia(uid, file) {
   if (error) throw new Error('Could not upload ' + file.name + '.')
   return { path, url: supabase.storage.from('content-media').getPublicUrl(path).data.publicUrl }
 }
+
+// ── Team (Elite): up to four people. An invite is created and emailed by invite-team-member; the
+// person accepts at /team/accept/<token> (join-team), which gives them their own Elite workspace and
+// puts them on this team list. Members do not see the owner's workspace.
+const teamErr = async (error, fallback) => {
+  let body = null
+  try { body = await error?.context?.json() } catch (_) { body = null }
+  const e = new Error((body && typeof body.error === 'string' && body.error) || fallback)
+  if (body?.code) e.code = body.code
+  return e
+}
+export async function loadTeam(uid) {
+  const [m, i] = await Promise.all([
+    supabase.from('team_members').select('id, name, email, role, status, created_at, member_profile_id, avatar_url').eq('creative_id', uid).order('created_at'),
+    supabase.from('team_invitations').select('id, email, role, status, created_at').eq('creative_id', uid).eq('status', 'pending').order('created_at'),
+  ])
+  if (m.error) throw new Error(m.error.message)
+  return { members: m.data || [], invites: i.data || [] }
+}
+export async function inviteTeam(email, role) {
+  const { data, error } = await supabase.functions.invoke('invite-team-member', { body: { email: String(email || '').trim().toLowerCase(), role } })
+  if (error) throw await teamErr(error, 'Could not send the invitation.')
+  if (data?.error) throw new Error(data.error)
+  return data
+}
+export async function resendTeamInvite(id) {
+  const { data, error } = await supabase.functions.invoke('invite-team-member', { body: { invitation_id: id } })
+  if (error) throw await teamErr(error, 'Could not resend the invitation.')
+  if (data?.error) throw new Error(data.error)
+}
+export async function cancelTeamInvite(id) { const { error } = await supabase.from('team_invitations').update({ status: 'cancelled' }).eq('id', id); if (error) throw new Error('Could not cancel it. Try again.') }
+export async function removeTeamMember(id) { const { error } = await supabase.from('team_members').delete().eq('id', id); if (error) throw new Error('Could not remove them. Try again.') }
+export async function getTeamInvitation(token) {
+  const { data, error } = await supabase.rpc('get_team_invitation', { p_token: token })
+  if (error) return null
+  return (Array.isArray(data) ? data[0] : data) || null
+}
+export async function joinTeam(token, f = {}) {
+  const { data, error } = await supabase.functions.invoke('join-team', { body: { invitation_token: token, password: f.password || '', business_name: f.business || '', first_name: f.first || '', last_name: f.last || '' } })
+  if (error) throw await teamErr(error, 'Could not join the team. Try again.')
+  if (data?.error) throw new Error(data.error)
+  if (data?.session?.access_token) await supabase.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token })
+  return data
+}
