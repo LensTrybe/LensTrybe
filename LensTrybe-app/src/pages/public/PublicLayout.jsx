@@ -6,6 +6,8 @@ import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { useReveal } from '../../lib/useReveal'
 import { outside, regionCookie, regionName, waitlistTo } from '../../lib/region'
+import { useAuth } from '../../backend/AuthContext'
+import { LIVE } from '../../lib/mode'
 import '../../styles/public.css'
 import '../../styles/pages.css'
 
@@ -13,6 +15,8 @@ import '../../styles/pages.css'
 // and is light everywhere else. Everything sits on the aurora field.
 export default function PublicLayout() {
   const { pathname } = useLocation()
+  const { user, isClient } = useAuth()
+  const signedIn = LIVE && !!user
   const home = pathname === '/'
   // outside the launch area: read anything, but every action points at the waitlist for the area
   const away = outside(), wl = pathname === '/waitlist'
@@ -48,8 +52,9 @@ export default function PublicLayout() {
           {!away && <NavLink to="/jobs" className="hide-m">Post a job</NavLink>}
           <NavLink to="/pricing" className="hide-m">Pricing</NavLink>
           {away && <NavLink to="/founding" className="hide-m">Founding</NavLink>}
+          {signedIn ? <Link to={isClient ? '/portal' : '/app'} className="cta">{isClient ? 'My portal' : 'My workspace'}</Link> : <>
           <NavLink to="/login">Log in</NavLink>
-          {away ? <Link to={waitlistTo()} className="cta">Join the waitlist</Link> : <Link to="/join" className="cta">Join as a creative</Link>}
+          {away ? <Link to={waitlistTo()} className="cta">Join the waitlist</Link> : <Link to="/join" className="cta">Join as a creative</Link>}</>}
           <button className="mb" aria-label="Menu" onClick={() => setMenu(m => !m)}><Icon name="menu" /></button>
         </div>
       </header>

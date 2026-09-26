@@ -57,7 +57,7 @@ function PostJob() {
       if (!user) return
       if (!v.by.trim()) return setErr('Add your name, so creatives know who they are quoting.')
       if (busy) return; setBusy(true); setErr('')
-      live.postJob({ ...v, d: v.flexOn ? '' : v.d, w: v.flexOn && v.flex ? v.w + '\n\nWhen: ' + v.flex : v.w, hrs: undefined }).then(jid => { clearDraft(); toast('Posted. Creatives who fit can reply now.'); nav('/jobs/' + jid) }).catch(x => setErr(x.message)).finally(() => setBusy(false))
+      live.postJob({ ...v, d: v.flexOn ? '' : v.d, w: v.w + (v.flexOn && v.flex ? '\n\nWhen: ' + v.flex : '') + (v.hrs ? '\n\nHow long: ' + v.hrs : '') }).then(jid => { clearDraft(); toast('Posted. Creatives who fit can reply now.'); nav('/jobs/' + jid) }).catch(x => setErr(x.message)).finally(() => setBusy(false))
       return
     }
     if (!v.by.trim() || !/.+@.+\..+/.test(v.em)) return setErr('Your name and a real email, so replies can reach you.'); setErr('')
