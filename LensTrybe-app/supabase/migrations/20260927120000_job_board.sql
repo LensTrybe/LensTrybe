@@ -76,7 +76,7 @@ create trigger a_guard_job_listing before insert or update on public.job_listing
 
 create or replace function public.guard_job_application() returns trigger
 language plpgsql set search_path = public as $$
-declare v_job public.job_listings; v_tier text; v_state text; v_name text; v_js text; v_ok boolean;
+declare v_status text; v_exp timestamptz; v_poster uuid; v_loc text; v_tier text; v_state text; v_name text; v_js text; v_ok boolean;
 begin
   if current_user not in ('anon', 'authenticated') then return NEW; end if;
   if TG_OP = 'INSERT' then
@@ -85,12 +85,13 @@ begin
     NEW.creative_id := auth.uid();
     NEW.status := 'pending';
     NEW.created_at := now();
-    select * into v_job from public.job_listings where id = NEW.job_id;
-    if not found or v_job.status <> 'active' or v_job.expires_at < now() then raise exception 'This job isn''t open any more.' using errcode = 'P0001'; end if;
-    if v_job.posted_by = NEW.creative_id then raise exception 'You can''t reply to your own job.' using errcode = 'P0001'; end if;
+    -- named columns: browser users can't read poster_email
+    select status, expires_at, posted_by, location into v_status, v_exp, v_poster, v_loc from public.job_listings where id = NEW.job_id;
+    if not found or v_status <> 'active' or v_exp < now() then raise exception 'This job isn''t open any more.' using errcode = 'P0001'; end if;
+    if v_poster = NEW.creative_id then raise exception 'You can''t reply to your own job.' using errcode = 'P0001'; end if;
     select lower(coalesce(subscription_tier, 'basic')), upper(btrim(coalesce(state, ''))), business_name into v_tier, v_state, v_name from public.profiles where id = NEW.creative_id;
     if v_tier is null or v_tier in ('basic', '') then raise exception 'Replying to jobs is on Pro and above.' using errcode = 'P0001'; end if;
-    v_js := public.job_state_of(v_job.location);
+    v_js := public.job_state_of(v_loc);
     if v_tier = 'pro' and v_js is not null and v_state <> '' and v_state <> v_js then
       raise exception 'On Pro you can reply to jobs in your own state. Expert and Elite reply anywhere.' using errcode = 'P0001';
     end if;
