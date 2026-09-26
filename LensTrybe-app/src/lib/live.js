@@ -441,3 +441,46 @@ export async function blockDates(uid, dates, note) {
   if (error) throw new Error(error.message)
 }
 export async function unblockDate(id) { const { error } = await supabase.from('availability').delete().eq('id', id); if (error) throw new Error(error.message) }
+
+// ── Meetings from the workspace ───────────────────────────────────────────────────────────────
+// meetings rows, proposed by the creative (send-meeting emails the client a /meeting/<token> link),
+// answered by the client (accepted / reschedule / declined), confirmed by the creative.
+const HOW = { video: 'Video', phone: 'Phone', in_person: 'In person' }
+const HOW_BACK = { Video: 'video', Phone: 'phone', 'In person': 'in_person' }
+export function shapeMeeting(m) {
+  const st = low(m.status), date = m.meeting_date || m.client_proposed_date || ''
+  const time = String(m.start_time || m.client_proposed_time || '09:00').slice(0, 5)
+  return { id: 'm-' + m.id, who: m.client_name || m.client_email || 'Client', t: '', when: date + 'T' + time, how: HOW[m.meeting_type] || m.meeting_type || 'Video', st: ['declined', 'cancelled'].includes(st) || (date && date < today()) ? 'done' : 'up', status: st, th: low(m.client_email), prep: m.description || '', notes: m.client_message || '', g: gradFor(low(m.client_email || m.client_name || 'x')), title: m.title, where: m.location, proposed: m.client_proposed_date ? { d: m.client_proposed_date, t: String(m.client_proposed_time || '').slice(0, 5) } : null, live: m }
+}
+export async function loadMeetings(uid) {
+  const { data } = await supabase.from('meetings').select('*').eq('creative_id', uid).order('meeting_date', { ascending: true })
+  return (data || []).map(shapeMeeting)
+}
+export async function createMeeting(uid, v) {
+  const mod = await moderateText([v.title, v.description].filter(Boolean).join('\n')); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be sent.')
+  const addMin = (t, n) => { const [h, m] = t.split(':').map(Number); const x = Math.min(23 * 60 + 59, h * 60 + m + n); return String(Math.floor(x / 60)).padStart(2, '0') + ':' + String(x % 60).padStart(2, '0') }
+  const end = v.end || (v.time ? addMin(v.time, v.minutes || 30) : null)
+  const row = { creative_id: uid, title: v.title || 'Meeting', meeting_type: HOW_BACK[v.how] || 'video', meeting_date: v.date || null, start_time: v.time || null, end_time: end, location: v.location || null, description: v.description || null, client_name: v.name || null, client_email: (v.email || '').toLowerCase() || null, status: 'draft', origin: 'creative', updated_at: new Date().toISOString() }
+  const { data, error } = await supabase.from('meetings').insert(row).select().single()
+  if (error) throw new Error(error.message)
+  if (v.send !== false && row.client_email) { const { error: e2 } = await supabase.functions.invoke('send-meeting', { body: { meetingId: data.id } }); if (e2) throw new Error('Saved, but the invite email did not go. Try Send again from Meetings.'); await supabase.from('meetings').update({ status: 'sent' }).eq('id', data.id) }
+  return data
+}
+export async function sendMeetingLive(id) { const { error } = await supabase.functions.invoke('send-meeting', { body: { meetingId: id } }); if (error) throw new Error('Could not send the invite. Try again.'); await supabase.from('meetings').update({ status: 'sent' }).eq('id', id) }
+export async function rescheduleMeeting(id, date, time, how) {
+  const patch = { meeting_date: date, start_time: time, updated_at: new Date().toISOString(), ...(how ? { meeting_type: HOW_BACK[how] || 'video' } : {}) }
+  const { error } = await supabase.from('meetings').update(patch).eq('id', id); if (error) throw new Error(error.message)
+  await sendMeetingLive(id)
+}
+// The creative confirms (their time, or the one the client suggested); client is emailed a confirmation.
+export async function confirmMeeting(m, useProposed) {
+  const date = useProposed ? m.client_proposed_date : m.meeting_date, start = useProposed ? m.client_proposed_time : m.start_time
+  if (!date) throw new Error('Set a date first.')
+  const { error } = await supabase.from('meetings').update({ status: 'accepted', meeting_date: date, start_time: start || null, updated_at: new Date().toISOString() }).eq('id', m.id); if (error) throw new Error(error.message)
+  try { await supabase.functions.invoke('meeting-notify', { body: { meetingId: m.id, kind: 'confirmed' } }) } catch { /* best effort */ }
+}
+export async function declineMeeting(id) {
+  const { error } = await supabase.from('meetings').update({ status: 'declined', updated_at: new Date().toISOString() }).eq('id', id); if (error) throw new Error(error.message)
+  try { await supabase.functions.invoke('meeting-notify', { body: { meetingId: id, kind: 'declined' } }) } catch { /* best effort */ }
+}
+export async function deleteMeeting(id) { const { error } = await supabase.from('meetings').delete().eq('id', id); if (error) throw new Error(error.message) }

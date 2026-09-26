@@ -39,7 +39,7 @@ export function useFlows() {
     say(tid, 'me', text, att.length ? { att } : {}); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
   }
   // Live: pull every thread, document and booking for this creative into the store
-  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => [])]); hydrate({ threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
+  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => [])]); hydrate({ meetings, threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
   // ── live bookings: the real bookings function, then a refresh ──
   const liveClientField = (preset = {}) => ({ k: 'client', l: 'Client', type: 'select', required: true, options: [...s.threads.map(t => [t.id, t.n]), ['__new', 'New client…']], ...(preset.client ? { value: preset.client } : {}) })
   const liveSlot = v => ({ date: v.d, allDay: v.allDay === true || v.allDay === 'true', start: v.time, end: v.endTime })
@@ -348,7 +348,17 @@ export function useFlows() {
     title: 'Add gear', cta: 'Add', fields: [{ k: 'n', l: 'Item', required: true, placeholder: 'Canon RF 50mm f/1.2' }, ...catFields('Lenses'), { k: 'v', l: 'Value', type: 'money', half: true }, { k: 'sn', l: 'Serial', half: true }, { k: 'svc', l: 'Next service', type: 'date', half: true }, { k: 'ins', l: 'Insured', type: 'toggle', value: true }, { k: 'kit', l: 'In the main kit', type: 'toggle', value: true, hint: 'Shows on every packing list' }, { k: 'note', l: 'Note', type: 'textarea', rows: 2 }],
     submit: v => { const c = catOf(v); add('gear', { n: v.n, c, sn: v.sn, v: v.v, ins: v.ins ? 1 : 0, svc: v.svc, note: v.note, kit: v.kit ? 1 : 0 }, 'gear'); toast(v.n + ' added to ' + c + (v.ins ? ', on the insurance list.' : '.')) },
   })
-  const newMeeting = (preset = {}) => open({
+  const newMeetingLive = (preset = {}) => open({
+    title: 'Propose a meeting', sub: 'The client gets an email with the time and can accept, suggest another, or decline.', cta: 'Send invite',
+    fields: [liveClientField(preset), ...newNameFields(), { k: 'title', l: 'What', required: true, value: preset.title || '', placeholder: 'Planning call' }, { k: 't', l: 'Type', type: 'select', value: preset.t || (s.meetingTypes[0]?.id || ''), options: s.meetingTypes.map(m => [m.id, m.n + ' · ' + m.m + ' min']) }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: preset.d || TODAY, min: TODAY }, { k: 'time', l: 'Time', type: 'time', required: true, half: true, value: '10:00' }, { k: 'how', l: 'How', type: 'select', half: true, value: 'Video', options: ['Video', 'Phone', 'In person'] }, { k: 'where', l: 'Link, number or place', half: true, placeholder: 'Zoom link, phone, cafe' }, { k: 'desc', l: 'Details for the client', type: 'textarea', rows: 3, placeholder: 'What you will cover' }],
+    submit: async v => {
+      const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
+      if (!name || !email) { toast('A name and an email to send the invite to.'); return false }
+      const type = s.meetingTypes.find(m => m.id === v.t)
+      try { await live.createMeeting(me.id, { name, email, title: v.title || type?.n || 'Meeting', date: v.d, time: v.time, minutes: type?.m || 30, how: v.how, location: v.where, description: v.desc }); await refreshLive(); toast('Invite sent to ' + name + '.'); nav('/app/meetings') } catch (e) { toast(e.message); return false }
+    },
+  })
+  const newMeeting = (preset = {}) => LIVE ? newMeetingLive(preset) : open({
     title: 'New meeting', sub: 'Goes on both calendars. The invite comes from you.', cta: 'Book meeting',
     fields: [clientField('client', preset.client ? { value: preset.client } : {}), ...newNameFields(), { k: 't', l: 'Type', type: 'select', required: true, value: preset.t || (s.meetingTypes[0]?.id || 'disc'), options: s.meetingTypes.map(m => [m.id, m.n + ' · ' + m.m + ' min']) }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: preset.d || TODAY, min: TODAY }, { k: 'time', l: 'Time', type: 'time', required: true, half: true, value: '10:00' }, { k: 'how', l: 'How', type: 'select', half: true, value: 'Video', options: ['Video', 'Phone', 'In person'] }, { k: 'prep', l: 'Prep', type: 'textarea', rows: 3, placeholder: 'What to have ready' }],
     submit: v => { const r = ensure(v); add('meetings', { who: r.name, t: v.t, when: v.d + 'T' + v.time, how: v.how, st: v.d === TODAY ? 'today' : 'up', th: r.tid, prep: v.prep, g: r.person.g }, 'meet'); say(r.tid, 'sys', (s.meetingTypes.find(m => m.id === v.t)?.n || 'Meeting') + ' booked · ' + shortDate(v.d) + ' ' + v.time + ' · ' + v.how); toast('Booked with ' + r.name + '. Invite sent.') },
