@@ -179,7 +179,7 @@ export function shapeProfile(p, extra = {}) {
     id: p.id, live: true, n: p.business_name || 'Creative', d: p.tagline || skills.join(' and '), short: skills[0] || 'Creative', c: p.city || p.location || '', state: p.state || 'QLD', p: from, r, rv: rv.length, t,
     mood: ['golden', 'dusk', 'cool', 'forest', 'night', 'rose'][hash(p.id) % 6], seed: (hash(p.id) % 40) + 1, free: p.is_available !== false, found: !!(p.founding_member && p.show_founding_badge !== false), resp: 'about a day',
     why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
-    photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported' })),
+    photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.filter(x => x.flag_status !== 'resolved_removed').map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported', reply: x.reply || '', featured: !!x.featured })).sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)),
     busy: extra.busy || [],
   }
 }
@@ -198,7 +198,7 @@ export async function loadCreative(id) {
   const [items, services, reviews, busy] = await Promise.all([
     supabase.rpc('get_public_portfolio_items', { p_creative_id: id }).then(r => r.data || []),
     supabase.from('portfolio_services').select('id, name, description, price, sort_order, image_url').eq('creative_id', id).order('sort_order').then(r => r.data || []),
-    supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type').eq('creative_id', id).eq('hidden', false).order('created_at', { ascending: false }).then(r => r.data || []),
+    supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type, reply, featured, flag_status').eq('creative_id', id).eq('hidden', false).order('created_at', { ascending: false }).then(r => r.data || []),
     supabase.rpc('creative_busy_times', { p_creative: id, p_to: iso(new Date(Date.now() + 400 * 864e5)) }).then(r => [...new Set((r.data || []).filter(x => x.all_day || x.source === 'booked').map(x => x.date))]),
   ])
   return shapeProfile(p, { items, services, reviews, busy })
@@ -605,7 +605,7 @@ export async function importContacts(uid, list, tag) {
 }
 
 // ── The workspace's own settings (no live-site table): one jsonb row per creative ──────────────
-export const SYNC_KEYS = ['avail', 'meetingTypes', 'stages', 'checklistTemplates', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'waitlist', 'settings', 'setup']
+export const SYNC_KEYS = ['avail', 'meetingTypes', 'stages', 'checklistTemplates', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
 export async function loadWorkspaceState(uid) {
   const { data } = await supabase.from('workspace_state').select('data').eq('creative_id', uid).maybeSingle()
   return data?.data || null
@@ -613,4 +613,37 @@ export async function loadWorkspaceState(uid) {
 export async function saveWorkspaceState(uid, data) {
   const { error } = await supabase.from('workspace_state').upsert({ creative_id: uid, data, updated_at: new Date().toISOString() })
   if (error) throw new Error(error.message)
+}
+
+// ── Reviews: the creative's side. Core words are frozen by the database; the creative can reply,
+// pin up to three, flag, and add (up to five) or remove their own imported ones.
+const RV_G = ['linear-gradient(135deg,#1DB954,#0f6b34)', 'linear-gradient(135deg,#7c5cff,#3b2a99)', 'linear-gradient(135deg,#ff8a5c,#b23c17)', 'linear-gradient(135deg,#3cb4ff,#155d99)', 'linear-gradient(135deg,#ff5ca8,#99185a)']
+const FLAG_WHY = { never: 'This person was never a client', abuse: 'Abusive or discriminatory', spam: 'Spam or a competitor', private: 'Shares private information', other: 'Something else' }
+export function shapeReview(x, i = 0) {
+  const date = (x.created_at || '').slice(0, 10), imported = x.source === 'imported'
+  const flagged = !!x.flagged && x.flag_status === 'pending'
+  return { id: x.id, live: true, who: x.reviewer_name || x.client_name || 'A client', job: x.project_type || 'Job', d: date ? new Date(date + 'T00:00:00').toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric' }) : '', date, n: x.rating || 5, t: x.body || x.comment || '', reply: x.reply || '', src: imported ? 'Imported' : 'LensTrybe', imported: imported ? 1 : 0, g: RV_G[i % RV_G.length], st: flagged ? 'flagged' : 'public', featured: x.featured ? 1 : 0, flag: flagged ? { why: x.flag_reason || 'other', at: (x.flagged_at || '').slice(0, 10) } : null, removed: x.flag_status === 'resolved_removed' }
+}
+export async function loadReviews(uid) {
+  const { data, error } = await supabase.from('reviews').select('id, rating, body, comment, reviewer_name, client_name, created_at, source, project_type, flagged, flag_reason, flag_status, flagged_at, reply, featured').eq('creative_id', uid).eq('hidden', false).order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  return (data || []).map(shapeReview).filter(r => !r.removed)
+}
+const rvErr = e => new Error(/FEATURE_LIMIT/.test(e.message) ? 'Three featured is the limit. Unpin one first.' : /IMPORT_LIMIT/.test(e.message) ? 'You can add up to five past reviews.' : /reviews_reply_len/.test(e.message) ? 'Keep the reply under 2000 characters.' : 'Could not save that. Try again.')
+export async function replyReviewLive(id, text) { const { error } = await supabase.from('reviews').update({ reply: text || null }).eq('id', id); if (error) throw rvErr(error) }
+export async function featureReviewLive(id, on) { const { error } = await supabase.from('reviews').update({ featured: !!on }).eq('id', id); if (error) throw rvErr(error) }
+export async function flagReviewLive(id, why, more) {
+  const reason = [FLAG_WHY[why] || why, (more || '').trim()].filter(Boolean).join(': ').slice(0, 1000)
+  const { error } = await supabase.from('reviews').update({ flagged: true, flag_reason: reason, flag_status: 'pending', flagged_at: new Date().toISOString() }).eq('id', id); if (error) throw rvErr(error)
+}
+export async function unflagReviewLive(id) { const { error } = await supabase.from('reviews').update({ flagged: false, flag_status: 'none', flag_reason: null, flagged_at: null }).eq('id', id); if (error) throw rvErr(error) }
+export async function addPastReviewLive(uid, v) {
+  const { error } = await supabase.from('reviews').insert({ creative_id: uid, source: 'imported', rating: Number(v.n) || 5, reviewer_name: v.who.trim().slice(0, 120), client_name: v.who.trim().slice(0, 120), body: v.t.trim().slice(0, 3000), comment: v.t.trim().slice(0, 3000), project_type: (v.job || '').trim().slice(0, 60) || null })
+  if (error) throw rvErr(error)
+}
+export async function removeReviewLive(id) { const { error } = await supabase.from('reviews').delete().eq('id', id).eq('source', 'imported'); if (error) throw rvErr(error) }
+export async function requestReviewLive(name, email, message) {
+  const { data, error } = await supabase.functions.invoke('send-review-request', { body: { client_name: name, client_email: email, message } })
+  if (error) { let m = ''; try { m = (await error.context?.json())?.error } catch { /* */ } throw new Error(m || 'Could not send the review request. Try again.') }
+  return data
 }

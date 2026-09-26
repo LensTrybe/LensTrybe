@@ -92,6 +92,7 @@
 .pub .revs .rc{padding:20px;border-radius:20px}
 .pub .revs .rc .h{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .pub .revs .rc .h i{color:var(--amber);font-style:normal;letter-spacing:1px}
+.pub .revs .rc .rvreply{margin-top:12px;padding:12px 14px;border-left:2px solid var(--green,#1DB954);background:rgba(255,255,255,.04);border-radius:0 12px 12px 0;font-size:13px}.pub .revs .rc .rvreply b{display:block;font-size:12px;margin-bottom:4px}.pub .revs .rc .rvreply p{margin:0;opacity:.85}
 .pub .revs .rc p{margin-top:8px;color:var(--ink-2);font-size:14.5px}
 .pub .revs .rc small{color:var(--ink-3);font-size:12.5px}
 .pub .about p{color:var(--ink-2);max-width:62ch;font-size:15px}
