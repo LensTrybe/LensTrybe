@@ -110,7 +110,7 @@ create trigger notify_collab_invite after insert or update on public.collaborati
 -- side (client_user_id), starting with the request's message. The requester follows it on Collaborate.
 create or replace function public.accept_collab_invite(p_invite uuid) returns uuid
 language plpgsql security definer set search_path = public as $$
-declare v_inv public.collaboration_invites; v_name text; v_email text; v_subject text; v_brief text; v_thread uuid;
+declare v_inv public.collaboration_invites; v_name text; v_email text; v_subject text; v_brief text; v_thread uuid; v_claims text; v_sub text;
 begin
   if auth.uid() is null then raise exception 'Please log in again.' using errcode = '42501'; end if;
   select * into v_inv from public.collaboration_invites where id = p_invite for update;
@@ -123,8 +123,15 @@ begin
   v_subject := left('Collab: ' || coalesce(nullif(btrim(split_part(coalesce(v_brief, ''), E'\n', 1)), ''), 'with ' || v_name), 150);
   insert into public.message_threads (creative_id, client_user_id, client_name, client_email, subject, sender_type, unread_count, last_message_at)
     values (auth.uid(), v_inv.from_creative_id, v_name, v_email, v_subject, 'client', 0, now()) returning id into v_thread;
+  -- The first message is the requester's words. messages_stamp_sender labels a message by auth.uid(),
+  -- so write it as the requester for this one insert, then put the caller back.
+  v_claims := current_setting('request.jwt.claims', true); v_sub := current_setting('request.jwt.claim.sub', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', v_inv.from_creative_id, 'role', 'authenticated')::text, true);
+  perform set_config('request.jwt.claim.sub', v_inv.from_creative_id::text, true);
   insert into public.messages (thread_id, sender_type, sender_name, sender_email, body)
     values (v_thread, 'client', v_name, v_email, coalesce(nullif(v_inv.message, ''), case when v_inv.collaboration_id is null then 'Hi, I''d like to collaborate.' else 'Hi, I''m interested in your collab.' end));
+  perform set_config('request.jwt.claims', coalesce(v_claims, ''), true);
+  perform set_config('request.jwt.claim.sub', coalesce(v_sub, ''), true);
   update public.collaboration_invites set status = 'accepted', thread_id = v_thread where id = v_inv.id;
   return v_thread;
 end $$;

@@ -18,7 +18,16 @@ export default function Threads() {
   const T = s.threads
   const list = useMemo(() => { const fn = FILTERS.find(x => x[0] === f)[2]; return T.filter(t => fn(t) && (!q || (t.n + ' ' + t.j).toLowerCase().includes(q.toLowerCase()))) }, [T, f, q])
   const cur = T.find(t => t.id === id) || list[0] || T[0]
-  useEffect(() => { if (id && !T.find(t => t.id === id)) nav('/app/threads', { replace: true }) }, [id, nav, T])
+  // Threads are grouped per person (id = their email). A link to one conversation (its uuid, from
+  // Marketplace, Collaborate or the Job board) opens that person; if it is brand new, reload once first.
+  const tried = useRef('')
+  useEffect(() => {
+    if (!id || T.find(t => t.id === id)) return
+    const owner = T.find(t => (t.line || []).some(x => x.thread === id))
+    if (owner) { nav('/app/thread/' + owner.id, { replace: true }); return }
+    if (/^[0-9a-f-]{36}$/i.test(id) && tried.current !== id && F.refreshLive) { tried.current = id; F.refreshLive(); return }
+    nav('/app/threads', { replace: true })
+  }, [id, nav, T]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <section className="view fill">
       <div className="tw">
