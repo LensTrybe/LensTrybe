@@ -5,6 +5,7 @@ import { useFlows } from '../../lib/flows'
 import { TODAY as T0, iso, parse, addDays, nice } from '../../lib/store'
 import { occurrences, ampm, mins, endOf, durMins, km, leaveBy, line, ics } from '../../lib/cal'
 import { fmt } from '../../lib/format'
+import { LIVE } from '../../lib/mode'
 
 const DOW = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const MON = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
@@ -83,7 +84,7 @@ export default function Bookings() {
         <div className="ctas"><button className="btn w sm" onClick={() => F.openDay(e.id)}>Open the day</button></div>
       </> : <>
         <p>{sd < TODAY ? 'Nothing on this day.' : offDay(sd) ? 'A day you do not work. Clients cannot ask for it; you can still book it.' : 'Open. Clients who ask can book it.'}</p>
-        {sd >= TODAY && <div className="ctas"><button className="btn w sm" onClick={() => F.newBooking(sel)}><Icon name="plus" size={13} />New booking</button><button className="btn g sm" onClick={() => F.newMeeting({ d: sel })}>Meeting</button><button className="btn g sm" onClick={() => F.newDoc('inv', { date: sel })}>Invoice due</button><button className="btn g sm" onClick={() => F.blockDay(sel)}>Day off</button></div>}
+        {sd >= TODAY && <div className="ctas"><button className="btn w sm" onClick={() => F.newBooking(sel)}><Icon name="plus" size={13} />New booking</button><button className="btn g sm" onClick={() => F.newMeeting({ d: sel })}>Meeting</button><button className="btn g sm" onClick={() => F.newDoc('inv', { date: sel })}>Invoice due</button><button className="btn g sm" onClick={() => F.blockDay(sel)}>Block the day</button></div>}
       </>}
       {(meets[sel] || []).length > 0 && <div className="side2"><b>Meetings</b>{meets[sel].map(m => <Link key={m.id} to="/app/meetings" className="row"><span className="t">{ampm(m.when.slice(11))}</span><span>{meetTypes[m.t]?.n || 'Meeting'} · {m.who}</span><small>{m.how}</small></Link>)}</div>}
       {(money[sel] || []).length > 0 && <div className="side2"><b>Money</b>{money[sel].map(r => <Link key={r.id} to="/app/invoicing" className="row"><span className={'t ' + (r.st === 'ok' ? 'ok' : 'due')}>{r.st === 'ok' ? 'Paid' : 'Due'}</span><span>{r.who} · {r.id}</span><small>{fmt(r.v)}</small></Link>)}</div>}
@@ -135,7 +136,7 @@ export default function Bookings() {
           <div className="card lg"><div className="h"><b>Coming up</b><Link to="/app/availability">Availability <Icon name="arrow" size={12} /></Link></div>
             <div className="up">{upcoming.map(x => { const d = parse(x.on); return <div key={x.oid} className="d" onClick={() => goto(x.on)}><div className="dt"><small>{DOW[(d.getDay() + 6) % 7]}</small><b>{d.getDate()}</b></div><div><b>{x.n}</b><small>{line(x) || x.s}</small></div><span className={'st ' + (x.k === 'p' ? 'viewed' : 'ok')}>{x.k === 'p' ? 'Pencilled' : 'Booked'}</span></div> })}{!upcoming.length && <p className="tempty">Nothing booked yet.</p>}</div>
           </div>
-          {!F.gapOffered() && <div className="tlumi"><span className="lm" /><div>23 Nov to 6 Dec is empty. Last year that fortnight was four family sessions. I can post a Christmas minis offer to your profile and message six families from last year.<div className="acts"><button className="y" onClick={() => F.offerGap()}>Post it</button><button onClick={() => F.toast('Noted. I will ask again on Thursday.')}>Not now</button></div></div></div>}
+          {!LIVE && !F.gapOffered() && <div className="tlumi"><span className="lm" /><div>23 Nov to 6 Dec is empty. Last year that fortnight was four family sessions. I can post a Christmas minis offer to your profile and message six families from last year.<div className="acts"><button className="y" onClick={() => F.offerGap()}>Post it</button><button onClick={() => F.toast('Noted. I will ask again on Thursday.')}>Not now</button></div></div></div>}
         </div>
       </div>
     </section>
