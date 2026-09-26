@@ -1,3 +1,4 @@
+import { LIVE } from '../../lib/mode'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
@@ -6,7 +7,15 @@ import { TODAY, nice, daysBetween } from '../../lib/store'
 // Channels: the accounts LensTrybe can post to and read numbers from. Connect, see what the token
 // allows, reconnect before it lapses, disconnect any time. The same screen once the real OAuth lands.
 const COL = { ig: '#E1306C', fb: '#4A9EFF', tt: '#f4f2f7', li: '#0A66C2', gm: '#34A853' }
-export default function Channels() {
+export default function Channels() { return LIVE ? <SoonLive /> : <ChannelsDemo /> }
+function SoonLive() {
+  return (
+    <section className="view">
+      <div className="vh"><div><h1>Channels</h1><p>Connecting Instagram, Facebook, TikTok and LinkedIn is on the way.</p></div><div className="acts"><Link className="btn w" to="/app/content-calendar">Content calendar</Link></div></div>
+      <div className="grid"><div className="card lg s7"><div className="h"><b>Coming soon</b></div><p className="note2">Posting for you and pulling reach, likes and saves needs each platform to approve LensTrybe first. Until then, plan posts on the content calendar, post them yourself on the day, and mark them as posted.</p><div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8 }}><Link className="btn g" to="/app/content-calendar">Plan a post</Link><Link className="btn g" to="/app/content-ideas">Ideas</Link></div></div></div>
+    </section>)
+}
+function ChannelsDemo() {
   const F = useFlows(); const { s, toast } = F; const CH = s.channels
   const on = CH.filter(c => c.on), expiring = on.filter(c => c.exp && daysBetween(TODAY, c.exp) <= 14)
   const posted = c => s.posts.filter(p => p.st === 'posted' && p.ch.includes(c.id)).length

@@ -30,7 +30,9 @@ export async function loadProjectBundle(uid, people = []) {
     st = (data || rows).sort((a, b) => a.position - b.position)
   }
   const stages = st.map(x => ({ id: x.id, n: x.name || 'Stage', c: colourName(x.color) }))
-  const [pj, cl, tk, tp, nt, fo, inv, co] = await Promise.all([
+  let { data: cst } = await supabase.from('content_stages').select('*').eq('creative_id', uid).order('position')
+  if (!cst?.length) { const rows = [['Idea', '#8b8f9a'], ['Draft', '#4aa3ff'], ['Scheduled', '#f5a524'], ['Posted', '#1DB954']].map(([n, c], i) => ({ id: uuid(), creative_id: uid, name: n, color: c, position: i })); const { data } = await supabase.from('content_stages').insert(rows).select(); cst = (data || rows).sort((a, b) => a.position - b.position) }
+  const [pj, cl, tk, tp, nt, fo, inv, co, cp, ci] = await Promise.all([
     supabase.from('projects').select('*, contact:crm_contacts(id, name, email, company)').eq('creative_id', uid).order('created_at', { ascending: false }).then(r => r.data || []),
     supabase.from('project_checklists').select('*').eq('creative_id', uid).order('position').then(r => r.data || []),
     supabase.from('creative_tasks').select('*').eq('user_id', uid).not('project_id', 'is', null).order('position').then(r => r.data || []),
@@ -39,6 +41,8 @@ export async function loadProjectBundle(uid, people = []) {
     supabase.from('inventory_folders').select('*').eq('creative_id', uid).order('position').then(r => r.data || []),
     supabase.from('inventory_items').select('*').eq('creative_id', uid).order('created_at').then(r => r.data || []),
     supabase.from('inventory_checkouts').select('item_id, project_id').eq('creative_id', uid).is('returned_at', null).then(r => r.data || []),
+    supabase.from('content_posts').select('*').eq('creative_id', uid).order('scheduled_date').limit(1000).then(r => r.data || []),
+    supabase.from('content_ideas').select('*').eq('creative_id', uid).is('converted_post_id', null).order('created_at', { ascending: false }).then(r => r.data || []),
   ])
   const items = cl.length ? await supabase.from('checklist_items').select('*').in('checklist_id', cl.map(c => c.id)).order('position').then(r => r.data || []) : []
   const parts = pj.length ? await supabase.from('project_participants').select('*').in('project_id', pj.map(p => p.id)).then(r => r.data || []) : []
@@ -64,7 +68,15 @@ export async function loadProjectBundle(uid, people = []) {
   const folderName = Object.fromEntries(fo.map(f => [f.id, f.name || 'Other']))
   if (inv.some(i => !i.folder_id || !folderName[i.folder_id]) && !gearCats.includes('Other')) { const id = uuid(); const { error } = await supabase.from('inventory_folders').insert({ id, creative_id: uid, name: 'Other', position: fo.length }); if (!error) { gearCats.push('Other'); gearFolders.Other = id } }
   const gear = inv.map(i => ({ id: i.id, n: i.name || 'Item', c: folderName[i.folder_id] || 'Other', sn: i.sku || '', v: Number(i.unit_value) || 0, ins: i.insured ? 1 : 0, svc: i.service_date || '', note: i.notes || '', kit: i.in_kit ? 1 : 0, packed: i.packed ? 1 : 0, qty: i.quantity ?? 1, reorder: i.reorder_level ?? 0, photo: i.photo_path || '' }))
-  return { stages, projects, checklistTemplates, notes, gear, gearCats: gearCats.length ? gearCats : ['Bodies', 'Lenses', 'Lights', 'Drones', 'Audio', 'Support', 'Cards'], gearFolders }
+  // content: stages Idea / Draft / Scheduled / Posted (the live site's defaults) carry the post's state
+  const contentStages = cst.map(x => ({ id: x.id, n: x.name || 'Stage' }))
+  const stName = Object.fromEntries(contentStages.map(x => [x.id, String(x.n).toLowerCase()]))
+  const today = new Date(Date.now() - new Date().getTimezoneOffset() * 6e4).toISOString().slice(0, 10)
+  const PL = { instagram: 'ig', facebook: 'fb', tiktok: 'tt', linkedin: 'li', google: 'gm' }
+  const mediaUrl = p => p ? supabase.storage.from('content-media').getPublicUrl(p).data.publicUrl : ''
+  const posts = cp.map(p => { const n = stName[p.stage_id] || 'draft'; const st0 = /post/.test(n) ? 'posted' : /sched/.test(n) ? 'scheduled' : /idea/.test(n) ? 'idea' : 'draft'; const d = p.scheduled_date || String(p.created_at || '').slice(0, 10); return { id: p.id, d, time: p.scheduled_time ? String(p.scheduled_time).slice(0, 5) : '', ch: (p.platforms || []).map(x => PL[x] || x).filter(x => ['ig', 'fb', 'tt', 'li', 'gm'].includes(x)), t: p.title || 'Post', body: p.caption || '', kind: p.format || 'image', st: st0 === 'scheduled' && d === today ? 'today' : st0, s: hash(p.id) % 24, m: MOODS[hash(p.id) % 6], cover: mediaUrl(p.media_path), mediaPath: p.media_path || '', tags: p.hashtags || '', notes: p.notes || '', stats: '' } })
+  const ideas = ci.map(i => ({ id: i.id, k: i.kind || 'own', t: i.title || 'Idea', why: i.why || '', cap: i.notes || '', ch: (i.platforms || []).map(x => PL[x] || x).filter(x => ['ig', 'fb', 'tt', 'li', 'gm'].includes(x)), s: hash(i.id) % 24, m: MOODS[hash(i.id) % 6], best: '', bd: '' }))
+  return { stages, projects, checklistTemplates, notes, gear, posts, ideas, contentStages, gearCats: gearCats.length ? gearCats : ['Bodies', 'Lenses', 'Lights', 'Drones', 'Audio', 'Support', 'Cards'], gearFolders }
 }
 
 // ── rows: what the database should hold for the current store ──────────────────────────────────
@@ -83,6 +95,10 @@ export function rowsOf(uid, s) {
   const gf = s.gearFolders || {}
   ;(s.gearCats || []).forEach((n, i) => { if (isUuid(gf[n])) put('inventory_folders', { id: gf[n], creative_id: uid, name: String(n).slice(0, 60), position: i }) })
   ;(s.gear || []).forEach(g => { if (isUuid(g.id)) put('inventory_items', { id: g.id, creative_id: uid, folder_id: isUuid(gf[g.c]) ? gf[g.c] : null, name: String(g.n || 'Item').slice(0, 200), sku: g.sn || null, unit_value: Number(g.v) || 0, notes: g.note || null, insured: !!g.ins, service_date: g.svc || null, in_kit: !!g.kit, packed: !!g.packed, quantity: g.qty ?? 1, reorder_level: g.reorder ?? 0, photo_path: g.photo || null }) })
+  const CS = s.contentStages || [], csBy = k => (CS.find(x => new RegExp(k, 'i').test(x.n)) || CS[0])?.id || null
+  const PLF = { ig: 'instagram', fb: 'facebook', tt: 'tiktok', li: 'linkedin', gm: 'google' }
+  ;(s.posts || []).forEach(p => { if (isUuid(p.id)) put('content_posts', { id: p.id, creative_id: uid, stage_id: csBy(p.st === 'posted' ? 'post' : p.st === 'scheduled' || p.st === 'today' ? 'sched' : p.st === 'idea' ? 'idea' : 'draft'), title: String(p.t || 'Post').slice(0, 200), caption: p.body || null, hashtags: p.tags || null, format: p.kind || 'image', platforms: (p.ch || []).map(c => PLF[c] || c), scheduled_date: p.d || null, scheduled_time: p.time || null, media_path: p.mediaPath || null, notes: p.notes || null }) })
+  ;(s.ideas || []).forEach(i => { if (isUuid(i.id)) put('content_ideas', { id: i.id, creative_id: uid, title: String(i.t || 'Idea').slice(0, 200), notes: i.cap || null, why: i.why || null, kind: i.k || 'own', platforms: (i.ch || []).map(c => PLF[c] || c) }) })
   ;(s.checklistTemplates || []).forEach(t => { if (isUuid(t.id)) put('checklist_templates', { id: t.id, creative_id: uid, name: String(t.n || 'Template').slice(0, 120), items: (t.items || []).map(x => String(x).slice(0, 500)) }) })
   ;(s.notes || []).forEach(n => { if (isUuid(n.id)) put('notes', { id: n.id, creative_id: uid, title: String(n.t || '').slice(0, 200) || null, body: n.body || null, project_id: isUuid(n.proj) ? n.proj : null, client_ref: n.client ? String(n.client).slice(0, 320) : null, pinned: !!n.pinned, color: n.color || null }) })
   return out
@@ -102,16 +118,18 @@ export function withIds(s) {
   })
   const checklistTemplates = (s.checklistTemplates || []).map(t => { const id = fix(t.id); return id === t.id ? t : { ...t, id } })
   const notes = (s.notes || []).map(n => { const id = fix(n.id); return id === n.id ? n : { ...n, id } })
+  const posts = (s.posts || []).map(p => { const id = fix(p.id); return id === p.id ? p : { ...p, id } })
+  const ideas = (s.ideas || []).map(i => { const id = fix(i.id); return id === i.id ? i : { ...i, id } })
   const gear = (s.gear || []).map(g => { const id = fix(g.id); return id === g.id ? g : { ...g, id } })
   const gf0 = s.gearFolders || {}, gearFolders = {}
   for (const n of (s.gearCats || [])) { if (isUuid(gf0[n])) gearFolders[n] = gf0[n]; else { gearFolders[n] = uuid(); changed = true } }
   if (Object.keys(gf0).some(n => !(n in gearFolders))) changed = true
-  return changed ? { stages, projects, checklistTemplates, notes, gear, gearFolders } : null
+  return changed ? { stages, projects, checklistTemplates, notes, gear, gearFolders, posts, ideas } : null
 }
 
 // Order matters: parents are written before children and removed after them.
-const WRITE = ['pipeline_stages', 'inventory_folders', 'inventory_items', 'projects', 'project_checklists', 'checklist_items', 'creative_tasks', 'checklist_templates', 'notes']
-const STAMP = { inventory_items: 'updated_at', projects: 'updated_at', creative_tasks: 'updated_at', notes: 'updated_at' }
+const WRITE = ['pipeline_stages', 'inventory_folders', 'inventory_items', 'content_posts', 'content_ideas', 'projects', 'project_checklists', 'checklist_items', 'creative_tasks', 'checklist_templates', 'notes']
+const STAMP = { content_posts: 'updated_at', content_ideas: 'updated_at', inventory_items: 'updated_at', projects: 'updated_at', creative_tasks: 'updated_at', notes: 'updated_at' }
 export async function pushDiff(prev, next) {
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
   const ups = {}, dels = {}

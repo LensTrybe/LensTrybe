@@ -57,7 +57,7 @@ export default function Reviews() {
                 : r.st !== 'flagged' && <div className="rc"><input value={draft[r.id] ?? ''} onChange={e => setDraft(d => ({ ...d, [r.id]: e.target.value }))} placeholder={r.st === 'private' ? 'Reply privately, in your words' : (LIVE ? 'Reply in your words, or tap Draft' : 'Reply in your words, or let Lumi draft one')} onKeyDown={e => e.key === 'Enter' && post(r, draft[r.id])} /><button className="act2" onClick={() => setDraft(d => ({ ...d, [r.id]: F.draftReply(r).replace(/\n/g, ' ') }))}>Draft</button><button className="btn w sm" onClick={() => post(r, draft[r.id])}>Post</button></div>}
               <div className="racts">
                 {r.st === 'public' && <button className="act2" onClick={() => F.featureReview(r.id)}>{r.featured ? 'Unpin' : LIVE ? 'Pin to top' : 'Feature on site'}</button>}
-                {!LIVE && r.st === 'public' && r.n >= 4 && <button className="act2" onClick={() => F.shareReview(r.id)}>Share as post</button>}
+                {r.st === 'public' && r.n >= 4 && <button className="act2" onClick={() => F.shareReview(r.id)}>Share as post</button>}
                 {r.st === 'private' && <button className="act2" onClick={() => F.publishReview(r.id)}>Make public</button>}
                 {r.t2 && <Link className="act2" to={'/app/thread/' + r.t2}>Thread</Link>}
                 {r.st === 'flagged' ? <button className="act2" onClick={() => F.unflagReview(r.id)}>Withdraw flag</button> : r.imported ? <button className="act2 quiet" onClick={() => F.removeReview(r.id)}>Remove</button> : <button className="act2 quiet" onClick={() => F.flagReview(r.id)}>Flag</button>}

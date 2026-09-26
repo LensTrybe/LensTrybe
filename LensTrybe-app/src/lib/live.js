@@ -814,3 +814,17 @@ export async function saveBrandKit(uid, b) {
   await supabase.from('profiles').update({ brand_primary_color: nb.accent, brand_logo_url: nb.logo || null, site_primary_color: nb.accent, site_logo_url: nb.logo || null, site_heading_font: nb.head, site_body_font: nb.body, ...(nb.everywhere && nb.tag ? { tagline: String(nb.tag).slice(0, 160) } : {}) }).eq('id', uid)
   return nb
 }
+
+// ── Content: one photo or video kept with a post (public content-media bucket, <uid>/...). ──────
+export async function uploadContentMedia(uid, file) {
+  const img = /^image\//.test(file.type), vid = /^video\//.test(file.type)
+  if (!img && !vid) throw new Error('Add a photo or a video.')
+  if (file.size > 100e6) throw new Error('That file is over 100 MB.')
+  let body = file
+  if (img) { const { moderateImage } = await import('../backend/moderateContent'); const { resizeImage } = await import('../backend/resizeImage'); const r = await moderateImage(file); if (r?.blocked) throw new Error('That image cannot be used here.'); body = await resizeImage(file) }
+  const ext = ((file.name.split('.').pop() || '').toLowerCase().replace(/[^a-z0-9]/g, '') || (img ? 'jpg' : 'mp4')).slice(0, 5)
+  const path = `${uid}/post-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.${ext}`
+  const { error } = await supabase.storage.from('content-media').upload(path, body, { upsert: false, contentType: file.type || undefined })
+  if (error) throw new Error('Could not upload ' + file.name + '.')
+  return { path, url: supabase.storage.from('content-media').getPublicUrl(path).data.publicUrl }
+}

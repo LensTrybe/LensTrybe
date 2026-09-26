@@ -1,3 +1,4 @@
+import { LIVE } from '../../lib/mode'
 import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Still from '../../components/Still'
@@ -14,7 +15,15 @@ const SLOTS = [['06', '6 am'], ['09', '9 am'], ['12', 'noon'], ['15', '3 pm'], [
 const sum = (o = {}) => Object.values(o).reduce((t, m) => t + (m.reach || 0), 0)
 const eng = (o = {}) => Object.values(o).reduce((t, m) => t + (m.likes || 0) + (m.comments || 0) + (m.saves || 0) + (m.shares || 0), 0)
 
-export default function Performance() {
+export default function Performance() { return LIVE ? <SoonLive /> : <PerformanceDemo /> }
+function SoonLive() {
+  return (
+    <section className="view">
+      <div className="vh"><div><h1>Performance</h1><p>Connecting Instagram, Facebook, TikTok and LinkedIn is on the way.</p></div><div className="acts"><Link className="btn w" to="/app/content-calendar">Content calendar</Link></div></div>
+      <div className="grid"><div className="card lg s7"><div className="h"><b>Coming soon</b></div><p className="note2">Posting for you and pulling reach, likes and saves needs each platform to approve LensTrybe first. Until then, plan posts on the content calendar, post them yourself on the day, and mark them as posted.</p><div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8 }}><Link className="btn g" to="/app/content-calendar">Plan a post</Link><Link className="btn g" to="/app/content-ideas">Ideas</Link></div></div></div>
+    </section>)
+}
+function PerformanceDemo() {
   const F = useFlows(); const { s } = F; const INS = s.insights || [], CH = s.channels.filter(c => c.on)
   const [range, setRange] = useState(30), [ch, setCh] = useState('all'), [hover, setHover] = useState(null)
   const from = addDays(TODAY, -range + 1)
