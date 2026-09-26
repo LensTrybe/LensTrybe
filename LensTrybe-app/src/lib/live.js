@@ -180,10 +180,10 @@ export function shapeProfile(p, extra = {}) {
     mood: ['golden', 'dusk', 'cool', 'forest', 'night', 'rose'][hash(p.id) % 6], seed: (hash(p.id) % 40) + 1, free: p.is_available !== false, found: !!(p.founding_member && p.show_founding_badge !== false), resp: 'about a day',
     why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
     photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.filter(x => x.flag_status !== 'resolved_removed').map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported', reply: x.reply || '', featured: !!x.featured })).sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)),
-    busy: extra.busy || [],
+    busy: extra.busy || [], slug: p.custom_domain || p.id,
   }
 }
-const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, website, site_service_areas, created_at'
+const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, website, site_service_areas, custom_domain, created_at'
 export async function loadCreatives() {
   const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).order('created_at', { ascending: false }).limit(200)
   if (error) throw error
@@ -752,7 +752,7 @@ export async function setSiteAddress(uid, slug) {
   if (error) throw new Error(/duplicate|unique/i.test(error.message) ? 'That address is taken. Try another.' : 'Could not save the address. Try again.')
   return s
 }
-const SITE_PROF = PUB + ', custom_domain, brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin'
+const SITE_PROF = PUB + ', brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin'
 // Public: /site/<address or id>. Returns null when there is no such site or the plan has no website.
 export async function loadSite(slug) {
   const s = String(slug || '').trim().toLowerCase(); if (!s) return null
