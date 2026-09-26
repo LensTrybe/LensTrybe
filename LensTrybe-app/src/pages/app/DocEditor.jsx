@@ -48,7 +48,7 @@ export default function DocEditor({ kind = 'inv' }) {
   const upFrom = (k, v) => up(x => ({ ...x, from: { ...x.from, [k]: v } })), upTo = (k, v) => up(x => ({ ...x, to: { ...x.to, [k]: v } }))
   const upItem = (i, k, v) => up(x => ({ ...x, items: x.items.map((it, j) => j === i ? { ...it, [k]: v } : it) }))
   // client from Contacts fills the To block, still editable after
-  const pickClient = cid => { if (LIVE) { const t = s.threads.find(x => x.id === cid); up(x => ({ ...x, client: cid, to: t ? { ...x.to, n: t.n, em: t.email || '' } : x.to })); return } const p = s.people.find(x => x.id === cid); up(x => ({ ...x, client: cid, to: p ? { n: p.n, co: p.co !== p.n ? p.co : '', em: p.em || '', ph: p.ph || '', addr: p.addr || '' } : x.to })) }
+  const pickClient = cid => { if (LIVE) { const t = s.threads.find(x => x.id === cid) || (() => { const p = s.people.find(x => x.id === cid); return p ? { n: p.n, email: p.em, ph: p.ph } : null })(); up(x => ({ ...x, client: cid, to: t ? { ...x.to, n: t.n, em: t.email || '', ph: t.ph || x.to.ph } : x.to })); return } const p = s.people.find(x => x.id === cid); up(x => ({ ...x, client: cid, to: p ? { n: p.n, co: p.co !== p.n ? p.co : '', em: p.em || '', ph: p.ph || '', addr: p.addr || '' } : x.to })) }
   useEffect(() => { if (!existing && state?.client) pickClient(state.client) }, []) // eslint-disable-line
   // totals
   const items = inv.items, sub = items.reduce((t, it) => t + (Number(it.q) || 0) * (Number(it.r) || 0), 0)
@@ -124,7 +124,7 @@ export default function DocEditor({ kind = 'inv' }) {
 
             <div className="to">
               <small>{isQ ? 'Quote for' : 'Bill to'}</small>
-              <div className="pick"><select value={inv.client} onChange={e => pickClient(e.target.value)}><option value="">{LIVE ? 'Pick a client thread…' : 'Pick from Contacts…'}</option>{(LIVE ? s.threads.map(t => ({ id: t.id, n: t.n })) : s.people).map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
+              <div className="pick"><select value={inv.client} onChange={e => pickClient(e.target.value)}><option value="">{LIVE ? 'Pick a client thread…' : 'Pick from Contacts…'}</option>{(LIVE ? [...s.threads.map(t => ({ id: t.id, n: t.n })), ...s.people.filter(p => p.em && !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n }))] : s.people).map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
               <Ed v={inv.to.n} set={v => upTo('n', v)} ph="Client name" cls="big" />
               <Ed v={inv.to.co} set={v => upTo('co', v)} ph="Contact or company" cls="sm" />
               <Ed v={inv.to.addr} set={v => upTo('addr', v)} ph="Address" cls="sm" />

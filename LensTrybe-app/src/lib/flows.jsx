@@ -39,16 +39,19 @@ export function useFlows() {
     say(tid, 'me', text, att.length ? { att } : {}); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
   }
   // Live: pull every thread, document and booking for this creative into the store
-  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings, galleries] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => []), live.loadDeliveries(me.id).catch(() => [])]); hydrate({ meetings, galleries, threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
+  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings, galleries, contacts] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => []), live.loadDeliveries(me.id).catch(() => []), live.loadContacts(me.id).catch(() => [])]); hydrate({ meetings, galleries, people: live.shapePeople(contacts, d.threads, d.ledger, [...d.events, ...blocked]), threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
   // ── live bookings: the real bookings function, then a refresh ──
-  const liveClientField = (preset = {}) => ({ k: 'client', l: 'Client', type: 'select', required: true, options: [...s.threads.map(t => [t.id, t.n]), ['__new', 'New client…']], ...(preset.client ? { value: preset.client } : {}) })
+  // live: anyone you have a thread with, plus saved contacts with an email you have no thread with yet
+  const liveClients = () => [...s.threads.map(t => ({ id: t.id, n: t.n, email: t.email })), ...s.people.filter(p => p.em && !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n, email: p.em }))]
+  const clientOf = id => liveClients().find(c => c.id === id)
+  const liveClientField = (preset = {}) => ({ k: 'client', l: 'Client', type: 'select', required: true, options: [...liveClients().map(c => [c.id, c.n]), ['__new', 'New client…']], ...(preset.client ? { value: preset.client } : {}) })
   const liveSlot = v => ({ date: v.d, allDay: v.allDay === true || v.allDay === 'true', start: v.time, end: v.endTime })
   const withForce = async (fn, label) => { try { await fn(false); return true } catch (e) { if (!e.conflict) { toast(e.message); return false } return new Promise(res => confirm({ title: 'That day is not clear', body: <>{e.message} Book it anyway?</>, cta: label || 'Book it anyway', onYes: async () => { try { await fn(true); res(true) } catch (x) { toast(x.message); res(false) } } })) } }
   const newBookingLive = (date = '', preset = {}) => open({
     title: 'New booking', sub: 'Goes on your calendar and into the thread. The client can get a confirmation email.', cta: 'Book it', working: 'Booking', wide: true,
     fields: [liveClientField(preset), ...newNameFields(), { k: 'what', l: 'What', required: true, placeholder: 'Wedding · full day', value: preset.what || '' }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: date || '', min: TODAY }, { k: 'allDay', l: 'All day', type: 'toggle', half: true, value: false }, { k: 'time', l: 'Start', type: 'time', half: true, value: preset.time || '10:00', when: v => !v.allDay }, { k: 'endTime', l: 'Finish', type: 'time', half: true, value: '12:00', when: v => !v.allDay }, { k: 'venue', l: 'Where', placeholder: 'Venue or address' }, { k: 'notes', l: 'Notes', type: 'textarea', rows: 3, placeholder: 'Only you see these' }, { k: 'notify', l: 'Email the client a confirmation', type: 'toggle', value: true }],
     submit: async v => {
-      const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
+      const th = clientOf(v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
       if (!name) { toast('Who is it for?'); return false }
       const ok = await withForce(force => live.createBooking({ name, email, service: v.what, location: v.venue, notes: v.notes, ...liveSlot(v), notify: v.notify }, force))
       if (!ok) return false
@@ -102,7 +105,12 @@ export function useFlows() {
   const SOCIAL = [['ig', 'Instagram', '@handle'], ['fb', 'Facebook', 'facebook.com/…'], ['tt', 'TikTok', '@handle'], ['li', 'LinkedIn', 'linkedin.com/in/…'], ['web', 'Website', 'example.com']]
   const socialFields = (cur = {}) => SOCIAL.map(([k, l, ph]) => ({ k: 's_' + k, l, half: true, placeholder: ph, value: cur[k] || '' }))
   const socialOf = v => Object.fromEntries(SOCIAL.map(([k]) => [k, (v['s_' + k] || '').trim()]).filter(([, x]) => x))
-  const newClient = (after) => open({
+  const newClientLive = (after) => open({
+    title: 'New client', sub: 'Saved to your contacts. Start a thread with them whenever you are ready.', cta: 'Save client', working: 'Saving',
+    fields: [{ k: 'n', l: 'Name', required: true, placeholder: 'Harper and Leo' }, { k: 'co', l: 'Company or contact', half: true, placeholder: 'Harper Ellis' }, { k: 'kind', l: 'Kind of work', half: true, type: 'select', value: 'Wedding', options: KINDS }, { k: 'em', l: 'Email', half: true, type: 'email' }, { k: 'ph', l: 'Phone', half: true, type: 'tel' }, { k: 'ig', l: 'Instagram', half: true, placeholder: '@name' }, { k: 'web', l: 'Website', half: true }, { k: 'notes', l: 'Notes', type: 'textarea', rows: 3, placeholder: 'How they found you, what they want' }],
+    submit: async v => { try { await live.saveContact(me.id, { ...v, tags: [v.kind] }); await refreshLive(); toast(v.n + ' saved.'); after?.({ pid: (v.em || '').trim().toLowerCase() || null }) } catch (e) { toast(e.message); return false } },
+  })
+  const newClient = (after) => LIVE ? newClientLive(after) : open({
     title: 'New client', sub: 'A person or a business. A thread opens with them.', cta: 'Add client',
     fields: [{ k: 'n', l: 'Name', required: true, placeholder: 'Harper and Leo' }, { k: 'co', l: 'Contact', half: true, placeholder: 'Harper Ellis' }, { k: 'kind', l: 'Kind of work', half: true, type: 'select', value: 'Wedding', options: KINDS }, { k: 'em', l: 'Email', half: true, type: 'email' }, { k: 'ph', l: 'Phone', half: true, type: 'tel' }, ...socialFields(), { k: 'notes', l: 'Notes', type: 'textarea', rows: 3, placeholder: 'How they found you, what they want' }],
     submit: v => { const r = ensure({ client: '__new', newName: v.n, newEmail: v.em, newPhone: v.ph, notes: v.notes }, v.kind + ' · new', 'TBC', v.kind); upd('people', r.pid, { co: v.co || v.n, social: socialOf(v) }); toast(v.n + ' added. A thread is open with them.'); after?.(r) },
@@ -110,15 +118,15 @@ export function useFlows() {
 
   // Live: a new thread is a real message thread with a first message, made the way the live site's
   // Messages page does it (find_client_account_id, message_threads insert, messages insert, notify).
-  const newThreadLive = () => open({
-    title: 'New thread', sub: 'One thread per client. They get an email with their link and see the same thread on their phone.', cta: 'Send and open', center: true,
-    fields: [{ k: 'name', l: 'Their name', half: true, required: true, placeholder: 'Harper and Leo' }, { k: 'email', l: 'Email', half: true, type: 'email', required: true, placeholder: 'name@email.com' }, { k: 'job', l: 'The job', required: true, placeholder: 'Wedding · Maleny Manor' }, { k: 'first', l: 'First message', type: 'textarea', rows: 4, required: true, placeholder: 'Hi Harper, lovely to hear from you. The 7th is open and I would love to.' }],
+  const newThreadLive = (preset = {}) => open({
+    title: 'New thread', sub: 'One thread per client. They get an email with their link and see the same thread on their phone.', cta: 'Send and open', working: 'Sending', center: true,
+    fields: [{ k: 'name', l: 'Their name', half: true, required: true, placeholder: 'Harper and Leo', value: preset.name || '' }, { k: 'email', l: 'Email', half: true, type: 'email', required: true, placeholder: 'name@email.com', value: preset.email || '' }, { k: 'job', l: 'The job', required: true, placeholder: 'Wedding · Maleny Manor' }, { k: 'first', l: 'First message', type: 'textarea', rows: 4, required: true, placeholder: 'Hi Harper, lovely to hear from you. The 7th is open and I would love to.' }],
     submit: async v => {
       try { await live.sendMessage({ n: v.name.trim(), email: v.email.trim().toLowerCase(), j: v.job.trim(), live: {} }, v.first, me); await refreshLive(); toast('Sent. ' + v.name.trim() + ' has the link.'); nav('/app/thread/' + encodeURIComponent(v.email.trim().toLowerCase())) }
       catch (e) { toast(e.message || 'Could not open the thread.'); return false }
     },
   })
-  const newThread = () => LIVE ? newThreadLive() : open({
+  const newThread = (preset) => LIVE ? newThreadLive(preset && preset.email ? preset : {}) : open({
     title: 'New thread', sub: 'One thread per job, from enquiry to review. The client sees the same thread on their phone.', cta: 'Open thread',
     fields: [clientField(), ...newNameFields(), { k: 'job', l: 'The job', required: true, placeholder: 'Wedding · Maleny Manor' }, { k: 'when', l: 'When', half: true, type: 'date', min: TODAY }, { k: 'kind', l: 'Kind', half: true, type: 'select', value: 'Wedding', options: KINDS }, { k: 'first', l: 'First message', type: 'textarea', rows: 3, placeholder: 'Optional. Sent to the client when the thread opens.' }],
     submit: v => {
@@ -352,7 +360,7 @@ export function useFlows() {
     title: 'Propose a meeting', sub: 'The client gets an email with the time and can accept, suggest another, or decline.', cta: 'Send invite', working: 'Sending invite',
     fields: [liveClientField(preset), ...newNameFields(), { k: 'title', l: 'What', required: true, value: preset.title || '', placeholder: 'Planning call' }, { k: 't', l: 'Type', type: 'select', value: preset.t || (s.meetingTypes[0]?.id || ''), options: s.meetingTypes.map(m => [m.id, m.n + ' · ' + m.m + ' min']) }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: preset.d || TODAY, min: TODAY }, { k: 'time', l: 'Time', type: 'time', required: true, half: true, value: '10:00' }, { k: 'how', l: 'How', type: 'select', half: true, value: 'Video', options: ['Video', 'Phone', 'In person'] }, { k: 'where', l: 'Link, number or place', half: true, placeholder: 'Zoom link, phone, cafe' }, { k: 'desc', l: 'Details for the client', type: 'textarea', rows: 3, placeholder: 'What you will cover' }],
     submit: async v => {
-      const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
+      const th = clientOf(v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
       if (!name || !email) { toast('A name and an email to send the invite to.'); return false }
       const type = s.meetingTypes.find(m => m.id === v.t)
       try { await live.createMeeting(me.id, { name, email, title: v.title || type?.n || 'Meeting', date: v.d, time: v.time, minutes: type?.m || 30, how: v.how, location: v.where, description: v.desc }); await refreshLive(); toast('Invite sent to ' + name + '.'); nav('/app/meetings') } catch (e) { toast(e.message); return false }
@@ -398,8 +406,8 @@ export function useFlows() {
   const newGalleryLive = (preset = {}) => open({
     title: 'New gallery', sub: 'A private link to the files. The client gets it by email and can download, favourite and send picks back.', cta: 'Create gallery', working: 'Creating', center: true, wide: true,
     fields: [
-      { ...liveClientField(preset), half: true, effect: (cid, v) => { const th = s.threads.find(t => t.id === cid); return { em: th?.email || v.em || '', d: v.d || th?.j || '' } } },
-      { k: 'em', l: 'Client email', type: 'email', half: true, placeholder: 'name@email.com', value: s.threads.find(t => t.id === preset.client)?.email || '', when: v => v.client !== '__new' },
+      { ...liveClientField(preset), half: true, effect: (cid, v) => { const th = clientOf(cid); const t2 = s.threads.find(t => t.id === cid); return { em: th?.email || v.em || '', d: v.d || t2?.j || '' } } },
+      { k: 'em', l: 'Client email', type: 'email', half: true, placeholder: 'name@email.com', value: clientOf(preset.client)?.email || '', when: v => v.client !== '__new' },
       ...newNameFields(),
       { k: 'd', l: 'Gallery title', required: true, placeholder: 'Wedding photos · Maleny Manor', value: preset.d || '' },
       { k: 'msg', l: 'Message to the client', type: 'textarea', rows: 2, value: 'Your photos are ready. Take your time with them, and tap the heart on any you love.' },
@@ -410,7 +418,7 @@ export function useFlows() {
       { k: 'send', l: 'Email the link now', type: 'toggle', value: true, hint: 'Off keeps it private until you press Send link' },
     ],
     submit: async (v, ui) => {
-      const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? (v.em || th.email) : (v.newEmail || '').trim()
+      const th = clientOf(v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? (v.em || th.email) : (v.newEmail || '').trim()
       if (!name) { toast('Who is it for?'); return false }
       if (v.send && !email) { toast('An email address to send the link to.'); return false }
       const files = (v.files || []).map(x => x.file).filter(Boolean)

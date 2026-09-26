@@ -556,3 +556,50 @@ export async function deleteDelivery(d) {
   const { error } = await supabase.from('deliveries').delete().eq('id', d.id)
   if (error) throw new Error(error.message)
 }
+
+// ── Contacts: crm_contacts, merged with everyone you have a thread with ─────────────────────────
+// A saved contact is a crm_contacts row (tier-capped by the database). Anyone you have messages,
+// quotes or bookings with shows too, unsaved, so the list is never missing a real client.
+const crmErr = e => { const m = String(e?.message || e || ''); if (/TIER_LIMIT:crm_records/i.test(m)) return new Error('Your plan has hit its saved-contact limit. Upgrade in Account to save more.'); return new Error(m || 'Could not save the contact.') }
+export async function loadContacts(uid) {
+  const { data } = await supabase.from('crm_contacts').select('*').eq('creative_id', uid).order('created_at', { ascending: false })
+  return data || []
+}
+// Build the people list from crm rows + threads + ledger + events (all already loaded)
+export function shapePeople(rows, threads, ledger, events) {
+  const byEmail = new Map(), out = []
+  const jobsFor = tid => {
+    const bk = events.filter(e => e.t === tid && e.live && (e.k === 'b' || e.k === 'p')).map(e => [e.live.service || 'Booking', nice(e.d), 0, e.k === 'p' ? 'Requested' : low(e.live.status) === 'completed' ? 'Done' : 'Booked'])
+    const inv = ledger.filter(r => r.t === tid && r.k === 'inv').map(r => [r.d || 'Invoice', nice(r.date), r.v, r.stt])
+    return [...bk, ...inv]
+  }
+  const paidFor = tid => ledger.filter(r => r.t === tid && r.k === 'inv' && r.st === 'ok').reduce((t, r) => t + r.v, 0)
+  const lastFor = tid => { const ds = [...events.filter(e => e.t === tid).map(e => e.d), ...ledger.filter(r => r.t === tid).map(r => r.date)].filter(Boolean).sort(); return ds[ds.length - 1] || '' }
+  for (const c of rows) {
+    const em = low(c.email).trim(), id = em || 'crm-' + c.id, th = em ? threads.find(t => t.id === em) : null
+    const jobs = em ? jobsFor(em) : []
+    const p = { id, n: c.name || em || 'Client', co: c.company || c.name || '', t: [c.status || 'Lead', c.company].filter(Boolean).join(' · '), kind: (c.tags || [])[0] || '', j: jobs.length, v: em ? paidFor(em) : Number(c.total_spent) || 0, l: (em && lastFor(em)) || String(c.last_contacted_at || c.created_at || '').slice(0, 10), tags: c.tags || [], g: gradFor(id), em: c.email || '', ph: c.phone || '', social: { ...(c.instagram ? { ig: c.instagram } : {}), ...(c.website ? { web: c.website } : {}) }, notes: c.notes || '', jobs, crm: c, thread: !!th }
+    out.push(p); if (em) byEmail.set(em, p)
+  }
+  for (const t of threads) {
+    if (byEmail.has(t.id)) continue
+    const jobs = jobsFor(t.id)
+    out.push({ id: t.id, n: t.n, co: t.n, t: 'From your threads · not saved', kind: '', j: jobs.length, v: paidFor(t.id), l: lastFor(t.id), tags: [], g: t.g, em: t.email, ph: '', social: {}, notes: '', jobs, crm: null, thread: true })
+  }
+  return out.sort((a, b) => (b.l || '') > (a.l || '') ? 1 : -1)
+}
+const crmRow = v => ({ name: (v.n || '').trim(), company: (v.co || '').trim() || null, email: (v.em || '').trim().toLowerCase() || null, phone: (v.ph || '').trim() || null, notes: v.notes ?? undefined, tags: v.tags ?? undefined, instagram: v.ig ?? undefined, website: v.web ?? undefined, status: v.status ?? undefined })
+const clean = o => Object.fromEntries(Object.entries(o).filter(([, x]) => x !== undefined))
+export async function saveContact(uid, v, existing) {
+  const row = clean(crmRow(v))
+  if (existing?.id) { const { error } = await supabase.from('crm_contacts').update(row).eq('id', existing.id); if (error) throw crmErr(error); return }
+  const { error } = await supabase.from('crm_contacts').insert({ ...row, creative_id: uid, status: row.status || 'Lead', last_contacted_at: new Date().toISOString() })
+  if (error) throw crmErr(error)
+}
+export async function deleteContact(id) { const { error } = await supabase.from('crm_contacts').delete().eq('id', id); if (error) throw crmErr(error) }
+export async function importContacts(uid, list, tag) {
+  const rows = list.map(([name, email, phone]) => ({ creative_id: uid, name, email: (email || '').toLowerCase() || null, phone: phone || null, status: 'Lead', tags: tag ? [tag] : [], last_contacted_at: new Date().toISOString() }))
+  let n = 0
+  for (const r of rows) { const { error } = await supabase.from('crm_contacts').insert(r); if (error) { if (n === 0) throw crmErr(error); break } n++ }
+  return n
+}
