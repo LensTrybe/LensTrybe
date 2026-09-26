@@ -22,6 +22,10 @@ export default function Bookings() {
   const [mode, setMode] = useState(() => { try { return localStorage.getItem('lt-cal') || 'month' } catch { return 'month' } })
   const [view, setView] = useState(new Date(TODAY.getFullYear(), TODAY.getMonth(), 1))
   const [sel, setSel] = useState(T0), [drag, setDrag] = useState(null), [over, setOver] = useState(null), [menu, setMenu] = useState(false)
+  // pick mode: tap or drag across days to block several at once
+  const [pick, setPick] = useState(null), [painting, setPainting] = useState(null)
+  const togglePick = (k, on) => setPick(p0 => { const n = new Set(p0 || []); if (on ?? !n.has(k)) n.add(k); else n.delete(k); return n })
+  useEffect(() => { const up = () => setPainting(null); addEventListener('mouseup', up); return () => removeEventListener('mouseup', up) }, [])
   useEffect(() => { if (!menu) return; const c = e => { if (!e.target.closest('.newmenu')) setMenu(false) }; document.addEventListener('click', c); return () => document.removeEventListener('click', c) }, [menu])
   useEffect(() => { try { localStorage.setItem('lt-cal', mode) } catch {} }, [mode])
   const A = s.avail
@@ -34,6 +38,7 @@ export default function Bookings() {
   const from = iso(range[0]), to = iso(range[range.length - 1])
   const occ = useMemo(() => occurrences(s.events, from, to), [s.events, from, to])
   const byDay = useMemo(() => { const m = {}; for (const e of occ) (m[e.on] ||= []).push(e); for (const k in m) m[k].sort((a, b) => (a.time || '00:00') < (b.time || '00:00') ? -1 : 1); return m }, [occ])
+  const canPick = k => k >= T0 && !(byDay[k] || []).some(x => x.k !== 'x')
   const meets = useMemo(() => { const m = {}; for (const x of s.meetings) { if (x.st === 'done') continue; const d = x.when.slice(0, 10); if (d >= from && d <= to) (m[d] ||= []).push(x) } return m }, [s.meetings, from, to])
   const money = useMemo(() => { const m = {}; for (const r of s.ledger) { if (r.k !== 'inv' || r.date < from || r.date > to) continue; (m[r.date] ||= []).push(r) } return m }, [s.ledger, from, to])
   const offDay = d => !A.days[(d.getDay() + 6) % 7]
@@ -105,12 +110,15 @@ export default function Bookings() {
         </div>
       </div>
       <div className="grid">
-        <div className={'card lg s8 calc ' + mode}>
+        <div className={'card lg s8 calc ' + mode + (pick ? ' picking' : '')}>
+          {!pick && mode === 'month' && <div className="pickbar idle"><span><b>Need time off?</b><small>Pick the days on the calendar, or give a date range.</small></span><button className="btn g sm" onClick={() => F.blockDays(sel >= T0 ? sel : T0)}>Date range</button><button className="btn w sm" onClick={() => setPick(new Set())}>Block days</button></div>}
+          {pick && <div className="pickbar"><span><b>{pick.size ? pick.size + (pick.size === 1 ? ' day' : ' days') + ' picked' : 'Tap the days to block'}</b><small>Tap a day, or hold and drag across a run. Booked and past days cannot be picked.</small></span><button className="btn g sm" onClick={() => F.blockDays(sel >= T0 ? sel : T0)}>By date range instead</button><button className="btn g sm" onClick={() => setPick(null)}>Cancel</button><button className="btn w sm" disabled={!pick.size} onClick={() => F.blockDates([...pick].sort(), () => setPick(null))}>Block {pick.size || ''} {pick.size === 1 ? 'day' : 'days'}</button></div>}
+          {mode !== 'month' && pick && <p className="tempty">Switch to Month to pick days.</p>}
           {mode === 'month' ? (
             <div className="mcal">
               {DOW.map(d => <div key={d} className="dh">{d}</div>)}
               {range.map(d => { const k = iso(d), xs = byDay[k] || [], x = xs.find(v => v.k !== 'x') || xs[0], out = d.getMonth() !== view.getMonth(), past = d < TODAY; return (
-                <div key={k} role="button" tabIndex={0} className={'d ' + (x?.k || '') + (out ? ' out' : '') + (past ? ' past' : '') + (offDay(d) ? ' off' : '') + (k === T0 ? ' today' : '') + (k === sel ? ' sel' : '') + (over === k ? ' over' : '')} onClick={() => setSel(k)} onDoubleClick={() => x && x.k !== 'x' ? F.editEvent(x.id, goto) : d >= TODAY && F.newBooking(k)} aria-label={long(d)} aria-pressed={k === sel} onKeyDown={ev => ev.key === 'Enter' && setSel(k)} {...dropProps(k)}>
+                <div key={k} role="button" tabIndex={0} className={'d ' + (x?.k || '') + (out ? ' out' : '') + (past ? ' past' : '') + (offDay(d) ? ' off' : '') + (k === T0 ? ' today' : '') + (k === sel && !pick ? ' sel' : '') + (over === k ? ' over' : '') + (pick?.has(k) ? ' picked' : '') + (pick && !canPick(k) ? ' nopick' : '')} onMouseDown={ev => { if (!pick || !canPick(k)) return; ev.preventDefault(); const on = !pick.has(k); setPainting(on); togglePick(k, on) }} onMouseEnter={() => { if (pick && painting !== null && canPick(k)) togglePick(k, painting) }} onClick={() => { if (pick) return; setSel(k) }} onDoubleClick={() => x && x.k !== 'x' ? F.editEvent(x.id, goto) : d >= TODAY && F.newBooking(k)} aria-label={long(d)} aria-pressed={k === sel} onKeyDown={ev => ev.key === 'Enter' && setSel(k)} {...dropProps(k)}>
                   <span className="n">{d.getDate()}{(money[k] || []).length > 0 && <b className={'mk ' + (money[k].some(r => r.st !== 'ok') ? 'due' : 'ok')} title={money[k].map(r => r.who + ' ' + fmt(r.v)).join(', ')}>$</b>}{(meets[k] || []).length > 0 && <b className="mk m" title={meets[k].map(m => m.who).join(', ')}>{meets[k].length}</b>}</span>
                   <span className="evs">{xs.slice(0, 2).map(chip)}{xs.length > 2 && <small className="more">+{xs.length - 2}</small>}</span>
                 </div>) })}

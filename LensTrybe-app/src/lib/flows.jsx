@@ -58,10 +58,32 @@ export function useFlows() {
       await refreshLive(); toast('Booked ' + shortDate(v.d) + ' for ' + name + (v.notify && email ? '. Confirmation sent.' : '.')); preset.then?.()
     },
   })
-  const blockDayLive = (date, then) => open({
-    title: 'Block ' + shortDate(date), sub: 'Clients cannot ask for a blocked day.', cta: 'Block the day',
-    fields: [{ k: 'why', l: 'Why', placeholder: 'Day off, editing, travel', hint: 'Only you see this' }, { k: 'to', l: 'Through', type: 'date', value: date, min: date, hint: 'Block a run of days at once' }],
-    submit: async v => { const dates = []; let d = date; const end = v.to && v.to > date ? v.to : date; while (d <= end && dates.length < 60) { if (!s.events.some(e => e.d === d && e.k === 'x')) dates.push(d); d = addDays(d, 1) } try { if (dates.length) await live.blockDates(me.id, dates, v.why); await refreshLive(); toast((dates.length > 1 ? dates.length + ' days' : shortDate(date)) + ' blocked.'); then?.() } catch (e) { toast(e.message); return false } },
+  // Block days: one shared sheet. A range (from → until, optional weekdays only) or a set picked on the
+  // calendar. Booked days are skipped and said so; days already blocked are left as they are.
+  const DOWS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+  const dow7 = d => (parse(d).getDay() + 6) % 7
+  const busyOn = d => s.events.some(e => e.d === d && (e.k === 'b' || e.k === 'p' || e.k === 'c'))
+  const blockedOn = d => s.events.some(e => e.d === d && e.k === 'x')
+  const rangeDates = v => { const out = []; if (!v.from) return out; let d = v.from; const end = v.to && v.to >= v.from ? v.to : v.from; while (d <= end && out.length < 370) { if (!v.only?.length || v.only.includes(String(dow7(d)))) out.push(d); d = addDays(d, 1) } return out }
+  const blockSummary = ds => { const free = ds.filter(d => !busyOn(d) && !blockedOn(d)), booked = ds.filter(busyOn), done = ds.filter(d => blockedOn(d) && !busyOn(d)); return <div className="blksum"><b>{free.length ? free.length + (free.length === 1 ? ' day' : ' days') + ' will be blocked' : 'Nothing new to block'}</b>{free.length > 0 && <small>{free.length <= 6 ? free.map(shortDate).join(', ') : shortDate(free[0]) + ' to ' + shortDate(free[free.length - 1])}</small>}{booked.length > 0 && <small className="warn">{booked.length} booked {booked.length === 1 ? 'day is' : 'days are'} skipped: {booked.slice(0, 3).map(shortDate).join(', ')}{booked.length > 3 ? '…' : ''}</small>}{done.length > 0 && <small>{done.length} already blocked</small>}</div> }
+  const doBlock = async (ds, why) => {
+    const free = ds.filter(d => !busyOn(d) && !blockedOn(d))
+    if (!free.length) { toast('Those days are already blocked or booked.'); return false }
+    if (LIVE) { try { await live.blockDates(me.id, free, why); await refreshLive() } catch (e) { toast(e.message); return false } }
+    else free.forEach(d => add('events', { d, k: 'x', n: why || '' }, 'ev'))
+    toast((free.length === 1 ? shortDate(free[0]) : free.length + ' days') + ' blocked. Clients cannot ask for ' + (free.length === 1 ? 'it.' : 'them.'))
+  }
+  const blockDays = (date, then) => open({
+    title: 'Block days', sub: 'Days off, editing days, holidays. Clients cannot ask for a blocked day; only you see why.', cta: 'Block', working: 'Blocking',
+    body: v => blockSummary(rangeDates(v)),
+    fields: [{ k: 'from', l: 'First day', type: 'date', required: true, half: true, value: date || TODAY, min: TODAY, effect: (x, v) => (!v.to || v.to < x ? { to: x } : {}) }, { k: 'to', l: 'Last day', type: 'date', required: true, half: true, value: date || TODAY, min: TODAY, hint: 'Same as the first day for just one' }, { k: 'only', l: 'Only these days of the week', type: 'chips', value: [], options: DOWS.map((l, i) => [String(i), l]), hint: 'Leave empty for every day in between' }, { k: 'why', l: 'Why', placeholder: 'Holiday, editing, day off' }],
+    submit: async v => { const r = await doBlock(rangeDates(v), v.why); if (r === false) return false; then?.() },
+  })
+  const blockDates = (ds, then) => open({
+    title: 'Block ' + (ds.length === 1 ? shortDate(ds[0]) : ds.length + ' days'), sub: 'Clients cannot ask for a blocked day; only you see why.', cta: 'Block', working: 'Blocking', center: true,
+    body: () => blockSummary(ds),
+    fields: [{ k: 'why', l: 'Why', placeholder: 'Holiday, editing, day off' }],
+    submit: async v => { const r = await doBlock(ds, v.why); if (r === false) return false; then?.() },
   })
   const editEventLive = (id, then) => {
     const e = s.events.find(x => x.id === id); if (!e) return
@@ -186,11 +208,7 @@ export function useFlows() {
       toast((v.pencil ? 'Pencilled ' : 'Booked ') + shortDate(v.d) + (ev.end ? ' to ' + shortDate(ev.end) : '') + (ev.rep ? ', repeating ' + ev.rep : '') + ' for ' + r.name + (w.length ? ', sent to ' + w.length + ' more.' : '.'))
     },
   })
-  const blockDay = (date, then) => LIVE ? blockDayLive(date, then) : open({
-    title: 'Block ' + shortDate(date), sub: 'Clients cannot ask for a blocked day. Google Calendar follows.', cta: 'Block the day',
-    fields: [{ k: 'why', l: 'Why', placeholder: 'Day off, editing, travel', hint: 'Only you see this' }, { k: 'to', l: 'Through', type: 'date', value: date, min: date, hint: 'Block a run of days at once' }],
-    submit: v => { let d = date, n = 0; const end = v.to && v.to > date ? v.to : date; while (d <= end && n < 60) { if (!s.events.some(e => e.d === d && e.k !== 'x')) add('events', { d, k: 'x', n: v.why || '' }, 'ev'); d = addDays(d, 1); n++ } toast((n > 1 ? n + ' days' : shortDate(date)) + ' blocked. Clients will not see it. Google Calendar updated.'); then?.() },
-  })
+  const blockDay = (date, then) => blockDays(date, then)
   // Edit a booking in place: same fields as New booking, prefilled. Calendar, thread and everyone on it follow.
   const editEvent = (id, then) => {
     if (LIVE) return editEventLive(id, then)
@@ -613,5 +631,5 @@ export function useFlows() {
   const askReview = tid => { const t = s.threads.find(x => x.id === tid); if (!t) return; reply(tid, `Hi ${t.n.split(' ')[0]}, I loved working on this with you. If you have two minutes, a review on my LensTrybe profile helps more than you know: maraokafor.lenstrybe.com/review`, { title: 'Ask ' + t.n + ' for a review', cta: 'Ask', done: 'Review request sent to ' + t.n + '.', next: 'Review requested', then: () => bump(tid, 7) }) }
   const resetAll = () => confirm({ title: 'Start the demo again?', body: 'Everything you have added or changed in this browser goes back to the sample data.', cta: 'Reset', danger: true, onYes: () => { reset(); toast('Back to the sample workspace.') } })
 
-  return { s, add, upd, del, say, patch, set, next, hydrate, open, confirm, toast, nav, me, sendMessage, refreshLive, ensure, newClient, SOCIAL, socialFields, socialOf, newThread, reply, nudge, wait, replyRuby, offerGap, gapOffered, newBooking, blockDay, editEvent, moveEvent, openDay, confirmEvent, releaseEvent, newDoc, markPaid, markAccepted, sendDoc, markSigned, chase, receipt, openInvoice, openQuote, openContract, openDoc, uploadContract, openUpload, downloadUpload, saveTemplate, editTemplate, invoiceFromQuote, editExpense, openReceipt, editExpCat, removeDoc, docAction, docActionLabel, sendContract, exportCsv, newNote, newProject, editStage, moveStage, setProjectStage, newGear, catFields, catOf, editGearCat, newMeeting, newPost, newIdea, connectChannel, disconnectChannel, publishPost, schedulePost, unschedulePost, bestTime, syncInsights, CHN, newGallery, newPage, newItem, ROLES, SEES, seatLimit, editSeat, acceptSeat, CROLES, addCrew, editCrew, feeOf, crewReply, cancelCrewJob, messageCrew, payCrew, passJob, takePassed, declinePassed, MCATS, MCOND, sellFromKit, postListing, editListing, removeListing, markSold, relist, saveListing, contactSeller, makeOffer, proposeSwap, replyOffer, acceptOffer, invite, askCrew, replyReview, askReview, draftReply, featureReview, shareReview, flagReview, unflagReview, publishReview, removeReview, addPastReview, requestReview, remindReview, cancelRequest, reviewLink, resetAll, KINDS_A, setAvail, addAway, removeAway, unblockDay, editSeason, extendHold, offerDate, removeWait, addWait, calFeed, dayStatus, nextOpen, dlabel, JOB_KINDS, canReply, jobDate, daysLeft, fitOf, replyJob, askJob, hideJob, unhideJob, saveJob, withdrawReply, nudgeReply, passOnJob, takeDownJob, jobAlerts, clientAccept, clientDecline, postClientJob }
+  return { s, add, upd, del, say, patch, set, next, hydrate, blockDates, blockDays, open, confirm, toast, nav, me, sendMessage, refreshLive, ensure, newClient, SOCIAL, socialFields, socialOf, newThread, reply, nudge, wait, replyRuby, offerGap, gapOffered, newBooking, blockDay, editEvent, moveEvent, openDay, confirmEvent, releaseEvent, newDoc, markPaid, markAccepted, sendDoc, markSigned, chase, receipt, openInvoice, openQuote, openContract, openDoc, uploadContract, openUpload, downloadUpload, saveTemplate, editTemplate, invoiceFromQuote, editExpense, openReceipt, editExpCat, removeDoc, docAction, docActionLabel, sendContract, exportCsv, newNote, newProject, editStage, moveStage, setProjectStage, newGear, catFields, catOf, editGearCat, newMeeting, newPost, newIdea, connectChannel, disconnectChannel, publishPost, schedulePost, unschedulePost, bestTime, syncInsights, CHN, newGallery, newPage, newItem, ROLES, SEES, seatLimit, editSeat, acceptSeat, CROLES, addCrew, editCrew, feeOf, crewReply, cancelCrewJob, messageCrew, payCrew, passJob, takePassed, declinePassed, MCATS, MCOND, sellFromKit, postListing, editListing, removeListing, markSold, relist, saveListing, contactSeller, makeOffer, proposeSwap, replyOffer, acceptOffer, invite, askCrew, replyReview, askReview, draftReply, featureReview, shareReview, flagReview, unflagReview, publishReview, removeReview, addPastReview, requestReview, remindReview, cancelRequest, reviewLink, resetAll, KINDS_A, setAvail, addAway, removeAway, unblockDay, editSeason, extendHold, offerDate, removeWait, addWait, calFeed, dayStatus, nextOpen, dlabel, JOB_KINDS, canReply, jobDate, daysLeft, fitOf, replyJob, askJob, hideJob, unhideJob, saveJob, withdrawReply, nudgeReply, passOnJob, takeDownJob, jobAlerts, clientAccept, clientDecline, postClientJob }
 }

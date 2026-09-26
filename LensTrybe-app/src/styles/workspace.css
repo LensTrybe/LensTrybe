@@ -1742,3 +1742,17 @@
 .ws .caltabs a:hover{background:var(--hov);color:var(--ink)}
 .ws .caltabs a.on{background:var(--ink);color:var(--bg)}
 .ws.dark .caltabs a.on{background:#fff;color:#0a0a0f}
+/* picking days to block on the month calendar */
+.ws .calc .pickbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 14px;margin:0 0 12px;border-radius:16px;background:var(--sig-bg);border:1px solid var(--sig-rim)}
+.ws .calc .pickbar span{flex:1;min-width:200px;display:flex;flex-direction:column;gap:2px}
+.ws .calc .pickbar b{font-size:14px;color:var(--ink)}.ws .calc .pickbar small{font-size:12px;color:var(--ink-3)}
+.ws .calc.picking .mcal .d{cursor:cell;user-select:none}
+.ws .calc.picking .mcal .d.picked{background:repeating-linear-gradient(135deg,var(--sig-bg) 0 6px,transparent 6px 12px);box-shadow:inset 0 0 0 2px var(--sig)}
+.ws .calc.picking .mcal .d.picked .n::after{content:"✓";margin-left:6px;color:var(--sig);font-weight:700}
+.ws .calc.picking .mcal .d.nopick{opacity:.35;cursor:not-allowed}
+.ws .vh .acts .btn.on{box-shadow:inset 0 0 0 2px var(--sig)}
+/* the block-days summary inside the sheet */
+.ws .blksum{display:flex;flex-direction:column;gap:3px;padding:12px 14px;border-radius:14px;background:var(--paper-2);border:1px solid var(--line)}
+.ws .blksum b{font-size:14px;color:var(--ink)}.ws .blksum small{font-size:12.5px;color:var(--ink-2)}.ws .blksum small.warn{color:var(--amber-t)}
+.ws .calc .pickbar.idle{background:transparent;border-style:dashed;border-color:var(--line-2);padding:8px 10px 8px 14px}
+.ws .calc .pickbar.idle b{font-size:13px}
