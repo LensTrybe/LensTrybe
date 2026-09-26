@@ -60,7 +60,6 @@ begin
   if TG_OP = 'INSERT' then
     NEW.id := gen_random_uuid(); NEW.from_creative_id := auth.uid(); NEW.status := 'pending'; NEW.created_at := now(); NEW.thread_id := null;
     NEW.message := left(btrim(coalesce(NEW.message, '')), 1000);
-    if NEW.to_creative_id = NEW.from_creative_id then raise exception 'That''s you.' using errcode = 'P0001'; end if;
     if NEW.collaboration_id is not null then
       select posted_by, status into v_poster, v_status from public.collaborations where id = NEW.collaboration_id;
       if not found or v_status <> 'open' then raise exception 'This collab isn''t open any more.' using errcode = 'P0001'; end if;
@@ -70,6 +69,7 @@ begin
       if public.tier_of(auth.uid()) = 'basic' then raise exception 'Inviting creatives directly is on Pro and above.' using errcode = 'P0001'; end if;
       if NEW.message = '' then raise exception 'Add a message.' using errcode = 'P0001'; end if;
     end if;
+    if NEW.to_creative_id = NEW.from_creative_id then raise exception 'That''s you.' using errcode = 'P0001'; end if;
     if public.collab_rate_ok('invite') is false then raise exception 'Too many requests today. Try again tomorrow.' using errcode = 'P0001'; end if;
     return NEW;
   end if;
