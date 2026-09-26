@@ -124,7 +124,7 @@ export default function ContractEditor() {
               </div>
               <div className="party to">
                 <small>And</small>
-                <div className="pick"><select value={c.client} onChange={e => pickClient(e.target.value)}><option value="">{LIVE ? 'Pick a client thread…' : 'Pick from Contacts…'}</option>{(LIVE ? [...s.threads.map(t => ({ id: t.id, n: t.n })), ...s.people.filter(p => p.em && !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n }))] : s.people).map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
+                <div className="pick"><select value={c.client} onChange={e => pickClient(e.target.value)}><option value="">{LIVE ? 'Pick a client thread…' : 'Pick from Contacts…'}</option>{(LIVE ? [...s.threads.map(t => ({ id: t.id, n: t.n })), ...s.people.filter(p => !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n }))] : s.people).map(p => <option key={p.id} value={p.id}>{p.n}</option>)}</select></div>
                 <Ed v={c.to.n} set={v => upTo('n', v)} ph="Client name" cls="big" />
                 <Ed v={c.to.co} set={v => upTo('co', v)} ph="Contact or company" cls="sm" />
                 <Ed v={c.to.addr} set={v => upTo('addr', v)} ph="Address" cls="sm" />

@@ -42,7 +42,7 @@ export function useFlows() {
   const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings, galleries, contacts] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => []), live.loadDeliveries(me.id).catch(() => []), live.loadContacts(me.id).catch(() => [])]); hydrate({ meetings, galleries, people: live.shapePeople(contacts, d.threads, d.ledger, [...d.events, ...blocked]), threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
   // ── live bookings: the real bookings function, then a refresh ──
   // live: anyone you have a thread with, plus saved contacts with an email you have no thread with yet
-  const liveClients = () => [...s.threads.map(t => ({ id: t.id, n: t.n, email: t.email })), ...s.people.filter(p => p.em && !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n, email: p.em }))]
+  const liveClients = () => [...s.threads.map(t => ({ id: t.id, n: t.n, email: t.email })), ...s.people.filter(p => !s.threads.some(t => t.id === p.id)).map(p => ({ id: p.id, n: p.n, email: p.em || '' }))]
   const clientOf = id => liveClients().find(c => c.id === id)
   const liveClientField = (preset = {}) => ({ k: 'client', l: 'Client', type: 'select', required: true, options: [...liveClients().map(c => [c.id, c.n]), ['__new', 'New client…']], ...(preset.client ? { value: preset.client } : {}) })
   const liveSlot = v => ({ date: v.d, allDay: v.allDay === true || v.allDay === 'true', start: v.time, end: v.endTime })
