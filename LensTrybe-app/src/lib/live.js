@@ -872,3 +872,76 @@ export async function joinTeam(token, f = {}) {
   if (data?.session?.access_token) await supabase.auth.setSession({ access_token: data.session.access_token, refresh_token: data.session.refresh_token })
   return data
 }
+
+// ── Job board. Anyone signed in posts (clients from /jobs, creatives "pass a job on"); creatives on
+// Pro+ reply with a price, what's included and a message. The database sets who, when and the status
+// (guard triggers); the poster accepts or declines through accept_job_application /
+// decline_job_application, and job-outcome-notify emails the creatives. Budget is free text in the
+// database (budget_range); a plain number is written from here.
+const JOB_COLS = 'id, title, description, creative_types, specialty, location, job_date, budget_range, status, expires_at, created_at, posted_by, poster_name'
+const APP_COLS = 'id, job_id, creative_id, creative_name, price, includes, description, message, status, created_at'
+export const jobStateOf = loc => (String(loc || '').toUpperCase().match(/\b(ACT|NSW|NT|QLD|SA|TAS|VIC|WA)\b/) || [])[1] || ''
+export const budgetOf = b => { const m = String(b || '').replace(/,/g, '').match(/\d+(\.\d+)?/); return m ? Number(m[0]) : 0 }
+const dayOf = t => { const d = new Date(t); return isNaN(d) ? '' : iso(d) }
+const dbMsg = (error, fallback) => new Error(['P0001', '42501'].includes(error?.code) && error.message ? error.message : fallback)
+const shapeApp = a => ({ id: a.id, job: a.job_id, cid: a.creative_id, n: a.creative_name || 'A creative', price: Number(a.price) || 0, incl: a.includes || '', msg: a.description || a.message || '', st: a.status || 'pending', at: dayOf(a.created_at), who: a.creative || null })
+export function shapeJob(r, uid) {
+  if (!r) return null
+  const exp = dayOf(r.expires_at)
+  return { id: r.id, t: r.title || 'A job', w: r.description || '', ct: r.creative_types?.length ? r.creative_types : ['Photographer'], k: r.specialty || '', loc: r.location || '', state: jobStateOf(r.location), d: r.job_date || '', b: budgetOf(r.budget_range), bText: r.budget_range || '', st: r.status === 'active' && exp && exp < iso(new Date()) ? 'expired' : r.status, expires: exp, posted: dayOf(r.created_at), by: r.poster_name || 'A LensTrybe client', mine: !!uid && r.posted_by === uid, apps: (r.job_applications || []).map(shapeApp).sort((a, b) => a.at < b.at ? 1 : -1) }
+}
+const CREATIVE_EMBED = 'creative:profiles(id, business_name, avatar_url, city, state)'
+export async function loadJobBoard(uid) {
+  const now = new Date().toISOString()
+  const [o, a, p] = await Promise.all([
+    supabase.from('job_listings').select(JOB_COLS).eq('status', 'active').gt('expires_at', now).neq('posted_by', uid).order('created_at', { ascending: false }).limit(300),
+    supabase.from('job_applications').select(APP_COLS + ', job:job_listings(' + JOB_COLS + ')').eq('creative_id', uid).order('created_at', { ascending: false }),
+    supabase.from('job_listings').select(JOB_COLS + ', job_applications(' + APP_COLS + ', ' + CREATIVE_EMBED + ')').eq('posted_by', uid).order('created_at', { ascending: false }),
+  ])
+  if (o.error || a.error || p.error) throw new Error('Could not load the job board. Reload to try again.')
+  return { open: (o.data || []).map(r => shapeJob(r, uid)), replies: (a.data || []).map(r => ({ ...shapeApp(r), j: shapeJob(r.job, uid) })), posted: (p.data || []).map(r => shapeJob(r, uid)) }
+}
+export async function loadOpenJobs(limit = 9) {
+  const { data } = await supabase.from('job_listings').select(JOB_COLS).eq('status', 'active').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: false }).limit(limit)
+  return (data || []).map(r => shapeJob(r))
+}
+export async function loadJob(id, uid) {
+  if (!/^[0-9a-f-]{36}$/i.test(String(id || ''))) return null
+  const { data } = await supabase.from('job_listings').select(JOB_COLS + ', job_applications(' + APP_COLS + ', ' + CREATIVE_EMBED + ')').eq('id', id).maybeSingle()
+  return shapeJob(data, uid)
+}
+export async function loadMyJobs(uid) {
+  const { data } = await supabase.from('job_listings').select(JOB_COLS + ', job_applications(id, status)').eq('posted_by', uid).order('created_at', { ascending: false })
+  return (data || []).map(r => shapeJob(r, uid))
+}
+export async function postJob(v) {
+  const title = String(v.t || '').trim(), description = String(v.w || '').trim()
+  if (!title || !description) throw new Error('Give the job a title and a few lines about it.')
+  const mod = await moderateText([title, description, v.loc].join('\n')); if (mod?.blocked) throw new Error('That wording can\'t be posted. Please change it and try again.')
+  const { data, error } = await supabase.from('job_listings').insert({
+    title: title.slice(0, 150), description: description.slice(0, 5000), creative_types: [].concat(v.ct || ['Photographer']).filter(Boolean),
+    specialty: v.k || null, location: String(v.loc || '').trim().slice(0, 150), job_date: v.d || null,
+    budget_range: v.b ? String(Math.round(Number(v.b))) : null, poster_name: String(v.by || '').trim().slice(0, 120) || null, status: 'active',
+  }).select('id').single()
+  if (error) throw dbMsg(error, 'Could not post the job. Try again.')
+  return data.id
+}
+export async function takeDownJob(id) { const { error } = await supabase.from('job_listings').update({ status: 'closed' }).eq('id', id); if (error) throw new Error('Could not take it down. Try again.') }
+export async function applyJob(jobId, v) {
+  const price = Number(v.price), description = String(v.msg || '').trim(), includes = String(v.incl || '').trim()
+  if (!(price >= 0) || v.price === '' || v.price == null) throw new Error('Add your price.')
+  if (!description) throw new Error('Add a message to the client.')
+  const mod = await moderateText(description + '\n' + includes); if (mod?.blocked) throw new Error('That wording can\'t be sent. Please change it and try again.')
+  const { data, error } = await supabase.from('job_applications').insert({ job_id: jobId, price, description: description.slice(0, 3000), message: description.slice(0, 3000), includes: includes.slice(0, 1000) || null }).select('id').single()
+  if (error) throw error.code === '23505' ? new Error('You\'ve already replied to this job.') : dbMsg(error, 'Could not send your reply. Try again.')
+  try { await supabase.functions.invoke('send-message-notification', { body: { job_application_id: data.id } }) } catch (_) { /* the reply is saved either way */ }
+  return data.id
+}
+export async function withdrawReply(id) { const { error } = await supabase.from('job_applications').update({ status: 'withdrawn' }).eq('id', id); if (error) throw new Error('Could not withdraw it. Try again.') }
+export async function acceptReply(appId) {
+  const { data, error } = await supabase.rpc('accept_job_application', { p_application: appId })
+  if (error) throw dbMsg(error, 'Could not accept that quote. Try again.')
+  try { await supabase.functions.invoke('job-outcome-notify', { body: { job_id: data.job_id } }) } catch (_) { /* emails are best effort */ }
+  return data
+}
+export async function declineReply(appId) { const { error } = await supabase.rpc('decline_job_application', { p_application: appId }); if (error) throw dbMsg(error, 'Could not decline that quote. Try again.') }
