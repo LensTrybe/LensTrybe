@@ -163,7 +163,7 @@ begin
   v_body := format('Hi %s, I''d like to go ahead with your quote for "%s" (AUD %s). Looking forward to working with you!',
                    coalesce(nullif(btrim(v_app.creative_name), ''), 'there'), v_job.title, to_char(coalesce(v_app.price, 0), 'FM999,999,990.00'));
   insert into public.message_threads (creative_id, client_user_id, client_name, client_email, subject, sender_type, unread_count, last_message_at)
-    values (v_app.creative_id, v_uid, v_name, v_email, left('Job: ' || v_job.title, 150), 'client', 1, now())
+    values (v_app.creative_id, v_uid, v_name, v_email, left('Job: ' || v_job.title, 150), 'client', 0, now())  -- message_threads_bump adds the 1
     returning id into v_thread;
   insert into public.messages (thread_id, sender_type, sender_name, sender_email, body)
     values (v_thread, 'client', v_name, v_email, v_body) returning id into v_msg;

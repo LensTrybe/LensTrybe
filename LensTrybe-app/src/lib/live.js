@@ -942,7 +942,7 @@ export async function withdrawReply(id) { const { error } = await supabase.from(
 export async function acceptReply(appId) {
   const { data, error } = await supabase.rpc('accept_job_application', { p_application: appId })
   if (error) throw dbMsg(error, 'Could not accept that quote. Try again.')
-  try { await supabase.functions.invoke('job-outcome-notify', { body: { job_id: data.job_id } }) } catch (_) { /* emails are best effort */ }
+  supabase.functions.invoke('job-outcome-notify', { body: { job_id: data.job_id } }).catch(() => {}) // emails are best effort; don't make the client wait
   return data
 }
 export async function declineReply(appId) { const { error } = await supabase.rpc('decline_job_application', { p_application: appId }); if (error) throw dbMsg(error, 'Could not decline that quote. Try again.') }

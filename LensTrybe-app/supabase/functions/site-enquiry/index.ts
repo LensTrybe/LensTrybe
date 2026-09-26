@@ -75,7 +75,7 @@ Deno.serve(async (req) => {
         // The profile form sends "Subject: …" as the first line; use it as the thread's subject.
         const sm = message.match(/^Subject: ([^\n]{1,150})\n\n/)
         const subject = sm ? sm[1] : 'Website enquiry', text = sm ? message.slice(sm[0].length) : message
-        const { data: th, error: thErr } = await sb.from('message_threads').insert({ creative_id: creativeId, client_name: name, client_email: email, subject, sender_type: 'client', unread_count: 1, last_message_at: now }).select('id').single()
+        const { data: th, error: thErr } = await sb.from('message_threads').insert({ creative_id: creativeId, client_name: name, client_email: email, subject, sender_type: 'client', unread_count: 0, last_message_at: now }  /* message_threads_bump adds the 1 */).select('id').single()
         if (thErr) throw thErr
         const { error: mErr } = await sb.from('messages').insert({ thread_id: th.id, sender_type: 'client', sender_name: name, body: phone ? `${text}\n\nPhone: ${phone}` : text })
         if (mErr) throw mErr
