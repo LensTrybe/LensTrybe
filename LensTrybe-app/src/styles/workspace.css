@@ -1769,3 +1769,6 @@
 /* chip fields in forms: picked chips stand out */
 .ws .sf .chips2 .chip.p{background:var(--sig);border-color:var(--sig);color:var(--sig-ink);box-shadow:0 0 0 3px var(--sig-bg)}
 .ws .sf .chips2 .chip.p::before{content:'✓ ';font-weight:700}
+
+/* square marks (SVG monograms have no size of their own) */
+.ws .lvb img[src$=".svg"],.ws .lvb img[src^="data:image/svg"]{width:64px;height:64px;max-width:none;max-height:none;border-radius:14px}
