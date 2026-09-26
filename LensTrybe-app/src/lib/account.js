@@ -61,3 +61,20 @@ async function fnError(error, fallback) {
   try { const ctx = error?.context; if (ctx && typeof ctx.json === 'function') { const j = await ctx.json(); if (j?.error) return j.error } } catch { /* keep fallback */ }
   return fallback
 }
+
+// The Trybe Edit on the public pages: sign up (a confirm link is emailed first), confirm, and the
+// published issues (approved and past their publish time; the table's policy decides).
+async function editFn(body) {
+  const { data, error } = await supabase.functions.invoke('edit-subscribe', { body })
+  if (error) throw new Error(await fnError(error, 'Something went wrong. Try again.'))
+  if (data?.error) throw new Error(data.error)
+  return data || {}
+}
+export async function editSubscribe(email) { if (!LIVE) { await wait(500); return { ok: true } } return editFn({ action: 'subscribe', email: String(email || '').trim() }) }
+export async function editConfirm(token) { if (!LIVE) { await wait(500); return { ok: true } } return editFn({ action: 'confirm', token }) }
+export async function loadEditIssues() {
+  if (!LIVE) return null
+  const { data, error } = await supabase.from('edit_issues').select('slug, n, month, title, dek, read, mood, seed, sections, publish_at').order('n', { ascending: false })
+  if (error) throw new Error('Could not load The Trybe Edit.')
+  return data || []
+}

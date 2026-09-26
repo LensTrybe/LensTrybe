@@ -1,11 +1,20 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { useToast } from '../../components/Toast'
 import { ISSUES } from '../../data/edit'
+import { LIVE } from '../../lib/mode'
+import { editConfirm, editSubscribe, loadEditIssues } from '../../lib/account'
+
+// Demo shows the bundled issues; live shows what the edit_issues table has published.
+function useIssues() {
+  const [list, setList] = useState(LIVE ? null : ISSUES)
+  useEffect(() => { if (!LIVE) return; let on = true; loadEditIssues().then(d => { if (on) setList(d) }).catch(() => { if (on) setList([]) }); return () => { on = false } }, [])
+  return list
+}
 
 function Inline({ text }) {
   const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g)
@@ -16,9 +25,16 @@ function Body({ paras }) {
 }
 
 function Subscribe({ dark }) {
-  const toast = useToast(); const [e, setE] = useState('')
+  const toast = useToast(); const [e, setE] = useState(''); const [busy, setBusy] = useState(false)
+  const go = async ev => {
+    ev.preventDefault(); if (!e.trim() || busy) return
+    setBusy(true)
+    try { await editSubscribe(e); toast('Nearly there. Check your inbox and tap the link to confirm.'); setE('') }
+    catch (err) { toast(err.message || 'Something went wrong. Try again.') }
+    finally { setBusy(false) }
+  }
   return (
-    <form className={'subs' + (dark ? ' d' : '')} onSubmit={ev => { ev.preventDefault(); if (e.trim()) { toast('You are on the list. Issue #2 lands next month.'); setE('') } }}>
+    <form className={'subs' + (dark ? ' d' : '')} onSubmit={go}>
       <span className="lens" aria-hidden="true" /><input type="email" value={e} onChange={ev => setE(ev.target.value)} placeholder="you@studio.com.au" aria-label="Email" /><button type="submit" className="go">Subscribe<Icon name="arrow" size={14} /></button>
     </form>
   )
@@ -28,7 +44,7 @@ function Subscribe({ dark }) {
 export function EditHome() {
   const cv = useRef(null)
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
-  const latest = ISSUES[0]
+  const issues = useIssues(); const latest = issues?.[0]
   return (
     <>
       <section className="hiw edit dark darkhero">
@@ -44,6 +60,7 @@ export function EditHome() {
       <div className="lt">
         <Aurora />
         <section className="sec" style={{ paddingTop: 'clamp(40px,6vw,72px)' }}><div className="wrap">
+          {!latest ? <div className="stephead rv"><div><p className="eb g">{issues ? 'Issue #1 · October 2026' : 'Loading'}</p><h2>The first issue lands <em>1 October.</em></h2><p className="lede">Subscribe above and it arrives in your inbox on the day. After that, a new issue on the 1st of every month.</p></div></div> : <>
           <div className="stephead rv"><div><p className="eb g">Latest issue · {latest.month}</p><h2>{latest.title.split(' ').slice(0, 3).join(' ')} <em>{latest.title.split(' ').slice(3).join(' ')}.</em></h2></div></div>
           <Link className="ecover lg rv" to={'/edit/' + latest.slug}>
             <div className="cimg"><Still seed={latest.seed} mood={latest.mood} /><span className="ctag">Issue #{latest.n}</span></div>
@@ -52,15 +69,15 @@ export function EditHome() {
               <div className="cmeta"><span>{latest.month}</span><span>{latest.read} read</span><span>{latest.sections.length} sections</span></div>
               <span className="btn k">Read the issue <Icon name="arrow" size={14} /></span>
             </div>
-          </Link>
+          </Link></>}
         </div></section>
-        <section className="sec" style={{ paddingTop: 0 }}><div className="wrap">
+        {latest && <section className="sec" style={{ paddingTop: 0 }}><div className="wrap">
           <div className="stephead rv"><div><p className="eb g">Every issue</p><h2>The <em>archive.</em></h2></div></div>
           <div className="agrid rv">
-            {ISSUES.map(i => <Link key={i.slug} className="acard lg" to={'/edit/' + i.slug}><div className="img"><Still seed={i.seed} mood={i.mood} /></div><div><small>Issue #{i.n} · {i.month}</small><b>{i.title}</b><span>{i.read} read</span></div></Link>)}
-            <div className="acard lg soon"><div><small>Issue #2 · coming next month</small><b>Bios that convert, pricing your work, and the first Creative Spotlight.</b><span>Subscribe above and it lands in your inbox.</span></div></div>
+            {issues.map(i => <Link key={i.slug} className="acard lg" to={'/edit/' + i.slug}><div className="img"><Still seed={i.seed} mood={i.mood} /></div><div><small>Issue #{i.n} · {i.month}</small><b>{i.title}</b><span>{i.read} read</span></div></Link>)}
+            <div className="acard lg soon"><div><small>Issue #{latest.n + 1} · the 1st of next month</small><b>A new issue on the 1st of every month.</b><span>Subscribe above and it lands in your inbox.</span></div></div>
           </div>
-        </div></section>
+        </div></section>}
       </div>
     </>
   )
@@ -68,16 +85,18 @@ export function EditHome() {
 
 // One issue, read like a magazine.
 export function EditIssue() {
-  const { slug } = useParams(); const issue = ISSUES.find(i => i.slug === slug) || ISSUES[0]
+  const { slug } = useParams(); const issues = useIssues(); const issue = issues?.find(i => i.slug === slug)
   const cv = useRef(null)
-  useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); scrollTo(0, 0); return () => l.destroy() }, [slug])
+  useEffect(() => { if (!cv.current) return; const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); scrollTo(0, 0); return () => l.destroy() }, [slug, !!issue])
+  if (!issues) return <section className="hiw edit issue dark darkhero" style={{ minHeight: '60vh' }} />
+  if (!issue) return <Navigate to="/edit" replace />
   return (
     <>
       <section className="hiw edit issue dark darkhero">
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
           <p className="eb">The Trybe Edit · Issue #{issue.n} · {issue.month}</p>
-          <h1><span className="ln"><span><Inline text={issue.title.replace(/ for your creative business$/, ' for *your creative business*')} /></span></span></h1>
+          <h1><span className="ln"><span><Inline text={issue.title} /></span></span></h1>
           <p className="sub">{issue.dek}</p>
           <div className="imeta"><span>{issue.read} read</span><span>For creative professionals</span><Link to="/edit">All issues</Link></div>
         </div>
@@ -98,11 +117,28 @@ export function EditIssue() {
             </section>
           ))}
           <div className="closer lg rv">
-            <div><p className="eb g">Don't miss Issue #2</p><h2>One email a month. <em>That's it.</em></h2></div>
+            <div><p className="eb g">Don't miss the next issue</p><h2>One email a month. <em>That's it.</em></h2></div>
             <Subscribe />
           </div>
         </div></article>
       </div>
     </>
+  )
+}
+
+// The link in the confirm email lands here: /edit/confirm?t=<token>
+export function EditConfirm() {
+  const [q] = useSearchParams(); const [st, setSt] = useState('busy'); const [msg, setMsg] = useState('')
+  const once = useRef(false)
+  useEffect(() => { if (once.current) return; once.current = true; editConfirm(q.get('t') || '').then(() => setSt('ok')).catch(e => { setMsg(e.message); setSt('bad') }) }, [])
+  return (
+    <section className="hiw edit dark darkhero" style={{ minHeight: '70vh' }}>
+      <div className="in">
+        <p className="eb">The Trybe Edit</p>
+        <h1 className="mast"><span className="ln"><span>{st === 'ok' ? <>You're <em>subscribed.</em></> : st === 'bad' ? <>That link <em>didn't work.</em></> : 'Confirming…'}</span></span></h1>
+        <p className="sub">{st === 'ok' ? 'The Trybe Edit lands in your inbox on the 1st of each month. Every email has a one-click unsubscribe.' : st === 'bad' ? (msg || 'Subscribe again and we will send a new link.') : ''}</p>
+        {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn" to="/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
+      </div>
+    </section>
   )
 }

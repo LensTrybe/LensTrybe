@@ -8,7 +8,7 @@ import RefractFilter from './components/RefractFilter'
 import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
 import HowItWorks from './pages/public/HowItWorks'
-import { EditHome, EditIssue } from './pages/public/Edit'
+import { EditConfirm, EditHome, EditIssue } from './pages/public/Edit'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
 import Pricing from './pages/public/Pricing'
@@ -49,7 +49,11 @@ export default function App() {
           <Route path="/" element={<Home />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/edit" element={<EditHome />} />
+          <Route path="/edit/confirm" element={<EditConfirm />} />
           <Route path="/edit/:slug" element={<EditIssue />} />
+          <Route path="/the-trybe-edit" element={<Navigate to="/edit" replace />} />
+          <Route path="/the-trybe-edit/*" element={<Navigate to="/edit" replace />} />
+          <Route path="/trybe-edit" element={<Navigate to="/edit" replace />} />
           <Route path="/jobs" element={<JobsBoard />} />
           <Route path="/jobs/:id" element={<JobsBoard />} />
           <Route path="/creatives" element={<Directory />} />

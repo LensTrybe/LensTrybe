@@ -1,46 +1,56 @@
-// The Trybe Edit: LensTrybe's monthly read for professional visual creatives. Copy is the live Issue 01, word for word.
+// The Trybe Edit: LensTrybe's monthly read for professional visual creatives.
+// Live mode reads the issues from the edit_issues table (published on the 1st of each month);
+// this file is the demo copy and the source the issues were written from.
 export const ISSUES = [
   {
-    slug: 'issue-01', n: 1, month: 'May 2026', title: 'What LensTrybe can actually do for your creative business',
-    dek: 'Your orientation: what the platform does, how it changes the way you run your business, and which plan fits where you are right now.',
-    mood: 'golden', seed: 21, read: '9 min',
+    slug: 'issue-01-lenstrybe-is-live', n: 1, month: 'October 2026', title: 'LensTrybe is live',
+    dek: "What's on the platform, how to get found, and the ten minutes that set you up for the busy season.",
+    mood: 'golden', seed: 21, read: '5 min', publish_at: '2026-10-01T00:00:00+10:00',
     sections: [
       { k: 'note', label: "Editor's note", body: [
-        "Welcome to the very first issue of **The Trybe Edit**, LensTrybe's monthly read for professional visual creatives who are serious about building a business, not just a following.",
-        "I started LensTrybe because I saw creative professionals who were extraordinary at their craft struggling with everything around it. Finding clients. Managing projects. Getting paid. Presenting their work professionally. The tools existed, but they were scattered, generic, and built for everyone, which meant they were built for no one in particular.",
-        "LensTrybe is different. It is built specifically for photographers, videographers, drone pilots, video editors, photo editors, social media managers, hair and makeup artists, and UGC creators. Every feature on the platform exists because it solves a real problem in a creative professional's working life.",
-        "This first issue is your orientation. What LensTrybe actually does. How it can change the way you run your business. And, honestly, which plan is the right fit for where you are right now.",
-        "We are just getting started. I cannot wait to grow this with you.",
+        "It's October, wedding season is starting, and LensTrybe is open.",
+        "When I started building this, I wanted one place where Australian photographers and videographers could get found, book the work, get paid and deliver it, without paying anyone a cut of their job. That place now exists, and this issue shows you how to get the most out of it before the busy months hit.",
+        "If you only have a minute, skip to the ten-minute checklist. It's the part that gets you in front of clients.",
       ], sig: ['Michael, Founder of LensTrybe', 'connect@lenstrybe.com · lenstrybe.com'] },
-      { k: 'feature', label: 'Feature', h: 'What LensTrybe can actually do for *your creative business*', body: [
-        "Most creatives spend somewhere between 30 and 50 percent of their working week on things that are not the work. Chasing invoices. Writing contracts from scratch. Sending files through links that expire. Trying to remember where they left a client's brief. Updating their website, or giving up and not updating it at all.",
-        "LensTrybe was built to give that time back. Here is what that looks like in practice.",
-        "### You get discovered by the right clients",
-        "When a client needs a photographer for a wedding in Brisbane, a UGC creator for a skincare launch, or a drone pilot for a real estate development, LensTrybe is where they come to find someone. Your profile is searchable by creative type, specialty, location, and availability. Clients do not browse Instagram hoping to stumble onto you. They search for exactly what they need, and you show up.",
-        "Your subscription tier determines your placement in those results. Elite appears first, then Expert, then Pro, then Basic. Investing in your LensTrybe presence is a direct investment in how often the right clients find you.",
-        "> Your profile is working for you at midnight, on weekends, while you are on a shoot. That is what a great platform does.",
-        "### You run your business from one place",
-        "Once a client finds you, everything that happens next lives inside LensTrybe. Quotes and invoices with your own bank details printed on them. No platform taking a cut. Money goes straight to you. Custom contracts you write once and reuse. A CRM that tracks every client from first enquiry to completed job. A client portal where your clients can see their contract, invoice, booking, and delivered files without needing to log in.",
-        "For a lot of creatives, these tools replace a collection of separate subscriptions covering invoicing software, contract tools, and file delivery services that collectively cost more than an Expert or Elite plan on LensTrybe.",
-        "### You deliver your work professionally",
-        "**LensTrybe Deliver** is built for the moment after the shoot, when you need to get files to a client in a way that looks professional and protects your work. Upload your photos and videos, generate a branded gallery link, and share it with your client. Password protection means you control access until the invoice is paid. Your logo and brand colours apply automatically. No generic file-sharing links. No expiry notices going out at the wrong time.",
-        "### You build a profile that compounds over time",
-        "Every review from a completed booking, every credential badge, every portfolio piece stays on your profile and continues working for you. A LensTrybe profile built over 12 months tells a much more powerful story than an Instagram grid. Clients can see your credentials, your past work, your reviews, and book directly. It is the professional presence you would otherwise spend weeks building on a custom website, and it updates itself as you work.",
-        "### You stop losing jobs to creatives who look more established",
-        "One of the most underestimated problems in the creative industry is the perception gap. Talented newcomers lose work to less talented but more polished competitors simply because the polished competitor has a professional invoice, a proper contract, and a branded delivery gallery. LensTrybe closes that gap from day one. Even on the free Basic plan, you have a public profile. As you grow into Pro and Expert, the tools that make you look established are right there waiting.",
+      { k: 'feature', label: 'Feature', h: 'What you can do on LensTrybe *today*', body: [
+        "### Get found by the right clients",
+        "**Find a Creative** is where clients search by what you do and where you are. Your profile shows your work, your services and your reviews. It's free on every plan, including Basic.",
+        "### Pick up work from the job board",
+        "Clients post jobs for free, with the date, the location and the budget up front. You can browse every job on any plan. On Pro you can reply to jobs in your own state, and on Expert and Elite you can reply anywhere in Australia. Your reply includes your price, what's included and a short message, and the client picks who they want.",
+        "### Run the job from one place",
+        "On Expert and Elite, everything after the enquiry lives in LensTrybe. Quotes the client can accept online. Contracts they sign on their phone. Invoices with payment tracking. A branded client portal where they see everything about their booking in one spot. And when the shoot is done, you deliver the files through **LensTrybe Deliver** with your branding.",
+        "### Work with other creatives",
+        "**Collaborate** is where you find a second shooter or post a collab. The **Marketplace** is where you buy and sell gear with other creatives. On Elite, you can bring up to four team members into your workspace.",
+        "> LensTrybe takes no commission on your jobs, ever. We make our money from plans, and Basic is free for good.",
       ] },
-      { k: 'plans', label: 'Plan guide', h: 'Which plan is right for *where you are right now?*', body: [
-        "There is no wrong answer here. Every plan is designed for a specific stage of a creative career. The key is being honest about where you are, not where you want to be. The right plan is the one that fits your actual workflow today, with room to grow into the next tier when you are ready.",
+      { k: 'plans', label: 'Plans', h: 'Four plans, *no commission*', body: [
+        "Every plan keeps 100% of what you earn. Pick the one that fits where your business is now, and change it any time.",
       ], plans: [
-        { n: 'Basic', p: 'Free', s: 'Always free', who: 'You are just starting out, or testing the waters', d: 'Basic gives you a public profile, 5 portfolio photos, and the ability to receive enquiries from clients. You can browse the marketplace and the job board. It is a genuine professional presence at no cost, ideal if you are in your first year, still building your portfolio, or simply want to see how clients on LensTrybe behave before committing to a paid plan. The limitation is visibility. Basic profiles appear last in search results and your monthly replies are capped at 5. When you are getting more enquiries than that, it is time to move up.', tags: ['Public profile', '5 portfolio photos', '5 replies/month', 'Marketplace browse'] },
-        { n: 'Pro', p: '$24.99/mo', s: 'or $249.90/year and save $49.98', who: 'You are actively taking bookings and want to look the part', d: 'Pro is for the creative who is past the wondering-if-this-will-work stage and is actively building a client base. You get 20 portfolio photos, 1 video, 20 monthly replies, booking and scheduling tools, and the ability to send quotes and invoices with your bank details. Your pink Pro badge shows clients you are a committed professional. For under $25 a month, Pro pays for itself with a single booking. This is the right starting point for most working creatives.', tags: ['20 photos · 1 video', '20 replies/month', 'Quotes and invoicing', 'Booking system', 'Review requests', 'Pro badge'] },
-        { n: 'Expert', p: '$74.99/mo', s: 'or $749.90/year and save $149.98', who: 'You are running a real business and need real tools', hot: true, d: 'Expert is for the creative who thinks of themselves as a business owner first. Unlimited replies. Custom contracts. A CRM to manage your client relationships. A client portal so every project has a professional shared space. Brand kit. A portfolio website at your own lenstrybe.com subdomain. LensTrybe Deliver with 50GB storage. Business insights so you understand your numbers. Homepage rotation so new clients find you. At $74.99 a month, Expert replaces tools that would cost $200 to $400 separately, and it all works together automatically.', tags: ['40 photos · 5 videos', 'Unlimited replies', 'Custom contracts', 'CRM 500 clients', 'Client portal', 'Brand kit', 'Deliver 50GB', 'Portfolio website', 'Business insights', 'Homepage rotation'] },
-        { n: 'Elite', p: '$149.99/mo', s: 'or $1,499.90/year and save $299.98', who: 'You are running a studio, agency, or high-volume creative operation', d: 'Elite is for the creative professional whose business has outgrown what one person can handle alone. Bring up to 4 team members under a single subscription. Unlimited everything including portfolio, storage, CRM records, and marketplace listings. A multi-page portfolio website with custom domain connection. Elite Spotlight placement on the LensTrybe homepage. LensTrybe Deliver with 200GB storage. A dedicated Studio Profile page that showcases your whole team. If you are running a photography or video production studio, Elite is the infrastructure your brand deserves.', tags: ['Unlimited portfolio', 'Team up to 5', 'Studio profile', 'Elite Spotlight', 'Deliver 200GB', 'Custom domain', 'Unlimited CRM', 'Team insights'] },
-      ], after: "**One note on timing.** LensTrybe opens on 1 October 2026, starting in South East Queensland and rolling out across Australia city by city. Join on a paid plan and your first three months are free. There are no commissions at any point, so what a client pays you is what you keep." },
-      { k: 'spotlight', label: 'Creative spotlight', h: 'Coming in *Issue #2*', teaser: { h: 'Every month, one creative. Their story, in their words.', p: 'From Issue #2 onwards, the Creative Spotlight will feature a real LensTrybe member. How they built their profile, how they landed their first bookings through the platform, and what advice they would give to a creative just starting out. Each issue, a different category, a different story. If you would like to be considered for a future spotlight, reach out to us at connect@lenstrybe.com.' } },
-      { k: 'tip', label: 'Platform tip', h: 'Set up your Brand Kit *before anything else*', tip: { h: 'Your Brand Kit is the multiplier', p: 'Available on Expert and Elite plans, your Brand Kit covers your logo, brand colour, and font. It applies automatically to every client-facing output on the platform including invoices, quotes, contracts, your client portal, your Deliver galleries, and your portfolio website. Set it once and every document and gallery you ever produce looks like it came from a proper studio. If you are on Expert or Elite and have not set this up yet, it is the first thing to do when you log in today.' } },
-      { k: 'next', label: "What's coming", h: 'In *Issue #2*', body: ['Next month we are going deeper on things a lot of creatives get wrong, and how getting them right changes everything.'], next: [
-        ['Feature', 'How to write a bio that actually converts browsers into clients'], ['Business', 'Pricing your creative services and what the market says you should charge'], ['Platform', 'Using LensTrybe Deliver as your payment protection tool'], ['Spotlight', 'A working creative shares how they landed their first five LensTrybe bookings'],
+        { n: 'Basic', p: 'Free', s: 'Always free', who: 'Getting found and building your presence', d: 'A public profile in Find a Creative, 5 portfolio photos and 3 bookings a month.', tags: ['Profile', 'Find a Creative', 'Browse jobs'] },
+        { n: 'Pro', p: '$24.99/mo', s: 'or $249.90 a year', who: 'Looking the part and taking bookings', d: 'Your own website, 5 bookings a month, a client list, review requests, and job replies in your state.', tags: ['Website', 'Job replies in your state', 'Reviews'] },
+        { n: 'Expert', p: '$74.99/mo', s: 'or $749.90 a year', who: 'Running your whole business in one place', hot: true, d: 'Quotes, contracts, invoicing, client portals and Deliver, unlimited bookings, and job replies anywhere in Australia.', tags: ['Quotes', 'Contracts', 'Invoicing', 'Client portals'] },
+        { n: 'Elite', p: '$149.99/mo', s: 'or $1,499.90 a year', who: 'Studios and teams', d: 'Everything in Expert, plus a team of up to four, your own domain and the homepage spotlight.', tags: ['Team', 'Own domain', 'Homepage spotlight'] },
+      ], after: '**Annual plans get you two months free.**' },
+      { k: 'checklist', label: 'The ten-minute checklist', h: 'Get into Find a Creative in *ten minutes*', body: [
+        "Clients can only find you in Find a Creative once your profile has three things. That's the whole list:",
+        "**1. A profile photo.** Your face or your logo, clear and well lit.",
+        "**2. A tagline.** One line that says what you shoot and where. \"Wedding and elopement photographer, Sunshine Coast\" beats \"Capturing your moments\".",
+        "**3. At least one creative type.** Photographer, videographer, drone pilot, editor and so on.",
+        "Then, if you have another five minutes:",
+        "**4. Add your best work.** Choose a few images that show the kind of jobs you want more of, not everything you've ever shot.",
+        "**5. Set your service area.** It decides which job board posts suit you.",
+        "**6. Add your services and starting prices.** Clients shortlist people who show a price.",
+        "That's it. You're now in front of every client searching your area.",
+      ] },
+      { k: 'howto', label: 'How-to', h: 'Reply to your *first job*', body: [
+        "**1.** Open the **Job board** and find a job that suits your date, area and price.",
+        "**2.** Tap **Reply**, enter your price and what's included, and write two or three sentences that show you read their brief.",
+        "**3.** Send it. If the client accepts, a conversation opens with them, and they're added to your clients automatically.",
+      ], tip: { h: 'Reply early, keep it short', p: 'A short, specific message that mentions their date and their brief stands out.' } },
+      { k: 'founding', label: 'Founding 100', h: 'Help shape *LensTrybe*', body: [
+        "We're inviting 100 Australian creatives to help shape LensTrybe. Founding creatives get 12 months of Expert free, then $49 a month locked in for life, plus a permanent Founding Creative badge.",
+        "In return we ask for a finished profile within seven days, your next three jobs run through the platform, and a line of feedback each month.",
+        "Places are invitation only. If you'd like one, email **connect@lenstrybe.com** and tell me about your work.",
       ] },
     ],
   },
