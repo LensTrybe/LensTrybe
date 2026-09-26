@@ -39,7 +39,7 @@ export function useFlows() {
     say(tid, 'me', text, att.length ? { att } : {}); upd('threads', tid, tt => ({ need: false, next: 'Waiting on ' + tt.n.split(' ')[0] })); return true
   }
   // Live: pull every thread, document and booking for this creative into the store
-  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => [])]); hydrate({ meetings, threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
+  const refreshLive = async () => { if (!LIVE) return; try { const [d, blocked, meetings, galleries] = await Promise.all([live.loadThreads(me), live.loadBlocked(me.id).catch(() => []), live.loadMeetings(me.id).catch(() => []), live.loadDeliveries(me.id).catch(() => [])]); hydrate({ meetings, galleries, threads: d.threads, ledger: [...d.ledger, ...s.ledger.filter(r => r.k === 'exp')], events: [...d.events, ...blocked, ...s.events.filter(e => !String(e.id).startsWith('b-') && !String(e.id).startsWith('x-'))] }) } catch (e) { toast('Could not load your threads: ' + (e.message || 'try again')) } }
   // ── live bookings: the real bookings function, then a refresh ──
   const liveClientField = (preset = {}) => ({ k: 'client', l: 'Client', type: 'select', required: true, options: [...s.threads.map(t => [t.id, t.n]), ['__new', 'New client…']], ...(preset.client ? { value: preset.client } : {}) })
   const liveSlot = v => ({ date: v.d, allDay: v.allDay === true || v.allDay === 'true', start: v.time, end: v.endTime })
@@ -395,7 +395,32 @@ export function useFlows() {
   // New gallery: the card in the middle of the screen. Brand-kit preview up top that follows what you type,
   // client from Contacts (email fills itself), a message, an optional password, and the files.
   const genPw = () => { const a = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'; let o = ''; for (let i = 0; i < 10; i++) o += a[Math.floor(Math.random() * a.length)]; return o }
-  const newGallery = (preset = {}) => { const b = s.brand, pc = s.people.find(x => x.id === preset.client); open({
+  const newGalleryLive = (preset = {}) => open({
+    title: 'New gallery', sub: 'A private link to the files. The client gets it by email and can download, favourite and send picks back.', cta: 'Create gallery', working: 'Creating', center: true, wide: true,
+    fields: [
+      { ...liveClientField(preset), half: true, effect: (cid, v) => { const th = s.threads.find(t => t.id === cid); return { em: th?.email || v.em || '', d: v.d || th?.j || '' } } },
+      { k: 'em', l: 'Client email', type: 'email', half: true, placeholder: 'name@email.com', value: s.threads.find(t => t.id === preset.client)?.email || '', when: v => v.client !== '__new' },
+      ...newNameFields(),
+      { k: 'd', l: 'Gallery title', required: true, placeholder: 'Wedding photos · Maleny Manor', value: preset.d || '' },
+      { k: 'msg', l: 'Message to the client', type: 'textarea', rows: 2, value: 'Your photos are ready. Take your time with them, and tap the heart on any you love.' },
+      { k: 'exp', l: 'Link lives for', type: 'select', half: true, value: '30', options: [['30', '30 days'], ['90', '90 days'], ['365', 'A year']] },
+      { k: 'pw', l: 'Password protect it', type: 'toggle', half: true, value: false },
+      { k: 'pwv', l: 'Gallery password', value: genPw(), when: v => v.pw, hint: 'Goes in the email. Change it to anything.' },
+      { k: 'files', l: 'Files', type: 'files', hint2: 'Photos, films, ZIPs. The first photo becomes the cover. You can add more later.' },
+      { k: 'send', l: 'Email the link now', type: 'toggle', value: true, hint: 'Off keeps it private until you press Send link' },
+    ],
+    submit: async (v, ui) => {
+      const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? (v.em || th.email) : (v.newEmail || '').trim()
+      if (!name) { toast('Who is it for?'); return false }
+      if (v.send && !email) { toast('An email address to send the link to.'); return false }
+      const files = (v.files || []).map(x => x.file).filter(Boolean)
+      ui?.progress(files.length ? 'Uploading 0 of ' + files.length : 'Creating')
+      try { await live.createDelivery(me.id, { title: v.d, name, email, message: v.msg, days: +v.exp || 30, password: v.pw ? v.pwv : '', files, send: v.send }, (i, n) => ui?.progress('Uploading ' + i + ' of ' + n)) } catch (e) { toast(e.message); await refreshLive(); return false }
+      await refreshLive(); toast('Gallery created' + (files.length ? ' with ' + files.length + ' files' : '') + (v.send ? '. Link emailed to ' + name + '.' : '. Press Send link when ready.')); preset.then?.()
+    },
+  })
+  const newGallery = (preset = {}) => LIVE ? newGalleryLive(preset) : _newGallery(preset)
+  const _newGallery = (preset = {}) => { const b = s.brand, pc = s.people.find(x => x.id === preset.client); open({
     title: 'New gallery', sub: 'A private link, in your brand kit. Files upload in the background; the client gets the link the moment you send it.', cta: 'Create & send link', center: true, wide: true,
     body: v => { const acc = b.accent, dark = (parseInt(acc.slice(1, 3), 16) * .299 + parseInt(acc.slice(3, 5), 16) * .587 + parseInt(acc.slice(5, 7), 16) * .114) < 150; const cover = (v.files || []).find(x => x.cover)?.cover; return <div className="galprev"><div className="gh" style={{ background: acc, color: dark ? '#fff' : '#14111a' }}>{(dark ? (b.logoLight || b.logo) : b.logo) ? <img src={dark ? (b.logoLight || b.logo) : b.logo} alt="" /> : <span className="mark" style={{ background: dark ? '#fff' : '#14111a', opacity: .9 }} />}{b.name}<small>Gallery</small></div><div className="gb" style={{ background: '#fff', color: '#14111a' }}><span className="cv">{cover && <img src={cover} alt="" />}</span><div><b>{v.d || 'Project title'}</b><small>{v.files?.length ? v.files.filter(x => x.type.startsWith('image/')).length + ' photos' : 'No files yet'} · for {v.client === '__new' ? (v.newName || 'new client') : (s.people.find(x => x.id === v.client)?.n || 'the client')}{v.pw ? ' · password' : ''}</small></div><span className="pill" style={{ background: acc, color: dark ? '#fff' : '#14111a' }}>Download all</span></div></div> },
     fields: [

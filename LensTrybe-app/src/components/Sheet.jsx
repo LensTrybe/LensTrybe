@@ -11,7 +11,7 @@ import Icon from './Icon'
 const Ctx = createContext({ open: () => {}, confirm: () => {}, close: () => {} })
 
 export function SheetProvider({ children }) {
-  const [sh, setSh] = useState(null), [v, setV] = useState({}), [on, setOn] = useState(false), [err, setErr] = useState(null), [busy, setBusy] = useState(false)
+  const [sh, setSh] = useState(null), [v, setV] = useState({}), [on, setOn] = useState(false), [err, setErr] = useState(null), [busy, setBusy] = useState(false), [busyText, setBusyText] = useState('')
   const first = useRef()
   const close = useCallback(() => { setBusy(false); setOn(false); setTimeout(() => setSh(null), 260) }, [])
   const open = useCallback(cfg => {
@@ -26,7 +26,9 @@ export function SheetProvider({ children }) {
     const miss = (sh.fields || []).filter(f => !f.when || f.when(v)).find(f => f.required && (v[f.k] === '' || v[f.k] == null || (Array.isArray(v[f.k]) && !v[f.k].length)))
     if (miss) { setErr(miss.k); first.current?.form?.querySelector(`[name="${miss.k}"]`)?.focus(); return }
     const out = {}; (sh.fields || []).forEach(f => { out[f.k] = ['number', 'money'].includes(f.type) ? Number(v[f.k] || 0) : v[f.k] })
-    const r = sh.submit?.(out)
+    setBusyText('')
+    // submit(values, { progress }) — progress('Uploading 3 of 20') relabels the busy button
+    const r = sh.submit?.(out, { progress: t => setBusyText(t) })
     // an async submit keeps the sheet open until it resolves; resolving false keeps it open (an error the form should show)
     if (r && typeof r.then === 'function') { setBusy(true); r.then(x => { setBusy(false); if (x !== false) close() }, () => setBusy(false)) } else if (r !== false) close()
   }
@@ -39,7 +41,7 @@ export function SheetProvider({ children }) {
     else if (f.type === 'toggle') return <label key={f.k} className="sf tog"><span><b>{f.l}</b>{f.hint && <small>{f.hint}</small>}</span><span className={'sw2' + (val ? ' on' : '')} role="switch" aria-checked={!!val} tabIndex={0} onClick={() => set(f.k, !val)} onKeyDown={e => e.key === ' ' && (e.preventDefault(), set(f.k, !val))}><i /></span></label>
     else if (f.type === 'chips') inp = <div className="chips2" style={{ marginTop: 6 }}>{opts.map(([o, l]) => <button type="button" key={o} className={'chip' + (val.includes(o) ? ' p' : '')} onClick={() => set(f.k, val.includes(o) ? val.filter(x => x !== o) : [...val, o])}>{l}</button>)}</div>
     else if (f.type === 'files') inp = <label className={'sfiles' + (val?.length ? ' has' : '')}>
-      <input id={id} name={f.k} type="file" multiple accept={f.accept || 'image/*,video/*,.zip,.pdf'} hidden onChange={e => { const fs = [...(e.target.files || [])]; e.target.value = ''; if (!fs.length) return; const first = fs.find(x => x.type.startsWith('image/')); const done = cover => set(f.k, [...(val || []), ...fs.map((x, i) => ({ name: x.name, size: x.size, type: x.type, cover: x === first ? cover : undefined }))]); if (first && first.size < 6e6) { const rd = new FileReader(); rd.onload = () => done(rd.result); rd.readAsDataURL(first) } else done(undefined) }} />
+      <input id={id} name={f.k} type="file" multiple accept={f.accept || 'image/*,video/*,.zip,.pdf'} hidden onChange={e => { const fs = [...(e.target.files || [])]; e.target.value = ''; if (!fs.length) return; const first = fs.find(x => x.type.startsWith('image/')); const done = cover => set(f.k, [...(val || []), ...fs.map((x, i) => ({ name: x.name, size: x.size, type: x.type, cover: x === first ? cover : undefined, file: x }))]); if (first && first.size < 6e6) { const rd = new FileReader(); rd.onload = () => done(rd.result); rd.readAsDataURL(first) } else done(undefined) }} />
       {val?.length ? <><span className="cov">{val.find(x => x.cover) ? <img src={val.find(x => x.cover).cover} alt="" /> : <Icon name="image" size={18} />}</span><span className="ft"><b>{val.length} {val.length === 1 ? 'file' : 'files'} · {(val.reduce((t, x) => t + x.size, 0) / 1e9).toFixed(2)} GB</b><small>{val.filter(x => x.type.startsWith('image/')).length} photos · {val.filter(x => x.type.startsWith('video/')).length} films · {val.filter(x => !x.type.startsWith('image/') && !x.type.startsWith('video/')).length} other · tap to add more</small></span><button type="button" className="lnk" onClick={e => { e.preventDefault(); set(f.k, []) }}>Clear</button></>
         : <><b>{f.cta || '+ Click to select files'}</b><small>{f.hint2 || 'Photos, videos, ZIPs or any file type. The first photo becomes the cover.'}</small></>}
     </label>
@@ -69,7 +71,7 @@ export function SheetProvider({ children }) {
             {sh.alt2 && <button type="button" className="btn g quiet" disabled={busy} onClick={() => { const r = sh.alt2.on?.(v); if (r && typeof r.then === 'function') { setBusy(true); r.then(x => { setBusy(false); if (x !== false) close() }, () => setBusy(false)) } else if (r !== false) close() }}>{sh.alt2.l}</button>}
             <span style={{ flex: 1 }} />
             <button type="button" className="btn g" onClick={close} disabled={busy}>{sh.cancel || 'Cancel'}</button>
-            {!sh.noSubmit && <button type="submit" className={'btn ' + (sh.danger ? 'danger' : 'w') + (busy ? ' busy' : '')} disabled={busy}>{busy ? <><span className="spin" aria-hidden="true" />{sh.working || 'Working'}</> : (sh.cta || 'Save')}</button>}
+            {!sh.noSubmit && <button type="submit" className={'btn ' + (sh.danger ? 'danger' : 'w') + (busy ? ' busy' : '')} disabled={busy}>{busy ? <><span className="spin" aria-hidden="true" />{busyText || sh.working || 'Working'}</> : (sh.cta || 'Save')}</button>}
           </div>
         </form>
       </div>}

@@ -484,3 +484,75 @@ export async function declineMeeting(id) {
   try { await supabase.functions.invoke('meeting-notify', { body: { meetingId: id, kind: 'declined' } }) } catch { /* best effort */ }
 }
 export async function deleteMeeting(id) { const { error } = await supabase.from('meetings').delete().eq('id', id); if (error) throw new Error(error.message) }
+
+// ── Deliver: galleries in the private deliveries bucket ───────────────────────────────────────
+// Same rows and paths as the live site (<uid>/<delivery id>/<time>-<name>); the client opens them
+// through the deliver function by download token; send-delivery emails the link.
+const DBUCKET = 'deliveries'
+const dPath = (uid, did, name) => `${uid}/${did}/${Date.now()}-${String(name || 'file').replace(/[\\/:*?"<>|]/g, '_')}`
+const isImgF = f => /^image\//.test(f?.type || '') || /\.(jpe?g|png|gif|webp|avif|heic)$/i.test(f?.name || '')
+export function shapeDelivery(d, coverUrl) {
+  const files = Array.isArray(d.files) ? d.files : []
+  const photos = files.filter(isImgF).length, films = files.filter(f => /^video\//.test(f.type || '')).length
+  const gb = Math.round(files.reduce((t, f) => t + (f.size || 0), 0) / 1e9 * 100) / 100
+  const days = d.expires_at ? Math.max(0, Math.ceil((new Date(d.expires_at) - Date.now()) / 864e5)) : 999
+  const log = [d.downloaded_at && [when(d.downloaded_at), 'Downloaded'], d.last_opened_at && [when(d.last_opened_at), 'Opened by the client'], d.favourites_submitted_at && [when(d.favourites_submitted_at), (d.favourites || []).length + ' favourites sent back'], [when(d.created_at), 'Gallery created']].filter(Boolean)
+  return { id: 'd-' + d.id, n: d.client_name || d.client_email || 'Client', d: d.title || 'Gallery', k: d.files_purged_at ? 'done' : files.length ? (d.downloaded_at ? 'done' : 'live') : 'wait', files: photos || files.length, films, gb, p: 100, m: 'golden', s: 3, opened: d.opened_at ? 1 : 0, dl: d.download_count || 0, exp: days, link: location.origin.replace(/^https?:\/\//, '') + '/deliver/' + d.download_token, url: location.origin + '/deliver/' + d.download_token, t: low(d.client_email), em: d.client_email || '', msg: d.message || '', pw: d.password_protected ? (d.password || '') : '', cover: coverUrl || '', log, live: d }
+}
+export async function loadDeliveries(uid) {
+  const { data } = await supabase.from('deliveries').select('*').eq('creative_id', uid).order('created_at', { ascending: false })
+  const rows = data || []
+  const covers = rows.map(d => d.cover_url).filter(p => p && !/^https?:/.test(p))
+  let signed = {}
+  if (covers.length) { const { data: s } = await supabase.storage.from(DBUCKET).createSignedUrls(covers, 3600); for (const x of s || []) if (x.signedUrl) signed[x.path] = x.signedUrl }
+  return rows.map(d => shapeDelivery(d, d.cover_url ? (signed[d.cover_url] || (/^https?:/.test(d.cover_url) ? d.cover_url : '')) : ''))
+}
+// Upload files into a delivery, one by one (onEach(i, total) for progress). Returns the new file records.
+export async function uploadDeliveryFiles(uid, did, files, onEach) {
+  const out = []
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i], path = dPath(uid, did, f.name)
+    const { error } = await supabase.storage.from(DBUCKET).upload(path, f, { contentType: f.type || undefined, upsert: false })
+    if (!error) out.push({ name: f.name, path, type: f.type, size: f.size })
+    onEach?.(i + 1, files.length)
+  }
+  return out
+}
+export async function createDelivery(uid, v, onEach) {
+  const { data: d, error } = await supabase.from('deliveries').insert({ creative_id: uid, title: v.title, client_name: v.name, client_email: (v.email || '').toLowerCase() || null, message: v.message || null, password_protected: !!v.password, password: v.password || null, download_token: crypto.randomUUID(), expires_at: v.days ? new Date(Date.now() + v.days * 864e5).toISOString() : null, files: [] }).select().single()
+  if (error) throw new Error(error.message)
+  if (v.files?.length) {
+    const up = await uploadDeliveryFiles(uid, d.id, v.files, onEach)
+    const first = up.find(isImgF)
+    await supabase.from('deliveries').update({ files: up, cover_url: first ? first.path : null }).eq('id', d.id)
+    if (up.length < v.files.length) throw new Error((v.files.length - up.length) + ' file(s) did not upload. The gallery is saved; add them again from Add files.')
+  }
+  if (v.send && d.client_email) await sendDeliveryLive(d.id)
+  return d
+}
+export async function addDeliveryFiles(uid, d, files, onEach) {
+  const up = await uploadDeliveryFiles(uid, d.id, files, onEach)
+  const all = [...(Array.isArray(d.files) ? d.files : []), ...up], first = all.find(isImgF)
+  const { error } = await supabase.from('deliveries').update({ files: all, cover_url: d.cover_url || (first ? first.path : null) }).eq('id', d.id)
+  if (error) throw new Error(error.message)
+  return up.length
+}
+export async function sendDeliveryLive(id) {
+  const { data, error } = await supabase.functions.invoke('send-delivery', { body: { delivery_id: id } })
+  if (error || data?.error) throw new Error('Could not email the link. Try Send link again.')
+}
+export async function extendDelivery(id, days = 30) {
+  const { error } = await supabase.from('deliveries').update({ expires_at: new Date(Date.now() + days * 864e5).toISOString(), expiry_reminder_sent: false }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+export async function updateDelivery(id, v) {
+  const { error } = await supabase.from('deliveries').update({ title: v.title, message: v.message || null, password_protected: !!v.password, password: v.password || null }).eq('id', id)
+  if (error) throw new Error(error.message)
+}
+// Files first, then the row: never orphan objects in the bucket.
+export async function deleteDelivery(d) {
+  const paths = (Array.isArray(d.files) ? d.files : []).map(f => f.path).filter(Boolean)
+  if (paths.length) { const { error } = await supabase.storage.from(DBUCKET).remove(paths); if (error) throw new Error('Could not remove the files, so the gallery was kept. Try again.') }
+  const { error } = await supabase.from('deliveries').delete().eq('id', d.id)
+  if (error) throw new Error(error.message)
+}
