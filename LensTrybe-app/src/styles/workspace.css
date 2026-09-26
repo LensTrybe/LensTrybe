@@ -1056,6 +1056,7 @@
 .ws .board{display:grid;gap:10px;align-items:start;min-width:max-content}
 .ws .bcol{display:flex;flex-direction:column;gap:8px;padding:10px;border-radius:18px;background:var(--hov);min-height:180px;border:1px solid transparent;transition:border-color .2s,background .2s;position:relative;--cc:var(--c-grey)}
 .ws .bcol::before{content:"";position:absolute;left:14px;right:14px;top:0;height:2px;border-radius:2px;background:rgb(var(--cc));opacity:.7}
+.ws .bcol.grey{--cc:var(--c-grey)}.ws .bcol.blue{--cc:var(--c-blue)}.ws .bcol.mint{--cc:var(--c-mint)}.ws .bcol.amber{--cc:var(--c-amber)}.ws .bcol.plum{--cc:var(--c-plum)}.ws .bcol.green{--cc:var(--c-green)}.ws .bcol.rose{--cc:var(--c-rose)}
 .ws .bcol.over{border-color:rgba(var(--cc),.5);background:rgba(var(--cc),.06)}
 .ws .bcol .bh{display:flex;align-items:center;gap:7px;padding:6px 4px 4px;font-size:12.5px;position:relative}
 .ws .bcol .bh .dot{width:7px;height:7px;border-radius:50%;background:rgb(var(--cc));box-shadow:0 0 8px rgba(var(--cc),.6);flex:none}
@@ -1756,3 +1757,11 @@
 .ws .blksum b{font-size:14px;color:var(--ink)}.ws .blksum small{font-size:12.5px;color:var(--ink-2)}.ws .blksum small.warn{color:var(--amber-t)}
 .ws .calc .pickbar.idle{background:transparent;border-style:dashed;border-color:var(--line-2);padding:8px 10px 8px 14px}
 .ws .calc .pickbar.idle b{font-size:13px}
+
+/* stage menu: opens rightward from the dots so the first column is not clipped; plain left-aligned rows */
+.ws .stmenu .menu{right:auto;left:0}
+.ws .bcol .bh .stmenu .menu button span{margin-left:0;color:var(--ink);font-size:13px;white-space:nowrap}
+.ws .bcol .bh .stmenu .menu button span b{font-weight:600}
+/* pinned notes */
+.ws .ic2.on{color:var(--amber,#f5a524);border-color:rgba(245,165,36,.45);box-shadow:0 0 0 3px rgba(245,165,36,.12)}
+.ws .tli .pinmark{color:var(--amber,#f5a524);margin-left:6px;font-style:normal;font-size:11px}
