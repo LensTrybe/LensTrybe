@@ -1172,3 +1172,11 @@ export async function loadTickets(uid) {
   const { data } = await supabase.from('support_tickets').select('id, created_at, category, subject, message, status').eq('user_id', uid).order('created_at', { ascending: false }).limit(20)
   return (data || []).map(t => ({ id: t.id, ref: String(t.id).slice(0, 8).toUpperCase(), at: dayOf(t.created_at), about: t.category || 'General', subject: t.subject || '', msg: t.message || '', st: t.status || 'open' }))
 }
+
+// Calendar feed link: the token lives in calendar_feeds (owner-only) and comes from
+// my_calendar_token(), which creates it the first time. reset_calendar_token() replaces it.
+export async function myCalendarToken(reset) {
+  const { data, error } = await supabase.rpc(reset ? 'reset_calendar_token' : 'my_calendar_token')
+  if (error || !data) throw new Error('Your calendar link could not be loaded. Try again in a moment.')
+  return data
+}

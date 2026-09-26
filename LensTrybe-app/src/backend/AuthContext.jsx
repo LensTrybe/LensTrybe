@@ -53,11 +53,10 @@ export function AuthProvider({ children }) {
   // protected routes). Used after in-page changes like an admin plan switch.
   async function fetchUserData(userId, opts = {}) {
     if (!opts.silent) setLoading(true)
-    const { data: profileRow } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .maybeSingle()
+    // Own profile through my_profile() (security definer), so private columns can be hidden from
+    // the profiles table itself; falls back to the table while the function is missing.
+    let { data: profileRow, error: profileErr } = await supabase.rpc('my_profile').maybeSingle()
+    if (profileErr) ({ data: profileRow } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle())
 
     // Bank details and credential document links live in the owner-only
     // profile_private table (they are no longer on the publicly readable profile).
