@@ -766,3 +766,51 @@ export async function loadSite(slug) {
   return { profile: p, c, pages: shapeSitePages(rows, p).filter(x => allowed.includes(x.id)), brand: siteBrand(p) }
 }
 export const siteBrand = p => ({ name: p.business_name || 'Creative', tag: p.tagline || '', accent: p.site_primary_color || p.brand_primary_color || '#1DB954', logo: p.site_logo_url || p.brand_logo_url || '', head: p.site_heading_font || 'Instrument Serif', body: p.site_body_font || 'Inter', paper: 'white', radius: 12, foot: 'Thank you for visiting' })
+
+// ── Brand kit: brand_kit (one row per creative). The columns and document_brand_settings keep the
+// live site's shape, which the quote, invoice and PDF functions read ({ base, invoice, quote }); the
+// workspace's full kit rides along in document_brand_settings.next. Saving also sets the profile's
+// brand and site colour, logo and fonts, so emails, the profile and the website all follow.
+const KIT_SKIP = ['logo', 'logoLight', 'mark']
+export async function loadBrandKit(uid) {
+  const { data } = await supabase.from('brand_kit').select('*').eq('creative_id', uid).maybeSingle()
+  return data || null
+}
+export function brandFromKit(k, base = {}) {
+  if (!k) return base
+  const ds = k.document_brand_settings || {}, nx = ds.next || {}, b0 = ds.base || {}
+  return { ...base, ...nx, accent: k.primary_color || b0.accent || base.accent, head: k.heading_font || b0.headingFont || base.head, body: k.body_font || b0.bodyFont || base.body, logo: k.logo_url || '', logoLight: k.logo_dark_url || '', mark: k.logo_icon_url || '', tag: k.tagline ?? nx.tag ?? base.tag, foot: b0.footer || nx.foot || base.foot, layout: b0.template || nx.layout || base.layout }
+}
+async function putDataImage(uid, dataUrl, name) {
+  if (!dataUrl || !String(dataUrl).startsWith('data:')) return dataUrl || null
+  const m = String(dataUrl).match(/^data:([^;,]+)(;base64)?,(.*)$/s); if (!m) return null
+  const type = m[1], svg = type === 'image/svg+xml'
+  if (!/^image\/(png|jpeg|webp|svg\+xml)$/.test(type)) throw new Error('Logos can be a PNG, JPG or WebP.')
+  const bytes = m[2] ? Uint8Array.from(atob(m[3]), c => c.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(m[3]))
+  if (bytes.length > 8e6) throw new Error('That logo is over 8 MB.')
+  const blob = new Blob([bytes], { type })
+  if (!svg) { const { moderateImage } = await import('../backend/moderateContent'); const r = await moderateImage(new File([blob], name + '.png', { type })); if (r?.blocked) throw new Error('That image cannot be used here.') }
+  const path = `${uid}/brand-${name}-${Date.now()}.${svg ? 'svg' : type.split('/')[1].replace('jpeg', 'jpg')}`
+  const { error } = await supabase.storage.from('portfolio-website').upload(path, blob, { upsert: false, contentType: type })
+  if (error) throw new Error('Could not upload the logo. Try again.')
+  return supabase.storage.from('portfolio-website').getPublicUrl(path).data.publicUrl
+}
+export async function saveBrandKit(uid, b) {
+  if (b.logo && String(b.logo).startsWith('data:image/svg')) throw new Error('Upload your logo as a PNG or JPG. SVG files are not accepted.')
+  const [logo, logoLight, mark] = await Promise.all([putDataImage(uid, b.logo, 'logo'), putDataImage(uid, b.logoLight, 'logo-white'), putDataImage(uid, b.mark, 'mark')])
+  const nb = { ...b, logo: logo || '', logoLight: logoLight || '', mark: mark || '' }
+  const over = nb.over || {}, ovr = k => ({ ...(over[k]?.accent ? { accent: over[k].accent } : {}), ...(over[k]?.prefix ? { numberPrefix: over[k].prefix } : {}) })
+  const next = Object.fromEntries(Object.entries(nb).filter(([k]) => !KIT_SKIP.includes(k)))
+  const ds = {
+    base: { accent: nb.accent, headingFont: nb.head, bodyFont: nb.body, logoUrl: nb.logo || null, footer: nb.foot || 'Thank you for your business', terms: nb.terms || '', template: ['classic', 'band', 'minimal'].includes(nb.layout) ? nb.layout : 'classic', showPhone: !!nb.phone, showWebsite: !!nb.site },
+    invoice: { ...ovr('inv'), showAbn: !!nb.abn, showGst: !!nb.gst, showBank: !!nb.pay },
+    quote: { ...ovr('q'), showAbn: !!nb.abn, showGst: !!nb.gst },
+    contract: ovr('c'),
+    next,
+  }
+  const row = { creative_id: uid, user_id: uid, primary_color: nb.accent, heading_font: nb.head, body_font: nb.body, font: nb.body, logo_url: nb.logo || null, logo_dark_url: nb.logoLight || null, logo_icon_url: nb.mark || null, tagline: nb.tag || null, document_brand_settings: ds, updated_at: new Date().toISOString() }
+  const { error } = await supabase.from('brand_kit').upsert(row, { onConflict: 'creative_id' })
+  if (error) throw new Error('Could not save your brand kit. Try again.')
+  await supabase.from('profiles').update({ brand_primary_color: nb.accent, brand_logo_url: nb.logo || null, site_primary_color: nb.accent, site_logo_url: nb.logo || null, site_heading_font: nb.head, site_body_font: nb.body, ...(nb.everywhere && nb.tag ? { tagline: String(nb.tag).slice(0, 160) } : {}) }).eq('id', uid)
+  return nb
+}

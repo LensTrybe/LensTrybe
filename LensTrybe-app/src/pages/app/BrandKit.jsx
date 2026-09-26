@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import Icon from '../../components/Icon'
 import Still from '../../components/Still'
 import { useFlows } from '../../lib/flows'
+import { LIVE } from '../../lib/mode'
+import * as live from '../../lib/live'
 import { LOOKS, PAIRINGS, FONTS, LAYOUTS, PAPERS, TONES, paperOf, fam, loadFont, contrast, fixContrast, onColour, lum, shade, portalAccent, paletteFromImage, whiteLogo, squareMark, monogram, zip, download, signatureHtml, brandFor } from '../../lib/brand'
 
 // Brand kit: one place that decides how the creative looks everywhere a client sees them. Four tabs on
@@ -23,7 +25,9 @@ export default function BrandKit() {
   const setM = o => { setB(x => ({ ...x, ...o })); setDirty(true) }
   const setV = (k, v) => set('voice', { ...(b.voice || {}), [k]: v })
   const setOver = (kind, k, v) => set('over', { ...(b.over || {}), [kind]: { ...((b.over || {})[kind] || {}), [k]: v } })
-  const save = () => { F.set('brandHistory', h => [{ at: Date.now(), b: s.brand, note: b.look && b.look !== s.brand.look ? 'Look: ' + (LOOKS.find(l => l.id === b.look)?.n || b.look) : 'Edited' }, ...(h || [])].slice(0, 20)); F.set('brand', b); if (b.everywhere) F.patch('profile', { h: b.tag }); setDirty(false); toast('Saved. Every document, email and page uses it from now.') }
+  const [saving, setSaving] = useState(false)
+  const saveLive = async () => { if (saving) return; setSaving(true); try { const nb = await live.saveBrandKit(F.me.id, b); F.set('brandHistory', h => [{ at: Date.now(), b: s.brand, note: 'Edited' }, ...(h || [])].slice(0, 10)); F.set('brand', nb); setB(nb); setDirty(false); toast('Saved. Quotes, invoices, emails, your profile and website use it from now.') } catch (e) { toast(e.message) } finally { setSaving(false) } }
+  const save = () => { if (LIVE) return saveLive(); F.set('brandHistory', h => [{ at: Date.now(), b: s.brand, note: b.look && b.look !== s.brand.look ? 'Look: ' + (LOOKS.find(l => l.id === b.look)?.n || b.look) : 'Edited' }, ...(h || [])].slice(0, 20)); F.set('brand', b); if (b.everywhere) F.patch('profile', { h: b.tag }); setDirty(false); toast('Saved. Every document, email and page uses it from now.') }
   const PP = paperOf(b.paper), acc = b.accent
   // ── logo intelligence ──
   const analyse = async src => { try { const info = await paletteFromImage(src); const mark = await squareMark(src); setLogoInfo(info); setM({ mark, logoDark: info.dark > 0.55 ? 1 : 0 }); if (info.colours[0] && info.dark < 0.55) toast('Logo in. I pulled ' + info.colours.length + ' colours out of it, pick one for the accent.') } catch { toast('Logo in.') } }
@@ -59,7 +63,7 @@ export default function BrandKit() {
     <section className="view bk">
       <div className="vh">
         <div><h1>Brand kit</h1><p>One look, everywhere a client sees you: documents, portal, gallery, booking page, emails.</p></div>
-        <div className="acts"><button className="btn g" onClick={() => F.open({ title: 'Send a preview', sub: 'A sample invoice and portal link with this kit, to your phone or inbox.', cta: 'Send', fields: [{ k: 'to', l: 'Send to', type: 'select', value: 'phone', options: [['phone', s.settings.phone], ['email', s.settings.email]] }], submit: v => toast('Preview sent to ' + (v.to === 'phone' ? s.settings.phone : s.settings.email) + '.') })}>Send a preview</button><button className={'btn w' + (dirty ? '' : ' quiet')} onClick={save}>{dirty ? 'Save kit' : 'Saved'}</button></div>
+        <div className="acts">{!LIVE && <button className="btn g" onClick={() => F.open({ title: 'Send a preview', sub: 'A sample invoice and portal link with this kit, to your phone or inbox.', cta: 'Send', fields: [{ k: 'to', l: 'Send to', type: 'select', value: 'phone', options: [['phone', s.settings.phone], ['email', s.settings.email]] }], submit: v => toast('Preview sent to ' + (v.to === 'phone' ? s.settings.phone : s.settings.email) + '.') })}>Send a preview</button>}<button className={'btn w' + (dirty ? '' : ' quiet')} onClick={save} disabled={saving}>{saving ? <><span className="spin" />Saving</> : dirty ? 'Save kit' : 'Saved'}</button></div>
       </div>
       <div className="grid">
         <div className="s6 side">
@@ -194,12 +198,12 @@ export default function BrandKit() {
               <p className="note2">One zip for second shooters, venues and printers: {b.logo ? 'logo' : 'no logo yet'}{b.logoLight ? ', white logo' : ''}{b.mark ? ', square mark' : ''}, colour codes, the email signature and a one-page brand sheet.</p>
               <div className="acts" style={{ marginTop: 10 }}><button className="btn w" onClick={downloadAssets}><Icon name="deliver" size={15} />Download the kit</button><button className="btn g" onClick={printSheet}><Icon name="doc" size={15} />Brand sheet PDF</button></div>
             </div>
-            <div className="card lg">
+            {!LIVE && <div className="card lg">
               <div className="h"><b>Brand page</b><span className={'sw2' + (b.brandPublic ? ' on' : '')} onClick={() => set('brandPublic', b.brandPublic ? 0 : 1)} role="switch" aria-checked={!!b.brandPublic}><i /></span></div>
               <p className="note2">A public page with your logo, colours and fonts, so collaborators pull the right files without emailing you.</p>
               <div className="linkrow"><code>{brandUrl}</code><button className="btn g sm" onClick={() => copy(brandUrl, 'Link copied.')}>Copy</button><a className="btn g sm" href={'/brand/' + slug} target="_blank" rel="noreferrer">Open</a></div>
               {!b.brandPublic && <p className="note2 warn2">Off: the link shows “not shared yet”. Switch it on to publish.</p>}
-            </div>
+            </div>}
             <div className="card lg">
               <div className="h"><b>History</b><small className="lumi-by">Every save is a version.</small></div>
               {(s.brandHistory || []).length ? <div className="hist">{(s.brandHistory || []).map((h, i) => <div key={h.at} className="hr"><span className="hsw" style={{ background: h.b.accent }} /><div><b>{h.note || 'Edited'}</b><small>{ago(h.at)} · {h.b.head} / {h.b.body} · {h.b.accent.toUpperCase()}</small></div><button className="act2" onClick={() => restore(h)}>Restore</button></div>)}</div> : <p className="note2">Nothing yet. The first save starts the trail.</p>}

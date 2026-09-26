@@ -360,7 +360,7 @@ export const LIVE_SEED = (() => {
   const s = JSON.parse(JSON.stringify(SEED))
   for (const k of EMPTY) s[k] = []
   s.profile = { ...s.profile, n: '', h: '', bio: '', kinds: [], from: '', city: '', ig: '', web: '', ph: '', disc: '', avatar: '', shots: [], film: '', strength: 0 }
-  s.brand = { ...s.brand, name: '', tag: '', logo: '' }
+  s.brand = { ...s.brand, name: '', tag: '', logo: '', logoLight: '', mark: '', look: '', voice: { tone: ['Warm'], greet: 'Hi', signoff: '', banned: '' }, over: {} }
   s.settings = { ...s.settings, email: '', phone: '', biz: '', abn: '', addr: '', ints: Object.fromEntries(Object.keys(s.settings.ints || {}).map(k => [k, 0])) }
   s.plan = { name: 'Basic', annual: false, founding: 0, since: '' }
   s.site = { live: false, domain: '' }

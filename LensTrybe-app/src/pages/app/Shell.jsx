@@ -89,6 +89,7 @@ function LiveSync() {
   useEffect(() => {
     if (!LIVE || !profile?.id) return
     let on = true
+    live.loadBrandKit(profile.id).then(k => { if (on && k) F.hydrate({ brand: live.brandFromKit(k, F.s.brand) }) }).catch(() => {})
     live.loadWorkspaceState(profile.id).then(d => { if (!on) return; if (d) F.hydrate(Object.fromEntries(live.SYNC_KEYS.filter(k => k in d).map(k => [k, k === 'settings' ? { ...F.s.settings, ...d.settings } : d[k]]))); loaded.current = true }).catch(() => { loaded.current = true })
     return () => { on = false }
   }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
