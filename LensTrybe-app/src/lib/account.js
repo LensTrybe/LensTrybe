@@ -15,7 +15,7 @@ export async function changeEmail(current, next, userEmail) {
   if (String(current || '').trim().toLowerCase() !== String(userEmail || '').trim().toLowerCase()) return { error: "That doesn't match your current email address." }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(next || '').trim())) return { error: 'A real email for the new address.' }
   if (!LIVE) return { ok: true }
-  const { error } = await supabase.auth.updateUser({ email: String(next).trim() })
+  const { error } = await supabase.auth.updateUser({ email: String(next).trim() }, { emailRedirectTo: origin() + '/app/settings' })
   return error ? { error: error.message } : { ok: true }
 }
 
