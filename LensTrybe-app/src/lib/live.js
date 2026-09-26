@@ -606,7 +606,7 @@ export async function importContacts(uid, list, tag) {
 }
 
 // ── The workspace's own settings (no live-site table): one jsonb row per creative ──────────────
-export const SYNC_KEYS = ['avail', 'meetingTypes', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
+export const SYNC_KEYS = ['avail', 'meetingTypes', 'contractTemplates', 'expCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
 export async function loadWorkspaceState(uid) {
   const { data } = await supabase.from('workspace_state').select('data').eq('creative_id', uid).maybeSingle()
   return data?.data || null

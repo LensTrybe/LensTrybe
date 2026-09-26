@@ -101,7 +101,7 @@ function LiveSync() {
     ps.loadProjectBundle(profile.id, F.s.people).then(b => { if (!on) return; F.hydrate(b); pPrev.current = ps.rowsOf(profile.id, { ...F.s, ...b }); pLoaded.current = true }).catch(() => { if (on) F.toast('Could not load your projects and notes. Reload to try again.') })
     return () => { on = false }
   }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-  const pSnap = LIVE ? JSON.stringify([F.s.stages, F.s.projects, F.s.checklistTemplates, F.s.notes]) : ''
+  const pSnap = LIVE ? JSON.stringify([F.s.stages, F.s.projects, F.s.checklistTemplates, F.s.notes, F.s.gear, F.s.gearCats, F.s.gearFolders]) : ''
   useEffect(() => {
     if (!LIVE || !profile?.id || !pLoaded.current) return
     const ids = ps.withIds(sNow.current); if (ids) { F.hydrate(ids); return }

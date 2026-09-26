@@ -30,12 +30,15 @@ export async function loadProjectBundle(uid, people = []) {
     st = (data || rows).sort((a, b) => a.position - b.position)
   }
   const stages = st.map(x => ({ id: x.id, n: x.name || 'Stage', c: colourName(x.color) }))
-  const [pj, cl, tk, tp, nt] = await Promise.all([
+  const [pj, cl, tk, tp, nt, fo, inv, co] = await Promise.all([
     supabase.from('projects').select('*, contact:crm_contacts(id, name, email, company)').eq('creative_id', uid).order('created_at', { ascending: false }).then(r => r.data || []),
     supabase.from('project_checklists').select('*').eq('creative_id', uid).order('position').then(r => r.data || []),
     supabase.from('creative_tasks').select('*').eq('user_id', uid).not('project_id', 'is', null).order('position').then(r => r.data || []),
     supabase.from('checklist_templates').select('*').eq('creative_id', uid).order('created_at').then(r => r.data || []),
     supabase.from('notes').select('*').eq('creative_id', uid).order('pinned', { ascending: false }).order('updated_at', { ascending: false }).then(r => r.data || []),
+    supabase.from('inventory_folders').select('*').eq('creative_id', uid).order('position').then(r => r.data || []),
+    supabase.from('inventory_items').select('*').eq('creative_id', uid).order('created_at').then(r => r.data || []),
+    supabase.from('inventory_checkouts').select('item_id, project_id').eq('creative_id', uid).is('returned_at', null).then(r => r.data || []),
   ])
   const items = cl.length ? await supabase.from('checklist_items').select('*').in('checklist_id', cl.map(c => c.id)).order('position').then(r => r.data || []) : []
   const parts = pj.length ? await supabase.from('project_participants').select('*').in('project_id', pj.map(p => p.id)).then(r => r.data || []) : []
@@ -47,7 +50,7 @@ export async function loadProjectBundle(uid, people = []) {
     return {
       id: p.id, n: p.title || 'Project', c: p.contact?.name || x.c || '', d: p.event_date || '', at: p.location || '', stage, k: isDoneStage(stageById[stage]) ? 'done' : 'live',
       type: p.project_type || 'Other', src: p.lead_source || '', v: Number(p.value) || 0, paid: 0, m: x.m || MOODS[hash(p.id) % 6], s: x.s ?? hash(p.id) % 24,
-      t: em || x.t || '', contact: p.contact_id || null, brief: p.notes || '', crew, gear: Array.isArray(x.gear) ? x.gear : [], files: Array.isArray(x.files) ? x.files : [], log: Array.isArray(x.log) ? x.log : [['' + (day(p.created_at) ? new Date(p.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''), 'Project created']],
+      t: em || x.t || '', contact: p.contact_id || null, brief: p.notes || '', crew, gear: Array.isArray(x.gear) ? x.gear : co.filter(c => c.project_id === p.id).map(c => c.item_id), files: Array.isArray(x.files) ? x.files : [], log: Array.isArray(x.log) ? x.log : [['' + (day(p.created_at) ? new Date(p.created_at).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) : ''), 'Project created']],
       lists: cl.filter(c => c.project_id === p.id).map(c => ({ id: c.id, n: c.name || 'Checklist', items: items.filter(i => i.checklist_id === c.id).map(i => [i.text || '', i.done ? 1 : 0, i.id]) })),
       tasks: tk.filter(t => t.project_id === p.id).map(t => [t.title || '', t.done ? 1 : 0, t.due_date || '', t.id]),
     }
@@ -55,7 +58,13 @@ export async function loadProjectBundle(uid, people = []) {
   const checklistTemplates = tp.map(t => ({ id: t.id, n: t.name || 'Template', items: (Array.isArray(t.items) ? t.items : []).map(String) }))
   const pname = Object.fromEntries(projects.map(p => [p.id, p.n]))
   const notes = nt.map(n => { const person = n.client_ref ? people.find(q => q.id === n.client_ref) : null; return { id: n.id, t: n.title || 'Untitled', body: n.body || '', proj: n.project_id || '', client: n.client_ref || '', on: n.project_id ? (pname[n.project_id] || 'A project') : person ? person.n : n.client_ref || '', to: n.project_id ? '/app/project/' + n.project_id : n.client_ref ? '/app/thread/' + n.client_ref : '', w: ago(n.updated_at || n.created_at), pinned: !!n.pinned, color: n.color || '' } })
-  return { stages, projects, checklistTemplates, notes }
+  // inventory: folders are the categories, kept by name in the store with their ids alongside
+  const gearFolders = Object.fromEntries(fo.map(f => [f.name || 'Other', f.id]))
+  const gearCats = fo.map(f => f.name || 'Other')
+  const folderName = Object.fromEntries(fo.map(f => [f.id, f.name || 'Other']))
+  if (inv.some(i => !i.folder_id || !folderName[i.folder_id]) && !gearCats.includes('Other')) { const id = uuid(); const { error } = await supabase.from('inventory_folders').insert({ id, creative_id: uid, name: 'Other', position: fo.length }); if (!error) { gearCats.push('Other'); gearFolders.Other = id } }
+  const gear = inv.map(i => ({ id: i.id, n: i.name || 'Item', c: folderName[i.folder_id] || 'Other', sn: i.sku || '', v: Number(i.unit_value) || 0, ins: i.insured ? 1 : 0, svc: i.service_date || '', note: i.notes || '', kit: i.in_kit ? 1 : 0, packed: i.packed ? 1 : 0, qty: i.quantity ?? 1, reorder: i.reorder_level ?? 0, photo: i.photo_path || '' }))
+  return { stages, projects, checklistTemplates, notes, gear, gearCats: gearCats.length ? gearCats : ['Bodies', 'Lenses', 'Lights', 'Drones', 'Audio', 'Support', 'Cards'], gearFolders }
 }
 
 // ── rows: what the database should hold for the current store ──────────────────────────────────
@@ -71,6 +80,9 @@ export function rowsOf(uid, s) {
     ;(p.lists || []).forEach((l, li) => { if (!isUuid(l.id)) return; put('project_checklists', { id: l.id, creative_id: uid, project_id: p.id, name: String(l.n || 'Checklist').slice(0, 120), position: li }); (l.items || []).forEach((it, ii) => { if (isUuid(it[2])) put('checklist_items', { id: it[2], creative_id: uid, checklist_id: l.id, text: String(it[0] || '').slice(0, 500), done: !!it[1], position: ii }) }) })
     ;(p.tasks || []).forEach((t, ti) => { if (isUuid(t[3])) put('creative_tasks', { id: t[3], user_id: uid, project_id: p.id, kind: 'project', title: String(t[0] || '').slice(0, 300), done: !!t[1], due_date: t[2] || null, position: ti }) })
   })
+  const gf = s.gearFolders || {}
+  ;(s.gearCats || []).forEach((n, i) => { if (isUuid(gf[n])) put('inventory_folders', { id: gf[n], creative_id: uid, name: String(n).slice(0, 60), position: i }) })
+  ;(s.gear || []).forEach(g => { if (isUuid(g.id)) put('inventory_items', { id: g.id, creative_id: uid, folder_id: isUuid(gf[g.c]) ? gf[g.c] : null, name: String(g.n || 'Item').slice(0, 200), sku: g.sn || null, unit_value: Number(g.v) || 0, notes: g.note || null, insured: !!g.ins, service_date: g.svc || null, in_kit: !!g.kit, packed: !!g.packed, quantity: g.qty ?? 1, reorder_level: g.reorder ?? 0, photo_path: g.photo || null }) })
   ;(s.checklistTemplates || []).forEach(t => { if (isUuid(t.id)) put('checklist_templates', { id: t.id, creative_id: uid, name: String(t.n || 'Template').slice(0, 120), items: (t.items || []).map(x => String(x).slice(0, 500)) }) })
   ;(s.notes || []).forEach(n => { if (isUuid(n.id)) put('notes', { id: n.id, creative_id: uid, title: String(n.t || '').slice(0, 200) || null, body: n.body || null, project_id: isUuid(n.proj) ? n.proj : null, client_ref: n.client ? String(n.client).slice(0, 320) : null, pinned: !!n.pinned, color: n.color || null }) })
   return out
@@ -90,12 +102,16 @@ export function withIds(s) {
   })
   const checklistTemplates = (s.checklistTemplates || []).map(t => { const id = fix(t.id); return id === t.id ? t : { ...t, id } })
   const notes = (s.notes || []).map(n => { const id = fix(n.id); return id === n.id ? n : { ...n, id } })
-  return changed ? { stages, projects, checklistTemplates, notes } : null
+  const gear = (s.gear || []).map(g => { const id = fix(g.id); return id === g.id ? g : { ...g, id } })
+  const gf0 = s.gearFolders || {}, gearFolders = {}
+  for (const n of (s.gearCats || [])) { if (isUuid(gf0[n])) gearFolders[n] = gf0[n]; else { gearFolders[n] = uuid(); changed = true } }
+  if (Object.keys(gf0).some(n => !(n in gearFolders))) changed = true
+  return changed ? { stages, projects, checklistTemplates, notes, gear, gearFolders } : null
 }
 
 // Order matters: parents are written before children and removed after them.
-const WRITE = ['pipeline_stages', 'projects', 'project_checklists', 'checklist_items', 'creative_tasks', 'checklist_templates', 'notes']
-const STAMP = { projects: 'updated_at', creative_tasks: 'updated_at', notes: 'updated_at' }
+const WRITE = ['pipeline_stages', 'inventory_folders', 'inventory_items', 'projects', 'project_checklists', 'checklist_items', 'creative_tasks', 'checklist_templates', 'notes']
+const STAMP = { inventory_items: 'updated_at', projects: 'updated_at', creative_tasks: 'updated_at', notes: 'updated_at' }
 export async function pushDiff(prev, next) {
   const same = (a, b) => JSON.stringify(a) === JSON.stringify(b)
   const ups = {}, dels = {}

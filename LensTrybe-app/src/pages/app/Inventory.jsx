@@ -4,6 +4,7 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { TODAY as T0, nice, parse, addDays } from '../../lib/store'
 import { fmt } from '../../lib/format'
+import { LIVE } from '../../lib/mode'
 
 // Inventory: every body, lens, light and drone with its serial, value and insurance, and a
 // packing list for the next shoot so nothing gets left on the bench. All of it in the store.
@@ -11,15 +12,15 @@ const TODAY = parse(T0)
 
 export default function Inventory() {
   const F = useFlows(); const { s, toast, upd } = F; const GEAR = s.gear, CATS = ['All', ...s.gearCats]
-  const [c, setC] = useState('All'), [q, setQ] = useState(''), [sel, setSel] = useState(4)
+  const [c, setC] = useState('All'), [q, setQ] = useState(''), [sel, setSel] = useState(LIVE ? null : 4)
   const list = useMemo(() => GEAR.filter(g => (c === 'All' || g.c === c) && (!q || (g.n + g.c + (g.sn || '') + (g.note || '')).toLowerCase().includes(q.toLowerCase()))), [GEAR, c, q])
-  const g = GEAR.find(x => x.id === sel)
+  const g = GEAR.find(x => x.id === sel) || (LIVE ? GEAR[0] : null)
   const total = GEAR.reduce((t, x) => t + (x.v || 0), 0), insured = GEAR.filter(x => x.ins).reduce((t, x) => t + (x.v || 0), 0)
   const due = GEAR.filter(x => x.svc && (parse(x.svc) - TODAY) / 864e5 < 45)
   const inKit = GEAR.filter(x => x.kit), packedN = inKit.filter(x => x.packed).length
   const nextShoot = s.events.filter(e => (e.k === 'b' || e.k === 'p') && e.d >= T0).sort((a, b) => a.d < b.d ? -1 : 1)[0]
   const edit = () => F.open({ title: g.n, cta: 'Save', fields: [{ k: 'n', l: 'Item', required: true, value: g.n }, ...F.catFields(g.c), { k: 'v', l: 'Value', type: 'money', half: true, value: g.v }, { k: 'sn', l: 'Serial', half: true, value: g.sn || '' }, { k: 'svc', l: 'Next service', type: 'date', half: true, value: g.svc || '' }, { k: 'ins', l: 'Insured', type: 'toggle', value: !!g.ins }, { k: 'note', l: 'Note', type: 'textarea', rows: 3, value: g.note || '' }], alt: { l: 'Remove', on: () => { F.confirm({ title: 'Remove ' + g.n + '?', body: 'Sold, lost or retired. It comes off the insurance list too.', cta: 'Remove', danger: true, onYes: () => { F.del('gear', g.id); setSel(null); toast(g.n + ' removed.') } }); return false } }, submit: v => { const c = F.catOf(v); upd('gear', g.id, { n: v.n, c, v: v.v, sn: v.sn, svc: v.svc, note: v.note, ins: v.ins ? 1 : 0 }); toast('Saved.') } })
-  const bookService = (x, when) => F.open({ title: 'Book a service · ' + x.n, sub: 'Blocks the day on your calendar so nothing is booked while it is away.', cta: 'Book it', fields: [{ k: 'd', l: 'Drop off', type: 'date', required: true, value: when || x.svc || addDays(T0, 7), min: T0 }, { k: 'who', l: 'Where', value: 'Camera Clinic, Maroochydore' }, { k: 'days', l: 'Days away', type: 'number', value: 3, min: 1, half: true }, { k: 'block', l: 'Block those days', type: 'toggle', value: false, hint: 'Only if you cannot shoot without it' }], submit: v => { upd('gear', x.id, { svc: '', note: ((x.note || '') + ' Service booked ' + nice(v.d) + (v.who ? ' at ' + v.who : '') + '.').trim() }); if (v.block) { for (let i = 0; i < (v.days || 1); i++) F.add('events', { d: addDays(v.d, i), k: 'x', n: 'Service · ' + x.n }, 'ev') } toast('Service booked for ' + nice(v.d) + (v.block ? '. Days blocked.' : '.')) } })
+  const bookService = (x, when) => F.open({ title: 'Book a service · ' + x.n, sub: 'Blocks the day on your calendar so nothing is booked while it is away.', cta: 'Book it', fields: [{ k: 'd', l: 'Drop off', type: 'date', required: true, value: when || x.svc || addDays(T0, 7), min: T0 }, { k: 'who', l: 'Where', value: LIVE ? '' : 'Camera Clinic, Maroochydore', placeholder: 'Camera repair shop' }, { k: 'days', l: 'Days away', type: 'number', value: 3, min: 1, half: true }, { k: 'block', l: 'Block those days', type: 'toggle', value: false, hint: 'Only if you cannot shoot without it' }], working: LIVE ? 'Booking' : undefined, submit: async v => { if (LIVE && v.block) { const ds = Array.from({ length: Math.max(1, Number(v.days) || 1) }, (_, i) => addDays(v.d, i)); const r = await F.doBlock(ds, 'Service · ' + x.n); if (r === false) return false } upd('gear', x.id, { svc: '', note: ((x.note || '') + ' Service booked ' + nice(v.d) + (v.who ? ' at ' + v.who : '') + '.').trim() }); if (LIVE) return toast('Service noted for ' + nice(v.d) + (v.block ? '. Days blocked.' : '.')); if (v.block) { for (let i = 0; i < (v.days || 1); i++) F.add('events', { d: addDays(v.d, i), k: 'x', n: 'Service · ' + x.n }, 'ev') } toast('Service booked for ' + nice(v.d) + (v.block ? '. Days blocked.' : '.')) } })
   const exportList = () => { const rows = GEAR.map(x => [x.n, x.c, x.sn || '', x.v || 0, x.ins ? 'Insured' : 'Not insured'].map(y => '"' + String(y).replace(/"/g, '""') + '"').join(',')).join('\n'); const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['item,category,serial,value,insurance\n' + rows], { type: 'text/csv' })); a.download = 'gear-' + T0 + '.csv'; a.click(); toast('Gear list exported with serials and values.') }
   return (
     <section className="view">
@@ -60,7 +61,7 @@ export default function Inventory() {
             {g.svc && <div className="kv"><span>Service</span><b>{nice(g.svc)}</b></div>}
             {g.note && <p className="note2" style={{ marginTop: 10 }}>{g.note}</p>}
             <div className="ctas" style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
-              {!g.ins && <button className="btn w sm" onClick={() => { upd('gear', g.id, { ins: 1 }); toast(g.n + ' added to the policy. Your insurer gets the updated list.') }}>Add to policy</button>}
+              {!g.ins && <button className="btn w sm" onClick={() => { upd('gear', g.id, { ins: 1 }); toast(g.n + (LIVE ? ' marked insured. Export the list for your insurer.' : ' added to the policy. Your insurer gets the updated list.')) }}>Add to policy</button>}
               {g.svc && <button className="btn g sm" onClick={() => bookService(g)}>Book service</button>}
               <button className="btn g sm" onClick={() => F.newDoc('exp', { who: g.n, v: g.v, cat: 'Gear', date: T0 })}>Log expense</button>
               {s.listings.some(l => l.gearId === g.id && l.st === 'live') ? <button className="btn g sm" onClick={() => F.nav('/app/marketplace')}>Listed for sale</button> : <button className="btn g sm" onClick={() => F.postListing({ gearId: g.id, t: g.n, p: Math.round(g.v * 0.6), d: g.note || '', then: () => F.nav('/app/marketplace') })}>Sell it</button>}
@@ -71,7 +72,7 @@ export default function Inventory() {
             <div className="chk">{inKit.map(x => <label key={x.id} className={x.packed ? 'on' : ''}><input type="checkbox" checked={!!x.packed} onChange={() => upd('gear', x.id, { packed: x.packed ? 0 : 1 })} /><i><Icon name="check" size={11} /></i><span>{x.n}</span></label>)}</div>
             <p className="tempty" style={{ textAlign: 'left', padding: '10px 0 0', fontSize: 12 }}>Tick Kit on any item to add it here. {packedN > 0 && <button className="lnk" onClick={() => GEAR.forEach(x => x.packed && upd('gear', x.id, { packed: 0 }))}>Unpack all</button>} <Link to="/app/bookings" className="lnk">Next shoot</Link></p>
           </div>
-          {GEAR.find(x => x.id === 4)?.svc && <div className="tlumi"><span className="lm" /><div>The 70-200's focus ring note is from July. Service is due in a week and Harper's wedding is on the 7th. Want it booked in for the 30th so it's back in time?<div className="acts"><button className="y" onClick={() => bookService(GEAR.find(x => x.id === 4), '2026-09-30')}>Book it</button><button onClick={() => toast("I'll remind you Friday.")}>Later</button></div></div></div>}
+          {!LIVE && GEAR.find(x => x.id === 4)?.svc && <div className="tlumi"><span className="lm" /><div>The 70-200's focus ring note is from July. Service is due in a week and Harper's wedding is on the 7th. Want it booked in for the 30th so it's back in time?<div className="acts"><button className="y" onClick={() => bookService(GEAR.find(x => x.id === 4), '2026-09-30')}>Book it</button><button onClick={() => toast("I'll remind you Friday.")}>Later</button></div></div></div>}
         </div>
       </div>
     </section>
