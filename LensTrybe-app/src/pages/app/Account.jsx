@@ -15,6 +15,7 @@ import { changeEmail, downloadMyData, newsletterStatus, sendPasswordReset, setNe
 import { signOut } from '../../lib/auth'
 import * as live from '../../lib/live'
 import { useNavigate } from 'react-router-dom'
+import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive } from './AccountLive'
 
 const Tiles = ({ t }) => <div className="s12"><div className="kp">{t.map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 const Head = ({ h, p, children }) => <div className="vh"><div><h1>{h}</h1><p>{p}</p></div><div className="acts">{children}</div></div>
@@ -121,7 +122,8 @@ export function ViewProfile() {
 }
 
 /* Subscription: your plan, billing and invoices from us. */
-export function Subscription() {
+export function Subscription() { return LIVE ? <SubscriptionLive /> : <SubscriptionDemo /> }
+function SubscriptionDemo() {
   const F = useFlows(); const { s, toast } = F; const [annual, setAnnual] = useState(!!s.plan.annual)
   const cur = s.plan.name, pending = s.plan.pending
   const gb = Math.round(s.galleries.reduce((t, x) => t + (x.gb || 0), 0) * 10) / 10 + 4.8
@@ -151,7 +153,8 @@ export function Subscription() {
 }
 
 /* Referrals: invite a creative, both of you get a month. */
-export function Referrals() {
+export function Referrals() { return LIVE ? <ReferralsLive /> : <ReferralsDemo /> }
+function ReferralsDemo() {
   const F = useFlows(); const { s, toast } = F; const R = s.referrals
   const link = 'lenstrybe.com/join?ref=' + s.profile.n.split(' ')[0].toLowerCase()
   const copy = () => { try { navigator.clipboard?.writeText('https://' + link)?.catch(() => {}) } catch {} toast('Link copied: ' + link) }
@@ -176,7 +179,8 @@ export function Referrals() {
 }
 
 /* Founding hub: your code, your locked rate and the hundred. */
-export function Founding() {
+export function Founding() { return LIVE ? <FoundingLive /> : <FoundingDemo /> }
+function FoundingDemo() {
   const F = useFlows(); const { s, toast } = F; const wall = !!s.settings.wall
   const code = 'FOUND-' + s.profile.n.split(' ')[0].toUpperCase() + '-23'
   return (
@@ -252,7 +256,8 @@ export function Settings() {
 }
 
 /* Help and support: answers first, a person when you need one. */
-export function Support() {
+export function Support() { return LIVE ? <SupportLive /> : <SupportDemo /> }
+function SupportDemo() {
   const F = useFlows(); const { s, toast } = F; const [q, setQ] = useState(''), [open, setOpen] = useState(0), [about, setAbout] = useState('Billing'), [msg, setMsg] = useState('')
   const FAQ = [['How do I get paid?', 'Clients pay by card or transfer on the invoice. Card payouts land daily via Stripe; transfers go straight to you.'], ['Can Lumi send things without asking?', 'Only what you switch on in Availability and Lumi. Everything else waits for your yes, and everything is undoable for 24 hours.'], ['What happens if a client cancels?', 'Your contract terms apply. The deposit stays yours by default; Lumi handles the message and the calendar.'], ['How do I move to Elite?', 'Subscription, then Move up. Your founding discount carries over as a credit.'], ['Where do gallery files live?', 'Australian servers, encrypted. 50 GB on Expert, 200 GB on Elite, and galleries expire when you say.']]
   const send = () => { if (!msg.trim()) return toast('Say what happened first.'); const id = 'LT-' + Date.now().toString(36).toUpperCase().slice(-5); F.add('tickets', { about, msg, st: 'Open' }, 'any'); setMsg(''); toast('Sent · ' + id + '. A person replies to ' + s.settings.email + ' within a business day.') }

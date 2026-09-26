@@ -1116,3 +1116,59 @@ export async function toggleCrew(uid, cid, on) {
   if (error && error.code !== '23505') throw new Error('Could not update your crew. Try again.')
 }
 export const replyInThread = (me, threadId, body) => messageSeller(me, { t: '', seller: {} }, body, threadId)
+
+// ── Account: subscription (Revolut, through the same edge functions as the live site), referrals,
+// the founding hub and support tickets.
+const fnBody = async (error, data, fallback) => { let b = null; try { b = await error?.context?.json() } catch (_) { b = null } return new Error((b && typeof b.error === 'string' && b.error) || (typeof data?.error === 'string' && data.error) || fallback) }
+export async function loadSubscription(uid) {
+  const { data } = await supabase.from('subscriptions').select('tier, billing, status, current_period_end, next_charge_date, pending_tier, pending_billing, pending_change_at, founding_member, revolut_payment_method_id, past_due_since, card_brand, card_last4, card_exp_month, card_exp_year').eq('user_id', uid).eq('provider', 'revolut').maybeSingle()
+  // a trial whose card setup never finished is not a live subscription yet
+  return data && data.status === 'trialing' && !data.revolut_payment_method_id ? { ...data, status: 'setup_incomplete' } : data || null
+}
+export async function planChange(tier, billing, preview) {
+  const { data, error } = await supabase.functions.invoke('change-subscription', { body: { tier, billing, ...(preview ? { preview: true } : {}) } })
+  if (error || !data || data.error || (!preview && !data.ok)) throw await fnBody(error, data, preview ? 'Could not work out that change. Try again.' : 'The change did not go through. Try again.')
+  return data
+}
+export async function cancelSubscription() {
+  const { data, error } = await supabase.functions.invoke('cancel-revolut-subscription')
+  if (error || !data?.ok) throw await fnBody(error, data, 'Could not cancel. Try again.')
+  return data
+}
+export async function adminSetTier(uid, tier) {
+  const { data, error } = await supabase.functions.invoke('admin-users', { body: { action: 'update_tier', userId: uid, tier } })
+  if (error || !data?.success) throw await fnBody(error, data, 'Could not switch plan.')
+}
+export async function loadReferrals(uid, paid) {
+  const [{ data: p }, { data: rows }] = await Promise.all([
+    supabase.from('profiles').select('referral_code, referral_count').eq('id', uid).maybeSingle(),
+    supabase.from('referrals').select('id, referred_user_id, status, created_at, confirmed_at').eq('referrer_id', uid).order('created_at', { ascending: false }),
+  ])
+  let code = p?.referral_code || ''
+  if (!code && paid) { try { const { data } = await supabase.functions.invoke('generate-referral-code', { body: {} }); code = data?.referral_code || '' } catch (_) { /* shown as pending */ } }
+  const ids = (rows || []).map(r => r.referred_user_id).filter(Boolean)
+  const names = ids.length ? Object.fromEntries(((await supabase.from('profiles').select('id, business_name').in('id', ids)).data || []).map(x => [x.id, x.business_name])) : {}
+  return { code, count: p?.referral_count || 0, rows: (rows || []).map(r => ({ id: r.id, n: names[r.referred_user_id] || 'A creative', st: r.status || 'pending', at: dayOf(r.created_at), ok: dayOf(r.confirmed_at) })) }
+}
+export async function loadFounding(uid) {
+  const [lc, jc, fb] = await Promise.all([
+    supabase.rpc('founding_listing_complete', { p_id: uid }),
+    supabase.rpc('founding_job_count', { p_id: uid }),
+    supabase.from('founding_feedback').select('created_at').eq('creative_id', uid).order('created_at', { ascending: false }).limit(1),
+  ])
+  return { listing: !!lc.data, jobs: Number(jc.data || 0), lastFeedback: fb.data?.[0]?.created_at || null }
+}
+export async function sendFoundingFeedback(uid, category, message) {
+  const text = String(message || '').trim(); if (!text) throw new Error('Write a little something first.')
+  const { error } = await supabase.from('founding_feedback').insert({ creative_id: uid, category, message: text.slice(0, 5000) })
+  if (error) throw new Error('Could not send your feedback. Try again.')
+}
+export async function submitTicket(f) {
+  const { data, error } = await supabase.functions.invoke('submit-support-ticket', { body: { name: String(f.name || '').trim(), email: String(f.email || '').trim(), role: 'creative', category: f.category || '', subject: String(f.subject || '').trim(), message: String(f.message || '').trim(), user_id: f.uid || null } })
+  if (error || !data?.ok) throw await fnBody(error, data, 'Something went wrong sending that. Try again in a moment.')
+  return data.ref
+}
+export async function loadTickets(uid) {
+  const { data } = await supabase.from('support_tickets').select('id, created_at, category, subject, message, status').eq('user_id', uid).order('created_at', { ascending: false }).limit(20)
+  return (data || []).map(t => ({ id: t.id, ref: String(t.id).slice(0, 8).toUpperCase(), at: dayOf(t.created_at), about: t.category || 'General', subject: t.subject || '', msg: t.message || '', st: t.status || 'open' }))
+}

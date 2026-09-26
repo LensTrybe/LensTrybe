@@ -5,6 +5,9 @@ import { useFlows } from '../../lib/flows'
 import { TODAY, nice, parse, addDays, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
 import { completeness } from '../../lib/complete'
+import { LIVE } from '../../lib/mode'
+import { useAuth } from '../../backend/AuthContext'
+import { getFeatures, INSIGHT_WIDGETS } from '../../backend/tierFeatures'
 
 // Insights: the whole business as numbers you can act on. Where enquiries come from, what they turn
 // into, what a booking is worth, how fast you reply and what that does to bookings, which months are
@@ -22,7 +25,8 @@ const delta = (a, b) => b ? (a >= b ? '▲ ' : '▼ ') + Math.abs(Math.round((a 
 const sum = (a, f = x => x) => a.reduce((t, x) => t + f(x), 0)
 const Spark = ({ pts, w = 84, h = 30 }) => { if (pts.length < 2) return null; const mx = Math.max(...pts, 1); const d = pts.map((v, i) => (i ? 'L' : 'M') + (i / (pts.length - 1) * w).toFixed(1) + ' ' + (h - v / mx * (h - 2) - 1).toFixed(1)).join(' '); return <svg viewBox={'0 0 ' + w + ' ' + h}><path d={d} fill="none" strokeWidth="1.6" /></svg> }
 
-export default function Insights() {
+export default function Insights() { return LIVE ? <InsightsLive /> : <InsightsDemo /> }
+function InsightsDemo() {
   const F = useFlows(); const { s, toast } = F
   const [range, setRange] = useState('90'), [src, setSrc] = useState(''), [hov, setHov] = useState(null)
   const days = Number(range); const from = addDays(TODAY, -days + 1), prevFrom = addDays(TODAY, -days * 2 + 1)
@@ -170,6 +174,105 @@ export default function Insights() {
         <div className="s12"><div className="h" style={{ marginBottom: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}><b>What to do about it</b><small className="lumi-by">Lumi, from the numbers above</small></div>
           <div className="nudges">{nudges.map(([t, cta, to], i) => <div key={i} className="tlumi"><span className="lm" /><div>{t}<div className="acts"><Link className="y" to={to}>{cta}</Link></div></div></div>)}</div>
         </div>
+      </div>
+    </section>
+  )
+}
+
+// Live: numbers worked out from what is really in the account (threads, bookings, quotes, invoices,
+// expenses, reviews, galleries, profile). Which cards a plan sees follows the live site
+// (tierFeatures INSIGHT_WIDGETS): Basic sees profile strength and search visibility; Pro adds
+// enquiries, bookings, reviews and this month's revenue; Expert and Elite get everything. Locked
+// cards show blurred with a note, the same as the live dashboard. Profile views aren't tracked yet.
+const day = iso => { if (!iso) return ''; const d = new Date(iso); if (isNaN(d)) return String(iso).slice(0, 10); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
+const ymKey = d => d.slice(0, 7)
+const lastMonths = n => { const out = []; const d = parse(TODAY); d.setDate(1); for (let i = n - 1; i >= 0; i--) { const x = new Date(d); x.setMonth(d.getMonth() - i); out.push({ key: x.getFullYear() + '-' + String(x.getMonth() + 1).padStart(2, '0'), l: MON[x.getMonth()] }) } return out }
+const WIDGET_TIER = { enquiries: 'Pro', bookings: 'Pro', reviews: 'Pro', revenue: 'Pro', leads: 'Expert', cashflow: 'Expert', quotes: 'Expert', deliverables: 'Expert' }
+function Bars({ rows, money }) {
+  const mx = Math.max(...rows.map(r => r.v), 1)
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(' + rows.length + ', 1fr)', gap: 6, alignItems: 'end', height: 150, marginTop: 8 }}>{rows.map(r => <div key={r.key} title={r.l + ': ' + (money ? fmt(r.v) : r.v)} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, height: '100%', justifyContent: 'flex-end' }}><small style={{ fontSize: 10, opacity: .75 }}>{r.v ? (money ? (r.v >= 1000 ? '$' + Math.round(r.v / 100) / 10 + 'k' : fmt(r.v)) : r.v) : ''}</small><span style={{ width: '100%', maxWidth: 34, height: Math.max(r.v ? 4 : 1, r.v / mx * 110), borderRadius: 6, background: r.v ? 'var(--sig)' : 'var(--hov)', opacity: r.now ? 1 : .7 }} /><small style={{ fontSize: 11, opacity: .7 }}>{r.l}</small></div>)}</div>
+}
+function InsightsLive() {
+  const F = useFlows(); const { s } = F; const { profile: P } = useAuth()
+  const [range, setRange] = useState('90')
+  const tier = String(P?.subscription_tier || 'basic').toLowerCase().replace('vip', 'elite')
+  const depth = getFeatures(tier)?.insights || 'none'
+  const can = w => (INSIGHT_WIDGETS[depth] || INSIGHT_WIDGETS.none).includes(w)
+  const days = Number(range), from = addDays(TODAY, -days + 1), prevFrom = addDays(TODAY, -days * 2 + 1)
+  const inR = (d, lo = from, hi = TODAY) => d && d >= lo && d <= hi
+  const cmp = completeness(s)
+  // enquiries = threads, dated by their first message; answered = I replied at least once
+  const TH = useMemo(() => s.threads.map(t => { const msgs = (t.line || []).filter(x => x.them != null || x.me != null); const first = msgs[0]; return { id: t.id, n: t.n, d: day(first?.at), answered: msgs.some(x => x.me != null), need: !!t.need, stage: t.stage || 0 } }).filter(t => t.d), [s.threads])
+  const enq = TH.filter(t => inR(t.d)), penq = TH.filter(t => inR(t.d, prevFrom, addDays(from, -1)))
+  const BK = (s.events || []).filter(e => String(e.id).startsWith('b-') && e.k === 'b')
+  const bk = BK.filter(e => inR(e.d)), upcoming = BK.filter(e => e.d > TODAY)
+  const RV = (s.reviews || []).filter(r => r.live && !r.removed), rating = RV.length ? sum(RV, r => r.n) / RV.length : 0
+  const INV = s.ledger.filter(r => r.k === 'inv'), paid = INV.filter(r => r.st === 'ok'), unpaid = INV.filter(r => r.st !== 'ok' && !/draft|cancel/i.test(r.stt || ''))
+  const paidDay = r => day(r.live?.paid_at || r.live?.updated_at) || r.date
+  const month = TODAY.slice(0, 7), prevMonth = (() => { const d = parse(TODAY); d.setDate(1); d.setMonth(d.getMonth() - 1); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') })()
+  const revMonth = sum(paid.filter(r => paidDay(r).startsWith(month)), r => r.v), revPrev = sum(paid.filter(r => paidDay(r).startsWith(prevMonth)), r => r.v)
+  const MONTHS = lastMonths(12).map(m => ({ ...m, v: sum(paid.filter(r => ymKey(paidDay(r)) === m.key), r => r.v), now: m.key === month }))
+  const EXP = s.ledger.filter(r => r.k === 'exp'), spentMonth = -sum(EXP.filter(r => (r.date || '').startsWith(month)), r => r.v)
+  const overdue = unpaid.filter(r => r.due && r.due < TODAY)
+  const Q = s.ledger.filter(r => r.k === 'q' && inR(r.date)), qAcc = Q.filter(r => r.st === 'ok'), qOpen = Q.filter(r => r.st !== 'ok' && !/declin|draft/i.test(r.stt || ''))
+  const GAL = s.galleries || [], galOpen = GAL.filter(g => g.opened), galDl = GAL.filter(g => g.dl > 0)
+  const TOP = useMemo(() => { const m = {}; paid.forEach(r => { m[r.who] = (m[r.who] || 0) + r.v }); return Object.entries(m).sort((a, b) => b[1] - a[1]).slice(0, 5) }, [s.ledger]) // eslint-disable-line react-hooks/exhaustive-deps
+  const avgJob = paid.length ? sum(paid, r => r.v) / paid.length : 0
+  const leadsOpen = TH.filter(t => t.stage <= 1), leadsWon = TH.filter(t => t.stage >= 4)
+  const listed = P?.is_listed !== false
+  const Card = ({ w, span = 's6', title, sub, children }) => can(w) ? <div className={'card lg ' + span}><div className="h"><b>{title}</b>{sub && <small className="lumi-by">{sub}</small>}</div>{children}</div>
+    : <div className={'card lg ' + span} style={{ position: 'relative', overflow: 'hidden' }}><div className="h"><b>{title}</b></div><div style={{ filter: 'blur(6px)', opacity: .5, pointerEvents: 'none' }}>{children}</div><div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}><div><b style={{ display: 'block', marginBottom: 6 }}>On {WIDGET_TIER[w] || 'Pro'} and above</b><Link className="btn g sm" to="/app/subscription">See plans</Link></div></div></div>
+  const KV = ({ l, v }) => <div className="kv"><span>{l}</span><b>{v}</b></div>
+  return (
+    <section className="view">
+      <div className="vh"><div><h1>Insights</h1><p>Your business in numbers, worked out from your enquiries, bookings, quotes, invoices and reviews.</p></div>
+        <div className="acts"><div className="tfilt" style={{ padding: 0 }}>{[['30', '30 days'], ['90', '90 days'], ['365', 'Year']].map(([v, l]) => <button key={v} className={range === v ? 'on' : ''} onClick={() => setRange(v)}>{l}</button>)}</div></div></div>
+      <div className="grid">
+        <div className="s12"><div className="kp">{[
+          ['Profile', cmp.pct + '%', cmp.complete ? 'complete' : cmp.remaining + ' to go', cmp.complete ? 'n' : 'w'],
+          ['Enquiries', can('enquiries') ? String(enq.length) : '—', can('enquiries') ? (delta(enq.length, penq.length) || 'last ' + days + ' days') : 'on Pro and above', can('enquiries') ? 'n' : ''],
+          ['Bookings', can('bookings') ? String(bk.length) : '—', can('bookings') ? upcoming.length + ' coming up' : 'on Pro and above', 'n'],
+          ['Revenue this month', can('revenue') ? fmt(revMonth) : '—', can('revenue') ? (revPrev ? delta(revMonth, revPrev) + ' on last month' : 'paid invoices') : 'on Pro and above', 'n'],
+        ].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
+
+        <Card w="profile_strength" title="Profile strength" sub={cmp.done + ' of ' + cmp.total}>
+          <div style={{ height: 8, borderRadius: 8, background: 'var(--hov)', overflow: 'hidden', margin: '4px 0 12px' }}><div style={{ width: cmp.pct + '%', height: '100%', background: 'var(--sig)' }} /></div>
+          {cmp.items.filter(i => !i.done).slice(0, 4).map(i => <div key={i.key} className="kv"><span>{i.label}</span><b><Link className="lnk" to={i.to}>Do it</Link></b></div>)}
+          {cmp.complete && <p className="note2">Everything clients look for is there.</p>}
+        </Card>
+        <Card w="search_visibility" title="Search visibility">
+          <KV l="In the directory" v={listed ? 'Yes, clients can find you' : 'No, your profile is hidden'} />
+          <KV l="Where" v={[P?.city, P?.state].filter(Boolean).join(', ') || 'Add your city on your profile'} />
+          <KV l="Reviews showing" v={RV.length ? RV.length + ' · ★ ' + rating.toFixed(1) : 'None yet'} />
+          <p className="note2" style={{ marginTop: 8 }}>{cmp.complete ? 'A complete profile with reviews ranks higher in search.' : 'Finish your profile to rank higher in search.'} Profile views aren't counted yet.</p>
+        </Card>
+
+        <Card w="revenue" span="s8" title="Money in" sub={depth === 'full' ? 'paid invoices, last 12 months' : 'this month'}>
+          {depth === 'full' ? <><Bars rows={MONTHS} money /><div className="kv" style={{ marginTop: 10 }}><span>Last 12 months</span><b>{fmt(sum(MONTHS, m => m.v))}</b></div><div className="kv"><span>Average paid invoice</span><b>{fmt(avgJob)}</b></div></>
+            : <><div className="kv"><span>{MON[parse(TODAY).getMonth()]}</span><b>{fmt(revMonth)}</b></div><div className="kv"><span>Last month</span><b>{fmt(revPrev)}</b></div><p className="note2" style={{ marginTop: 8 }}>Expert shows twelve months, your best clients and cash flow.</p></>}
+        </Card>
+        <Card w="enquiries" span="s4" title="Enquiries" sub={'last ' + days + ' days'}>
+          <KV l="New conversations" v={enq.length} /><KV l="You replied to" v={enq.filter(t => t.answered).length + ' of ' + enq.length} /><KV l="Waiting on you" v={TH.filter(t => t.need).length} /><KV l="Became jobs" v={enq.filter(t => t.stage >= 4).length} />
+        </Card>
+        <Card w="bookings" span="s4" title="Bookings" sub={'last ' + days + ' days'}>
+          <KV l="Confirmed" v={bk.length} /><KV l="Coming up" v={upcoming.length} />{upcoming[0] && <KV l="Next" v={nice(upcoming.sort((a, b) => a.d < b.d ? -1 : 1)[0].d) + ' · ' + upcoming[0].n.split(' · ')[0]} />}
+        </Card>
+        <Card w="reviews" span="s4" title="Reviews">
+          <KV l="Rating" v={RV.length ? '★ ' + rating.toFixed(1) : '—'} /><KV l="Reviews" v={RV.length} /><KV l="You replied to" v={RV.filter(r => r.reply).length} /><Link className="lnk" to="/app/reviews">Ask for a review</Link>
+        </Card>
+        <Card w="quotes" span="s4" title="Quotes" sub={'last ' + days + ' days'}>
+          <KV l="Sent" v={Q.length} /><KV l="Accepted" v={qAcc.length + (Q.length ? ' · ' + pct(qAcc.length, Q.length) + '%' : '')} /><KV l="Waiting" v={qOpen.length + (qOpen.length ? ' · ' + fmt(sum(qOpen, r => r.v)) : '')} /><KV l="Accepted value" v={fmt(sum(qAcc, r => r.v))} />
+        </Card>
+        <Card w="cashflow" span="s6" title="Cash flow" sub="this month">
+          <KV l="Money in" v={fmt(revMonth)} /><KV l="Spent" v={fmt(spentMonth)} /><KV l="Left" v={fmt(revMonth - spentMonth)} /><KV l="Owed to you" v={fmt(sum(unpaid, r => r.v)) + ' · ' + unpaid.length + (unpaid.length === 1 ? ' invoice' : ' invoices')} /><KV l="Overdue" v={overdue.length ? fmt(sum(overdue, r => r.v)) + ' · ' + overdue.length : 'Nothing overdue'} />
+        </Card>
+        <Card w="leads" span="s6" title="Leads and clients">
+          <KV l="Open enquiries" v={leadsOpen.length} /><KV l="Became jobs, all time" v={leadsWon.length + (TH.length ? ' of ' + TH.length + ' · ' + pct(leadsWon.length, TH.length) + '%' : '')} />
+          {TOP.length ? TOP.map(([n, v]) => <KV key={n} l={n} v={fmt(v)} />) : <p className="note2">Your best clients show here once invoices are paid.</p>}
+        </Card>
+        <Card w="deliverables" span="s6" title="Galleries">
+          <KV l="Galleries" v={GAL.length} /><KV l="Opened by the client" v={galOpen.length} /><KV l="Downloaded" v={galDl.length} /><KV l="Waiting on files" v={GAL.filter(g => g.k === 'wait').length} />
+        </Card>
       </div>
     </section>
   )
