@@ -64,7 +64,7 @@ export default function Inventory() {
               {!g.ins && <button className="btn w sm" onClick={() => { upd('gear', g.id, { ins: 1 }); toast(g.n + (LIVE ? ' marked insured. Export the list for your insurer.' : ' added to the policy. Your insurer gets the updated list.')) }}>Add to policy</button>}
               {g.svc && <button className="btn g sm" onClick={() => bookService(g)}>Book service</button>}
               <button className="btn g sm" onClick={() => F.newDoc('exp', { who: g.n, v: g.v, cat: 'Gear', date: T0 })}>Log expense</button>
-              {s.listings.some(l => l.gearId === g.id && l.st === 'live') ? <button className="btn g sm" onClick={() => F.nav('/app/marketplace')}>Listed for sale</button> : <button className="btn g sm" onClick={() => F.postListing({ gearId: g.id, t: g.n, p: Math.round(g.v * 0.6), d: g.note || '', then: () => F.nav('/app/marketplace') })}>Sell it</button>}
+              {s.listings.some(l => l.gearId === g.id && l.st === 'live') ? <button className="btn g sm" onClick={() => F.nav('/app/marketplace')}>Listed for sale</button> : <button className="btn g sm" onClick={() => LIVE ? F.nav('/app/marketplace?sell=' + g.id) : F.postListing({ gearId: g.id, t: g.n, p: Math.round(g.v * 0.6), d: g.note || '', then: () => F.nav('/app/marketplace') })}>Sell it</button>}
             </div>
           </div>}
           <div className="card lg">

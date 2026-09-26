@@ -4,7 +4,8 @@
 // Writes go through the same path the live site uses (messages insert + send-message-notification,
 // portal_send_message for the client). Nothing here runs in demo mode.
 import { supabase } from '../backend/supabaseClient'
-import { moderateText } from '../backend/moderateContent'
+import { moderateText, partitionFilesByPortfolioImageModeration } from '../backend/moderateContent'
+import { resizeImage } from '../backend/resizeImage'
 import { STAGES } from '../data/workspace'
 import { threadOwnerTierContactSharingRestricted, messageBodyContainsContactDetails, MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE } from '../backend/messagingContactPolicy'
 import { isMonthlyMessageLimitError, MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE } from '../backend/messageMonthlyLimit'
@@ -946,3 +947,106 @@ export async function acceptReply(appId) {
   return data
 }
 export async function declineReply(appId) { const { error } = await supabase.rpc('decline_job_application', { p_application: appId }); if (error) throw dbMsg(error, 'Could not decline that quote. Try again.') }
+
+// ── Marketplace. Gear between creatives: listings in marketplace_listings (photos in the public
+// 'marketplace' bucket under the seller's folder; guard_marketplace_listing checks owner, lengths,
+// photos and the plan limit on relisting; guard_tier_count the limit on posting), saves in
+// saved_listings. Contact / offer / swap all go into one thread per buyer and listing, subject
+// "Marketplace: <title>", which lands in the seller's Threads; the buyer reads and replies on the
+// Marketplace "My messages" tab (they are the client side of that thread).
+const MKT_COLS = 'id, creative_id, title, category, condition, price, description, location, open_to_swaps, photos, status, created_at, updated_at'
+const SELLER = 'seller:profiles(id, business_name, avatar_url, city, state, subscription_tier)'
+const mktSubject = t => ('Marketplace: ' + String(t || 'a listing')).slice(0, 150)
+export function shapeListing(r, uid) {
+  if (!r) return null
+  const sel = r.seller || {}
+  return { id: r.id, t: r.title || 'Listing', cat: r.category || 'Other', cond: r.condition || 'Good', p: Number(r.price) || 0, d: r.description || '', loc: r.location || '', swap: r.open_to_swaps ? 1 : 0, photos: Array.isArray(r.photos) ? r.photos.filter(x => typeof x === 'string') : [], st: r.status === 'sold' ? 'sold' : 'live', posted: dayOf(r.created_at), mine: !!uid && r.creative_id === uid, seller: { id: r.creative_id, n: sel.business_name || 'A creative', c: sel.city || '', state: sel.state || '', av: sel.avatar_url || '', tier: sel.subscription_tier || '' } }
+}
+export async function loadMarket(uid) {
+  const [b, m, sv, bt, st] = await Promise.all([
+    supabase.from('marketplace_listings').select(MKT_COLS + ', ' + SELLER).eq('status', 'active').neq('creative_id', uid).order('created_at', { ascending: false }).limit(300),
+    supabase.from('marketplace_listings').select(MKT_COLS).eq('creative_id', uid).order('created_at', { ascending: false }),
+    supabase.from('saved_listings').select('listing_id, l:marketplace_listings(' + MKT_COLS + ', ' + SELLER + ')').eq('user_id', uid),
+    supabase.from('message_threads').select('id, creative_id, subject, last_message_at, messages(id, body, sender_type, sender_name, created_at)').eq('client_user_id', uid).ilike('subject', 'Marketplace:%').order('last_message_at', { ascending: false }),
+    supabase.from('message_threads').select('id, subject, client_name, last_message_at, unread_count').eq('creative_id', uid).ilike('subject', 'Marketplace:%').order('last_message_at', { ascending: false }),
+  ])
+  if (b.error || m.error) throw new Error('Could not load the marketplace. Reload to try again.')
+  const sellerIds = [...new Set((bt.data || []).map(t => t.creative_id))]
+  const sellers = sellerIds.length ? ((await supabase.from('profiles').select('id, business_name, avatar_url').in('id', sellerIds)).data || []) : []
+  const sname = Object.fromEntries(sellers.map(p => [p.id, p]))
+  return {
+    browse: (b.data || []).map(r => shapeListing(r, uid)),
+    mine: (m.data || []).map(r => shapeListing(r, uid)),
+    saved: (sv.data || []).filter(x => x.l).map(x => shapeListing(x.l, uid)),
+    savedIds: (sv.data || []).map(x => x.listing_id),
+    buying: (bt.data || []).map(t => ({ id: t.id, seller: t.creative_id, sn: sname[t.creative_id]?.business_name || 'The seller', t: String(t.subject || '').replace(/^Marketplace:\s*/, ''), at: t.last_message_at, msgs: (t.messages || []).sort((x, y) => x.created_at < y.created_at ? -1 : 1).map(x => ({ id: x.id, me: x.sender_type === 'client', n: x.sender_name || '', body: x.body || '', at: x.created_at })) })),
+    selling: (st.data || []).map(t => ({ id: t.id, t: String(t.subject || '').replace(/^Marketplace:\s*/, ''), who: t.client_name || 'A creative', at: t.last_message_at, unread: t.unread_count || 0 })),
+  }
+}
+const MKT_TYPES = ['image/jpeg', 'image/png', 'image/webp']
+async function uploadListingPhotos(uid, items) {
+  const out = []
+  const fresh = (items || []).filter(x => x.file)
+  if (fresh.some(x => !MKT_TYPES.includes(x.file.type))) throw new Error('Photos need to be JPG, PNG or WebP.')
+  let ok = fresh.map(x => x.file)
+  try { const r = await partitionFilesByPortfolioImageModeration(ok); if (r.blockedFileNames?.length) throw new Error('One of those photos can\'t be used. Pick another.'); ok = r.filesToUpload } catch (e) { if (/can't be used/.test(e.message)) throw e }
+  for (const it of items || []) {
+    if (typeof it === 'string') { out.push(it); continue }
+    if (it.url) { out.push(it.url); continue }
+    if (!it.file || !ok.includes(it.file)) continue
+    const f = await resizeImage(it.file).catch(() => it.file)
+    if (f.size > 10 * 1024 * 1024) throw new Error('Each photo can be up to 10 MB.')
+    const path = uid + '/' + Date.now() + '_' + out.length + '_' + String(it.file.name || 'photo').replace(/[^a-zA-Z0-9._-]/g, '_').slice(-60)
+    const { error } = await supabase.storage.from('marketplace').upload(path, f, { contentType: f.type, upsert: false })
+    if (error) throw new Error('A photo did not upload. Try again.')
+    out.push(supabase.storage.from('marketplace').getPublicUrl(path).data.publicUrl)
+  }
+  return out.slice(0, 5)
+}
+const tierMsg = error => /TIER_LIMIT:marketplace_listings/.test(error?.message || '') ? new Error('You have reached the listing limit on your plan (' + String(error.hint || '').replace(/^This plan allows (\d+)\.$/, '$1') + ' live). Mark one sold, delete one, or move up a plan.') : null
+export async function saveListing(uid, v, id) {
+  const title = String(v.t || '').trim(), description = String(v.d || '').trim()
+  if (!title || !(Number(v.p) >= 0)) throw new Error('Title and price are required.')
+  const mod = await moderateText(title + '\n' + description); if (mod?.blocked) throw new Error('That wording can\'t be posted. Please change it and try again.')
+  const photos = await uploadListingPhotos(uid, v.photos)
+  const row = { title: title.slice(0, 150), category: String(v.cat || 'Other').slice(0, 60), condition: v.cond || 'Good', price: Math.round(Number(v.p) || 0), description: description.slice(0, 3000) || null, location: String(v.loc || '').trim().slice(0, 120) || null, open_to_swaps: !!v.swap, photos }
+  const q = id ? supabase.from('marketplace_listings').update(row).eq('id', id).select('id').single() : supabase.from('marketplace_listings').insert({ ...row, creative_id: uid, status: 'active' }).select('id').single()
+  const { data, error } = await q
+  if (error) throw tierMsg(error) || dbMsg(error, 'Could not save the listing. Try again.')
+  return data.id
+}
+export async function setListingStatus(id, st) {
+  const { error } = await supabase.from('marketplace_listings').update({ status: st }).eq('id', id)
+  if (error) throw tierMsg(error) || new Error('Could not update the listing. Try again.')
+}
+export async function deleteListing(l) {
+  const { error } = await supabase.from('marketplace_listings').delete().eq('id', l.id)
+  if (error) throw new Error('Could not delete the listing. Try again.')
+  const paths = (l.photos || []).map(u => decodeURIComponent(String(u).split('/storage/v1/object/public/marketplace/')[1] || '')).filter(Boolean)
+  if (paths.length) supabase.storage.from('marketplace').remove(paths).catch(() => {})
+}
+export async function toggleSaved(uid, id, on) {
+  const { error } = on ? await supabase.from('saved_listings').insert({ user_id: uid, listing_id: id }) : await supabase.from('saved_listings').delete().eq('user_id', uid).eq('listing_id', id)
+  if (error && error.code !== '23505') throw new Error('Could not save that. Try again.')
+}
+// One thread per buyer and listing; offers and swaps are messages in it.
+export async function messageSeller(me, l, body, threadId) {
+  const text = String(body || '').trim(); if (!text) throw new Error('Write a message first.')
+  if (threadOwnerTierContactSharingRestricted(l.seller?.tier) && messageBodyContainsContactDetails(text)) throw new Error(MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE)
+  const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That message cannot be sent.')
+  let tid = threadId
+  if (!tid) {
+    const subject = mktSubject(l.t)
+    const { data: ex } = await supabase.from('message_threads').select('id').eq('creative_id', l.seller.id).eq('client_user_id', me.id).eq('subject', subject).limit(1).maybeSingle()
+    tid = ex?.id
+    if (!tid) {
+      const { data: th, error: te } = await supabase.from('message_threads').insert({ creative_id: l.seller.id, client_user_id: me.id, client_name: me.name, client_email: me.email, subject, sender_type: 'client', unread_count: 0, last_message_at: new Date().toISOString() }).select('id').single()
+      if (te) throw new Error('Could not start the conversation. Try again.')
+      tid = th.id
+    }
+  }
+  const { data: msg, error } = await supabase.from('messages').insert({ thread_id: tid, sender_type: 'client', sender_name: me.name, sender_email: me.email, body: text.slice(0, 5000) }).select('id').single()
+  if (error) throw new Error(isMonthlyMessageLimitError(error) ? MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE : 'Could not send the message. Try again.')
+  supabase.functions.invoke('send-message-notification', { body: { message_id: msg.id } }).catch(() => {})
+  return tid
+}
