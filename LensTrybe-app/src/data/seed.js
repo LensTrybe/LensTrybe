@@ -364,7 +364,8 @@ export const LIVE_SEED = (() => {
   s.settings = { ...s.settings, email: '', phone: '', biz: '', abn: '', addr: '', ints: Object.fromEntries(Object.keys(s.settings.ints || {}).map(k => [k, 0])) }
   s.plan = { name: 'Basic', annual: false, founding: 0, since: '' }
   s.site = { live: false, domain: '' }
-  s.avail = { ...s.avail, touched: 0 }
+  // a new account works every day, takes everything, no notice rules, nothing away: the creative sets their own
+  s.avail = { ...s.avail, days: [1, 1, 1, 1, 1, 1, 1], kinds: { Weddings: 1, 'Real estate': 1, Events: 1, Brand: 1, Headshots: 1, Family: 1 }, lead: 0, max: 0, buffers: { rest: 0, gap: 0, travel: 0 }, away: [], seasons: [], pub: { show: 1, n: 3, instant: [] }, auto: { hold: 0, gap: 0, sat: 0 }, touched: 0 }
   s.channels = (s.channels || []).map(c => ({ ...c, on: 0, followers: 0, grow: 0 }))
   s.setup = { hidden: 0 }
   s.counters = {}

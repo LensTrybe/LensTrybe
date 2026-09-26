@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
+import { LIVE } from '../../lib/mode'
 import { TODAY, nice, parse, addDays, daysBetween, iso } from '../../lib/store'
 import { occurrences } from '../../lib/cal'
 import { dayStatus, nextOpen, countOpen, awayOn } from '../../lib/avail'
@@ -72,7 +73,7 @@ export default function Availability() {
           </div>
           <div className="card lg"><div className="h"><b>How far you travel</b><b style={{ color: 'var(--sig)' }}>{A.radius} km</b></div>
             <input type="range" className="rng" min="20" max="400" step="10" value={A.radius} onChange={e => set({ radius: +e.target.value })} aria-label="Travel radius" />
-            <p className="tempty" style={{ textAlign: 'left', padding: '8px 0 0', fontSize: 12 }}>{s.profile.city.split(',')[0]} to Brisbane is 140 km, to Byron 230 km. Travel inside the radius is included in your quotes; beyond it Lumi adds it, and the job board shows those jobs as further out.</p>
+            <p className="tempty" style={{ textAlign: 'left', padding: '8px 0 0', fontSize: 12 }}>{LIVE ? '' : (s.profile.city || '').split(',')[0] + ' to Brisbane is 140 km, to Byron 230 km. '} Travel inside the radius is included in your quotes; beyond it, the job board shows those jobs as further out.</p>
           </div>
         </div>
 

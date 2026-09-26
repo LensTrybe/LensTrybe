@@ -7,7 +7,7 @@ import { LIVE } from './mode'
 // Later this is the layer that talks to Supabase; the pages will not need to change.
 // Live mode keeps its own key: what a real account loads must never mix with the sample data,
 // and clearing the demo must not touch a real session's cached view.
-const KEY = LIVE ? 'lt-live-v2' : 'lt-store-v11'
+const KEY = LIVE ? 'lt-live-v3' : 'lt-store-v11'
 // the live store starts empty (the real account fills it); a demo can start empty too, to test that
 const BASE = LIVE || import.meta.env.VITE_LT_SEED === 'empty' ? LIVE_SEED : SEED
 const Ctx = createContext(null)

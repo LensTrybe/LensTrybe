@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom'
 import Logo from '../../components/Logo'
 import Aurora from '../../components/Aurora'
@@ -10,6 +10,7 @@ import { useSpecular } from '../../lib/useSpecular'
 import { signOut } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
+import * as live from '../../lib/live'
 import Today from './Today'
 import Threads from './Threads'
 import Thread from './Thread'
@@ -82,6 +83,21 @@ function LiveSync() {
       site: { live: !!P.portfolio_website_active, domain: P.custom_domain || (P.portfolio_website_vanity_url ? P.portfolio_website_vanity_url + '.lenstrybe.com' : '') },
     })
   }, [profile?.id, profile?.business_name, profile?.subscription_tier, profile?.avatar_url, profile?.tagline, profile?.bio, profile?.city, profile?.phone, profile?.abn, profile?.brand_logo_url, profile?.founding_member]) // eslint-disable-line react-hooks/exhaustive-deps
+  // the workspace's own settings: load once per account, then save (debounced) whenever they change
+  const loaded = useRef(false), timer = useRef(null)
+  useEffect(() => {
+    if (!LIVE || !profile?.id) return
+    let on = true
+    live.loadWorkspaceState(profile.id).then(d => { if (!on) return; if (d) F.hydrate(Object.fromEntries(live.SYNC_KEYS.filter(k => k in d).map(k => [k, k === 'settings' ? { ...F.s.settings, ...d.settings } : d[k]]))); loaded.current = true }).catch(() => { loaded.current = true })
+    return () => { on = false }
+  }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const snap = JSON.stringify(live.SYNC_KEYS.map(k => F.s[k]))
+  useEffect(() => {
+    if (!LIVE || !profile?.id || !loaded.current) return
+    clearTimeout(timer.current)
+    timer.current = setTimeout(() => { const { email, phone, biz, abn, addr, ...settings } = F.s.settings || {}; live.saveWorkspaceState(profile.id, { ...Object.fromEntries(live.SYNC_KEYS.map(k => [k, F.s[k]])), settings }).catch(() => {}) }, 1200)
+    return () => clearTimeout(timer.current)
+  }, [snap]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!LIVE) return
     let on = true; const run = () => { if (on && document.visibilityState === 'visible') F.refreshLive() }

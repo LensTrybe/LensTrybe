@@ -603,3 +603,14 @@ export async function importContacts(uid, list, tag) {
   for (const r of rows) { const { error } = await supabase.from('crm_contacts').insert(r); if (error) { if (n === 0) throw crmErr(error); break } n++ }
   return n
 }
+
+// ── The workspace's own settings (no live-site table): one jsonb row per creative ──────────────
+export const SYNC_KEYS = ['avail', 'meetingTypes', 'stages', 'checklistTemplates', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'waitlist', 'settings', 'setup']
+export async function loadWorkspaceState(uid) {
+  const { data } = await supabase.from('workspace_state').select('data').eq('creative_id', uid).maybeSingle()
+  return data?.data || null
+}
+export async function saveWorkspaceState(uid, data) {
+  const { error } = await supabase.from('workspace_state').upsert({ creative_id: uid, data, updated_at: new Date().toISOString() })
+  if (error) throw new Error(error.message)
+}
