@@ -92,7 +92,17 @@
 .pub .revs .rc{padding:20px;border-radius:20px}
 .pub .revs .rc .h{display:flex;justify-content:space-between;gap:10px;font-size:14px}
 .pub .revs .rc .h i{color:var(--amber);font-style:normal;letter-spacing:1px}
-.pub .revs .rc .rvreply{margin-top:12px;padding:12px 14px;border-left:2px solid var(--green,#1DB954);background:rgba(255,255,255,.04);border-radius:0 12px 12px 0;font-size:13px}.pub .revs .rc .rvreply b{display:block;font-size:12px;margin-bottom:4px}.pub .revs .rc .rvreply p{margin:0;opacity:.85}
+.pub .rvgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px;align-items:start}
+.pub .rvcard{padding:18px 18px 16px;border-radius:18px;background:var(--glass,rgba(255,255,255,.6));border:1px solid var(--line,rgba(0,0,0,.06));box-shadow:0 6px 20px rgba(20,20,40,.06);display:flex;flex-direction:column;gap:12px;max-width:360px}
+.pub .rvcard.pin{border-color:rgba(29,185,84,.35)}
+.pub .rvtop{display:flex;align-items:center;justify-content:space-between}
+.pub .rvstars{color:var(--amber);font-style:normal;letter-spacing:2px;font-size:14px}.pub .rvstars span{opacity:.25}
+.pub .rvtop em{font-style:normal;font-size:11px;font-weight:600;color:var(--green-t);background:rgba(29,185,84,.1);padding:3px 8px;border-radius:99px}
+.pub .rvtext{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-2);display:-webkit-box;-webkit-line-clamp:7;-webkit-box-orient:vertical;overflow:hidden}
+.pub .rvwho{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.pub .rvwho b{display:block;font-size:13.5px}.pub .rvwho small{color:var(--ink-3);font-size:12px}
+.pub .rvav{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700;color:#fff;background:linear-gradient(135deg,#1DB954,#0f6b34);flex:none}
+.pub .rvsrc{margin-left:auto}
+.pub .rvcard .rvreply,.pub .revs .rc .rvreply{margin-top:0;padding:12px 14px;border-left:2px solid var(--green,#1DB954);background:rgba(255,255,255,.04);border-radius:0 12px 12px 0;font-size:13px}.pub .rvreply b{display:block;font-size:12px;margin-bottom:4px}.pub .rvreply p{margin:0;opacity:.85}
 .pub .revs .rc p{margin-top:8px;color:var(--ink-2);font-size:14.5px}
 .pub .revs .rc small{color:var(--ink-3);font-size:12.5px}
 .pub .about p{color:var(--ink-2);max-width:62ch;font-size:15px}
