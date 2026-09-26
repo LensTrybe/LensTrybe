@@ -7,3 +7,4 @@ dist
 !.env.example
 *.local
 .vercel
+_to_delete/

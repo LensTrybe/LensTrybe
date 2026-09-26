@@ -45,7 +45,7 @@ export function useFlows() {
   const liveSlot = v => ({ date: v.d, allDay: v.allDay === true || v.allDay === 'true', start: v.time, end: v.endTime })
   const withForce = async (fn, label) => { try { await fn(false); return true } catch (e) { if (!e.conflict) { toast(e.message); return false } return new Promise(res => confirm({ title: 'That day is not clear', body: <>{e.message} Book it anyway?</>, cta: label || 'Book it anyway', onYes: async () => { try { await fn(true); res(true) } catch (x) { toast(x.message); res(false) } } })) } }
   const newBookingLive = (date = '', preset = {}) => open({
-    title: 'New booking', sub: 'Goes on your calendar and into the thread. The client can get a confirmation email.', cta: 'Book it', wide: true,
+    title: 'New booking', sub: 'Goes on your calendar and into the thread. The client can get a confirmation email.', cta: 'Book it', working: 'Booking', wide: true,
     fields: [liveClientField(preset), ...newNameFields(), { k: 'what', l: 'What', required: true, placeholder: 'Wedding · full day', value: preset.what || '' }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: date || '', min: TODAY }, { k: 'allDay', l: 'All day', type: 'toggle', half: true, value: false }, { k: 'time', l: 'Start', type: 'time', half: true, value: preset.time || '10:00', when: v => !v.allDay }, { k: 'endTime', l: 'Finish', type: 'time', half: true, value: '12:00', when: v => !v.allDay }, { k: 'venue', l: 'Where', placeholder: 'Venue or address' }, { k: 'notes', l: 'Notes', type: 'textarea', rows: 3, placeholder: 'Only you see these' }, { k: 'notify', l: 'Email the client a confirmation', type: 'toggle', value: true }],
     submit: async v => {
       const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()
@@ -349,7 +349,7 @@ export function useFlows() {
     submit: v => { const c = catOf(v); add('gear', { n: v.n, c, sn: v.sn, v: v.v, ins: v.ins ? 1 : 0, svc: v.svc, note: v.note, kit: v.kit ? 1 : 0 }, 'gear'); toast(v.n + ' added to ' + c + (v.ins ? ', on the insurance list.' : '.')) },
   })
   const newMeetingLive = (preset = {}) => open({
-    title: 'Propose a meeting', sub: 'The client gets an email with the time and can accept, suggest another, or decline.', cta: 'Send invite',
+    title: 'Propose a meeting', sub: 'The client gets an email with the time and can accept, suggest another, or decline.', cta: 'Send invite', working: 'Sending invite',
     fields: [liveClientField(preset), ...newNameFields(), { k: 'title', l: 'What', required: true, value: preset.title || '', placeholder: 'Planning call' }, { k: 't', l: 'Type', type: 'select', value: preset.t || (s.meetingTypes[0]?.id || ''), options: s.meetingTypes.map(m => [m.id, m.n + ' · ' + m.m + ' min']) }, { k: 'd', l: 'Date', type: 'date', required: true, half: true, value: preset.d || TODAY, min: TODAY }, { k: 'time', l: 'Time', type: 'time', required: true, half: true, value: '10:00' }, { k: 'how', l: 'How', type: 'select', half: true, value: 'Video', options: ['Video', 'Phone', 'In person'] }, { k: 'where', l: 'Link, number or place', half: true, placeholder: 'Zoom link, phone, cafe' }, { k: 'desc', l: 'Details for the client', type: 'textarea', rows: 3, placeholder: 'What you will cover' }],
     submit: async v => {
       const th = s.threads.find(t => t.id === v.client); const name = th ? th.n : (v.newName || '').trim(); const email = th ? th.email : (v.newEmail || '').trim()

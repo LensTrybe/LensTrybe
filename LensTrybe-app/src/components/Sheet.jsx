@@ -11,9 +11,9 @@ import Icon from './Icon'
 const Ctx = createContext({ open: () => {}, confirm: () => {}, close: () => {} })
 
 export function SheetProvider({ children }) {
-  const [sh, setSh] = useState(null), [v, setV] = useState({}), [on, setOn] = useState(false), [err, setErr] = useState(null)
+  const [sh, setSh] = useState(null), [v, setV] = useState({}), [on, setOn] = useState(false), [err, setErr] = useState(null), [busy, setBusy] = useState(false)
   const first = useRef()
-  const close = useCallback(() => { setOn(false); setTimeout(() => setSh(null), 260) }, [])
+  const close = useCallback(() => { setBusy(false); setOn(false); setTimeout(() => setSh(null), 260) }, [])
   const open = useCallback(cfg => {
     const init = {}; (cfg.fields || []).forEach(f => { init[f.k] = f.value ?? (f.type === 'toggle' ? false : f.type === 'chips' ? [] : '') })
     setV(init); setErr(null); setSh(cfg); requestAnimationFrame(() => { setOn(true); setTimeout(() => first.current?.focus(), 80) })
@@ -28,7 +28,7 @@ export function SheetProvider({ children }) {
     const out = {}; (sh.fields || []).forEach(f => { out[f.k] = ['number', 'money'].includes(f.type) ? Number(v[f.k] || 0) : v[f.k] })
     const r = sh.submit?.(out)
     // an async submit keeps the sheet open until it resolves; resolving false keeps it open (an error the form should show)
-    if (r && typeof r.then === 'function') r.then(x => { if (x !== false) close() }); else if (r !== false) close()
+    if (r && typeof r.then === 'function') { setBusy(true); r.then(x => { setBusy(false); if (x !== false) close() }, () => setBusy(false)) } else if (r !== false) close()
   }
   const field = (f, i) => {
     const id = 'sf-' + f.k, val = v[f.k], bad = err === f.k, ref = i === 0 ? first : undefined
@@ -65,11 +65,11 @@ export function SheetProvider({ children }) {
             {sh.fields?.length > 0 && <div className="sfs">{sh.fields.filter(f => !f.when || f.when(v)).map(field)}</div>}
           </div>
           <div className="sh-f">
-            {sh.alt && <button type="button" className="btn g" onClick={() => { const r = sh.alt.on?.(v); if (r !== false) close() }}>{sh.alt.l}</button>}
-            {sh.alt2 && <button type="button" className="btn g quiet" onClick={() => { const r = sh.alt2.on?.(v); if (r !== false) close() }}>{sh.alt2.l}</button>}
+            {sh.alt && <button type="button" className="btn g" disabled={busy} onClick={() => { const r = sh.alt.on?.(v); if (r && typeof r.then === 'function') { setBusy(true); r.then(x => { setBusy(false); if (x !== false) close() }, () => setBusy(false)) } else if (r !== false) close() }}>{sh.alt.l}</button>}
+            {sh.alt2 && <button type="button" className="btn g quiet" disabled={busy} onClick={() => { const r = sh.alt2.on?.(v); if (r && typeof r.then === 'function') { setBusy(true); r.then(x => { setBusy(false); if (x !== false) close() }, () => setBusy(false)) } else if (r !== false) close() }}>{sh.alt2.l}</button>}
             <span style={{ flex: 1 }} />
-            <button type="button" className="btn g" onClick={close}>{sh.cancel || 'Cancel'}</button>
-            {!sh.noSubmit && <button type="submit" className={'btn ' + (sh.danger ? 'danger' : 'w')}>{sh.cta || 'Save'}</button>}
+            <button type="button" className="btn g" onClick={close} disabled={busy}>{sh.cancel || 'Cancel'}</button>
+            {!sh.noSubmit && <button type="submit" className={'btn ' + (sh.danger ? 'danger' : 'w') + (busy ? ' busy' : '')} disabled={busy}>{busy ? <><span className="spin" aria-hidden="true" />{sh.working || 'Working'}</> : (sh.cta || 'Save')}</button>}
           </div>
         </form>
       </div>}

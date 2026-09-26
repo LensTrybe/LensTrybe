@@ -54,3 +54,7 @@ p{margin:0}
 .modebadge{position:fixed;left:14px;bottom:14px;z-index:60;height:26px;padding:0 10px;border-radius:999px;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(10,10,15,.8);color:rgba(255,255,255,.75);border:1px solid rgba(255,255,255,.18);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);cursor:pointer}
 .modebadge.live.ok,.modebadge.live.signed-in{color:#0a0a0f;background:var(--neon)}
 .modebadge.live.error{color:#fff;background:#c11f5a}
+/* a button doing something slow: keeps its place, shows a ring, cannot be clicked twice */
+.btn.busy{opacity:.85;transform:none;cursor:progress}
+.btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:btnspin .7s linear infinite;flex:none}
+@keyframes btnspin{to{transform:rotate(360deg)}}
