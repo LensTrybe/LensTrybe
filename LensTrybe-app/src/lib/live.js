@@ -1050,3 +1050,68 @@ export async function messageSeller(me, l, body, threadId) {
   supabase.functions.invoke('send-message-notification', { body: { message_id: msg.id } }).catch(() => {})
   return tid
 }
+
+// ── Collaborate: the collab board between creatives. collaborations (posts), collaboration_invites
+// ("I'm interested" on a post, or a direct invite), saved_creatives (your crew). Accepting runs
+// accept_collab_invite, which opens a thread in the accepter's Threads with the requester on the
+// other side; the requester follows it here (like a marketplace buyer). Rules in guard_collaboration /
+// guard_collab_invite: Basic can browse, save crew and say they're interested; posting and direct
+// invites are Pro and up.
+const COLLAB_COLS = 'id, posted_by, roles_needed, work_type, arrangement, location, date_or_timeline, is_paid, budget_amount, brief, status, created_at'
+const PROF_MINI = 'id, business_name, avatar_url, city, state, skill_types, subscription_tier'
+const shapeProf = p => p ? { id: p.id, n: p.business_name || 'A creative', av: p.avatar_url || '', c: p.city || '', state: p.state || '', skills: [].concat(p.skill_types || []).filter(Boolean), tier: String(p.subscription_tier || 'basic').toLowerCase() } : null
+export const shapeCollab = (r, prof) => ({ id: r.id, by: r.posted_by, who: prof || null, roles: r.roles_needed || [], work: r.work_type, arr: r.arrangement, loc: r.location || '', when: r.date_or_timeline || '', paid: !!r.is_paid, amt: r.budget_amount == null ? null : Number(r.budget_amount), brief: r.brief || '', st: r.status, posted: dayOf(r.created_at) })
+export async function loadCollab(uid) {
+  const [o, m, sent, got, sv, th] = await Promise.all([
+    supabase.from('collaborations').select(COLLAB_COLS).eq('status', 'open').neq('posted_by', uid).order('created_at', { ascending: false }).limit(200),
+    supabase.from('collaborations').select(COLLAB_COLS).eq('posted_by', uid).order('created_at', { ascending: false }),
+    supabase.from('collaboration_invites').select('id, collaboration_id, from_creative_id, to_creative_id, message, status, created_at, thread_id').eq('from_creative_id', uid).order('created_at', { ascending: false }),
+    supabase.from('collaboration_invites').select('id, collaboration_id, from_creative_id, to_creative_id, message, status, created_at, thread_id').eq('to_creative_id', uid).order('created_at', { ascending: false }),
+    supabase.from('saved_creatives').select('creative_id, created_at').eq('user_id', uid).order('created_at', { ascending: false }),
+    supabase.from('message_threads').select('id, creative_id, subject, last_message_at, messages(id, body, sender_type, created_at)').eq('client_user_id', uid).ilike('subject', 'Collab:%'),
+  ])
+  if (o.error || m.error || sent.error || got.error) throw new Error('Could not load Collaborate. Reload to try again.')
+  const collabIds = [...new Set([...(sent.data || []), ...(got.data || [])].map(i => i.collaboration_id).filter(Boolean))].filter(id => ![...(o.data || []), ...(m.data || [])].some(c => c.id === id))
+  const extra = collabIds.length ? ((await supabase.from('collaborations').select(COLLAB_COLS).in('id', collabIds)).data || []) : []
+  const ids = [...new Set([...(o.data || []).map(c => c.posted_by), ...extra.map(c => c.posted_by), ...(sent.data || []).map(i => i.to_creative_id), ...(got.data || []).map(i => i.from_creative_id), ...(sv.data || []).map(x => x.creative_id)])].filter(Boolean)
+  const profs = ids.length ? ((await supabase.from('profiles').select(PROF_MINI).in('id', ids)).data || []) : []
+  const P = Object.fromEntries(profs.map(p => [p.id, shapeProf(p)]))
+  const C = Object.fromEntries([...(o.data || []), ...(m.data || []), ...extra].map(c => [c.id, shapeCollab(c, P[c.posted_by])]))
+  const threads = Object.fromEntries((th.data || []).map(t => [t.id, { id: t.id, at: t.last_message_at, msgs: (t.messages || []).sort((a, b) => a.created_at < b.created_at ? -1 : 1).map(x => ({ id: x.id, me: x.sender_type === 'client', body: x.body || '', at: x.created_at })) }]))
+  const inv = (i, other) => ({ id: i.id, collab: i.collaboration_id ? C[i.collaboration_id] || null : null, other: P[other] || { id: other, n: 'A creative' }, msg: i.message || '', st: i.status, at: dayOf(i.created_at), thread: i.thread_id, conv: threads[i.thread_id] || null })
+  return {
+    open: (o.data || []).map(c => C[c.id]), mine: (m.data || []).map(c => C[c.id]),
+    sent: (sent.data || []).map(i => inv(i, i.to_creative_id)), got: (got.data || []).map(i => inv(i, i.from_creative_id)),
+    crew: (sv.data || []).map(x => P[x.creative_id]).filter(Boolean), crewIds: (sv.data || []).map(x => x.creative_id),
+  }
+}
+export async function findCreatives(uid, q) {
+  let r = supabase.from('profiles').select(PROF_MINI).eq('is_admin', false).eq('is_listed', true).neq('id', uid).order('created_at', { ascending: false }).limit(40)
+  const s = String(q || '').trim().replace(/[%_,()]/g, ' ').slice(0, 60)
+  if (s) r = r.or('business_name.ilike.%' + s + '%,city.ilike.%' + s + '%')
+  const { data } = await r
+  return (data || []).map(shapeProf)
+}
+export async function saveCollab(v, id) {
+  const brief = String(v.brief || '').trim()
+  const mod = await moderateText(brief + '\n' + (v.loc || '')); if (mod?.blocked) throw new Error('That wording can\'t be posted. Please change it and try again.')
+  const row = { roles_needed: [].concat(v.roles || []), work_type: v.work || 'on-location', arrangement: v.arr || 'one-off', location: v.work === 'remote' ? null : String(v.loc || '').trim() || null, date_or_timeline: String(v.when || '').trim() || null, is_paid: !!v.paid, budget_amount: v.paid && Number(v.amt) > 0 ? Number(v.amt) : null, brief }
+  const { data, error } = id ? await supabase.from('collaborations').update(row).eq('id', id).select('id').single() : await supabase.from('collaborations').insert({ ...row, status: 'open' }).select('id').single()
+  if (error) throw dbMsg(error, 'Could not save the collab. Try again.')
+  return data.id
+}
+export async function setCollabStatus(id, st) { const { error } = await supabase.from('collaborations').update({ status: st }).eq('id', id); if (error) throw new Error('Could not update it. Try again.') }
+export async function deleteCollab(id) { const { error } = await supabase.from('collaborations').delete().eq('id', id); if (error) throw new Error('Could not delete it. Try again.') }
+export async function sendCollabRequest({ collabId = null, to = null, message = '' }) {
+  const text = String(message || '').trim()
+  if (text) { const mod = await moderateText(text); if (mod?.blocked) throw new Error('That wording can\'t be sent. Please change it and try again.') }
+  const { error } = await supabase.from('collaboration_invites').insert({ collaboration_id: collabId, to_creative_id: to, message: text.slice(0, 1000), status: 'pending' })
+  if (error) throw error.code === '23505' ? new Error('You already have a request waiting with them.') : dbMsg(error, 'Could not send it. Try again.')
+}
+export async function acceptCollab(id) { const { data, error } = await supabase.rpc('accept_collab_invite', { p_invite: id }); if (error) throw dbMsg(error, 'Could not accept it. Try again.'); return data }
+export async function declineCollab(id) { const { error } = await supabase.from('collaboration_invites').update({ status: 'declined' }).eq('id', id); if (error) throw new Error('Could not decline it. Try again.') }
+export async function toggleCrew(uid, cid, on) {
+  const { error } = on ? await supabase.from('saved_creatives').insert({ user_id: uid, creative_id: cid }) : await supabase.from('saved_creatives').delete().eq('user_id', uid).eq('creative_id', cid)
+  if (error && error.code !== '23505') throw new Error('Could not update your crew. Try again.')
+}
+export const replyInThread = (me, threadId, body) => messageSeller(me, { t: '', seller: {} }, body, threadId)
