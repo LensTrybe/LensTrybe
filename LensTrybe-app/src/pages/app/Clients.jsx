@@ -44,7 +44,7 @@ export default function Clients({ kind = 'clients' }) {
   return (
     <section className="view">
       <div className="vh">
-        <div><h1>{kind === 'crm' ? 'CRM' : 'Contacts'}</h1><p>{kind === 'crm' ? 'Every job by stage, and every person behind it. Drag a card to move it, or let the thread do it.' : 'Everyone who has booked, enquired or been quoted. Lumi keeps the notes.'}</p></div>
+        <div><h1>CRM &amp; Contacts</h1><p>{view === 'pipeline' ? 'Every job by stage, and every person behind it. Send a quote, a contract or an invoice and the card moves itself.' : 'Everyone who has booked, enquired or been quoted, with the jobs and money behind each name.'}</p></div>
         <div className="acts"><button className="btn g" onClick={importCsv}><Icon name="deliver" size={15} />Import</button><button className="btn w" onClick={() => F.newClient(r => setSel(r.pid))}><Icon name="plus" size={15} />Add client</button></div>
       </div>
       <div className="grid">

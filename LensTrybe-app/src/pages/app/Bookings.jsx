@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
+import CalTabs from './CalTabs'
 import { TODAY as T0, iso, parse, addDays, nice } from '../../lib/store'
 import { occurrences, ampm, mins, endOf, durMins, km, leaveBy, line, ics } from '../../lib/cal'
 import { fmt } from '../../lib/format'
@@ -96,6 +97,7 @@ export default function Bookings() {
       <div className="vh">
         <div><h1>{title}</h1><p>{counts.b} booked, {counts.p} pencilled, {fmt(counts.v)} on the books in {MON[view.getMonth()]}. Tap a day, drag a booking to move it.</p></div>
         <div className="acts">
+          <CalTabs />
           <button className="syncb" onClick={exportIcs} title="Download an .ics for Google, Apple or Outlook"><i />Google Calendar · export</button>
           <div className="tfilt seg3">{[['month', 'Month'], ['week', 'Week'], ['day', 'Day']].map(([k, l]) => <button key={k} className={mode === k ? 'on' : ''} onClick={() => setMode(k)}>{l}</button>)}</div>
           <div className="mnav"><button onClick={() => step(-1)} aria-label="Previous"><Icon name="back" size={15} /></button><button className="today" onClick={() => goto(T0)}>Today</button><button onClick={() => step(1)} aria-label="Next" className="fwd"><Icon name="back" size={15} /></button></div>
@@ -133,7 +135,7 @@ export default function Bookings() {
         </div>
         <div className="s4 side">
           {dayPanel}
-          <div className="card lg"><div className="h"><b>Coming up</b><Link to="/app/availability">Availability <Icon name="arrow" size={12} /></Link></div>
+          <div className="card lg"><div className="h"><b>Coming up</b><Link to="/app/availability">Your availability <Icon name="arrow" size={12} /></Link></div>
             <div className="up">{upcoming.map(x => { const d = parse(x.on); return <div key={x.oid} className="d" onClick={() => goto(x.on)}><div className="dt"><small>{DOW[(d.getDay() + 6) % 7]}</small><b>{d.getDate()}</b></div><div><b>{x.n}</b><small>{line(x) || x.s}</small></div><span className={'st ' + (x.k === 'p' ? 'viewed' : 'ok')}>{x.k === 'p' ? 'Pencilled' : 'Booked'}</span></div> })}{!upcoming.length && <p className="tempty">Nothing booked yet.</p>}</div>
           </div>
           {!LIVE && !F.gapOffered() && <div className="tlumi"><span className="lm" /><div>23 Nov to 6 Dec is empty. Last year that fortnight was four family sessions. I can post a Christmas minis offer to your profile and message six families from last year.<div className="acts"><button className="y" onClick={() => F.offerGap()}>Post it</button><button onClick={() => F.toast('Noted. I will ask again on Thursday.')}>Not now</button></div></div></div>}

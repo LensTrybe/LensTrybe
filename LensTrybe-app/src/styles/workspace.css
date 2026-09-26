@@ -1736,3 +1736,9 @@
 
 /* Two-column fields: the bf+bf spacing rule must not push the second column down */
 .ws .fields.two .bf+.bf{margin-top:0}
+/* Calendar | Availability tabs sit first in the header actions */
+.ws .caltabs{margin:0;display:inline-flex;align-items:center}
+.ws .caltabs a{display:inline-flex;align-items:center;height:32px;padding:0 12px;border-radius:999px;font-size:12px;font-weight:600;color:var(--ink-3);white-space:nowrap;text-decoration:none;transition:background .2s,color .2s}
+.ws .caltabs a:hover{background:var(--hov);color:var(--ink)}
+.ws .caltabs a.on{background:var(--ink);color:var(--bg)}
+.ws.dark .caltabs a.on{background:#fff;color:#0a0a0f}

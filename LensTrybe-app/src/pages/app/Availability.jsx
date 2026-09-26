@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
+import CalTabs from './CalTabs'
 import { LIVE } from '../../lib/mode'
 import { TODAY, nice, parse, addDays, daysBetween, iso } from '../../lib/store'
 import { occurrences } from '../../lib/cal'
@@ -39,7 +40,7 @@ export default function Availability() {
   const wl = (s.waitlist || []).filter(w => !w.offered), wlOpen = wl.filter(w => dayStatus(s, w.d).st === 'open')
   return (
     <section className="view avl">
-      <div className="vh"><div><h1>Availability</h1><p>The days you take work, the rules around them, and what the ask bar can offer without asking you.</p></div><div className="acts"><button className="btn g" onClick={F.calFeed}><Icon name="cal" size={15} />Subscribe on your phone</button><Link className="btn g" to="/app/bookings"><Icon name="cal" size={15} />Calendar</Link><button className="btn w" onClick={() => F.blockDay(sel || TODAY)}><Icon name="plus" size={15} />Block days</button></div></div>
+      <div className="vh"><div><h1>Availability</h1><p>The days you take work, the rules around them, and what the ask bar can offer without asking you.</p></div><div className="acts"><CalTabs /><button className="btn g" onClick={F.calFeed}><Icon name="cal" size={15} />Subscribe on your phone</button><button className="btn w" onClick={() => F.blockDay(sel || TODAY)}><Icon name="plus" size={15} />Block days</button></div></div>
       <div className="grid">
         <div className="s12"><div className="kp">{[['Open days, next 90', String(open90), booked90 + ' booked · ' + (90 - open90 - booked90) + ' off, away or buffer', ''], ['Saturdays open to Christmas', sats[0] + ' of ' + sats[1], nextSat ? 'next one ' + nice(nextSat) : 'none open', sats[0] <= 3 ? 'w' : ''], ['Holds', String(holds.length), expiring.length ? expiring.length + ' lapse' + (expiring.length > 1 ? '' : 's') + ' in the next two days' : holds.length ? 'none lapsing soon' : 'nothing pencilled', expiring.length ? 'w' : 'n'], ['Waiting on a date', String(wl.length), wlOpen.length ? wlOpen.length + ' could be offered now' : wl.length ? 'none of their dates are open yet' : 'nobody waiting', wlOpen.length ? '' : 'n']].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 

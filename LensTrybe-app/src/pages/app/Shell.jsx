@@ -44,7 +44,7 @@ import Team from './Team'
 import Availability from './Availability'
 import Jobs from './Jobs'
 import { EditProfile, ViewProfile, Subscription, Referrals, Founding, Settings, Support } from './Account'
-import { TOP, GROUPS } from './nav'
+import { TOP, GROUPS, HIDDEN } from './nav'
 import '../../styles/workspace.css'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
@@ -119,7 +119,7 @@ export default function Shell() {
   useSpecular([pathname, dock])
   const toggle = () => { if (innerWidth <= 1180) setDockM(d => !d); else setDock(d => !d) }
   const { s } = useStore(); const need = s.threads.filter(t => t.need).length
-  const active = k => pathname === '/app/' + k || (k === 'today' && pathname === '/app') || (k === 'threads' && pathname.startsWith('/app/thread/')) || (k === 'projects' && pathname.startsWith('/app/project/')) || (k === 'invoicing' && pathname.startsWith('/app/invoice/')) || (k === 'quotes' && pathname.startsWith('/app/quote/')) || (k === 'contracts' && pathname.startsWith('/app/contract/'))
+  const active = k => pathname === '/app/' + k || (k === 'bookings' && pathname === '/app/availability') || (k === 'clients' && pathname === '/app/crm') || (k === 'today' && pathname === '/app') || (k === 'threads' && pathname.startsWith('/app/thread/')) || (k === 'projects' && pathname.startsWith('/app/project/')) || (k === 'invoicing' && pathname.startsWith('/app/invoice/')) || (k === 'quotes' && pathname.startsWith('/app/quote/')) || (k === 'contracts' && pathname.startsWith('/app/contract/'))
   const here = GROUPS.find(g => g[2].some(i => active(i[0])))?.[0] || null
   const [open, setOpen] = useState(here)
   useEffect(() => { if (here) setOpen(here) }, [here])
@@ -159,7 +159,7 @@ export default function Shell() {
             <Route path="quote/:id" element={<DocEditor kind="q" />} />
             <Route path="contract/new" element={<ContractEditor />} />
             <Route path="contract/:id" element={<ContractEditor />} />
-            {[...TOP, ...GROUPS.flatMap(g => g[2]), ['lumi']].map(([k]) => { const C = BUILT[k]; return <Route key={k} path={k} element={C ? <C /> : <Soon id={k} />} /> })}
+            {[...TOP, ...GROUPS.flatMap(g => g[2]), ...HIDDEN, ['lumi']].map(([k]) => { const C = BUILT[k]; return <Route key={k} path={k} element={C ? <C /> : <Soon id={k} />} /> })}
           </Routes>
         </main>
         <Dock onClose={() => { setDock(false); setDockM(false) }} />
