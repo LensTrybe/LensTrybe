@@ -783,10 +783,10 @@ export function brandFromKit(k, base = {}) {
 }
 async function putDataImage(uid, dataUrl, name) {
   if (!dataUrl || !String(dataUrl).startsWith('data:')) return dataUrl || null
-  const m = String(dataUrl).match(/^data:([^;,]+)(;base64)?,(.*)$/s); if (!m) return null
+  const m = String(dataUrl).match(/^data:([^;,]+)((?:;[^,]*)?),(.*)$/s); if (!m) return null
   const type = m[1], svg = type === 'image/svg+xml'
   if (!/^image\/(png|jpeg|webp|svg\+xml)$/.test(type)) throw new Error('Logos can be a PNG, JPG or WebP.')
-  const bytes = m[2] ? Uint8Array.from(atob(m[3]), c => c.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(m[3]))
+  const bytes = /;base64/.test(m[2]) ? Uint8Array.from(atob(m[3]), c => c.charCodeAt(0)) : new TextEncoder().encode(decodeURIComponent(m[3]))
   if (bytes.length > 8e6) throw new Error('That logo is over 8 MB.')
   const blob = new Blob([bytes], { type })
   if (!svg) { const { moderateImage } = await import('../backend/moderateContent'); const r = await moderateImage(new File([blob], name + '.png', { type })); if (r?.blocked) throw new Error('That image cannot be used here.') }
