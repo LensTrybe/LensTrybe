@@ -38,7 +38,7 @@ function Body({ text }) {
 export default function Legal() {
   const { doc } = useParams(); const key = DOCS[doc] ? doc : 'terms'; const d = DOCS[key]
   const [active, setActive] = useState(d.sections[0]?.id)
-  useEffect(() => { setActive(d.sections[0]?.id); scrollTo(0, 0) }, [key])
+  useEffect(() => { setActive(d.sections[0]?.id); const h = decodeURIComponent(window.location.hash.slice(1)); if (h && d.sections.some(x => x.id === h)) setTimeout(() => document.getElementById(h)?.scrollIntoView(), 60); else scrollTo(0, 0) }, [key])
   useEffect(() => {
     const els = d.sections.map(s => document.getElementById(s.id)).filter(Boolean)
     const io = new IntersectionObserver(es => { es.forEach(e => { if (e.isIntersecting) setActive(e.target.id) }) }, { rootMargin: '-25% 0px -65% 0px' })

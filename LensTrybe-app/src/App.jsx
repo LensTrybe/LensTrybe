@@ -70,6 +70,13 @@ export default function App() {
           <Route path="/upcoming" element={<Upcoming />} />
           <Route path="/support" element={<Support />} />
           <Route path="/legal/:doc" element={<Legal />} />
+          {/* Old site addresses (emails, Revolut, Google) keep working */}
+          <Route path="/terms" element={<Navigate to="/legal/terms" replace />} />
+          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
+          <Route path="/cookies" element={<Navigate to="/legal/cookies" replace />} />
+          <Route path="/refunds" element={<Navigate to="/legal/refunds" replace />} />
+          <Route path="/refund-policy" element={<Navigate to="/legal/refunds" replace />} />
+          <Route path="/founding-agreement" element={<Navigate to="/legal/founding" replace />} />
         </Route>
         <Route path="/onboarding" element={<Onboard />} />
         <Route path="/portal" element={<RequireClient><ClientHome /></RequireClient>} />
