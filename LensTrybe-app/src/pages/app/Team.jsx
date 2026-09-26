@@ -54,7 +54,7 @@ function TeamDemo() {
 const MAX_TEAM = 4, TTL_DAYS = 14
 const ROLE_OPTS = ['Second shooter', 'Editor', 'Assistant', 'Studio manager', 'Partner', 'Other']
 const GRADS = ['linear-gradient(135deg,#2c5e3a,#7fe8a8)', 'linear-gradient(135deg,#5e2c4a,#e87fb8)', 'linear-gradient(135deg,#5e4a2c,#e8c07f)', 'linear-gradient(135deg,#2c3a5e,#7fa8e8)']
-const ymd = t => String(t || '').slice(0, 10)
+const ymd = t => { const d = new Date(t); return isNaN(d) ? '' : d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0') }
 function TeamLive() {
   const F = useFlows(); const { s, toast } = F; const { profile: P } = useAuth()
   const elite = s.plan.name === 'Elite'
