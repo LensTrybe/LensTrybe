@@ -58,3 +58,7 @@ create policy "Published issues are public" on public.edit_issues for select to 
   using (approved and publish_at <= now());
 revoke all on public.edit_issues from anon, authenticated;
 grant select on public.edit_issues to anon, authenticated;
+
+-- A new address that has asked for The Edit but not yet tapped the confirm link.
+alter table public.email_subscribers drop constraint if exists email_subscribers_status_check;
+alter table public.email_subscribers add constraint email_subscribers_status_check check (status = any (array['subscribed','unsubscribed','pending']));

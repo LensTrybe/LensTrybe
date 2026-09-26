@@ -29,7 +29,7 @@ function Subscribe({ dark }) {
   const go = async ev => {
     ev.preventDefault(); if (!e.trim() || busy) return
     setBusy(true)
-    try { await editSubscribe(e); toast('Nearly there. Check your inbox and tap the link to confirm.'); setE('') }
+    try { await editSubscribe(e); toast("You're subscribed to The Trybe Edit."); setE('') }
     catch (err) { toast(err.message || 'Something went wrong. Try again.') }
     finally { setBusy(false) }
   }
@@ -54,13 +54,13 @@ export function EditHome() {
           <h1 className="mast"><span className="ln"><span>The Trybe <em>Edit.</em></span></span></h1>
           <p className="sub">A monthly read for professional visual creatives who are serious about building a business, not just a following. Written by the people building LensTrybe.</p>
           <Subscribe dark />
-          <p className="tiny">One email a month. No spam, ever. Unsubscribe in one tap.</p>
+          <p className="tiny">A new issue on the 1st of every month. Unsubscribe any time.</p>
         </div>
       </section>
       <div className="lt">
         <Aurora />
         <section className="sec" style={{ paddingTop: 'clamp(40px,6vw,72px)' }}><div className="wrap">
-          {!latest ? <div className="stephead rv"><div><p className="eb g">{issues ? 'Issue #1 · October 2026' : 'Loading'}</p><h2>The first issue lands <em>1 October.</em></h2><p className="lede">Subscribe above and it arrives in your inbox on the day. After that, a new issue on the 1st of every month.</p></div></div> : <>
+          {!latest ? <div className="stephead rv"><div><p className="eb g">{issues ? 'Issue #1 · October 2026' : 'Loading'}</p><h2>The first issue lands <em>1 October.</em></h2><p className="lede">Then a new issue on the 1st of every month, right here.</p></div></div> : <>
           <div className="stephead rv"><div><p className="eb g">Latest issue · {latest.month}</p><h2>{latest.title.split(' ').slice(0, 3).join(' ')} <em>{latest.title.split(' ').slice(3).join(' ')}.</em></h2></div></div>
           <Link className="ecover lg rv" to={'/edit/' + latest.slug}>
             <div className="cimg"><Still seed={latest.seed} mood={latest.mood} /><span className="ctag">Issue #{latest.n}</span></div>
@@ -75,7 +75,7 @@ export function EditHome() {
           <div className="stephead rv"><div><p className="eb g">Every issue</p><h2>The <em>archive.</em></h2></div></div>
           <div className="agrid rv">
             {issues.map(i => <Link key={i.slug} className="acard lg" to={'/edit/' + i.slug}><div className="img"><Still seed={i.seed} mood={i.mood} /></div><div><small>Issue #{i.n} · {i.month}</small><b>{i.title}</b><span>{i.read} read</span></div></Link>)}
-            <div className="acard lg soon"><div><small>Issue #{latest.n + 1} · the 1st of next month</small><b>A new issue on the 1st of every month.</b><span>Subscribe above and it lands in your inbox.</span></div></div>
+            <div className="acard lg soon"><div><small>Issue #{latest.n + 1} · the 1st of next month</small><b>A new issue on the 1st of every month.</b><span>Subscribe above so you don't miss it.</span></div></div>
           </div>
         </div></section>}
       </div>
@@ -117,7 +117,7 @@ export function EditIssue() {
             </section>
           ))}
           <div className="closer lg rv">
-            <div><p className="eb g">Don't miss the next issue</p><h2>One email a month. <em>That's it.</em></h2></div>
+            <div><p className="eb g">Don't miss the next issue</p><h2>A new issue on the 1st. <em>Every month.</em></h2></div>
             <Subscribe />
           </div>
         </div></article>
@@ -136,7 +136,7 @@ export function EditConfirm() {
       <div className="in">
         <p className="eb">The Trybe Edit</p>
         <h1 className="mast"><span className="ln"><span>{st === 'ok' ? <>You're <em>subscribed.</em></> : st === 'bad' ? <>That link <em>didn't work.</em></> : 'Confirming…'}</span></span></h1>
-        <p className="sub">{st === 'ok' ? 'The Trybe Edit lands in your inbox on the 1st of each month. Every email has a one-click unsubscribe.' : st === 'bad' ? (msg || 'Subscribe again and we will send a new link.') : ''}</p>
+        <p className="sub">{st === 'ok' ? 'A new issue of The Trybe Edit goes up on the 1st of every month.' : st === 'bad' ? (msg || 'Subscribe again and we will send a new link.') : ''}</p>
         {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn" to="/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
       </div>
     </section>
