@@ -1765,3 +1765,7 @@
 /* pinned notes */
 .ws .ic2.on{color:var(--amber,#f5a524);border-color:rgba(245,165,36,.45);box-shadow:0 0 0 3px rgba(245,165,36,.12)}
 .ws .tli .pinmark{color:var(--amber,#f5a524);margin-left:6px;font-style:normal;font-size:11px}
+
+/* chip fields in forms: picked chips stand out */
+.ws .sf .chips2 .chip.p{background:var(--sig);border-color:var(--sig);color:var(--sig-ink);box-shadow:0 0 0 3px var(--sig-bg)}
+.ws .sf .chips2 .chip.p::before{content:'✓ ';font-weight:700}
