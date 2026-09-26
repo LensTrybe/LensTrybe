@@ -11,6 +11,7 @@ import { signOut } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import * as live from '../../lib/live'
+import * as ps from '../../lib/projsync'
 import Today from './Today'
 import Threads from './Threads'
 import Thread from './Thread'
@@ -91,6 +92,31 @@ function LiveSync() {
     live.loadWorkspaceState(profile.id).then(d => { if (!on) return; if (d) F.hydrate(Object.fromEntries(live.SYNC_KEYS.filter(k => k in d).map(k => [k, k === 'settings' ? { ...F.s.settings, ...d.settings } : d[k]]))); loaded.current = true }).catch(() => { loaded.current = true })
     return () => { on = false }
   }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  // projects, stages, checklist templates and notes: load once, then write only what changed
+  const sNow = useRef(F.s); sNow.current = F.s
+  const pLoaded = useRef(false), pPrev = useRef(new Map()), pTimer = useRef(null), pBusy = useRef(false), pAgain = useRef(false), pFail = useRef(0)
+  useEffect(() => {
+    if (!LIVE || !profile?.id) return
+    let on = true
+    ps.loadProjectBundle(profile.id, F.s.people).then(b => { if (!on) return; F.hydrate(b); pPrev.current = ps.rowsOf(profile.id, { ...F.s, ...b }); pLoaded.current = true }).catch(() => { if (on) F.toast('Could not load your projects and notes. Reload to try again.') })
+    return () => { on = false }
+  }, [profile?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  const pSnap = LIVE ? JSON.stringify([F.s.stages, F.s.projects, F.s.checklistTemplates, F.s.notes]) : ''
+  useEffect(() => {
+    if (!LIVE || !profile?.id || !pLoaded.current) return
+    const ids = ps.withIds(sNow.current); if (ids) { F.hydrate(ids); return }
+    clearTimeout(pTimer.current)
+    const push = async () => {
+      if (pBusy.current) { pAgain.current = true; return }
+      pBusy.current = true
+      const next = ps.rowsOf(profile.id, sNow.current)
+      try { await ps.pushDiff(pPrev.current, next); pPrev.current = next; pFail.current = 0 } catch (e) { pFail.current++; if (pFail.current === 1) F.toast('Could not save your last change. Check your connection; it will try again.'); console.error(e) }
+      pBusy.current = false
+      if (pAgain.current || pFail.current && pFail.current < 4) { pAgain.current = false; pTimer.current = setTimeout(push, pFail.current ? 4000 : 300) }
+    }
+    pTimer.current = setTimeout(push, 700)
+    return () => clearTimeout(pTimer.current)
+  }, [pSnap]) // eslint-disable-line react-hooks/exhaustive-deps
   const snap = JSON.stringify(live.SYNC_KEYS.map(k => F.s[k]))
   useEffect(() => {
     if (!LIVE || !profile?.id || !loaded.current) return

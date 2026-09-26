@@ -593,8 +593,9 @@ const clean = o => Object.fromEntries(Object.entries(o).filter(([, x]) => x !== 
 export async function saveContact(uid, v, existing) {
   const row = clean(crmRow(v))
   if (existing?.id) { const { error } = await supabase.from('crm_contacts').update(row).eq('id', existing.id); if (error) throw crmErr(error); return }
-  const { error } = await supabase.from('crm_contacts').insert({ ...row, creative_id: uid, status: row.status || 'Lead', last_contacted_at: new Date().toISOString() })
+  const { data, error } = await supabase.from('crm_contacts').insert({ ...row, creative_id: uid, status: row.status || 'Lead', last_contacted_at: new Date().toISOString() }).select('id').single()
   if (error) throw crmErr(error)
+  return data?.id
 }
 export async function deleteContact(id) { const { error } = await supabase.from('crm_contacts').delete().eq('id', id); if (error) throw crmErr(error) }
 export async function importContacts(uid, list, tag) {
@@ -605,7 +606,7 @@ export async function importContacts(uid, list, tag) {
 }
 
 // ── The workspace's own settings (no live-site table): one jsonb row per creative ──────────────
-export const SYNC_KEYS = ['avail', 'meetingTypes', 'stages', 'checklistTemplates', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
+export const SYNC_KEYS = ['avail', 'meetingTypes', 'contractTemplates', 'expCats', 'gearCats', 'reviewRules', 'reviewRequests', 'waitlist', 'settings', 'setup']
 export async function loadWorkspaceState(uid) {
   const { data } = await supabase.from('workspace_state').select('data').eq('creative_id', uid).maybeSingle()
   return data?.data || null

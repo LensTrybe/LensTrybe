@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import Still from '../../components/Still'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
-import { nice as niceD, TODAY } from '../../lib/store'
+import { nice as niceD, TODAY, addDays } from '../../lib/store'
 import { fmt } from '../../lib/format'
 
 // Projects: every job start to finish, in the creative's own pipeline. Board to move things along,
@@ -21,7 +21,7 @@ export default function Projects() {
   const list = useMemo(() => P.filter(p => (mode === 'board' || f === 'all' || p.k === f) && (!q || (p.n + ' ' + p.c + ' ' + (p.type || '') + ' ' + (p.at || '')).toLowerCase().includes(q.toLowerCase()))).sort((a, b) => a.d < b.d ? -1 : 1), [P, q, f, mode])
   const paidOf = p => s.ledger.filter(r => r.t === p.t && r.k === 'inv' && r.st === 'ok').reduce((t, r) => t + r.v, 0) || p.paid || 0
   const live = P.filter(p => p.k !== 'done'), value = live.reduce((t, p) => t + (p.v || 0), 0), owed = live.reduce((t, p) => t + Math.max(0, (p.v || 0) - paidOf(p)), 0)
-  const openTasks = P.reduce((t, p) => t + (p.tasks || []).filter(x => !x[1]).length, 0), dueSoon = P.reduce((t, p) => t + (p.tasks || []).filter(x => !x[1] && x[2] && x[2] <= '2026-09-29').length, 0)
+  const openTasks = P.reduce((t, p) => t + (p.tasks || []).filter(x => !x[1]).length, 0), dueSoon = P.reduce((t, p) => t + (p.tasks || []).filter(x => !x[1] && x[2] && x[2] <= addDays(TODAY, 7)).length, 0)
   const dragProps = p => ({ draggable: true, onDragStart: ev => { ev.dataTransfer.setData('text/plain', p.id); ev.dataTransfer.effectAllowed = 'move'; setDrag(p.id) }, onDragEnd: () => { setDrag(null); setOver(null) } })
   const dropProps = st => ({ onDragOver: ev => { if (drag) { ev.preventDefault(); ev.dataTransfer.dropEffect = 'move'; if (over !== st) setOver(st) } }, onDragLeave: () => over === st && setOver(null), onDrop: ev => { ev.preventDefault(); const id = ev.dataTransfer.getData('text/plain') || drag; setOver(null); setDrag(null); if (id) F.setProjectStage(id, st) } })
   const card = p => { const n = total(p), d = done(p), pd = paidOf(p), next = (p.tasks || []).find(t => !t[1]); return (
