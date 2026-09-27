@@ -936,8 +936,8 @@ export async function clearJobDraftMeta(user) { if (user?.user_metadata?.job_dra
 // New-job alerts: on unless the creative has turned them off (job_alert_optouts)
 export async function jobAlertsOn(uid) { const { data } = await supabase.from('job_alert_optouts').select('user_id').eq('user_id', uid).maybeSingle(); return !data }
 export async function setJobAlerts(uid, on) {
-  const { error } = on ? await supabase.from('job_alert_optouts').delete().eq('user_id', uid) : await supabase.from('job_alert_optouts').upsert({ user_id: uid })
-  if (error) throw new Error('Could not save that. Try again.')
+  const { error } = on ? await supabase.from('job_alert_optouts').delete().eq('user_id', uid) : await supabase.from('job_alert_optouts').insert({ user_id: uid })
+  if (error && error.code !== '23505') throw new Error('Could not save that. Try again.')
 }
 export async function takeDownJob(id) { const { error } = await supabase.from('job_listings').update({ status: 'closed' }).eq('id', id); if (error) throw new Error('Could not take it down. Try again.') }
 export async function applyJob(jobId, v) {
