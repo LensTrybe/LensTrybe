@@ -5,12 +5,13 @@ import { mountLens } from '../../lib/lens'
 import { checkFoundingCode, foundingReason, isEmail, PASSWORD_MIN, signInWithGoogle, signUpClient } from '../../lib/auth'
 import { LIVE } from '../../lib/mode'
 import { outside, waitlistTo } from '../../lib/region'
+import { useSite, jobsOpen, untilLabel, jobsPostedRecent } from '../../lib/site'
 
 const WHY = {
   creative: [
     ['Keep every dollar', 'A flat subscription, never a commission. What the client pays is what you get.'],
     ['Three months free', 'Any paid plan. Add a card, pay nothing until month four, cancel before then and pay nothing at all.'],
-    ['Found by the ask', 'Clients say what they need in a sentence. If you fit and you are free, you appear.'],
+    ['Clients post the work', 'People who need a photographer or videographer post the job, with the date, place and budget. You reply with a quote.'],
   ],
   client: [
     ['Free, always', 'Clients never pay to enquire, book or message. There is nothing to subscribe to.'],
@@ -30,6 +31,9 @@ export default function Join() {
   const [f, setF] = useState({ first: saved?.first || '', last: saved?.last || '', email: state?.email || p.get('email') || saved?.email || '', pw: '', disc: saved?.disc || 'Photographer', co: '', news: true }); const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
+  // proof for creatives: real jobs posted, and the launch window where every plan can reply
+  const site = useSite(); const win = jobsOpen(site); const [posted, setPosted] = useState(null)
+  useEffect(() => { jobsPostedRecent(30).then(setPosted) }, [])
   const go = async e => { e.preventDefault(); if (busy) return
     if (!f.first.trim() || !f.last.trim()) return setErr(kind === 'creative' ? 'Your name, so clients know who they are talking to.' : 'Your name, so creatives know who is asking.')
     if (!isEmail(f.email)) return setErr('A real email, it is how you log in.')
@@ -58,6 +62,7 @@ export default function Join() {
           <h1>{kind === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>Find the right person, <em>fast.</em></>}</h1>
           <p className="sub">{kind === 'creative' ? 'Photographers and videographers at launch, six more disciplines after. Sign up takes a minute; your profile goes live as soon as it has a photo and a line about you.' : 'A free account keeps every enquiry, quote, contract and gallery in one place, with the job board for when you would rather they come to you. Or skip it: browse everyone and ask without one.'}</p>
           <div className="why">{WHY[kind].map(([t, d]) => <div key={t}><i><Icon name="check" size={13} /></i><div><b>{t}</b><span>{d}</span></div></div>)}</div>
+          {kind === 'creative' && (win.open || posted >= 5) && <p className="jbnow">{posted >= 5 && <><b>{posted}</b> jobs posted by clients in the last 30 days. </>}{win.open && <>Until {untilLabel(win.until)}, every plan can reply to jobs, including the free one.</>}</p>}
         </div>
         <div className="lpane lg d">
           <div className="who" role="tablist" aria-label="I am">

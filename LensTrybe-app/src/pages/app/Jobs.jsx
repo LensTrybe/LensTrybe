@@ -8,6 +8,7 @@ import * as live from '../../lib/live'
 import { CREATIVE_TYPES } from '../../backend/creativeTypes'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
+import { useSite, jobsOpen, untilLabel } from '../../lib/site'
 
 // Job board: briefs from clients on lenstrybe.com and jobs other creatives cannot take. Sorted by fit,
 // filtered by what you do and how far you go, replied to with a quote that opens a thread. Every reply
@@ -110,7 +111,9 @@ function JobsLive() {
   const open = (d?.open || []).filter(j => !repliedTo.has(j.id) && !hiddenIds.includes(j.id))
   const hidden = (d?.open || []).filter(j => hiddenIds.includes(j.id) && !repliedTo.has(j.id))
   const replies = d?.replies || [], posted = d?.posted || []
-  const gate = j => plan === 'Basic' ? { ok: false, text: 'Replying to jobs is on Pro and above. Browsing is free on every plan.' } : plan === 'Pro' && j.state && myState && j.state !== myState ? { ok: false, text: 'This job is in ' + j.state + '. On Pro you reply to jobs in ' + myState + '; Expert and Elite reply anywhere.' } : { ok: true }
+  // launch window: every plan replies to every job until jobs_open_until (the database checks it too)
+  const site = useSite(); const win = jobsOpen(site)
+  const gate = j => win.open ? { ok: true } : plan === 'Basic' ? { ok: false, text: 'Replying to jobs is on Pro and above. Browsing is free on every plan.' } : plan === 'Pro' && j.state && myState && j.state !== myState ? { ok: false, text: 'This job is in ' + j.state + '. On Pro you reply to jobs in ' + myState + '; Expert and Elite reply anywhere.' } : { ok: true }
   const list = useMemo(() => {
     if (tab === 'replies') return replies.filter(r => !q || ((r.j?.t || '') + ' ' + (r.j?.loc || '')).toLowerCase().includes(q.toLowerCase()))
     const base = tab === 'open' ? open : tab === 'hidden' ? hidden : posted
@@ -153,6 +156,7 @@ function JobsLive() {
     <section className="view jobs">
       <div className="vh"><div><h1>Job board</h1><p>Briefs from clients on LensTrybe, and jobs other creatives could not take. Reply with a quote; if they accept, a thread opens. Nothing is taken from what you earn.</p></div><div className="acts"><button className="btn w" onClick={passOn}><Icon name="plus" size={15} />Pass a job on</button></div></div>
       <div className="grid">
+        {win.open && <div className="s12"><div className="card lg" style={{ padding: '14px 18px', display: 'flex', gap: 12, alignItems: 'center', borderColor: 'var(--sig-rim)' }}><Icon name="spark" size={16} /><div><b>Launch offer: reply to any job, on any plan</b><div style={{ fontSize: 13, opacity: .8, marginTop: 2 }}>Until {untilLabel(win.until)}, every plan, Basic included, can reply to jobs anywhere in Australia. After that the usual plan rules apply.</div></div></div></div>}
         <div className="s12"><div className="kp">{[['Open', String(open.length), myState ? open.filter(x => !x.state || x.state === myState).length + ' in ' + myState : 'across Australia', ''], ['Replied this month', String(replies.filter(r => r.at.startsWith(month)).length), replies.filter(r => r.st === 'pending').length + ' waiting to hear', 'n'], ['Accepted', String(won.length), won.length ? fmt(won.reduce((t, r) => t + r.price, 0)) + ' all time' : 'none yet', won.length ? '' : 'n'], ['Posted by you', String(posted.filter(x => x.st === 'active').length), posted.length ? posted.length + ' all time' : 'pass one on any time', '']].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
         <div className="card lg s8">
           <div className="h"><div className="tfilt" style={{ padding: 0 }}>{[['open', 'Open', open.length], ['replies', 'My replies', replies.length], ['posted', 'Posted by me', posted.length], ['hidden', 'Hidden', hidden.length]].map(([id, l, n]) => <button key={id} className={tab === id ? 'on' : ''} onClick={() => { setTab(id); setSel(null) }}>{l}{n ? <i>{n}</i> : null}</button>)}</div></div>

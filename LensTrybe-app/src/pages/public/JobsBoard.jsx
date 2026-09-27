@@ -33,7 +33,7 @@ export default function JobsBoard() {
   return id ? (LIVE ? <ClientJobLive id={id} /> : <ClientJob id={id} />) : <PostJob />
 }
 
-function PostJob() {
+export function PostJob() {
   const F = useFlows(); const { s, toast } = F; const nav = useNavigate(); const [params] = useSearchParams()
   const { user, profile, clientAccount } = useAuth()
   const cv = useRef(null)
@@ -119,7 +119,7 @@ function PostJob() {
                 </>}
               </>}
             </form>
-            <p className="lfoot">By posting you agree to the <Link to="/legal/terms">terms</Link> and <Link to="/legal/privacy">privacy policy</Link>. Prefer to browse? <Link to="/creatives">Find a creative</Link> or <Link to="/">ask in one sentence</Link>.</p>
+            <p className="lfoot">By posting you agree to the <Link to="/legal/terms">terms</Link> and <Link to="/legal/privacy">privacy policy</Link>. Prefer to browse? <Link to="/creatives">Find a creative</Link>{!LIVE && <> or <Link to="/">ask in one sentence</Link></>}.</p>
           </div>
         </div>
       </section>

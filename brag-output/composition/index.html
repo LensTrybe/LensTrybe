@@ -1,0 +1,548 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>LensTrybe Next — launch</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script src="assets/audio-data.js"></script>
+    <style>
+      @font-face { font-family: "Inter"; src: url("assets/fonts/Inter-var.woff2") format("woff2"); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+      @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1920px; height: 1080px; overflow: hidden; background: #07070b; }
+      body { font-family: "Inter", system-ui, sans-serif; color: #f4f2f7; -webkit-font-smoothing: antialiased; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #07070b; }
+
+      /* the living lens (lib/lens.js), ported to a seek-driven canvas */
+      #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      #vig { position: absolute; inset: 0; pointer-events: none;
+        background: radial-gradient(ellipse 1200px 700px at 50% 50%, rgba(7,7,11,0) 55%, rgba(7,7,11,0.3) 100%); }
+
+      .clip { position: absolute; inset: 0; overflow: hidden; }
+      .sc { position: absolute; inset: 0; }
+      .serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+      .grad { background: linear-gradient(90deg, #9AC4C5, #D996BA 50%, #C6A5E5); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
+
+      /* ---------- scene A: the ask + constellation ---------- */
+      #bigHead { position: absolute; left: 0; right: 0; top: 330px; text-align: center; }
+      #bigHead h1 { font-size: 112px; font-weight: 600; letter-spacing: -0.045em; line-height: 1.02; color: #fff; text-shadow: 0 2px 40px rgba(0,0,0,0.55); }
+      #bigHead .ln { display: block; overflow: hidden; padding: 0.04em 0.12em 0.2em; }
+      #bigHead .ln > span { display: inline-block; }
+      #bigHead .serif { font-size: 1.08em; }
+      #sub { margin-top: 26px; font-size: 30px; color: rgba(244,242,247,0.78); letter-spacing: -0.01em; text-shadow: 0 2px 20px rgba(0,0,0,0.8); }
+
+      #smallHead { position: absolute; left: 0; right: 0; top: 64px; text-align: center; font-size: 44px; font-weight: 500; letter-spacing: -0.03em; color: #fff; opacity: 0; }
+
+      #barWrap { position: absolute; left: 240px; top: 452px; width: 1440px; height: 96px; }
+      #bar { position: absolute; inset: 0; display: flex; align-items: center; gap: 16px; padding: 0 12px 0 30px; border-radius: 999px;
+        background: rgba(16,16,24,0.72); border: 2px solid rgba(255,255,255,0.18);
+        box-shadow: 0 40px 90px -30px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.14), 0 0 0 8px rgba(29,185,84,0.10);
+        -webkit-backdrop-filter: blur(18px) saturate(160%); backdrop-filter: blur(18px) saturate(160%); }
+      #miniLens { width: 34px; height: 34px; border-radius: 50%; flex: none; position: relative; background: conic-gradient(from 0deg, #9AC4C5, #D996BA, #C6A5E5, #9AC4C5); }
+      #miniLens::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: #0b0b12; }
+      #typed { flex: 1; min-width: 0; font-size: 31px; color: #fff; white-space: nowrap; overflow: hidden; letter-spacing: -0.01em; }
+      #caret { display: inline-block; width: 3px; height: 34px; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; vertical-align: -6px; margin-left: 3px; }
+      #mic { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; flex: none; color: rgba(244,242,247,0.62); }
+      #go { height: 70px; padding: 0 32px; border-radius: 999px; background: #fff; color: #0a0a0f; font-weight: 600; font-size: 25px; display: flex; align-items: center; gap: 12px; flex: none; }
+      #goRipple { position: absolute; right: 8px; top: 10px; width: 206px; height: 76px; border-radius: 999px; border: 3px solid #8DF3D6; opacity: 0; }
+
+      #chips { position: absolute; left: 0; right: 0; top: 590px; display: flex; justify-content: center; gap: 14px; }
+      .chip { padding: 12px 24px; border-radius: 999px; background: rgba(16,16,24,0.7); border: 1.5px solid rgba(255,255,255,0.18); font-size: 24px; color: #f4f2f7; display: inline-flex; gap: 10px; align-items: center; opacity: 0; }
+      .chip i { width: 9px; height: 9px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; }
+
+      #cursor { position: absolute; left: 0; top: 0; width: 44px; height: 44px; opacity: 0; z-index: 9; }
+
+      #beams { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+      #beams line { stroke-width: 2; stroke-linecap: round; }
+      .orb { position: absolute; width: 380px; margin-left: -190px; text-align: center; opacity: 0; }
+      .orb .ph { position: relative; margin: 0 auto; border-radius: 50%; border: 3px solid rgba(255,255,255,0.18); box-shadow: 0 24px 60px -20px rgba(0,0,0,0.95); }
+      .orb .ph canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+      .orb.best .ph { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 0 2px rgba(141,243,214,0.55), 0 0 0 12px rgba(141,243,214,0.09), 0 0 60px -6px rgba(141,243,214,0.5), 0 24px 60px -20px rgba(0,0,0,0.95); }
+      .orb .fit { position: absolute; left: 0; right: 0; bottom: -14px; display: flex; justify-content: center; }
+      .orb .fit span { padding: 5px 14px; border-radius: 999px; background: #0a0a0f; border: 1.5px solid rgba(141,243,214,0.6); color: #A9F5DF; font-size: 19px; font-weight: 700; white-space: nowrap; box-shadow: 0 0 16px -2px rgba(141,243,214,0.4); }
+      .orb .fit.mid span { border-color: rgba(245,181,68,0.7); color: #f7b955; box-shadow: none; }
+      .orb .fit.low span { border-color: rgba(255,255,255,0.22); color: rgba(244,242,247,0.75); box-shadow: none; }
+      .orb.best .fit span { background: #8DF3D6; color: #0a0a0f; border-color: #8DF3D6; box-shadow: 0 0 22px rgba(141,243,214,0.6); }
+      .orb b { display: block; margin-top: 24px; font-size: 25px; font-weight: 600; letter-spacing: -0.01em; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,0.95); white-space: nowrap; }
+      .orb small { display: block; margin-top: 3px; font-size: 20px; color: rgba(244,242,247,0.76); white-space: nowrap; text-shadow: 0 2px 12px rgba(0,0,0,0.95); }
+      .orb .av { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 19px; font-weight: 600; color: #A9F5DF; }
+      .orb .av i { width: 9px; height: 9px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; }
+      .orb .av.no { color: rgba(244,242,247,0.7); } .orb .av.no i { background: rgba(244,242,247,0.5); box-shadow: none; }
+
+      #lumiLine { position: absolute; left: 400px; top: 966px; width: 1120px; min-height: 80px; padding: 20px 26px; border-radius: 24px; display: flex; gap: 16px; align-items: flex-start;
+        background: rgba(16,16,24,0.78); border: 1.5px solid rgba(255,255,255,0.12); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); opacity: 0; }
+      .lm { width: 30px; height: 30px; border-radius: 50%; flex: none; background: conic-gradient(from 90deg, #8DF3D6, #D996BA, #C6A5E5, #8DF3D6); box-shadow: 0 0 18px rgba(141,243,214,0.55); }
+      #lumiText { font-size: 23px; line-height: 1.4; color: rgba(244,242,247,0.82); }
+      #lumiText b { color: #fff; font-weight: 600; }
+      #lumiText .cur { display: inline-block; width: 2px; height: 22px; background: #8DF3D6; box-shadow: 0 0 8px #8DF3D6; vertical-align: -3px; margin-left: 2px; }
+
+      /* ---------- scene B: one booking, two screens ---------- */
+      #bSc { opacity: 0; }
+      #bTitle { position: absolute; left: 0; right: 0; top: 70px; text-align: center; }
+      .eb { font-size: 21px; font-weight: 600; letter-spacing: 0.16em; text-transform: uppercase; color: #A9F5DF; }
+      #bTitle h2 { margin-top: 12px; font-size: 72px; font-weight: 600; letter-spacing: -0.04em; color: #fff; text-shadow: 0 2px 30px rgba(0,0,0,0.7); }
+      #bTitle .serif { font-size: 1.08em; }
+
+      #phone { position: absolute; left: 250px; top: 238px; width: 410px; height: 790px; border-radius: 58px; background: #0d0d14; border: 2px solid rgba(255,255,255,0.16);
+        box-shadow: 0 50px 120px -40px rgba(0,0,0,1), inset 0 0 0 8px #07070b; overflow: hidden; }
+      #pbar { display: flex; justify-content: space-between; align-items: center; padding: 22px 38px 0; font-size: 18px; font-weight: 600; color: rgba(244,242,247,0.8); }
+      #pnotch { width: 110px; height: 30px; border-radius: 20px; background: #000; }
+      #phead { display: flex; align-items: center; gap: 14px; padding: 20px 24px 16px; border-bottom: 1.5px solid rgba(255,255,255,0.08); }
+      #pav { width: 50px; height: 50px; border-radius: 50%; overflow: hidden; position: relative; flex: none; }
+      #pav canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #phead b { display: block; font-size: 21px; color: #fff; }
+      #phead small { display: block; font-size: 15px; color: rgba(244,242,247,0.66); margin-top: 2px; }
+      #plive { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: #A9F5DF; }
+      #plive i { width: 8px; height: 8px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 8px #8DF3D6; }
+      #pview { position: absolute; left: 0; right: 0; top: 150px; bottom: 96px; overflow: hidden; }
+      #pthread { position: absolute; left: 18px; right: 18px; top: 16px; }
+      .pi { opacity: 0; margin-bottom: 14px; }
+      .msg { max-width: 318px; padding: 14px 18px; border-radius: 22px 22px 22px 8px; background: rgba(255,255,255,0.09); font-size: 18px; line-height: 1.38; color: #f4f2f7; }
+      .sys { text-align: center; font-size: 15px; color: rgba(244,242,247,0.66); padding: 4px 0; }
+      .mcard { padding: 18px 20px; border-radius: 22px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); }
+      .mcard b { display: block; font-size: 19px; color: #fff; }
+      .mcard small { display: block; margin-top: 4px; font-size: 16px; color: rgba(244,242,247,0.7); }
+      .btn2 { position: relative; margin-top: 14px; height: 50px; border-radius: 14px; background: #fff; color: #0a0a0f; font-weight: 600; font-size: 18px; }
+      .btn2 span { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 14px; }
+      .btn2 .ok { background: #1DB954; color: #04120a; opacity: 0; }
+      .sig2 { margin-top: 12px; height: 70px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1.5px dashed rgba(255,255,255,0.18); }
+      .sig2 svg { width: 100%; height: 100%; display: block; }
+      .sig2 path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+      #ppin { position: absolute; left: 18px; right: 18px; bottom: 24px; height: 56px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); display: flex; align-items: center; padding: 0 22px; font-size: 17px; color: rgba(244,242,247,0.66); }
+
+      #link { position: absolute; left: 684px; top: 600px; width: 140px; height: 40px; }
+      #link svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+      #pulse { position: absolute; left: 0; top: 11px; width: 18px; height: 18px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 18px #8DF3D6, 0 0 4px #fff; opacity: 0; }
+
+      #desk { position: absolute; left: 846px; top: 290px; width: 840px; height: 660px; border-radius: 30px; overflow: hidden;
+        background: linear-gradient(160deg, rgba(22,22,32,0.92), rgba(14,14,22,0.88)); border: 2px solid rgba(255,255,255,0.18);
+        box-shadow: 0 50px 120px -40px rgba(0,0,0,1), inset 0 1px 0 rgba(255,255,255,0.18); }
+      #dbar { height: 58px; display: flex; align-items: center; gap: 22px; padding: 0 24px; border-bottom: 1.5px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.25); }
+      #dbar .dots { display: flex; gap: 8px; } #dbar .dots i { width: 13px; height: 13px; border-radius: 50%; background: rgba(255,255,255,0.2); }
+      #durl { font-size: 17px; color: rgba(244,242,247,0.7); padding: 7px 18px; border-radius: 999px; background: rgba(255,255,255,0.06); }
+      #dside { position: absolute; left: 0; top: 58px; bottom: 0; width: 262px; padding: 26px 22px; border-right: 1.5px solid rgba(255,255,255,0.08); background: rgba(0,0,0,0.18); }
+      #dside > b { display: block; font-size: 22px; color: #fff; }
+      #dside > small { display: block; margin-top: 4px; font-size: 16px; line-height: 1.4; color: rgba(244,242,247,0.68); }
+      #dsteps { margin-top: 22px; }
+      .st { position: relative; display: flex; align-items: center; gap: 12px; height: 44px; padding: 0 12px; border-radius: 12px; font-size: 19px; color: rgba(244,242,247,0.62); }
+      .st i { position: relative; width: 12px; height: 12px; border-radius: 50%; border: 2px solid rgba(244,242,247,0.4); flex: none; }
+      .st .hl { position: absolute; inset: 0; border-radius: 12px; background: rgba(141,243,214,0.12); border: 1.5px solid rgba(141,243,214,0.45); opacity: 0; }
+      .st .lab { position: relative; }
+      .st .dn { position: absolute; left: 12px; top: 16px; width: 12px; height: 12px; border-radius: 50%; background: #1DB954; opacity: 0; }
+      #st0 .dn { opacity: 1; }
+      #dmain { position: absolute; left: 262px; right: 0; top: 58px; bottom: 0; }
+      .dm { position: absolute; inset: 0; padding: 32px 36px; opacity: 0; }
+      .dm h5 { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+      .dm .dsub { margin-top: 6px; font-size: 19px; color: rgba(244,242,247,0.68); }
+      .dk { margin-top: 24px; border-radius: 18px; border: 1.5px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.2); }
+      .r { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 22px; border-bottom: 1.5px solid rgba(255,255,255,0.07); font-size: 20px; color: rgba(244,242,247,0.85); }
+      .r:last-child { border-bottom: 0; }
+      .r b { font-weight: 600; color: #fff; } .r small { display: block; margin-top: 3px; font-size: 16px; color: rgba(244,242,247,0.66); }
+      .pill { padding: 5px 14px; border-radius: 999px; font-size: 16px; font-weight: 700; white-space: nowrap; }
+      .pill.sent { background: rgba(74,158,255,0.16); color: #8cc2ff; }
+      .pill.ok { background: rgba(29,185,84,0.18); color: #7cf0a5; }
+      .pill.pink { background: rgba(255,45,120,0.16); color: #ff9dc2; }
+      .dl { display: flex; gap: 14px; align-items: flex-start; padding: 18px 22px; font-size: 18px; line-height: 1.4; color: rgba(244,242,247,0.85); border-top: 1.5px solid rgba(255,255,255,0.07); }
+      .dl .lm { width: 24px; height: 24px; }
+      .kp { margin-top: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+      .kp > div { padding: 20px; border-radius: 18px; background: rgba(0,0,0,0.22); border: 1.5px solid rgba(255,255,255,0.1); }
+      .kp small { display: block; font-size: 16px; color: rgba(244,242,247,0.66); }
+      .kp b { display: block; margin-top: 6px; white-space: nowrap; font-size: 36px; font-weight: 600; letter-spacing: -0.02em; color: #fff; }
+      .kp em { display: block; margin-top: 2px; font-style: normal; font-size: 16px; color: #A9F5DF; }
+      #paidGlow { position: absolute; left: 1040px; top: 300px; width: 560px; height: 320px; border-radius: 50%; background: radial-gradient(closest-side, rgba(29,185,84,0.35), rgba(29,185,84,0)); opacity: 0; }
+
+      /* ---------- scene C: lockup ---------- */
+      #cSc { opacity: 0; }
+      #lockup { position: absolute; left: 0; right: 0; top: 408px; text-align: center; }
+      #logo { width: 720px; height: 151px; display: block; margin: 0 auto; }
+      #tag { margin-top: 44px; font-size: 60px; font-weight: 600; letter-spacing: -0.035em; color: #fff; text-shadow: 0 2px 30px rgba(0,0,0,0.6); }
+      #tag .serif { font-size: 1.08em; }
+      #url { margin-top: 18px; font-size: 27px; font-weight: 500; letter-spacing: 0.02em; color: rgba(244,242,247,0.8); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="22" data-width="1920" data-height="1080">
+      <canvas id="gl" width="1440" height="810"></canvas>
+      <div id="vig"></div>
+
+      <!-- ================= Scene A: the ask + the constellation ================= -->
+      <section id="sA" class="clip" data-start="0" data-duration="13.7" data-track-index="0">
+        <div class="sc" id="aSc">
+          <div id="bigHead">
+            <h1>
+              <span class="ln"><span id="l1">Tell us what you need.</span></span>
+              <span class="ln"><span id="l2">We'll <span class="serif grad">find them.</span></span></span>
+            </h1>
+            <p id="sub">One sentence. Photographers and videographers across Australia.</p>
+          </div>
+          <div id="smallHead">Tell us what you need. We'll <span class="serif grad">find them.</span></div>
+
+          <svg id="beams" viewBox="0 0 1920 1080"><g id="beamG"></g></svg>
+          <div id="orbs"></div>
+
+          <div id="barWrap">
+            <div id="bar">
+              <span id="miniLens"></span>
+              <div id="typed"><span id="typedTxt"></span><span id="caret"></span></div>
+              <span id="mic"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></span>
+              <div id="go"><span>Find them</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            </div>
+            <div id="goRipple"></div>
+          </div>
+          <div id="chips">
+            <span class="chip" id="c1"><i></i>Wedding + Photo</span>
+            <span class="chip" id="c2"><i></i>Noosa</span>
+            <span class="chip" id="c3"><i></i>14 November</span>
+            <span class="chip" id="c4"><i></i>Around $3,000</span>
+          </div>
+
+          <div id="lumiLine"><span class="lm"></span><div id="lumiText"></div></div>
+
+          <svg id="cursor" viewBox="0 0 24 24"><path d="M4 2.5 L4 19.5 L8.6 15.2 L11.6 21.6 L14.6 20.2 L11.7 14 L18 14 Z" fill="#fff" stroke="#0a0a0f" stroke-width="1.4" stroke-linejoin="round"/></svg>
+        </div>
+      </section>
+
+      <!-- ================= Scene B: one booking, two screens ================= -->
+      <section id="sB" class="clip" data-start="12.9" data-duration="5.7" data-track-index="1">
+        <div class="sc" id="bSc">
+          <div id="bTitle"><p class="eb">One booking, two screens</p><h2>Same thread, <span class="serif grad">same second.</span></h2></div>
+
+          <div id="phone">
+            <div id="pbar"><span>9:41</span><span id="pnotch"></span><span>5G</span></div>
+            <div id="phead"><span id="pav"><canvas id="pavCv" width="100" height="100"></canvas></span><div><b>Mara Okafor</b><small>Wedding photography</small></div><span id="plive"><i></i>Live</span></div>
+            <div id="pview"><div id="pthread">
+              <div class="pi" id="p1"><div class="msg">Hi Harper! Yes, the 14th is open and I'd love to. Full day is $3,200, quote attached.</div></div>
+              <div class="pi" id="p2"><div class="mcard"><b>Quote #Q-0412 · Full day</b><small>$3,200 incl. GST · valid 14 days</small><div class="btn2" data-layout-allow-overlap><span id="p2b">Accept quote</span><span class="ok" id="p2ok">Accepted ✓</span></div></div></div>
+              <div class="pi" id="p3"><div class="sys">Quote accepted · 11:40 am</div></div>
+              <div class="pi" id="p4"><div class="mcard"><b>Contract #C-0412</b><small>12 clauses · plain English</small><div class="sig2"><svg viewBox="0 0 300 70" preserveAspectRatio="none"><path id="sig" d="M12 48c14-22 26-30 30-22s-4 34 6 30 20-38 30-32-2 32 8 30 22-26 30-20-4 26 6 24 18-24 30-18 4 20 12 18 24-22 36-16 8 20 20 16 26-20 40-14 10 16 22 12"/></svg></div><div class="btn2" data-layout-allow-overlap><span id="p4b">Sign</span><span class="ok" id="p4ok">Signed ✓</span></div></div></div>
+              <div class="pi" id="p5"><div class="mcard"><b>Deposit · $960</b><small>Invoice INV-0219 · secures Sat 14 Nov</small><div class="btn2" data-layout-allow-overlap><span id="p5b">Pay deposit</span><span class="ok" id="p5ok">Paid with Apple Pay ✓</span></div></div></div>
+            </div></div>
+            <div id="ppin">Message Mara</div>
+          </div>
+
+          <div id="link"><svg viewBox="0 0 140 40" preserveAspectRatio="none"><path d="M0 20 H140" fill="none" stroke="rgba(141,243,214,0.55)" stroke-width="2" stroke-dasharray="5 7"/></svg><span id="pulse"></span></div>
+
+          <div id="paidGlow"></div>
+          <div id="desk">
+            <div id="dbar"><span class="dots"><i></i><i></i><i></i></span><span id="durl">app.lenstrybe.com/thread/harper-leo</span></div>
+            <aside id="dside"><b>Harper and Leo</b><small>Wedding · Sat 14 Nov · Maleny Manor</small>
+              <div id="dsteps">
+                <div class="st" id="st0"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Enquiry</span></div>
+                <div class="st" id="st1"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Quote</span></div>
+                <div class="st" id="st2"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Accept</span></div>
+                <div class="st" id="st3"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Sign</span></div>
+                <div class="st" id="st4"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Deposit</span></div>
+                <div class="st" id="st5"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Shoot day</span></div>
+                <div class="st" id="st6"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Deliver</span></div>
+                <div class="st" id="st7"><span class="hl"></span><i></i><span class="dn"></span><span class="lab">Review</span></div>
+              </div>
+            </aside>
+            <div id="dmain">
+              <div class="dm" id="d1"><h5>Quote #Q-0412</h5><p class="dsub">Sent 9:14 am · private between you and Harper</p>
+                <div class="dk"><div class="r"><div><b>Full day, 10 hours</b><small>Prep to first dance · 400+ photos</small></div><b>$3,200</b></div><div class="r"><div><b>Travel</b><small>Within 150 km of Noosa</small></div><span>Included</span></div><div class="r"><span>Status</span><span class="pill sent">Sent</span></div></div></div>
+              <div class="dm" id="d2"><h5>Quote #Q-0412</h5><p class="dsub">Accepted 11:40 am · contract generated</p>
+                <div class="dk"><div class="r"><span>Quote</span><span class="pill ok">Accepted</span></div><div class="r"><div><b>Contract #C-0412</b><small>From your Full day template · 12 clauses</small></div><span class="pill sent">Sent</span></div><div class="dl"><span class="lm"></span><span>Contract sent automatically. I'll nudge Harper if it's unsigned in 48 hours.</span></div></div></div>
+              <div class="dm" id="d3"><h5>Contract #C-0412</h5><p class="dsub">Signed by Harper Ellis · 8:05 pm</p>
+                <div class="dk"><div class="r"><span>Harper Ellis</span><span class="pill pink">Signed</span></div><div class="r"><span>Mara Okafor</span><span class="pill ok">Signed</span></div><div class="r"><div><b>Deposit invoice INV-0219</b><small>30% · $960 · sent automatically</small></div><span class="pill sent">Sent</span></div></div></div>
+              <div class="dm" id="d4"><h5>Paid</h5><p class="dsub">$960 deposit · Apple Pay · 8:07 pm</p>
+                <div class="kp"><div><small>Received</small><b>$960</b><em>Deposit</em></div><div><small>Balance due</small><b>$2,240</b><em>7 Nov</em></div><div><small>Date</small><b>14 Nov</b><em>Locked</em></div></div>
+                <div class="dk"><div class="dl" style="border-top:0"><span class="lm"></span><span>Date locked on your LensTrybe and Google calendars.</span></div></div></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= Scene C: lockup ================= -->
+      <section id="sC" class="clip" data-start="17.8" data-duration="4.2" data-track-index="2">
+        <div class="sc" id="cSc">
+          <div id="lockup">
+            <img id="logo" src="assets/brand/logo-white.svg" alt="LensTrybe" />
+            <p id="tag">No commissions, <span class="serif grad">ever.</span></p>
+            <p id="url">lenstrybe.com</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================= audio ================= -->
+      <audio id="bgm" data-timeline-role="music" src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3" data-start="0" data-duration="22" data-track-index="10" data-volume="0.32"></audio>
+      <audio id="k1" src="assets/sfx/keyboard/keypress-002.wav" data-start="3.18" data-duration="0.15" data-track-index="11" data-volume="0.34"></audio>
+      <audio id="k2" src="assets/sfx/keyboard/keypress-006.wav" data-start="3.46" data-duration="0.15" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k3" src="assets/sfx/keyboard/keypress-011.wav" data-start="3.77" data-duration="0.15" data-track-index="11" data-volume="0.32"></audio>
+      <audio id="k4" src="assets/sfx/keyboard/keypress-004.wav" data-start="4.05" data-duration="0.15" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k5" src="assets/sfx/keyboard/keypress-016.wav" data-start="4.36" data-duration="0.15" data-track-index="11" data-volume="0.32"></audio>
+      <audio id="k6" src="assets/sfx/keyboard/keypress-009.wav" data-start="4.66" data-duration="0.15" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="k7" src="assets/sfx/keyboard/keypress-013.wav" data-start="4.95" data-duration="0.15" data-track-index="11" data-volume="0.32"></audio>
+      <audio id="k8" src="assets/sfx/keyboard/keypress-019.wav" data-start="5.28" data-duration="0.15" data-track-index="12" data-volume="0.3"></audio>
+      <audio id="sfxClick" src="assets/sfx/interface/click_003.ogg" data-start="6.0" data-duration="0.01" data-track-index="13" data-volume="0.7"></audio>
+      <audio id="sfxMara" src="assets/sfx/interface/drop_001.ogg" data-start="8.5" data-duration="0.11" data-track-index="14" data-volume="0.5"></audio>
+      <audio id="sfxRest" src="assets/sfx/interface/drop_002.ogg" data-start="9.0" data-duration="0.19" data-track-index="15" data-volume="0.32"></audio>
+      <audio id="sfxB" src="assets/sfx/impact/impactSoft_medium_001.ogg" data-start="12.98" data-duration="0.18" data-track-index="16" data-volume="0.5"></audio>
+      <audio id="sfxS1" src="assets/sfx/interface/switch_002.ogg" data-start="14.0" data-duration="0.2" data-track-index="17" data-volume="0.45"></audio>
+      <audio id="sfxS2" src="assets/sfx/interface/switch_002.ogg" data-start="15.3" data-duration="0.2" data-track-index="18" data-volume="0.45"></audio>
+      <audio id="sfxPaid" src="assets/sfx/interface/bong_001.ogg" data-start="16.28" data-duration="0.12" data-track-index="19" data-volume="0.5"></audio>
+      <audio id="sfxLock" src="assets/sfx/impact/impactBell_heavy_000.ogg" data-start="18.0" data-duration="1.5" data-track-index="20" data-volume="0.4"></audio>
+    </div>
+
+    <script>
+      var D = 22;
+      // vol-1, 120.19 BPM. beat-locked: 3.02 (ask), 13.02 (two screens), 18.02 (lockup)
+      var B = { ask: 3.02, click: 6.02, live: 8.02, mara: 8.52, sB: 13.02, s1: 14.02, s2: 15.02, s3: 16.02, sC: 18.02 };
+
+      // ---------- seeded stand-in photography (lib/stills.js, no randomness) ----------
+      var MOODS = {
+        dusk:   { base: ['#0b0d16', '#151a2b'], gels: [['29,185,84', .55], ['255,45,120', .35], ['198,165,229', .25]] },
+        golden: { base: ['#120c0a', '#2a1a12'], gels: [['245,158,11', .5], ['255,45,120', .3], ['29,185,84', .28]] },
+        cool:   { base: ['#080c14', '#101a2a'], gels: [['74,158,255', .5], ['29,185,84', .35], ['217,150,186', .25]] },
+        forest: { base: ['#070d0a', '#0f1f16'], gels: [['29,185,84', .6], ['154,196,197', .3], ['255,45,120', .2]] },
+        rose:   { base: ['#12080e', '#241019'], gels: [['255,45,120', .55], ['198,165,229', .3], ['29,185,84', .25]] }
+      };
+      function rng(seed) { var s = seed * 9301 + 49297; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+      function paintStill(cv, seed, moodName) {
+        var W = cv.width, H = cv.height, mood = MOODS[moodName] || MOODS.dusk, R = rng(seed), ctx = cv.getContext('2d');
+        var bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, mood.base[0]); bg.addColorStop(1, mood.base[1]); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        var hy = H * (.55 + R() * .25); ctx.fillStyle = 'rgba(255,255,255,.025)'; ctx.fillRect(0, hy, W, H - hy);
+        ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H * (.08 + R() * .1));
+        mood.gels.forEach(function (g, i) { var x = W * (i === 0 ? .15 + R() * .3 : .55 + R() * .4), y = H * (R() * .7), rad = Math.max(W, H) * (.35 + R() * .35); var gr = ctx.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(' + g[0] + ',' + g[1] + ')'); gr.addColorStop(.5, 'rgba(' + g[0] + ',' + (g[1] * .25) + ')'); gr.addColorStop(1, 'rgba(' + g[0] + ',0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); });
+        ctx.save(); ctx.translate(W * R(), H * R()); ctx.rotate((R() - .5) * 1.2); var st = ctx.createLinearGradient(-W, 0, W, 0); st.addColorStop(0, 'rgba(255,255,255,0)'); st.addColorStop(.5, 'rgba(255,255,255,.12)'); st.addColorStop(1, 'rgba(255,255,255,0)'); ctx.fillStyle = st; ctx.fillRect(-W, -H * .02, W * 2, H * .04); ctx.restore();
+        var n = 5 + Math.floor(R() * 8);
+        for (var i = 0; i < n; i++) { var x = W * R(), y = H * R(), rad = (6 + R() * 30) * 1.5, g = mood.gels[i % mood.gels.length]; var gr = ctx.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(' + g[0] + ',' + (.22 + R() * .25) + ')'); gr.addColorStop(.8, 'rgba(' + g[0] + ',.08)'); gr.addColorStop(1, 'rgba(' + g[0] + ',0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); }
+        var fg = ctx.createLinearGradient(0, hy, 0, H); fg.addColorStop(0, 'rgba(' + mood.gels[0][0] + ',.14)'); fg.addColorStop(1, 'rgba(0,0,0,0)'); ctx.fillStyle = fg; ctx.fillRect(0, hy, W, H - hy);
+        var v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+      }
+
+      // ---------- the constellation (data/creatives.js, brief: wedding, Noosa, 14 Nov, $3,000) ----------
+      var CX = 960, CY = 530;
+      var ORBS = [
+        { n: 'Mara Okafor',    s: 'Wedding photography · Noosa',          fit: 96, free: true,  mood: 'golden', seed: 3,  sz: 176, x: 1330, y: 372 },
+        { n: 'Lena Hoang',     s: 'Wedding photography · Sunshine Beach', fit: 91, free: true,  mood: 'cool',   seed: 29, sz: 152, x: 590,  y: 372 },
+        { n: 'Beck Halloran',  s: 'Wedding films · Maleny',               fit: 84, free: true,  mood: 'dusk',   seed: 13, sz: 152, x: 1650, y: 640 },
+        { n: 'Priya Nair',     s: 'Portraits · Maroochydore',             fit: 72, free: true,  mood: 'forest', seed: 9,  sz: 132, x: 270,  y: 640 },
+        { n: 'Jono Reyes',     s: 'Events · Brisbane',                    fit: 61, free: true,  mood: 'rose',   seed: 17, sz: 132, x: 1190, y: 770 },
+        { n: 'Ari Castellano', s: 'Product photography · West End',       fit: 49, free: false, mood: 'rose',   seed: 23, sz: 132, x: 730,  y: 770 }
+      ];
+      (function buildOrbs() {
+        var host = document.getElementById('orbs'), bg = document.getElementById('beamG');
+        ORBS.forEach(function (o, j) {
+          var el = document.createElement('div');
+          el.className = 'orb' + (j === 0 ? ' best' : ''); el.id = 'orb' + j;
+          el.style.left = o.x + 'px'; el.style.top = (o.y - o.sz / 2) + 'px';
+          var cls = o.fit >= 80 ? '' : o.fit >= 55 ? ' mid' : ' low';
+          el.innerHTML = '<div class="ph" style="width:' + o.sz + 'px;height:' + o.sz + 'px"><canvas width="' + (o.sz * 2) + '" height="' + (o.sz * 2) + '"></canvas>' +
+            '<div class="fit' + cls + '"><span>' + (j === 0 ? 'Closest fit · ' : '') + o.fit + '%</span></div></div>' +
+            '<b>' + o.n + '</b><small>' + o.s + '</small><span class="av' + (o.free ? '' : ' no') + '"><i></i>' + (o.free ? 'Free on the date' : 'Booked that day') + '</span>';
+          host.appendChild(el);
+          paintStill(el.querySelector('canvas'), o.seed, o.mood);
+          var ang = Math.atan2(o.y - CY, o.x - CX), rr = o.sz / 2 + 12, r0 = 186;
+          var ln = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+          var x1 = CX + Math.cos(ang) * r0, y1 = CY + Math.sin(ang) * r0, x2 = o.x - Math.cos(ang) * rr, y2 = o.y - Math.sin(ang) * rr;
+          ln.setAttribute('x1', x1.toFixed(1)); ln.setAttribute('y1', y1.toFixed(1)); ln.setAttribute('x2', x2.toFixed(1)); ln.setAttribute('y2', y2.toFixed(1));
+          ln.setAttribute('stroke', j === 0 ? '#8DF3D6' : '#D996BA');
+          ln.setAttribute('stroke-opacity', j === 0 ? '0.85' : '0.45');
+          var len = Math.hypot(x2 - x1, y2 - y1); o.len = len;
+          ln.setAttribute('stroke-dasharray', len.toFixed(1)); ln.setAttribute('stroke-dashoffset', len.toFixed(1));
+          ln.id = 'beam' + j; bg.appendChild(ln);
+        });
+        paintStill(document.getElementById('pavCv'), 3, 'golden');
+      })();
+
+      // ---------- the living lens: lib/lens.js shader, uniforms driven by timeline time ----------
+      var VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+      var FS = 'precision highp float;uniform vec2 uRes;uniform float uT;uniform float uPulse;uniform float uLive;uniform float uCy;uniform float uR;uniform vec2 uAim;uniform float uAimOn;uniform float uFade;uniform float uAud;' +
+        'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}' +
+        'void main(){vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;' +
+        'vec2 c=uv-uAim*.07*uAimOn;c=c-vec2(0.,0.5-uCy);float d=length(c);float ang=atan(c.y,c.x);' +
+        'float aimAng=atan(uAim.y,uAim.x);float face=pow(.5+.5*cos(ang-aimAng),3.);' +
+        'float R=uR+0.015*uPulse+.06*uAimOn*face;float t=fract(ang/6.2831+uT*.02);' +
+        'vec3 mint=vec3(.604,.769,.773),rose=vec3(.851,.588,.729),lilac=vec3(.776,.647,.898);' +
+        'vec3 col=t<.5?mix(mint,rose,t*2.):mix(rose,lilac,(t-.5)*2.);col=mix(col,mint,smoothstep(.86,1.,t));' +
+        'float sweep=pow(.5+.5*cos(ang-uT*.5),10.)*(1.-uAimOn)+pow(.5+.5*cos(ang-aimAng),5.)*1.6*uAimOn;' +
+        'vec3 room=vec3(.027,.027,.043);' +
+        'room+=vec3(.114,.725,.329)*.06*(1.-smoothstep(.2,1.1,length(uv-vec2(-.7,.35))));' +
+        'room+=vec3(1.,.176,.47)*.05*(1.-smoothstep(.2,1.1,length(uv-vec2(.8,-.4))));' +
+        'vec3 o=room;float inner=1.-smoothstep(R-.11,R-.07,d);float g=smoothstep(-.3,.3,c.x+c.y*.6);' +
+        'vec3 glass=mix(vec3(.55,.9,.8),vec3(.98,.68,.82),g);glass=mix(glass,vec3(.85,.78,.98),smoothstep(.55,.9,g));' +
+        'vec2 sp=mix(vec2(-.09,.1),uAim*(R*.55),uAimOn);float spec=pow(max(0.,1.-length(c-sp)*6.),3.)*(1.+.6*uAimOn);' +
+        'o=mix(o,glass*.22+o*.55+spec*.28,inner);' +
+        'float ring=smoothstep(.06,0.,abs(d-R)-.014);float glow=exp(-abs(d-R)*8.)*.45*uAud;' +
+        'o+=col*(ring*.62+glow)*(.75+.35*sweep)*(1.-.5*uLive*(1.-.5*uAimOn*face));' +
+        'o*=1.-.6*smoothstep(.03,0.,abs(d-(R-.06))-.014);' +
+        'float halo=exp(-abs(d-R)*7.)*.06*(1.+uLive)*uAud;o+=col*halo;' +
+        'o+=col*exp(-abs(d-R)*16.)*.14*uAimOn*face;' +
+        'vec3 v=mix(room,o,uFade);v*=1.-.35*smoothstep(.6,1.4,length(uv));' +
+        'v+=(hash(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(v,1.);}';
+      var cv = document.getElementById('gl');
+      var gl = cv.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true });
+      var U = null;
+      if (gl) {
+        var sh = function (t, s) { var x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x; };
+        var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+        var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        var loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        U = {}; ['uRes', 'uT', 'uPulse', 'uLive', 'uCy', 'uR', 'uAim', 'uAimOn', 'uFade', 'uAud'].forEach(function (k) { U[k] = gl.getUniformLocation(pr, k); });
+        gl.viewport(0, 0, cv.width, cv.height);
+      } else {
+        cv.style.background = 'radial-gradient(circle at 50% 50%, #16162a, #07070b 60%)';
+      }
+
+      // lens keyframes as pure functions of time
+      function ss(a, b, t) { var x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); }
+      function lensAt(t) {
+        var fade = ss(0.05, 1.5, t), pulse = 0;
+        // thinking pulse after Find them
+        if (t > B.click && t < B.live + 0.3) pulse = (0.5 + 0.5 * Math.sin((t - B.click) * 9)) * (1 - ss(B.live, B.live + 0.3, t));
+        // live: the ring gathers into the centre of the constellation
+        var k = ss(B.live, B.live + 0.9, t);
+        var cy = 0.5 + (CY / 1080 - 0.5) * k, R = 0.32 + (0.165 - 0.32) * k, live = k;
+        // it leans toward Mara as she blooms
+        var aimOn = ss(B.mara - 0.1, B.mara + 0.35, t) * (1 - ss(10.2, 11.2, t)) * 0.9;
+        // two screens: the ring widens and steps back behind the devices
+        var b = ss(B.sB - 0.2, B.sB + 0.7, t);
+        R = R + (0.56 - R) * b; cy = cy + (0.5 - cy) * b; fade = fade * (1 - 0.62 * b); live = live * (1 - b);
+        // lockup: the ring frames the logo
+        var c = ss(B.sC - 0.3, B.sC + 0.8, t);
+        R = R + (0.4 - R) * c; cy = cy + (0.49 - cy) * c; fade = fade + (1 - fade) * c;
+        return { cy: cy, R: R, live: live, fade: fade, aimOn: aimOn, pulse: pulse };
+      }
+      var aimX = ORBS[0].x - CX, aimY = -(ORBS[0].y - CY), aimL = Math.hypot(aimX, aimY); aimX /= aimL; aimY /= aimL;
+
+      // audio-reactive: smoothed, normalised RMS lifts the ring glow and halo only
+      var AR = (function () {
+        var fr = AUDIO_DATA.frames, n = fr.length, a = new Array(n), s = 0, lo = Infinity, hi = -Infinity;
+        for (var i = 0; i < n; i++) { s = s * 0.8 + fr[i].rms * 0.2; a[i] = s; if (s < lo) lo = s; if (s > hi) hi = s; }
+        for (var j = 0; j < n; j++) a[j] = hi > lo ? (a[j] - lo) / (hi - lo) : 0;
+        return { fps: AUDIO_DATA.fps, n: n, rms: a };
+      })();
+
+      function drawLens(t) {
+        if (!U) return;
+        var L = lensAt(t), i = Math.min(AR.n - 1, Math.max(0, Math.floor(t * AR.fps)));
+        gl.uniform2f(U.uRes, cv.width, cv.height); gl.uniform1f(U.uT, t); gl.uniform1f(U.uPulse, L.pulse); gl.uniform1f(U.uLive, L.live);
+        gl.uniform1f(U.uCy, L.cy); gl.uniform1f(U.uR, L.R); gl.uniform2f(U.uAim, aimX, aimY); gl.uniform1f(U.uAimOn, L.aimOn);
+        gl.uniform1f(U.uFade, L.fade); gl.uniform1f(U.uAud, 0.8 + 0.55 * AR.rms[i]);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      // typed text as pure functions of time
+      var BRIEF = 'A wedding photographer in Noosa on 14 November, around $3,000';
+      var LUMI = '6 match. 5 are free on 14 November, 4 inside your budget. Mara is the closest fit.';
+      var typedTxt = document.getElementById('typedTxt'), caret = document.getElementById('caret'), lumiText = document.getElementById('lumiText');
+      function typeAt(t) {
+        var n = Math.round(BRIEF.length * Math.min(1, Math.max(0, (t - 3.12) / (5.42 - 3.12))));
+        typedTxt.textContent = BRIEF.slice(0, n);
+        var typing = t > 3.1 && t < 5.5;
+        caret.style.opacity = typing || (t < B.click && Math.floor(t * 2.4) % 2 === 0) ? '1' : '0';
+        var m = Math.round(LUMI.length * Math.min(1, Math.max(0, (t - 8.3) / (9.9 - 8.3))));
+        var s = LUMI.slice(0, m), cut = LUMI.indexOf('.') + 1;
+        var html = m >= cut ? '<b>' + s.slice(0, cut) + '</b>' + s.slice(cut) : s;
+        if (m > 0 && t < 11.2) html += '<span class="cur"></span>';
+        lumiText.innerHTML = html;
+      }
+
+      // ---------- timeline ----------
+      var tl = gsap.timeline({ paused: true });
+      var drv = { t: 0 };
+      tl.to(drv, { t: 1, duration: D, ease: 'none', onUpdate: function () { var t = tl.time(); drawLens(t); typeAt(t); } }, 0);
+
+      // ===== hook: the lens wakes, the promise rises =====
+      tl.fromTo('#l1', { yPercent: 110 }, { yPercent: 0, duration: 1.0, ease: 'expo.out' }, 0.35);
+      tl.fromTo('#l2', { yPercent: 110 }, { yPercent: 0, duration: 1.0, ease: 'expo.out' }, 0.75);
+      tl.fromTo('#sub', { opacity: 0, y: 18 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' }, 1.45);
+      tl.fromTo('#bigHead', { scale: 1 }, { scale: 1.035, duration: 2.8, ease: 'none' }, 0.2);
+
+      // ===== the ask (beat-locked: 3.02) =====
+      tl.to('#bigHead', { opacity: 0, y: -60, filter: 'blur(10px)', duration: 0.5, ease: 'power2.in' }, B.ask - 0.35);
+      tl.fromTo('#smallHead', { opacity: 0, y: 20 }, { opacity: 0.92, y: 0, duration: 0.6, ease: 'power3.out' }, B.ask);
+      tl.fromTo('#barWrap', { opacity: 0, y: 50, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.7, ease: 'power3.out' }, B.ask - 0.1);
+      tl.fromTo('#miniLens', { rotation: 0 }, { rotation: 720, duration: B.click - B.ask + 0.3, ease: 'none' }, B.ask);
+      tl.to('#miniLens', { rotation: 2880, duration: B.live - B.click, ease: 'power1.inOut' }, B.click + 0.3);
+      // cursor arrives, taps Find them
+      tl.fromTo('#cursor', { opacity: 0, x: 1700, y: 900 }, { opacity: 1, x: 1600, y: 700, duration: 0.3, ease: 'power1.out' }, 5.2);
+      tl.to('#cursor', { x: 1560, y: 505, duration: 0.5, ease: 'power2.inOut' }, 5.5);
+      tl.to('#cursor', { scale: 0.84, duration: 0.07, ease: 'power2.in', yoyo: true, repeat: 1 }, B.click - 0.02);
+      tl.to('#go', { scale: 0.95, duration: 0.07, ease: 'power2.in', yoyo: true, repeat: 1 }, B.click - 0.02);
+      tl.fromTo('#goRipple', { opacity: 0.9, scale: 1 }, { opacity: 0, scale: 1.3, duration: 0.6, ease: 'power2.out' }, B.click);
+      tl.to('#cursor', { x: 1620, y: 980, opacity: 0, duration: 0.6, ease: 'power2.in' }, B.click + 0.35);
+      tl.to('#smallHead', { opacity: 0.55, duration: 0.3 }, B.click + 0.1);
+      // the brief, understood: chips land quickly and hold (natural timing for readability)
+      ['#c1', '#c2', '#c3', '#c4'].forEach(function (c, i) {
+        tl.fromTo(c, { opacity: 0, y: 16, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.4, ease: 'back.out(1.6)' }, 6.55 + i * 0.16);
+      });
+
+      // ===== the constellation (live at 8.02) =====
+      tl.to('#chips', { opacity: 0, y: -10, duration: 0.3, ease: 'power2.in' }, B.live - 0.1);
+      tl.to('#barWrap', { y: -300, scale: 0.82, duration: 0.9, ease: 'power3.inOut' }, B.live - 0.05);
+      tl.to('#smallHead', { opacity: 0, y: -16, duration: 0.4, ease: 'power2.in' }, B.live - 0.05);
+      tl.fromTo('#lumiLine', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, 8.1);
+      // beat-grid: Mara 8.52, then 9.02, 9.27, 9.52, 9.77, 10.02 (names then hold to 13s)
+      var bloom = [B.mara, 9.02, 9.27, 9.52, 9.77, 10.02];
+      ORBS.forEach(function (o, j) {
+        var at = bloom[j];
+        tl.fromTo('#beam' + j, { attr: { 'stroke-dashoffset': o.len } }, { attr: { 'stroke-dashoffset': 0 }, duration: 0.45, ease: 'power2.out' }, at - 0.22);
+        tl.fromTo('#orb' + j, { opacity: 0, scale: 0.3 }, { opacity: 1, scale: 1, duration: j === 0 ? 0.9 : 0.75, ease: 'back.out(1.5)' }, at);
+      });
+      tl.fromTo('#orb0 .ph', { scale: 1 }, { scale: 1.06, duration: 0.8, ease: 'sine.inOut', yoyo: true, repeat: 3 }, 9.6);
+      tl.fromTo('#aSc', { scale: 1 }, { scale: 1.04, duration: 5.2, ease: 'none', transformOrigin: '50% 50%' }, 8.0);
+
+      // ===== same thread, same second (beat-locked: 13.02) =====
+      tl.to('#aSc', { opacity: 0, filter: 'blur(14px)', duration: 0.6, ease: 'power1.inOut' }, B.sB - 0.3);
+      tl.fromTo('#bSc', { opacity: 0 }, { opacity: 1, duration: 0.5, ease: 'power1.out' }, B.sB - 0.1);
+      tl.fromTo('#bTitle', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out' }, B.sB);
+      tl.fromTo('#phone', { opacity: 0, x: -80 }, { opacity: 1, x: 0, duration: 0.9, ease: 'power3.out' }, B.sB - 0.05);
+      tl.fromTo('#desk', { opacity: 0, x: 80, scale: 0.97 }, { opacity: 1, x: 0, scale: 1, duration: 0.9, ease: 'power3.out' }, B.sB + 0.05);
+      tl.fromTo('#link', { opacity: 0 }, { opacity: 1, duration: 0.5 }, B.sB + 0.4);
+      // Quote
+      tl.fromTo('#p1', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, B.sB + 0.25);
+      tl.fromTo('#p2', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.45, ease: 'power2.out' }, B.sB + 0.45);
+      tl.fromTo('#st1 .hl', { opacity: 0 }, { opacity: 1, duration: 0.3 }, B.sB + 0.3);
+      tl.fromTo('#d1', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, B.sB + 0.3);
+      function pulse(at, toDesk) {
+        tl.fromTo('#pulse', { opacity: 0, x: toDesk ? 0 : 122 }, { opacity: 1, x: toDesk ? 122 : 0, duration: 0.45, ease: 'power2.inOut', immediateRender: false }, at);
+        tl.to('#pulse', { opacity: 0, duration: 0.15 }, at + 0.46);
+      }
+      pulse(B.sB + 0.35, false);
+      function step(k, at) {
+        tl.to('#st' + (k - 1) + ' .hl', { opacity: 0, duration: 0.25 }, at);
+        tl.fromTo('#st' + (k - 1) + ' .dn', { opacity: 0 }, { opacity: 1, duration: 0.25 }, at);
+        tl.fromTo('#st' + k + ' .hl', { opacity: 0 }, { opacity: 1, duration: 0.25, immediateRender: false }, at);
+        tl.to('#d' + (k - 1), { opacity: 0, y: -10, duration: 0.25, ease: 'power2.in' }, at);
+        tl.fromTo('#d' + k, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out', immediateRender: false }, at + 0.12);
+      }
+      // Accept (beat-grid 14.02)
+      tl.to('#p2ok', { opacity: 1, duration: 0.25 }, B.s1 - 0.05); tl.to('#p2b', { opacity: 0, duration: 0.2 }, B.s1 - 0.05);
+      tl.fromTo('#p3', { opacity: 0 }, { opacity: 1, duration: 0.3 }, B.s1 + 0.2);
+      pulse(B.s1, true); step(2, B.s1);
+      // Sign (beat-grid 15.02): the thread scrolls, the signature draws itself
+      tl.to('#pthread', { y: -120, duration: 0.5, ease: 'power2.inOut' }, B.s2 - 0.15);
+      tl.fromTo('#p4', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, B.s2 - 0.05);
+      tl.fromTo('#sig', { strokeDasharray: 620, strokeDashoffset: 620 }, { strokeDashoffset: 0, duration: 0.6, ease: 'power1.inOut' }, B.s2 + 0.1);
+      tl.to('#p4ok', { opacity: 1, duration: 0.2 }, B.s2 + 0.72); tl.to('#p4b', { opacity: 0, duration: 0.15 }, B.s2 + 0.72);
+      pulse(B.s2 + 0.3, true); step(3, B.s2 + 0.3);
+      // Deposit (beat-grid 16.02): paid in a tap
+      tl.to('#pthread', { y: -250, duration: 0.5, ease: 'power2.inOut' }, B.s3 - 0.15);
+      tl.fromTo('#p5', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power2.out' }, B.s3 - 0.05);
+      tl.to('#p5ok', { opacity: 1, duration: 0.2 }, B.s3 + 0.26); tl.to('#p5b', { opacity: 0, duration: 0.15 }, B.s3 + 0.26);
+      tl.fromTo('#p5ok', { scale: 0.9 }, { scale: 1, duration: 0.4, ease: 'back.out(2)', immediateRender: false }, B.s3 + 0.26);
+      pulse(B.s3 + 0.28, true); step(4, B.s3 + 0.28);
+      tl.fromTo('#paidGlow', { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1.1, duration: 0.8, ease: 'power2.out' }, B.s3 + 0.3);
+      tl.to('#paidGlow', { opacity: 0.5, duration: 1.0, ease: 'sine.inOut' }, B.s3 + 1.1);
+      tl.fromTo('#bSc', { scale: 1 }, { scale: 1.025, duration: 5.2, ease: 'none', transformOrigin: '50% 55%', immediateRender: false }, B.sB);
+
+      // ===== lockup (beat-locked: 18.02) =====
+      tl.to('#bSc', { opacity: 0, filter: 'blur(14px)', duration: 0.6, ease: 'power1.inOut' }, B.sC - 0.35);
+      tl.fromTo('#cSc', { opacity: 0 }, { opacity: 1, duration: 0.3 }, B.sC - 0.1);
+      tl.fromTo('#logo', { opacity: 0, scale: 0.9, filter: 'blur(10px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 1.0, ease: 'power3.out' }, B.sC);
+      tl.fromTo('#tag', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, B.sC + 0.62);
+      tl.fromTo('#url', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, B.sC + 1.2);
+      tl.fromTo('#lockup', { scale: 1 }, { scale: 1.03, duration: 3.9, ease: 'sine.out' }, B.sC);
+
+      // music fades under the lockup
+      tl.fromTo('#bgm', { volume: 0.32 }, { volume: 0, duration: 1.4, ease: 'power1.in' }, 20.6);
+
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>
