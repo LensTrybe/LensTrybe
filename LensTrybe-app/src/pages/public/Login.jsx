@@ -29,7 +29,7 @@ export default function Login() {
     try { sessionStorage.removeItem('returnTo') } catch { /* ignore */ }
     nav(next || (LIVE ? homeFor(r.kind) : r.kind === 'client' ? '/portal/harper-leo' : '/app'), { replace: true })
   }
-  const google = async () => { const r = await signInWithGoogle(next); if (r.error) setErr(r.error); else if (!LIVE) nav(who === 'client' ? '/portal/harper-leo' : '/app') }
+  const google = async () => { const r = await signInWithGoogle(next, ''); if (r.error) setErr(r.error); else if (!LIVE) nav(who === 'client' ? '/portal/harper-leo' : '/app') }
   return (
     <section className="hiw login dark darkhero">
       <canvas className="gl" ref={cv} aria-hidden="true" />

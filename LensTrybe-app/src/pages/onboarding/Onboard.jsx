@@ -6,7 +6,8 @@ import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { useStore, TODAY } from '../../lib/store'
 import { outside, waitlistTo } from '../../lib/region'
-import { signUpCreative } from '../../lib/auth'
+import { createMyAccount, googleNames, signUpCreative } from '../../lib/auth'
+import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import '../../styles/public.css'
 import '../../styles/pages.css'
@@ -24,17 +25,35 @@ import './onboard.css'
 const PLANS = [['Basic', 'Free', 'Profile, enquiries, one skill', 'Free forever'], ['Pro', '$24.99', 'Quotes, invoices, contracts, job board', '3 months free'], ['Expert', '$74.99', 'Your own website, both skills, reply anywhere in Australia', '3 months free'], ['Elite', '$149.99', 'Custom domain, team of five, Elite spotlight', '3 months free']]
 
 export default function Onboard() {
-  const { state } = useLocation(); const nav = useNavigate(); useSpecular([]); const { patch, set } = useStore()
-  const j = state || {}
+  const { state, search } = useLocation(); const nav = useNavigate(); useSpecular([]); const { patch, set } = useStore()
+  // Google: already signed in with no account yet; the name and email come from the Google account
+  const auth = useAuth(); const gUser = LIVE && auth.user && !auth.profile && !auth.clientAccount ? auth.user : null
+  const google = LIVE && (new URLSearchParams(search).get('google') === '1' || !!gUser)
+  const gn = googleNames(gUser); const [gDisc, setGDisc] = useState('Photographer')
+  const j = google ? { first: gn.first, last: gn.last, email: gUser?.email || '', disc: gDisc, news: false } : (state || {})
   const first = j.first || '', last = j.last || '', email = j.email || '', disc0 = j.disc || 'Photographer', password = j.password || '', code = (j.code || '').toUpperCase()
   const founding = !!code
   const lock = founding ? (j.codeTier ? j.codeTier[0].toUpperCase() + j.codeTier.slice(1) : 'Expert') : ''
   const [plan, setPlan] = useState(lock || 'Pro'), [agree, setAgree] = useState(false), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
-  useEffect(() => { if (outside()) return nav(waitlistTo(), { replace: true }); if (!first || !email || (LIVE && !password)) nav('/join', { replace: true }) }, [first, email, password, nav])
+  useEffect(() => {
+    if (outside()) return nav(waitlistTo(), { replace: true })
+    if (google) { if (!auth.loading && !auth.user) nav('/join', { replace: true }); else if (!auth.loading && auth.profile) nav('/app/today', { replace: true }); return }
+    if (!first || !email || (LIVE && !password)) nav('/join', { replace: true })
+  }, [first, email, password, nav, google, auth.loading, auth.user, auth.profile])
   const name = (first + ' ' + last).trim()
   const go = async () => {
     if (!agree) return setErr('Have a read of the terms first, then tick the box.')
     const disc = !['Expert', 'Elite'].includes(plan) && disc0 === 'Both' ? 'Photographer' : disc0
+    if (LIVE && google) {
+      if (busy || !gUser) return; setBusy(true)
+      const made = await createMyAccount('creative', first, last, disc === 'Both' ? ['Photographer', 'Videographer'] : [disc], false)
+      if (made.error) { setBusy(false); return setErr(made.error) }
+      if (plan !== 'Basic') {
+        const r = await signUpCreative({ google: true, userId: gUser.id, first, last, email, disc, tier: plan.toLowerCase(), billing: 'monthly' })
+        if (r.error) { setBusy(false); return setErr(r.error + ' Your account is made on Basic; you can pick a plan any time in Subscription.') }
+      }
+      return window.location.replace(window.location.origin + '/app/today?welcome=1')
+    }
     if (LIVE) {
       if (busy) return; setBusy(true)
       const r = await signUpCreative({ first, last, email, password, disc, tier: plan.toLowerCase(), billing: 'monthly', code, news: j.news !== false })
@@ -59,6 +78,7 @@ export default function Onboard() {
       <main className="obw">
         <div className="obc lg">
           <p className="eb g">{founding ? 'Founding creative programme' : 'Last step, ' + first}</p><h1>{founding ? 'Your place is held.' : 'Pick a plan.'}</h1><p className="sub">{founding ? 'Expert free until 21 September 2027, then $49 a month for life, plus the badge. Three real client jobs in the first six months keeps it.' : 'Three months free on any paid plan: add a card, pay nothing until month four, cancel before then and pay nothing at all. Basic is free forever. Change it any time.'}</p>
+          {google && <div className="obdisc" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 16px', alignItems: 'center' }}><span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>What you do</span>{['Photographer', 'Videographer', 'Both'].map(x => <button key={x} type="button" onClick={() => setGDisc(x)} className={'btn sm ' + (gDisc === x ? 'k' : 'g')}>{x}</button>)}</div>}
           <div className="plans4">{PLANS.map(([n, pr, d, tag]) => <button key={n} type="button" className={plan === n ? 'on' : ''} disabled={founding && n !== lock} onClick={() => { setPlan(n); setErr('') }}><b>{n}</b><span>{pr}{pr !== 'Free' && <small style={{ display: 'inline', minHeight: 0, marginLeft: 3 }}>/mo</small>}</span><small>{d}</small><em>{founding && n === lock ? 'Founding: free for a year' : tag}</em></button>)}</div>
           {disc0 === 'Both' && !['Expert', 'Elite'].includes(plan) && <p className="fine">Photographer and videographer on one profile needs Expert or Elite. On {plan} you start as a photographer and can add film later.</p>}
           <label className="obagree"><input type="checkbox" checked={agree} onChange={e => { setAgree(e.target.checked); setErr('') }} /><span>I agree to the <Link to="/legal/terms" target="_blank">terms</Link> and <Link to="/legal/privacy" target="_blank">privacy policy</Link>{founding && <> and the <Link to="/legal/founding" target="_blank">founding creative agreement</Link></>}.</span></label>

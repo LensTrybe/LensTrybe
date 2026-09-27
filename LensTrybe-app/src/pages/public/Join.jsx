@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
-import { checkFoundingCode, foundingReason, isEmail, PASSWORD_MIN, signInWithGoogle, signUpClient } from '../../lib/auth'
+import { checkFoundingCode, createMyAccount, foundingReason, googleNames, isEmail, PASSWORD_MIN, signInWithGoogle, signOut, signUpClient } from '../../lib/auth'
+import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import { outside, waitlistTo } from '../../lib/region'
 import { useSite, jobsOpen, untilLabel, jobsPostedRecent } from '../../lib/site'
@@ -54,7 +55,30 @@ export default function Join() {
       nav('/onboarding', { state: { ...fields, password: f.pw, news: f.news, code: fc ? fc.code : '', codeTier: fc ? fc.tier : '' } })
     } finally { setBusy(false) }
   }
-  const google = async () => { const r = await signInWithGoogle(kind === 'creative' ? '/onboarding' : '/portal'); if (r.error) setErr(r.error); else if (!LIVE) nav(kind === 'creative' ? '/onboarding' : '/portal/harper-leo') }
+  const google = async () => { if (code && code.trim()) return setErr('Founding codes use email sign-up. Fill in the form and your code is applied.'); const r = await signInWithGoogle('', kind, f.news); if (r.error) setErr(r.error); else if (!LIVE) nav(kind === 'creative' ? '/onboarding' : '/portal/harper-leo') }
+  // back from Google with no LensTrybe account yet (they started from Log in): choose, then it's made
+  const auth = useAuth(); const [gBusy, setGBusy] = useState(false)
+  const gPending = LIVE && auth.user && !auth.loading && !auth.profile && !auth.clientAccount
+  const asClient = async () => {
+    if (gBusy) return; setGBusy(true); const { first: gf, last: gl } = googleNames(auth.user)
+    const r = await createMyAccount('client', gf, gl, null, false); if (r.error) { setGBusy(false); return setErr(r.error) }
+    let rt = ''; try { rt = sessionStorage.getItem('returnTo') || ''; sessionStorage.removeItem('returnTo') } catch { /* ignore */ }
+    window.location.replace(window.location.origin + (rt.startsWith('/') && !rt.startsWith('//') && !rt.startsWith('/app') ? rt : '/portal'))
+  }
+  if (gPending) return (
+    <section className="hiw join dark darkhero">
+      <canvas className="gl" ref={cv} aria-hidden="true" />
+      <div className="jgrid">
+        <div className="jpitch"><p className="eb">Almost there</p><h1>How will you use <em>LensTrybe?</em></h1><p className="sub">You're signed in with Google as <b style={{ color: '#fff' }}>{auth.user.email}</b>, but there's no LensTrybe account for it yet. Pick one and it's made.</p></div>
+        <div className="lpane lg d"><div className="lform">
+          <button type="button" className="btn w lg" onClick={() => nav('/onboarding?google=1')}>I'm a creative <Icon name="arrow" size={14} /></button>
+          <button type="button" className="btn g lg" disabled={gBusy} onClick={asClient}>{gBusy ? 'One moment' : "I'm hiring a creative"}</button>
+          {err && <p className="jerr">{err}</p>}
+          <p className="tiny">Creatives pick a plan next (Basic is free). Clients never pay. Wrong Google account? <button type="button" className="forgot" onClick={async () => { await signOut(); nav('/login') }}>Log out</button></p>
+        </div></div>
+      </div>
+    </section>
+  )
   return (
     <section className="hiw join dark darkhero">
       <canvas className="gl" ref={cv} aria-hidden="true" />

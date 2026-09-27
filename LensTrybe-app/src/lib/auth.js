@@ -48,13 +48,35 @@ export async function signIn(email, password, demoKind = 'creative') {
   return { kind: await accountKind(data.user?.id) }
 }
 
-// Google. The live site sets a session flag so AuthContext knows to send a brand new
-// Google user to onboarding. Next keeps the flag; its onboarding is the plan step.
-export async function signInWithGoogle(next = '/') {
+// Google. A session flag tells AuthContext this is a return from Google; lt_google_kind says what
+// the person chose (creative / client, or '' from the login page) so a brand new Google user gets
+// the right account (create_my_account) instead of none. A returnTo already set (say the job form's
+// '/jobs?resume=1') is kept; `next` only fills it when nothing is waiting.
+export async function signInWithGoogle(next = '', kind = '', news = false) {
   if (!LIVE) return { ok: true }
-  try { sessionStorage.setItem(LT_GOOGLE_OAUTH_PENDING_KEY, '1'); if (next && next !== '/') sessionStorage.setItem('returnTo', next) } catch { /* ignore */ }
+  try {
+    sessionStorage.setItem(LT_GOOGLE_OAUTH_PENDING_KEY, '1')
+    sessionStorage.setItem('lt_google_kind', kind || '')
+    sessionStorage.setItem('lt_google_news', news ? '1' : '')
+    if (next && next !== '/' && !sessionStorage.getItem('returnTo')) sessionStorage.setItem('returnTo', next)
+  } catch { /* ignore */ }
   const { error } = await supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: origin() + '/' } })
   return error ? { error: error.message } : { ok: true }
+}
+
+// Make the signed-in person's own account after Google (never someone else's, never twice).
+export async function createMyAccount(kind, first = '', last = '', skills = null, news = false) {
+  if (!LIVE) return { ok: true }
+  const { error } = await supabase.rpc('create_my_account', { p_kind: kind, p_first: first || '', p_last: last || '', p_skills: skills, p_news: !!news })
+  return error ? { error: error.message || 'The account could not be made. Try again.' } : { ok: true }
+}
+// First and last name from a Google account's details
+export function googleNames(user) {
+  const m = user?.user_metadata || {}
+  const full = String(m.full_name || m.name || '').trim()
+  const first = String(m.given_name || full.split(' ')[0] || '').trim()
+  const last = String(m.family_name || full.split(' ').slice(1).join(' ') || '').trim()
+  return { first, last }
 }
 
 export async function signOut() {
@@ -89,7 +111,8 @@ export function foundingReason(reason) {
 export async function signUpCreative(f) {
   const email = String(f.email || '').trim(), password = String(f.password || '')
   if (!isEmail(email)) return { error: 'A real email, it is how you log in.' }
-  if (password.length < PASSWORD_MIN) return { error: 'A password of at least eight characters.' }
+  // f.google: signed in with Google and the profile already made (create_my_account); only the card step is left
+  if (!f.google && password.length < PASSWORD_MIN) return { error: 'A password of at least eight characters.' }
   const business = (f.business || (f.first + ' ' + f.last)).trim()
   if (!LIVE) return { ok: true, userId: 'demo', needsConfirm: false }
   const mod = await moderateText(business)

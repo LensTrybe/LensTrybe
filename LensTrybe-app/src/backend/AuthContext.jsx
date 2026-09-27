@@ -12,6 +12,8 @@ export const LT_JOIN_FLASH_KEY = 'lt_join_flash'
 /** Post-OAuth / magic-link: optional `sessionStorage.returnTo`, never hijack portal or deliver links. */
 function consumeOAuthReturnRedirect() {
   if (typeof window === 'undefined') return
+  // a Google return is sorted out in fetchUserData, once we know whether they have an account
+  try { if (sessionStorage.getItem(LT_GOOGLE_OAUTH_PENDING_KEY) === '1') return } catch { /* ignore */ }
   const path = window.location.pathname
   if (path.startsWith('/portal/') || path.startsWith('/deliver/')) return
   const returnTo = sessionStorage.getItem('returnTo')
@@ -93,15 +95,33 @@ export function AuthProvider({ children }) {
       /* ignore */
     }
 
-    if (googleOAuthReturn && !profileData && !clientData) {
-      if (window.location.pathname !== '/onboarding') {
-        window.location.replace(`${window.location.origin}/onboarding`)
+    if (googleOAuthReturn) {
+      let kind = '', news = false, rt = ''
+      try {
+        kind = sessionStorage.getItem('lt_google_kind') || ''; news = sessionStorage.getItem('lt_google_news') === '1'
+        rt = sessionStorage.getItem('returnTo') || ''
+        sessionStorage.removeItem('lt_google_kind'); sessionStorage.removeItem('lt_google_news')
+      } catch { /* ignore */ }
+      const safe = rt.startsWith('/') && !rt.startsWith('//') ? rt : ''
+      const go = to => { try { sessionStorage.removeItem('returnTo') } catch { /* ignore */ } window.location.replace(window.location.origin + to) }
+      if (!profileData && !clientData) {
+        // brand new to LensTrybe: make the account they chose
+        if (kind === 'client') {
+          const { data: { user: u } } = await supabase.auth.getUser()
+          const m = u?.user_metadata || {}, full = String(m.full_name || m.name || '').trim()
+          await supabase.rpc('create_my_account', { p_kind: 'client', p_first: m.given_name || full.split(' ')[0] || '', p_last: m.family_name || full.split(' ').slice(1).join(' ') || '', p_skills: null, p_news: news })
+          return go(safe || '/portal')
+        }
+        if (kind === 'creative') { if (window.location.pathname !== '/onboarding') go('/onboarding?google=1'); return }
+        // from the log in page with no account yet: choose creative or client first
+        if (window.location.pathname !== '/join') go('/join?google=1')
+        return
       }
-      return
-    }
-
-    if (googleOAuthReturn && profileData && window.location.pathname === '/') {
-      window.location.replace(`${window.location.origin}/dashboard`)
+      // an existing account: back to what they were doing, or their home
+      const home = profileData ? '/app/today' : '/portal'
+      const wrongSide = safe && ((profileData && safe.startsWith('/portal')) || (!profileData && safe.startsWith('/app')))
+      if (safe && !wrongSide) return go(safe)
+      if (['/', '/login', '/join', '/join/client', '/join/creative', '/onboarding'].includes(window.location.pathname)) return go(home)
       return
     }
 
