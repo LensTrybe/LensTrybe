@@ -23,6 +23,7 @@ import Waitlist from './pages/public/Waitlist'
 import Unsubscribe from './pages/public/Unsubscribe'
 import Upcoming from './pages/public/Upcoming'
 import Legal from './pages/public/Legal'
+import { OldDashboard, OldClientDashboard, DocView } from './pages/public/OldLinks'
 import Support from './pages/public/Support'
 import Onboard from './pages/onboarding/Onboard'
 import ClientThread from './pages/portal/ClientThread'
@@ -93,6 +94,11 @@ export default function App() {
         <Route path="/meeting/:token" element={<MeetingLive />} />
         <Route path="/deliver/:token" element={<DeliverLive />} />
         <Route path="/app/*" element={<RequireCreative><Shell /></RequireCreative>} />
+        {/* old-site addresses already in people's inboxes */}
+        <Route path="/dashboard" element={<OldDashboard />} />
+        <Route path="/dashboard/*" element={<OldDashboard />} />
+        <Route path="/client-dashboard" element={<OldClientDashboard />} />
+        <Route path="/doc/:type/:token" element={<DocView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <ModeBadge />

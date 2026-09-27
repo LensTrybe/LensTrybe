@@ -30,6 +30,8 @@ export default function Join() {
   const saved = (() => { try { return JSON.parse(sessionStorage.getItem('lt_join') || 'null') } catch { return null } })()
   const [f, setF] = useState({ first: saved?.first || '', last: saved?.last || '', email: state?.email || p.get('email') || saved?.email || '', pw: '', disc: saved?.disc || 'Photographer', co: '', news: true }); const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
+  // arrived from the job form: their job is saved and waiting
+  const savedJob = (() => { try { const d = JSON.parse(localStorage.getItem('lt-job-draft') || 'null'); return d?.t && (sessionStorage.getItem('returnTo') || '').startsWith('/jobs') ? d.t : '' } catch { return '' } })()
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
   // proof for creatives: real jobs posted, and the launch window where every plan can reply
   const site = useSite(); const win = jobsOpen(site); const [posted, setPosted] = useState(null)
@@ -59,8 +61,10 @@ export default function Join() {
       <div className="jgrid">
         <div className="jpitch">
           <p className="eb">{p.get('founding') ? 'Founding application' : 'Join'}</p>
+          {kind === 'client' && savedJob ? <><h1>Your job is saved. <em>One last step.</em></h1>
+          <p className="sub">Make your free account and <b style={{ color: '#fff' }}>{savedJob}</b> is ready to post. After you confirm your email, it's one tap from your portal.</p></> : <>
           <h1>{kind === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>Find the right person, <em>fast.</em></>}</h1>
-          <p className="sub">{kind === 'creative' ? 'Photographers and videographers at launch, six more disciplines after. Sign up takes a minute; your profile goes live as soon as it has a photo and a line about you.' : 'A free account keeps every enquiry, quote, contract and gallery in one place, with the job board for when you would rather they come to you. Or skip it: browse everyone and ask without one.'}</p>
+          <p className="sub">{kind === 'creative' ? 'Photographers and videographers at launch, six more disciplines after. Sign up takes a minute; your profile goes live as soon as it has a photo and a line about you.' : 'A free account keeps every enquiry, quote, contract and gallery in one place, with the job board for when you would rather they come to you. Or skip it: browse everyone and ask without one.'}</p></>}
           <div className="why">{WHY[kind].map(([t, d]) => <div key={t}><i><Icon name="check" size={13} /></i><div><b>{t}</b><span>{d}</span></div></div>)}</div>
           {kind === 'creative' && (win.open || posted >= 5) && <p className="jbnow">{posted >= 5 && <><b>{posted}</b> jobs posted by clients in the last 30 days. </>}{win.open && <>Until {untilLabel(win.until)}, every plan can reply to jobs, including the free one.</>}</p>}
         </div>

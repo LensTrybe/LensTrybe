@@ -16,7 +16,8 @@ export default function ModeBadge() {
     once.then(([{ data }, r]) => { if (on) setSt(r.error ? 'error' : data?.session ? 'signed-in' : 'ok') }).catch(() => on && setSt('error'))
     return () => { on = false }
   }, [])
-  if (hide) return null
+  // never on the real site: after the swap lenstrybe.com shows no badge
+  if (hide || /(^|\.)lenstrybe\.com$/.test(location.hostname) && !location.hostname.startsWith('next.')) return null
   const label = MODE === 'demo' ? 'Demo' : st === 'checking' ? 'Live · connecting' : st === 'error' ? 'Live · no answer' : st === 'signed-in' ? 'Live · signed in' : 'Live · connected'
   return <button type="button" className={'modebadge ' + MODE + ' ' + st} onClick={() => setHide(true)} title="Which build this is. Click to hide.">{label}</button>
 }

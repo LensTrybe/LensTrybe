@@ -14,6 +14,7 @@ export default function CheckEmail() {
   const cv = useRef(null)
   const email = state?.email || '', client = (state?.as || p.get('as')) === 'client'
   const next = p.get('next') || (client ? '/portal/harper-leo' : '/app/today?welcome=1')
+  const hasJob = (() => { try { return !!JSON.parse(localStorage.getItem('lt-job-draft') || 'null')?.t } catch { return false } })()
   const [sent, setSent] = useState(0), [cool, setCool] = useState(0), [err, setErr] = useState('')
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
   useEffect(() => { if (!cool) return; const t = setTimeout(() => setCool(c => c - 1), 1000); return () => clearTimeout(t) }, [cool])
@@ -24,7 +25,7 @@ export default function CheckEmail() {
       <div className="lpane lg d">
         <p className="eb">{client ? 'Client account' : 'Almost there'}</p>
         <h1>Check your <em>inbox.</em></h1>
-        <p className="hint">{email ? <>A confirmation link is on its way to <b style={{ color: '#fff' }}>{email}</b>. </> : 'A confirmation link is on its way. '}One tap and {client ? 'you can enquire, book and keep every job in one place.' : 'your workspace opens with the checklist.'} It works for twenty-four hours.</p>
+        <p className="hint">{email ? <>A confirmation link is on its way to <b style={{ color: '#fff' }}>{email}</b>. </> : 'A confirmation link is on its way. '}One tap and {client ? (hasJob ? 'your job is ready to post from your portal. It works on any device.' : 'you can enquire, book and keep every job in one place.') : 'your workspace opens with the checklist.'} It works for twenty-four hours.</p>
         <div className="lform">
           {!LIVE && <button type="button" className="btn w lg" onClick={() => nav(next)}>Open the link (demo) <Icon name="arrow" size={14} /></button>}
           {err && <p className="jerr">{err}</p>}

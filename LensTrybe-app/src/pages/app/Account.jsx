@@ -208,6 +208,9 @@ export function Settings() {
   const [acc, setAcc] = useState({ email: S.email, phone: S.phone, biz: S.biz, abn: S.abn }), [dirty, setDirty] = useState(false)
   const [delOpen, setDelOpen] = useState(false), [news, setNews] = useState(null)
   useEffect(() => { let on = true; newsletterStatus().then(d => on && setNews(!!d.subscribed)).catch(() => on && setNews(false)); return () => { on = false } }, [])
+  const [jobAl, setJobAl] = useState(true)
+  useEffect(() => { if (!LIVE || !auth.user?.id) return; let on = true; live.jobAlertsOn(auth.user.id).then(v => on && setJobAl(v)).catch(() => {}); return () => { on = false } }, [auth.user?.id])
+  const toggleJobAl = async () => { const next = !jobAl; setJobAl(next); if (!LIVE) return; try { await live.setJobAlerts(auth.user.id, next); toast(next ? 'Job alerts on. At most 3 emails a day.' : 'Job alerts off. New jobs still show on your job board.') } catch (e) { setJobAl(!next); toast(e.message) } }
   const toggleNews = async () => { const next = !news; setNews(next); const r = await setNewsletter(next); if (r.error) { setNews(!next); toast(r.error) } else toast(next ? "You're on The Trybe Edit." : 'Unsubscribed. Emails about your own account still arrive.') }
   const changeEmailSheet = () => F.open({ title: 'Change email', sub: 'A link goes to both addresses. The change lands once both are clicked.', cta: 'Send the links', center: true, fields: [{ k: 'cur', l: 'Current email', type: 'email', required: true, placeholder: email }, { k: 'next', l: 'New email', type: 'email', required: true }], submit: async v => { const r = await changeEmail(v.cur, v.next, email); if (r.error) { toast(r.error); return false } toast('Links sent to ' + v.cur + ' and ' + v.next + '. Click both to finish.') } })
   const [dark, setDark] = useState(() => read('lt-dark', true)), [dock, setDock] = useState(() => read('lt-dock', true))
@@ -233,7 +236,7 @@ export function Settings() {
             <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}><button className="btn g sm" onClick={changeEmailSheet}>Change email</button><button className="btn g sm" onClick={password}>Change password</button><button className="btn g sm" onClick={twofa}>Two-factor · {S.twofa === false ? 'off' : 'on'}</button></div>
           </div>
           <div className="card lg"><div className="h"><b>Notifications</b></div>
-            <div className="brows one">{[['enq', 'New enquiry', 'Push and email, straight away'], ['pay', 'Payment received', 'Push'], ['lumi', 'Lumi needs a yes', 'Push, batched at 7 am and 5 pm'], ['week', 'Weekly summary', 'Email, Monday 7 am'], ['mkt', 'The Trybe Edit', 'The newsletter and occasional LensTrybe news']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span>{k === 'mkt' ? <Sw on={!!news} set={toggleNews} /> : <Sw on={S.notif[k]} set={() => F.patch('settings', { notif: { ...S.notif, [k]: S.notif[k] ? 0 : 1 } })} />}</label>)}</div>
+            <div className="brows one">{[['enq', 'New enquiry', 'Push and email, straight away'], ['pay', 'Payment received', 'Push'], ['lumi', 'Lumi needs a yes', 'Push, batched at 7 am and 5 pm'], ['week', 'Weekly summary', 'Email, Monday 7 am'], ['jobs', 'New jobs that fit you', 'Email and bell when a client posts one, at most 3 emails a day'], ['mkt', 'The Trybe Edit', 'The newsletter and occasional LensTrybe news']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span>{k === 'mkt' ? <Sw on={!!news} set={toggleNews} /> : k === 'jobs' ? <Sw on={jobAl} set={toggleJobAl} /> : <Sw on={S.notif[k]} set={() => F.patch('settings', { notif: { ...S.notif, [k]: S.notif[k] ? 0 : 1 } })} />}</label>)}</div>
           </div>
         </div>
         <div className="s6 side">

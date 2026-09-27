@@ -16,7 +16,7 @@ import '../../styles/pages.css'
 export default function ClientHome() {
   const { user, clientAccount } = useAuth(); const nav = useNavigate()
   const [rows, setRows] = useState(null), [jobs, setJobs] = useState([])
-  const draft = (() => { try { return JSON.parse(localStorage.getItem('lt-job-draft') || 'null') } catch (_) { return null } })()
+  const draft = (() => { try { return JSON.parse(localStorage.getItem('lt-job-draft') || 'null') } catch (_) { return null } })() || user?.user_metadata?.job_draft || null
   useEffect(() => { if (LIVE && user?.id) loadMyJobs(user.id).then(setJobs).catch(() => {}) }, [user?.id])
   useEffect(() => {
     if (!LIVE) { setRows([{ id: 'harper-leo', title: 'Wedding, Noosa', with: 'Mara Okafor', when: '14 Nov 2026', st: 'Quote accepted' }]); return }
@@ -40,7 +40,7 @@ export default function ClientHome() {
           {rows && rows.length === 0 && <div className="chempty"><b>Nothing booked yet.</b><p>Post what you need and creatives who do that work reply with a real quote.</p><Link className="btn p" to="/jobs">Post a job <Icon name="arrow" size={14} /></Link></div>}
           {rows && rows.map(r => <Link key={r.id} className="chrow" to={'/portal/' + r.id}><div><b>{r.title}</b><span>{[r.with, r.when].filter(Boolean).join(' · ')}</span></div><em>{r.st}</em><Icon name="arrow" size={14} /></Link>)}
         </div>
-        {draft?.t && <div className="lg chlist"><Link className="chrow" to="/jobs?resume=1"><div><b>Finish posting: {draft.t}</b><span>You filled this in before logging in. One tap to post it.</span></div><em>Not posted</em><Icon name="arrow" size={14} /></Link></div>}
+        {draft?.t && <div className="lg chlist"><Link className="chrow" to="/jobs?resume=1"><div><b>Finish posting: {draft.t}</b><span>You filled this in before making your account. One tap to post it.</span></div><em>Not posted</em><Icon name="arrow" size={14} /></Link></div>}
         {jobs.length > 0 && <><h2 style={{ fontSize: 18, margin: '28px 0 10px' }}>Your jobs</h2><div className="lg chlist">{jobs.map(j => { const n = j.apps.filter(a => !['withdrawn', 'declined'].includes(a.st)).length; return <Link key={j.id} className="chrow" to={'/jobs/' + j.id}><div><b>{j.t}</b><span>{[j.loc, n ? n + (n === 1 ? ' quote' : ' quotes') : 'no quotes yet'].filter(Boolean).join(' · ')}</span></div><em>{{ active: 'Open', filled: 'Booked', closed: 'Taken down', expired: 'Expired' }[j.st] || j.st}</em><Icon name="arrow" size={14} /></Link> })}</div></>}
         <p className="fine">Signed in as {user?.email}. <Link to="/jobs">Post a job</Link> for creatives to come to you, or <Link to="/creatives">browse everyone</Link>.</p>
       </div></main>

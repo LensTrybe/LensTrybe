@@ -6,6 +6,7 @@ import { mountLens } from '../../lib/lens'
 import { Calculator, FoundingBand } from './Sections'
 import WorkspacePeek from './WorkspacePeek'
 import { PLANS } from '../../data/workspace'
+import { useSite, jobsOpen, untilLabel } from '../../lib/site'
 
 const ROWS = [
   ['Public profile and listing', '✓', '✓', '✓', '✓'], ['Portfolio photos', '5', '20 + video', '40 + video', 'Unlimited'], ['Bookings a month', '3', '5', 'Unlimited', 'Unlimited'], ['Quotes clients can accept', '', '✓', '✓', '✓'], ['Branded invoices and payment', '', '', '✓', '✓'], ['Contracts and e-signatures', '', '', '✓', '✓'], ['CRM client records', '', '25', '500', 'Unlimited'], ['Branded client portals', '', '', '✓', '✓'], ['Deliver storage', '', '', '50 GB', '200 GB'], ['Your own website', '', 'Home and contact', 'Five pages', 'Five pages, own domain'], ['Lumi, your AI assistant', '', '5 messages a month', 'Unlimited', 'Unlimited'], ['Team members', '', '', '', 'Up to 5'], ['Elite spotlight on the homepage', '', '', '', '✓'],
@@ -27,6 +28,7 @@ const FAQ = [
 // Pricing: a dark opener with the lens, four glass plans, the full comparison, the maths and a short FAQ.
 export default function Pricing() {
   const [annual, setAnnual] = useState(false)
+  const win = jobsOpen(useSite())
   const [open, setOpen] = useState(0)
   const cv = useRef(null)
   const [lead, setLead] = useState(true)
@@ -64,6 +66,7 @@ export default function Pricing() {
               <button role="tab" aria-selected={annual} className={annual ? 'on' : ''} onClick={() => setAnnual(true)}>Annual <i>2 months free</i></button>
             </div>
           </div>
+          {win.open && <p className="rv" style={{ display: 'table', textAlign: 'center', margin: '0 auto 22px', maxWidth: '66ch', color: '#fff', fontSize: 14.5, lineHeight: 1.5, background: 'rgba(10,10,15,.88)', border: '1px solid rgba(141,243,214,.35)', borderRadius: 18, padding: '10px 18px' }}><b style={{ color: 'var(--mint)' }}>Launch offer:</b> until {untilLabel(win.until)}, every plan, including Basic, can reply to jobs anywhere in Australia. <Link to="/join" style={{ color: 'var(--mint)', fontWeight: 600 }}>Join free</Link></p>}
           <div className="pgrid rv">
             {PLANS.map(p => (
               <div key={p.n} className={'pcard lg' + (p.hot ? ' hot' : '')}>

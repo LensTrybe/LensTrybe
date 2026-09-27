@@ -48,7 +48,8 @@ export function PostJob() {
   useEffect(() => { if (LIVE) live.loadOpenJobs(9).then(setLiveOpen).catch(() => {}) }, [])
   // back from logging in or signing up: the job they filled in is waiting on step 2. Any other visit
   // with a saved, unposted job (say they pressed back on the login page) brings it back on step 1.
-  useEffect(() => { if (!LIVE || params.get('q')) return; const dr = readDraft(); if (!dr?.t) return; setV(o => ({ ...o, ...dr })); if (params.get('resume')) setStep(2) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  const restored = useRef(false)
+  useEffect(() => { if (!LIVE || params.get('q') || restored.current) return; const dr = readDraft() || user?.user_metadata?.job_draft; if (!dr?.t) return; restored.current = true; setV(o => ({ ...o, ...dr, by: o.by || dr.by || '' })); if (params.get('resume')) setStep(2) }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   const myName = (clientAccount ? [clientAccount.first_name, clientAccount.last_name].filter(Boolean).join(' ') : '') || profile?.business_name || ''
   useEffect(() => { if (LIVE && myName) setV(o => o.by ? o : { ...o, by: myName }) }, [myName])
   const openJobs = LIVE ? liveOpen : s.jobs.filter(j => j.st === 'open' && j.expires >= TODAY && j.kind === 'client').sort((a, b) => a.posted < b.posted ? 1 : -1)
@@ -58,7 +59,7 @@ export function PostJob() {
       if (!user) return
       if (!v.by.trim()) return setErr('Add your name, so creatives know who they are quoting.')
       if (busy) return; setBusy(true); setErr('')
-      live.postJob({ ...v, d: v.flexOn ? '' : v.d, w: v.w + (v.flexOn && v.flex ? '\n\nWhen: ' + v.flex : '') + (v.hrs ? '\n\nHow long: ' + v.hrs : '') }).then(jid => { clearDraft(); toast('Posted. Creatives who fit can reply now.'); nav('/jobs/' + jid) }).catch(x => setErr(x.message)).finally(() => setBusy(false))
+      live.postJob({ ...v, d: v.flexOn ? '' : v.d, w: v.w + (v.flexOn && v.flex ? '\n\nWhen: ' + v.flex : '') + (v.hrs ? '\n\nHow long: ' + v.hrs : '') }).then(jid => { clearDraft(); live.clearJobDraftMeta(user); toast('Posted. Creatives who fit can reply now.'); nav('/jobs/' + jid) }).catch(x => setErr(x.message)).finally(() => setBusy(false))
       return
     }
     if (!v.by.trim() || !/.+@.+\..+/.test(v.em)) return setErr('Your name and a real email, so replies can reach you.'); setErr('')

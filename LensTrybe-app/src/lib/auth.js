@@ -132,9 +132,13 @@ export async function signUpClient(f) {
   if (!isEmail(email)) return { error: 'A real email, it is how you log in.' }
   if (password.length < PASSWORD_MIN) return { error: 'A password of at least eight characters.' }
   if (!LIVE) return { ok: true, needsConfirm: true }
+  // a job they filled in before signing up travels with the account, so it is waiting in the portal
+  // even if they confirm the email on another device
+  let jobDraft = null
+  try { const d = JSON.parse(localStorage.getItem('lt-job-draft') || 'null'); if (d?.t) jobDraft = Object.fromEntries(['t', 'k', 'ct', 'loc', 'd', 'flex', 'flexOn', 'b', 'hrs', 'w', 'by'].map(k => [k, typeof d[k] === 'string' ? d[k].slice(0, k === 'w' ? 4000 : 200) : d[k]])) } catch { /* no draft */ }
   const { data, error } = await supabase.auth.signUp({
     email, password,
-    options: { emailRedirectTo: origin() + '/portal', data: { account_type: 'client', first_name: f.first, last_name: f.last, company_name: f.co || '', marketing_opt_in: f.news ? 'true' : 'false' } },
+    options: { emailRedirectTo: origin() + '/portal', data: { account_type: 'client', first_name: f.first, last_name: f.last, company_name: f.co || '', marketing_opt_in: f.news ? 'true' : 'false', ...(jobDraft ? { job_draft: jobDraft } : {}) } },
   })
   if (error) return { error: friendly(error.message) }
   if (data.session) {

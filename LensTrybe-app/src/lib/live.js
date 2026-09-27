@@ -927,7 +927,17 @@ export async function postJob(v) {
     budget_range: v.b ? String(Math.round(Number(v.b))) : null, poster_name: String(v.by || '').trim().slice(0, 120) || null, status: 'active',
   }).select('id').single()
   if (error) throw dbMsg(error, 'Could not post the job. Try again.')
+  // tell creatives who fit (email + bell); the job is posted either way
+  supabase.functions.invoke('job-alert', { body: { job_id: data.id } }).catch(() => {})
   return data.id
+}
+// A job filled in before sign-up rides on the account (user_metadata.job_draft) until it is posted
+export async function clearJobDraftMeta(user) { if (user?.user_metadata?.job_draft) { try { await supabase.auth.updateUser({ data: { job_draft: null } }) } catch (_) { /* harmless */ } } }
+// New-job alerts: on unless the creative has turned them off (job_alert_optouts)
+export async function jobAlertsOn(uid) { const { data } = await supabase.from('job_alert_optouts').select('user_id').eq('user_id', uid).maybeSingle(); return !data }
+export async function setJobAlerts(uid, on) {
+  const { error } = on ? await supabase.from('job_alert_optouts').delete().eq('user_id', uid) : await supabase.from('job_alert_optouts').upsert({ user_id: uid })
+  if (error) throw new Error('Could not save that. Try again.')
 }
 export async function takeDownJob(id) { const { error } = await supabase.from('job_listings').update({ status: 'closed' }).eq('id', id); if (error) throw new Error('Could not take it down. Try again.') }
 export async function applyJob(jobId, v) {
