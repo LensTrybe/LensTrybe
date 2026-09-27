@@ -35,7 +35,7 @@ export default function JobsBoard() {
 
 export function PostJob() {
   const F = useFlows(); const { s, toast } = F; const nav = useNavigate(); const [params] = useSearchParams()
-  const { user, profile, clientAccount, loading: authLoading } = useAuth()
+  const { user, profile, clientAccount } = useAuth()
   const cv = useRef(null)
   const [liveOpen, setLiveOpen] = useState([]), [busy, setBusy] = useState(false)
   const brief = useMemo(() => parseBrief(params.get('q') || ''), [params])
@@ -76,13 +76,6 @@ export function PostJob() {
             {LIVE ? (openJobs.length > 0 && <p className="jbnow"><b>{openJobs.length}{openJobs.length >= 9 ? '+' : ''}</b> {openJobs.length === 1 ? 'job' : 'jobs'} open right now</p>) : <p className="jbnow"><b>{openJobs.length}</b> jobs open right now · <b>{replies}</b> quotes sent this week · most jobs get their first reply within <b>2 hours</b></p>}
           </div>
           <div className="lpane lg d">
-            {LIVE && !user ? (authLoading ? <div style={{ minHeight: 280 }} aria-busy="true" /> : <div className="jbgate">
-              <p className="eb g" style={{ marginTop: 0 }}>Step one</p>
-              <h2 style={{ fontSize: 26, lineHeight: 1.2, margin: '6px 0 10px', color: '#fff' }}>Make a free account to post your job</h2>
-              <p className="tiny" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '0 0 18px' }}>It takes a minute and it's free, always. Your account keeps every quote and message in one place, and creatives know the job is real.</p>
-              <div className="ctas" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="btn w lg" onClick={() => { try { sessionStorage.setItem('returnTo', '/jobs') } catch (_) { /* */ } nav('/join/client') }}>Make a free account <Icon name="arrow" size={14} /></button><button type="button" className="btn g lg" onClick={() => { try { sessionStorage.setItem('returnTo', '/jobs') } catch (_) { /* */ } nav('/login') }}>Log in</button></div>
-              <p className="tiny" style={{ marginTop: 16 }}>Once you're in, the job form is right here. Your contact details stay private until you accept a quote.</p>
-            </div>) : <>
             <div className="jbsteps"><span className={step >= 1 ? 'on' : ''}><i>1</i>The job</span><span className={step >= 2 ? 'on' : ''}><i>2</i>You</span><span><i>3</i>Quotes arrive</span></div>
             <form onSubmit={next} className="lform" noValidate>
               {step === 1 ? <>
@@ -106,7 +99,9 @@ export function PostJob() {
               </> : <>
                 <div className="jbsum"><b>{v.t}</b><span>{v.k} · {v.loc}{v.d ? ' · ' + nice(v.d, { weekday: 'short' }) : v.flex ? ' · ' + v.flex : ''}{v.b ? ' · ' + fmt(v.b) : ''}</span><button type="button" className="forgot" onClick={() => setStep(1)}>Edit</button></div>
                 {LIVE && !user ? <>
-                  <p className="tiny" style={{ fontSize: 14, marginTop: 0 }}>Log in or make a free client account and your job posts straight away. What you've written is kept.</p>
+                  <p className="eb g" style={{ margin: '4px 0 0' }}>Last step</p>
+                  <h2 style={{ fontSize: 24, lineHeight: 1.2, margin: '6px 0 8px', color: '#fff' }}>Make a free account to post it</h2>
+                  <p className="tiny" style={{ fontSize: 14, marginTop: 0 }}>It takes a minute and it's free, always. Everything you've written is kept, so once you're in it's one tap to post.</p>
                   <div className="ctas" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="btn w lg" onClick={() => { saveDraft(v); try { sessionStorage.setItem('returnTo', '/jobs?resume=1') } catch (_) { /* */ } nav('/join/client') }}>Make a free account <Icon name="arrow" size={14} /></button><button type="button" className="btn g lg" onClick={() => { saveDraft(v); try { sessionStorage.setItem('returnTo', '/jobs?resume=1') } catch (_) { /* */ } nav('/login') }}>Log in</button></div>
                 </> : LIVE ? <>
                   <label className="lf"><span>Your name</span><input value={v.by} onChange={e => set('by', e.target.value)} placeholder="Harper Ellis, or your business" autoComplete="name" /></label>
@@ -126,7 +121,6 @@ export function PostJob() {
                 </>}
               </>}
             </form>
-            </>}
             <p className="lfoot">By posting you agree to the <Link to="/legal/terms">terms</Link> and <Link to="/legal/privacy">privacy policy</Link>. Prefer to browse? <Link to="/creatives">Find a creative</Link>{!LIVE && <> or <Link to="/">ask in one sentence</Link></>}.</p>
           </div>
         </div>
