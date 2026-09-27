@@ -46,8 +46,9 @@ export function PostJob() {
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
   useEffect(() => { document.title = 'Post a job · LensTrybe' }, [])
   useEffect(() => { if (LIVE) live.loadOpenJobs(9).then(setLiveOpen).catch(() => {}) }, [])
-  // back from logging in or signing up: the job they filled in is waiting on step 2
-  useEffect(() => { if (!LIVE || !params.get('resume')) return; const dr = readDraft(); if (dr?.t) { setV(o => ({ ...o, ...dr })); setStep(2) } }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  // back from logging in or signing up: the job they filled in is waiting on step 2. Any other visit
+  // with a saved, unposted job (say they pressed back on the login page) brings it back on step 1.
+  useEffect(() => { if (!LIVE || params.get('q')) return; const dr = readDraft(); if (!dr?.t) return; setV(o => ({ ...o, ...dr })); if (params.get('resume')) setStep(2) }, []) // eslint-disable-line react-hooks/exhaustive-deps
   const myName = (clientAccount ? [clientAccount.first_name, clientAccount.last_name].filter(Boolean).join(' ') : '') || profile?.business_name || ''
   useEffect(() => { if (LIVE && myName) setV(o => o.by ? o : { ...o, by: myName }) }, [myName])
   const openJobs = LIVE ? liveOpen : s.jobs.filter(j => j.st === 'open' && j.expires >= TODAY && j.kind === 'client').sort((a, b) => a.posted < b.posted ? 1 : -1)
