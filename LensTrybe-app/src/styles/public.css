@@ -610,3 +610,11 @@
 .pub .areabar{position:fixed;left:0;right:0;bottom:0;z-index:49;display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;padding:10px clamp(16px,3vw,36px);background:rgba(10,10,15,.82);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-top:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.8);font-size:13px;line-height:1.45}
 .pub .areabar a{flex:none;display:inline-flex;align-items:center;height:32px;padding:0 14px;border-radius:999px;background:var(--neon);color:#0a0a0f;font-weight:600;font-size:12.5px;text-decoration:none}
 @media (max-width:640px){.pub .areabar{font-size:12px;gap:8px;padding:10px 16px}}
+/* client-first launch: the post-a-job pill above the hero headline */
+.pub .ask .jobpill{display:inline-flex;align-items:center;gap:10px;padding:11px 20px;border-radius:999px;background:var(--mint,#8df3d6);color:#06140f;font-size:15px;font-weight:700;text-decoration:none;box-shadow:0 0 0 1px rgba(255,255,255,.25) inset,0 10px 40px rgba(141,243,214,.35);transition:transform .25s var(--ease),box-shadow .25s;animation:fadeup .9s var(--ease) .1s backwards}
+.pub .ask .jobpill i{width:8px;height:8px;border-radius:50%;background:#06140f;box-shadow:0 0 0 4px rgba(6,20,15,.15)}
+.pub .ask .jobpill:hover{transform:translateY(-2px);box-shadow:0 0 0 1px rgba(255,255,255,.35) inset,0 14px 50px rgba(141,243,214,.5)}
+.pub .ask .jobpill svg{transition:transform .25s}.pub .ask .jobpill:hover svg{transform:translateX(3px)}
+@media (max-width:700px){.pub .ask .jobpill{font-size:14px;padding:10px 16px}}
+.pub .ask .jobpill.big{font-size:18px;padding:16px 30px;gap:12px;margin-top:6px;animation-delay:.5s}
+@media (max-width:700px){.pub .ask .jobpill.big{font-size:16px;padding:14px 22px}}

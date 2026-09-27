@@ -35,12 +35,12 @@ export default function JobsBoard() {
 
 export function PostJob() {
   const F = useFlows(); const { s, toast } = F; const nav = useNavigate(); const [params] = useSearchParams()
-  const { user, profile, clientAccount } = useAuth()
+  const { user, profile, clientAccount, loading: authLoading } = useAuth()
   const cv = useRef(null)
   const [liveOpen, setLiveOpen] = useState([]), [busy, setBusy] = useState(false)
   const brief = useMemo(() => parseBrief(params.get('q') || ''), [params])
   const isoFrom = d => { const m = (d || '').match(/^(\d{1,2}) (\w{3})/); if (!m) return ''; const mo = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(m[2].toLowerCase()); if (mo < 0) return ''; let y = Number(TODAY.slice(0, 4)); let s = y + '-' + String(mo + 1).padStart(2, '0') + '-' + m[1].padStart(2, '0'); if (s < TODAY) s = (y + 1) + s.slice(4); return s }
-  const [v, setV] = useState(() => ({ t: '', k: TAG_KIND[brief.tags.find(t => TAG_KIND[t])] || 'Wedding', ct: brief.tags.includes('video') && !brief.tags.includes('photo') ? ['Videographer'] : brief.tags.includes('video') ? ['Photographer', 'Videographer'] : ['Photographer'], loc: brief.place ? brief.place.replace(/\b\w/g, c => c.toUpperCase()) + ', QLD' : '', d: isoFrom(brief.date), flex: brief.date && !/\d/.test(brief.date) ? brief.date : '', flexOn: !!(brief.date && !/\d/.test(brief.date)), b: brief.budget || '', hrs: '', w: params.get('q') || '', by: '', em: '', ph: '' }))
+  const [v, setV] = useState(() => ({ t: params.get('q') ? [TAG_KIND[brief.tags.find(t => TAG_KIND[t])] || '', brief.tags.includes('video') && !brief.tags.includes('photo') ? 'videographer' : 'photographer'].filter(Boolean).join(' ').replace(/^./, c => c.toUpperCase()) + (brief.place ? ', ' + brief.place.replace(/\b\w/g, c => c.toUpperCase()) : '') : '', k: TAG_KIND[brief.tags.find(t => TAG_KIND[t])] || 'Wedding', ct: brief.tags.includes('video') && !brief.tags.includes('photo') ? ['Videographer'] : brief.tags.includes('video') ? ['Photographer', 'Videographer'] : ['Photographer'], loc: brief.place ? brief.place.replace(/\b\w/g, c => c.toUpperCase()) + ', QLD' : '', d: isoFrom(brief.date), flex: brief.date && !/\d/.test(brief.date) ? brief.date : '', flexOn: !!(brief.date && !/\d/.test(brief.date)), b: brief.budget || '', hrs: '', w: params.get('q') || '', by: '', em: '', ph: '' }))
   const [step, setStep] = useState(1), [err, setErr] = useState('')
   const set = (k, x) => setV(o => ({ ...o, [k]: x }))
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
@@ -76,6 +76,13 @@ export function PostJob() {
             {LIVE ? (openJobs.length > 0 && <p className="jbnow"><b>{openJobs.length}{openJobs.length >= 9 ? '+' : ''}</b> {openJobs.length === 1 ? 'job' : 'jobs'} open right now</p>) : <p className="jbnow"><b>{openJobs.length}</b> jobs open right now · <b>{replies}</b> quotes sent this week · most jobs get their first reply within <b>2 hours</b></p>}
           </div>
           <div className="lpane lg d">
+            {LIVE && !user ? (authLoading ? <div style={{ minHeight: 280 }} aria-busy="true" /> : <div className="jbgate">
+              <p className="eb g" style={{ marginTop: 0 }}>Step one</p>
+              <h2 style={{ fontSize: 26, lineHeight: 1.2, margin: '6px 0 10px', color: '#fff' }}>Make a free account to post your job</h2>
+              <p className="tiny" style={{ fontSize: 14.5, lineHeight: 1.6, margin: '0 0 18px' }}>It takes a minute and it's free, always. Your account keeps every quote and message in one place, and creatives know the job is real.</p>
+              <div className="ctas" style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}><button type="button" className="btn w lg" onClick={() => { try { sessionStorage.setItem('returnTo', '/jobs') } catch (_) { /* */ } nav('/join/client') }}>Make a free account <Icon name="arrow" size={14} /></button><button type="button" className="btn g lg" onClick={() => { try { sessionStorage.setItem('returnTo', '/jobs') } catch (_) { /* */ } nav('/login') }}>Log in</button></div>
+              <p className="tiny" style={{ marginTop: 16 }}>Once you're in, the job form is right here. Your contact details stay private until you accept a quote.</p>
+            </div>) : <>
             <div className="jbsteps"><span className={step >= 1 ? 'on' : ''}><i>1</i>The job</span><span className={step >= 2 ? 'on' : ''}><i>2</i>You</span><span><i>3</i>Quotes arrive</span></div>
             <form onSubmit={next} className="lform" noValidate>
               {step === 1 ? <>
@@ -119,6 +126,7 @@ export function PostJob() {
                 </>}
               </>}
             </form>
+            </>}
             <p className="lfoot">By posting you agree to the <Link to="/legal/terms">terms</Link> and <Link to="/legal/privacy">privacy policy</Link>. Prefer to browse? <Link to="/creatives">Find a creative</Link>{!LIVE && <> or <Link to="/">ask in one sentence</Link></>}.</p>
           </div>
         </div>

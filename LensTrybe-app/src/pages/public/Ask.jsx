@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { mountLens } from '../../lib/lens'
 import { CREATIVES, parseBrief, scoreCreative, TAG_LABEL } from '../../data/creatives'
 import Still from '../../components/Still'
@@ -15,7 +15,11 @@ const HINTS = [
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
 // The ask: one sentence in, a constellation of matches around the living lens.
-export default function Ask({ onOpen }) {
+// jobFirst (the client-first launch): the same hero with no ask bar; one clear post-a-job pill leads
+// to the form (Michael, 28 Sep).
+export default function Ask({ onOpen, jobFirst = false }) {
+  const nav = useNavigate()
+  const toJob = t => nav('/jobs' + (t && t.trim() ? '?q=' + encodeURIComponent(t.trim()) : ''))
   const cv = useRef(null), lens = useRef(null), field = useRef(null), input = useRef(null), stage = useRef(null)
   const [q, setQ] = useState('')
   const [live, setLive] = useState(false)
@@ -95,21 +99,26 @@ export default function Ask({ onOpen }) {
   const [params] = useSearchParams()
   useEffect(() => { const q0 = params.get('q'); if (q0) { touched.current = true; setQ(q0); const t = setTimeout(() => run(q0), 400); return () => clearTimeout(t) } // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  const submit = e => { e.preventDefault(); touched.current = true; if (!q.trim()) return; run(q.trim()) }
-  const hint = t => { touched.current = true; setQ(t); run(t) }
+  const submit = e => { e.preventDefault(); touched.current = true; if (jobFirst) return toJob(q); if (!q.trim()) return; run(q.trim()) }
+  const hint = t => { touched.current = true; setQ(t); if (jobFirst) return toJob(t); run(t) }
   const first = line.indexOf('.') + 1
 
   return (
     <section className={'ask dark darkhero' + (live ? ' live' : '') + (think ? ' think' : '')} id="ask">
       <canvas className="gl" ref={cv} aria-hidden="true" />
       <div className="stage" ref={stage}>
-        <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>We'll <em>find them.</em></span></span></h1>
-        <p className="sub">One sentence. Photographers and videographers across Australia, matched on the work, the date, the place and the budget. No commissions, ever.</p>
+        {jobFirst
+          ? <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>Creatives <em>come to you.</em></span></span></h1>
+          : <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>We'll <em>find them.</em></span></span></h1>}
+        <p className="sub">{jobFirst ? 'Post the job in a minute. Photographers and videographers who do that work reply with a real quote, and you pick one. Free for clients, no commissions, ever.' : 'One sentence. Photographers and videographers across Australia, matched on the work, the date, the place and the budget. No commissions, ever.'}</p>
+        {jobFirst ? <>
+          <Link className="jobpill big" to="/jobs"><i />Post a job<Icon name="arrow" size={16} /></Link>
+        </> : <>
         <form className={'bar lg refract chroma tilt' + (think ? ' think' : '')} onSubmit={submit} autoComplete="off" role="search">
           <span className="lens" aria-hidden="true" />
           <input ref={input} value={q} placeholder={ph} aria-label="Describe what you need" onChange={e => { touched.current = true; setQ(e.target.value) }} />
           <button type="button" className="mic" aria-label="Speak instead"><Icon name="mic" size={18} /></button>
-          <button type="submit" className="go"><span>Find them</span><Icon name="arrow" size={14} /></button>
+          <button type="submit" className="go"><span>{jobFirst ? 'Post it' : 'Find them'}</span><Icon name="arrow" size={14} /></button>
         </form>
         {brief && <div className="brief">
           {brief.tags.length > 0 && <span className="lg"><i />{brief.tags.map(t => TAG_LABEL[t]).join(' + ')}</span>}
@@ -119,6 +128,7 @@ export default function Ask({ onOpen }) {
         </div>}
         <div className="hints">{HINTS.map(([l, t]) => <button key={l} type="button" className="lg" onClick={() => hint(t)}>{l}</button>)}</div>
         <Link className="postjob" to={'/jobs' + (q.trim() ? '?q=' + encodeURIComponent(q.trim()) : '')}>{live ? 'Not quite right? Post it as a job and they reply to you' : 'Or post a job and let them come to you'}<Icon name="arrow" size={12} /></Link>
+        </>}
       </div>
       <div className="cfield" ref={field}>
         {orbs.map((o, i) => (
@@ -130,8 +140,8 @@ export default function Ask({ onOpen }) {
           </div>
         ))}
       </div>
-      <div className="lumi-line lg"><span className="lm" /><span>{first > 0 && line.length >= first ? <><b>{line.slice(0, first)}</b>{line.slice(first)}</> : line}{line && <span className="cursor" />}</span></div>
-      <Link className="scroll-cue" to="/how-it-works">How it works<i /></Link>
+      {!jobFirst && <div className="lumi-line lg"><span className="lm" /><span>{first > 0 && line.length >= first ? <><b>{line.slice(0, first)}</b>{line.slice(first)}</> : line}{line && <span className="cursor" />}</span></div>}
+      {!jobFirst && <Link className="scroll-cue" to="/how-it-works">How it works<i /></Link>}
     </section>
   )
 }

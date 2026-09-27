@@ -34,9 +34,10 @@ export default function ClientHome() {
         <p className="eb g">Your portal</p>
         <h1>{first ? 'Hi ' + first + '.' : 'Hello.'}</h1>
         <p className="sub">Every job you book on LensTrybe lives behind one link: quote, contract, deposit, messages and the gallery when it lands. They are all here.</p>
+        <div className="ctas" style={{ margin: '4px 0 22px' }}><Link className="btn p lg" to="/jobs">Post a job <Icon name="arrow" size={14} /></Link></div>
         <div className="lg chlist">
           {rows === null && <p className="fine">Loading your bookings.</p>}
-          {rows && rows.length === 0 && <div className="chempty"><b>Nothing booked yet.</b><p>Say what you need in a sentence and the people who fit, and are free, reply with a real quote.</p><Link className="btn p" to="/">Find a creative <Icon name="arrow" size={14} /></Link></div>}
+          {rows && rows.length === 0 && <div className="chempty"><b>Nothing booked yet.</b><p>Post what you need and creatives who do that work reply with a real quote.</p><Link className="btn p" to="/jobs">Post a job <Icon name="arrow" size={14} /></Link></div>}
           {rows && rows.map(r => <Link key={r.id} className="chrow" to={'/portal/' + r.id}><div><b>{r.title}</b><span>{[r.with, r.when].filter(Boolean).join(' · ')}</span></div><em>{r.st}</em><Icon name="arrow" size={14} /></Link>)}
         </div>
         {draft?.t && <div className="lg chlist"><Link className="chrow" to="/jobs?resume=1"><div><b>Finish posting: {draft.t}</b><span>You filled this in before logging in. One tap to post it.</span></div><em>Not posted</em><Icon name="arrow" size={14} /></Link></div>}
