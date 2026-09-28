@@ -42,3 +42,14 @@
 
 .ws-ph img,.ws-hero .ws-himg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
 .ws-ask2 input+input{border-left:1px solid var(--line)}
+
+/* The LensTrybe strip over a creative's website when it's opened from Find a creative (28 Sep) */
+.lt-strip{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;height:40px;padding:0 16px;background:#0a0a0f;color:rgba(255,255,255,.78);font:500 12.5px/1 Inter,system-ui,sans-serif}
+.lt-strip a{color:inherit;text-decoration:none}
+.lt-strip .back{display:inline-flex;align-items:center;gap:6px;color:#fff;font-weight:600}
+.lt-strip .back:hover{color:#8DF3D6}
+.lt-strip .meta{display:flex;align-items:center;gap:10px;margin-left:auto}
+.lt-strip .meta b{color:#fff}
+.lt-strip .meta em{font-style:normal;font-size:10.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:99px;color:#ff9dc2;border:1px solid rgba(255,45,120,.4)}
+.lt-strip .mark{display:flex}.lt-strip .mark img{height:12px;width:auto;opacity:.85}
+@media (max-width:560px){.lt-strip .mark{display:none}.lt-strip{gap:10px}}

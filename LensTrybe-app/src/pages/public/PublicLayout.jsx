@@ -40,6 +40,7 @@ export default function PublicLayout() {
     r.style.setProperty('--gl-x', (b.left - a.left) + 'px'); r.style.setProperty('--gl-w', b.width + 'px'); r.style.setProperty('--gl-o', 1)
   }
   useEffect(() => { const t = setTimeout(() => glide(null), 60); addEventListener('resize', () => glide(null)); return () => clearTimeout(t) }, [pathname, lite])
+  if (LIVE && /^\/creatives\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(pathname)) return <Outlet />
   return (
     <div className={'pub' + (darkTop ? '' : ' pub-light')}>
       {!darkTop && <Aurora />}

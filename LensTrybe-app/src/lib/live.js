@@ -717,19 +717,26 @@ export async function saveFinanceSettings(uid, patch) {
 }
 
 // ── Website: site_pages (one row per page type, the live site's shape) + the public /site/<address> ──
-// Five pages on Expert and Elite, Home and Contact on Pro. The page text lives in content under the
-// keys the live site reads (headline/subheadline/hero_image on Home, heading/body/portrait_image on
-// About, heading/blurb elsewhere), plus the workspace's section switches.
-export const SITE_PAGES = [['home', 'Home'], ['gallery', 'Work'], ['about', 'About'], ['services', 'Pricing'], ['contact', 'Contact']]
-const SITE_SECS = { home: [['Hero', 1], ['Recent work', 1], ['What clients say', 1], ['Ask in one sentence', 1]], gallery: [['All work', 1]], about: [['Portrait and story', 1], ['What clients say', 0]], services: [['Packages', 1], ['Ask in one sentence', 1]], contact: [['Ask bar', 1], ['Booking link', 1], ['Where I work', 1]] }
-export const sitePagesFor = plan => /elite|expert/i.test(plan || '') ? SITE_PAGES.map(p => p[0]) : /pro/i.test(plan || '') ? ['home', 'contact'] : []
+// Every creative's public profile is a website (Michael, 28 Sep): Trybe Free one page, built from the
+// profile on its own; Trybe Essential Home and Gallery; Trybe Complete and Studio Home, About, Gallery
+// and Contact. The page text lives in content under the keys the live site reads (headline/
+// subheadline/hero_image on Home, heading/body/portrait_image on About, heading/blurb elsewhere), plus
+// the workspace's section switches. An old Pricing page ('services') is no longer shown: packages sit
+// on Home.
+export const SITE_PAGES = [['home', 'Home'], ['about', 'About'], ['gallery', 'Gallery'], ['contact', 'Contact']]
+const SITE_SECS = { home: [['Hero', 1], ['Recent work', 1], ['Packages', 1], ['What clients say', 1], ['Portrait and story', 0], ['Booking link', 0], ['Ask in one sentence', 1]], gallery: [['All work', 1]], about: [['Portrait and story', 1], ['What clients say', 0]], contact: [['Ask bar', 1], ['Booking link', 1], ['Where I work', 1]] }
+export const sitePagesFor = plan => /elite|expert|vip/i.test(plan || '') ? ['home', 'about', 'gallery', 'contact'] : /pro/i.test(plan || '') ? ['home', 'gallery'] : ['home']
+// Trybe Free's page is built from the profile and isn't edited in the Website editor
+export const siteEditable = plan => /pro|expert|elite|vip/i.test(plan || '')
 const pageText = (id, c) => id === 'home' ? [c.headline, c.subheadline || c.intro] : id === 'about' ? [c.heading, c.body] : [c.heading, c.blurb]
 const pageImg = (id, c) => c.image || (id === 'home' ? c.hero_image : id === 'about' ? c.portrait_image : '') || ''
-export function shapeSitePages(rows, prof = {}) {
+// With no About page the story sits on Home; with no Contact page the next open date does too.
+const secsFor = (id, allowed) => id !== 'home' ? SITE_SECS[id] : SITE_SECS.home.map(([k, on]) => [k, k === 'Portrait and story' ? (allowed.includes('about') ? 0 : 1) : k === 'Booking link' ? (allowed.includes('contact') ? 0 : 1) : on])
+export function shapeSitePages(rows, prof = {}, allowed = sitePagesFor(prof.subscription_tier)) {
   const by = Object.fromEntries((rows || []).map(r => [r.page_type, r]))
   const first = String(prof.business_name || 'me').split(' ')[0]
-  const DEF = { home: [prof.tagline || prof.business_name || 'Welcome', prof.bio ? String(prof.bio).split('\n')[0].slice(0, 180) : ''], gallery: ['Recent work', 'A few favourites.'], about: ['Hi, I\'m ' + first + '.', ''], services: ['Packages and prices', 'Prices include GST.'], contact: ['Say what you need.', 'One sentence is enough. I reply within a day.'] }
-  return SITE_PAGES.map(([id, n]) => { const r = by[id], c = r?.content || {}; const [h, p] = pageText(id, c); const secs = Array.isArray(c.secs) && c.secs.length ? SITE_SECS[id].map(([k, on]) => { const s = c.secs.find(x => x[0] === k); return [k, s ? (s[1] ? 1 : 0) : on] }) : SITE_SECS[id]; return { id, n, on: r ? (r.visible !== false ? 1 : 0) : 1, h: h ?? DEF[id][0], p: p ?? DEF[id][1], img: pageImg(id, c), secs, saved: !!r } })
+  const DEF = { home: [prof.tagline || prof.business_name || 'Welcome', prof.bio ? String(prof.bio).split('\n')[0].slice(0, 180) : ''], gallery: ['Gallery', 'A few favourites.'], about: ['Hi, I\'m ' + first + '.', ''], contact: ['Say what you need.', 'One sentence is enough. I reply within a day.'] }
+  return SITE_PAGES.map(([id, n]) => { const r = by[id], c = r?.content || {}; const [h, p] = pageText(id, c); const base = secsFor(id, allowed); const secs = Array.isArray(c.secs) && c.secs.length ? base.map(([k, on]) => { const s = c.secs.find(x => x[0] === k); return [k, s ? (s[1] ? 1 : 0) : on] }) : base; return { id, n, on: r ? (r.visible !== false ? 1 : 0) : 1, h: h ?? DEF[id][0], p: p ?? DEF[id][1], img: pageImg(id, c), secs, saved: !!r } })
 }
 export async function loadSitePages(uid) {
   const { data, error } = await supabase.from('site_pages').select('*').eq('creative_id', uid)
@@ -756,17 +763,17 @@ export async function setSiteAddress(uid, slug) {
   return s
 }
 const SITE_PROF = PUB + ', brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin'
-// Public: /site/<address or id>. Returns null when there is no such site or the plan has no website.
+// Public: /site/<address or id> and /creatives/<id>. Returns null when there is no such creative.
 export async function loadSite(slug) {
   const s = String(slug || '').trim().toLowerCase(); if (!s) return null
   const q = supabase.from('profiles').select(SITE_PROF)
   const { data: p } = isUuid(s) ? await q.eq('id', s).maybeSingle() : await q.eq('custom_domain', s).maybeSingle()
   if (!p || p.is_admin) return null
   const allowed = sitePagesFor(p.subscription_tier)
-  if (!allowed.length) return { profile: p, none: true }
-  const [c, rows] = await Promise.all([loadCreative(p.id), loadSitePages(p.id).catch(() => [])])
+  // Trybe Free: the one page comes from the profile alone, never from saved pages
+  const [c, rows] = await Promise.all([loadCreative(p.id), siteEditable(p.subscription_tier) ? loadSitePages(p.id).catch(() => []) : Promise.resolve([])])
   if (!c) return null
-  return { profile: p, c, pages: shapeSitePages(rows, p).filter(x => allowed.includes(x.id)), brand: siteBrand(p) }
+  return { profile: p, c, pages: shapeSitePages(rows, p, allowed).filter(x => allowed.includes(x.id)), brand: siteBrand(p) }
 }
 export const siteBrand = p => ({ name: p.business_name || 'Creative', tag: p.tagline || '', accent: p.site_primary_color || p.brand_primary_color || '#1DB954', logo: p.site_logo_url || p.brand_logo_url || '', head: p.site_heading_font || 'Instrument Serif', body: p.site_body_font || 'Inter', paper: 'white', radius: 12, foot: 'Thank you for visiting' })
 

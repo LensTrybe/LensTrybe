@@ -45,7 +45,7 @@ export const TIER_FEATURES = {
     disciplines: 1,
 
     // Their website
-    website: 'none',
+    website: 'single',
     homeMedia: 0,
     customDomain: false,
 
@@ -282,7 +282,7 @@ export const FEATURE_CATALOG = [
   { id: 'planBadge', label: 'Plan badge', say: (v, tier) => (v ? `${TIER_META[tier].name} badge on your profile` : null) },
   { id: 'responseBadge', label: 'Response time badge', say: (v) => (v ? 'Response time badge' : null) },
   { id: 'showPhone', label: 'Phone on profile', say: (v) => (v ? 'Show your phone number on your profile' : null) },
-  { id: 'website', label: 'Website', say: (v) => ({ none: null, onepage: 'Your own website: Home and Contact', full: 'Your own five page website' }[v]) },
+  { id: 'website', label: 'Website', say: (v) => ({ none: null, single: 'A one-page website, built from your profile', onepage: 'Your own website: Home and Gallery', full: 'Your own website: Home, About, Gallery and Contact' }[v]) },
   { id: 'customDomain', label: 'Custom domain', say: (v) => (v ? 'Use your own domain name' : null) },
   { id: 'bookingsPerMonth', label: 'Bookings', say: (v) => (v === UNLIMITED ? 'Unlimited bookings' : `${many(v, 'booking', 'bookings')} a month`) },
   { id: 'repliesPerMonth', label: 'Message replies', say: (v) => (v === UNLIMITED ? 'Unlimited message replies' : `${many(v, 'message reply', 'message replies')} a month`) },

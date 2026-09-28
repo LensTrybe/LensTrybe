@@ -20,7 +20,6 @@ export const PAGE_GATES = {
   clients: ['crmRecords', 'CRM & Contacts', 'is'],
   crm: ['crmRecords', 'CRM & Contacts', 'is'],
   'brand-kit': ['brandKit', 'The brand kit', 'is'],
-  website: ['website', 'Your own website', 'is'],
   deliver: ['deliverGb', 'Deliver', 'is'],
   insights: ['insights', 'Insights', 'are'],
   team: ['teamSeats', 'Team', 'is'],
@@ -28,7 +27,6 @@ export const PAGE_GATES = {
 }
 // Where the sidebar's one-line description would oversell for the plan being offered.
 const BLURB = {
-  website: 'Your own website, built from your profile. Home and contact pages on Trybe Essential; five pages and your own domain on Trybe Complete.',
   deliver: 'Send finished galleries and files to clients with your branding, and see when they download them.',
 }
 // The document editors belong to their list page.

@@ -9,7 +9,7 @@ import { useToast } from '../../components/Toast'
 import SiteRender from '../../components/SiteRender'
 import { useStore, nice } from '../../lib/store'
 import { dayStatus, nextOpen } from '../../lib/avail'
-import CreativeLive from './CreativeLive'
+import SiteLive from './SiteLive'
 import { isUuid } from '../../lib/live'
 import { LIVE } from '../../lib/mode'
 
@@ -20,7 +20,8 @@ const TITLES = ['Harper and Leo, Maleny', 'First look, Noosa', 'Sunshine Beach',
 // real profile from the project; the named sample creatives stay for the demo.
 export default function Creative() {
   const { id } = useParams()
-  if (LIVE && isUuid(id)) return <CreativeLive id={id} />
+  // a real creative: their website is their profile, on every plan
+  if (LIVE && isUuid(id)) return <SiteLive slug={id} strip />
   return <CreativeDemo id={id} />
 }
 function CreativeDemo({ id }) {

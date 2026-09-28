@@ -9,7 +9,8 @@ import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
 import { planLabel } from '../../backend/tierFeatures'
 
-// Website: your site, built from your profile and brand kit. Five pages on Expert, your own domain on Elite.
+// Website: your site, built from your profile and brand kit. One page on Trybe Free (built for you),
+// Home and Gallery on Trybe Essential, Home, About, Gallery and Contact on Trybe Complete and Studio.
 // Pages on the left, the site on the right, publish when it looks right.
 const LIMIT = { Basic: 0, Pro: 0, Expert: 5, Elite: 99 }
 const SITE_PLANS = ['Expert', 'Elite']
@@ -112,8 +113,8 @@ function StandardProfile({ s, F }) {
 }
 
 // ── Live: pages in site_pages, published by the button. Drafts are kept with the workspace so an
-// unpublished edit survives a reload. Pro gets Home and Contact, Expert and Elite all five.
-const PIC = { home: 'globe', gallery: 'image', about: 'user', services: 'dollar', contact: 'chat' }
+// unpublished edit survives a reload. Essential edits Home and Gallery, Complete and Studio all four.
+const PIC = { home: 'globe', gallery: 'image', about: 'user', contact: 'chat' }
 const pub = pages => JSON.stringify(pages.map(p => [p.id, p.on ? 1 : 0, p.h || '', p.p || '', p.img || '', p.secs]))
 function WebsiteLive() {
   const F = useFlows(); const { s, toast } = F; const { profile: P } = useAuth()
@@ -121,7 +122,7 @@ function WebsiteLive() {
   const [rows, setRows] = useState(null), [c, setC] = useState(null), [sel, setSel] = useState('home'), [busy, setBusy] = useState(false), [upBusy, setUpBusy] = useState(false), [addr, setAddr] = useState(P?.custom_domain || '')
   const file = useRef()
   const load = async () => { const [r, cr] = await Promise.all([live.loadSitePages(P.id), live.loadCreative(P.id)]); setRows(r); setC(cr); return r }
-  useEffect(() => { if (!P?.id) return; load().then(r => { const draft = s.pages.length && s.pages.every(p => 'saved' in p) ? s.pages : null; F.set('pages', draft || live.shapeSitePages(r, P)) }).catch(() => { setRows([]); toast('Could not load your website. Reload to try again.') }) }, [P?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!P?.id) return; load().then(r => { const draft = s.pages.length && s.pages.every(p => 'saved' in p) && !s.pages.some(p => p.id === 'services') ? s.pages : null; F.set('pages', draft || live.shapeSitePages(r, P)) }).catch(() => { setRows([]); toast('Could not load your website. Reload to try again.') }) }, [P?.id]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { setAddr(P?.custom_domain || '') }, [P?.custom_domain])
   const pages = s.pages.filter(p => allowed.includes(p.id)), pg = pages.find(p => p.id === sel) || pages[0]
   const published = rows ? live.shapeSitePages(rows, P || {}).filter(p => allowed.includes(p.id)) : []
@@ -133,16 +134,16 @@ function WebsiteLive() {
   const pickImg = async e => { const fl = e.target.files?.[0]; e.target.value = ''; if (!fl) return; if (!/^image\//.test(fl.type)) return toast('Pick a photo.'); if (fl.size > 20e6) return toast('That photo is over 20 MB.'); setUpBusy(true); try { const url = await live.uploadSiteImage(P.id, fl); upd('img', url); toast('Photo added. Publish to put it live.') } catch (x) { toast(x.message) } finally { setUpBusy(false) } }
   const changeAddr = () => F.open({ title: 'Your website address', sub: 'Letters, numbers and dashes. Old links to the previous address stop working.', cta: 'Save address', working: 'Saving', fields: [{ k: 'a', l: 'Address', required: true, value: addr || '', placeholder: 'your-name', hint: 'lenstrybe.com/site/your-name' }], submit: async v => { try { const a = await live.setSiteAddress(P.id, v.a); setAddr(a); toast('Your site is now at lenstrybe.com/site/' + a) } catch (e) { toast(e.message); return false } } })
   const copy = () => { const u = window.location.origin + siteUrl; try { navigator.clipboard?.writeText(u)?.catch(() => {}) } catch {} toast('Copied: ' + u) }
-  if (!allowed.length) return (
+  if (!live.siteEditable(plan)) return (
     <section className="view">
-      <div className="vh"><div><h1>Website</h1><p>On {planLabel(plan)} your public profile is the standard LensTrybe page. Trybe Essential adds a two page website, Trybe Complete a five page one.</p></div>
-        <div className="acts"><a className="btn g" href={'/creatives/' + P?.id} target="_blank" rel="noopener noreferrer">View profile <Icon name="arrow" size={14} /></a><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
-      <div className="grid"><div className="card lg s7"><div className="h"><b>Your public profile</b></div><p className="note2">Clients find you in the directory and see your profile: cover photo, work, packages, reviews and the enquiry form. It updates from your profile on its own.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/profile">Edit profile</Link></div></div></div>
+      <div className="vh"><div><h1>Website</h1><p>On {planLabel(plan)} your profile is a one-page website that builds itself from your profile: your cover, work, packages, reviews, story and enquiry box. Trybe Essential lets you edit it and adds a Gallery page; Trybe Complete adds About and Contact.</p></div>
+        <div className="acts"><a className="btn g" href={'/creatives/' + P?.id} target="_blank" rel="noopener noreferrer">View your page <Icon name="arrow" size={14} /></a><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
+      <div className="grid"><div className="card lg s7"><div className="h"><b>Your page</b></div><p className="note2">Clients who open you in Find a creative see this page. It updates on its own whenever you change your profile, photos, packages or bio.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/profile">Edit profile</Link></div></div></div>
     </section>)
   return (
     <section className="view">
       <div className="vh">
-        <div><h1>Website</h1><p>{allowed.length > 2 ? 'Five pages' : 'Home and Contact'} on {planLabel(plan)}, built from your profile, photos, packages and reviews. Edit on the left, publish when it looks right.</p></div>
+        <div><h1>Website</h1><p>{allowed.length > 2 ? 'Home, About, Gallery and Contact' : 'Home and Gallery'} on {planLabel(plan)}, built from your profile, photos, packages and reviews. This is what clients see when they open you in Find a creative. Edit on the left, publish when it looks right.</p></div>
         <div className="acts">
           <span className={'syncb' + (rows && rows.length ? '' : ' off')}><i />{rows && rows.length ? 'Live · lenstrybe.com/site/' + slug : 'Not published yet'}</span>
           <a className="btn g" href={siteUrl} target="_blank" rel="noopener noreferrer">View site <Icon name="arrow" size={14} /></a>
