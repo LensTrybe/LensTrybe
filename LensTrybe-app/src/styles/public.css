@@ -618,3 +618,31 @@
 @media (max-width:700px){.pub .ask .jobpill{font-size:14px;padding:10px 16px}}
 .pub .ask .jobpill.big{font-size:18px;padding:16px 30px;gap:12px;margin-top:6px;animation-delay:.5s}
 @media (max-width:700px){.pub .ask .jobpill.big{font-size:16px;padding:14px 22px}}
+
+/* ── The intro (item 9, 28 Sep). The hero's surface for four seconds: brand black, the lens ring
+   sweeping in, the three words rising, the wordmark, then it clears. ── */
+@property --sw{syntax:'<angle>';inherits:false;initial-value:0deg}
+.intro{position:fixed;inset:0;z-index:200;background:#07070b;display:grid;place-items:center;cursor:pointer;overflow:hidden;
+  --s:min(62vh,78vw,560px);transition:opacity .7s var(--ease)}
+.intro.out{opacity:0;pointer-events:none}
+.intro .iring{position:relative;width:var(--s);height:var(--s);grid-area:1/1;transition:transform .8s var(--ease)}
+.intro.out .iring{transform:scale(1.08)}
+.intro .iring i,.intro .iring b{position:absolute;inset:0;border-radius:50%;background:conic-gradient(from 210deg,var(--mint),var(--rose) 40%,var(--lilac) 70%,var(--mint));
+  -webkit-mask:conic-gradient(from -90deg,#000 calc(var(--sw) - 14deg),transparent var(--sw));mask:conic-gradient(from -90deg,#000 calc(var(--sw) - 14deg),transparent var(--sw));animation:sweep 1.3s var(--ease) .25s forwards}
+.intro .iring i::after,.intro .iring b::after{content:"";position:absolute;inset:9%;border-radius:50%;background:#07070b}
+.intro .iring i{animation:sweep 1.3s var(--ease) .25s forwards,turn 14s linear 1.6s infinite}
+.intro .iring b{filter:blur(calc(var(--s) * .06));opacity:.75;transform:scale(1.04)}
+@keyframes sweep{to{--sw:374deg}}
+@keyframes turn{to{rotate:360deg}}
+.intro .iwords{grid-area:1/1;position:relative;text-align:center;font-size:clamp(34px,6vw,72px);font-weight:600;letter-spacing:-.045em;line-height:1.02;color:#fff;text-shadow:0 2px 40px rgba(0,0,0,.6)}
+.intro .iwords .ln{display:block;overflow:hidden;padding:.06em .14em .22em;margin:-.06em -.14em -.22em}
+.intro .iwords .ln span{display:inline-block;animation:rise .9s var(--ease) both}
+.intro .iwords .ln:nth-child(1) span{animation-delay:1.25s}
+.intro .iwords .ln:nth-child(2) span{animation-delay:1.7s}
+.intro .iwords .ln:nth-child(3) span{animation-delay:2.15s}
+.intro .iwords em{font-family:var(--serif);font-style:italic;font-weight:400;letter-spacing:-.02em;background:linear-gradient(90deg,var(--mint),var(--rose) 50%,var(--lilac));-webkit-background-clip:text;background-clip:text;color:transparent;padding-right:.08em}
+.intro .imark{grid-area:1/1;align-self:end;margin-bottom:max(28px,6vh);height:18px;width:auto;opacity:0;animation:fadeup .8s var(--ease) 2.95s forwards}
+/* the hero's own headline waits under the intro and rises as it clears */
+.introing .pub .ask h1 .ln span{animation-play-state:paused}
+@media (max-width:640px){.intro{--s:min(78vw,62vh)}.intro .imark{height:16px}}
+@media (prefers-reduced-motion:reduce){.intro{display:none}}

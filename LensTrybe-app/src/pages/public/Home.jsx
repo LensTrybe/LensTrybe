@@ -3,6 +3,7 @@ import { Navigate } from 'react-router-dom'
 import { outside, waitlistTo } from '../../lib/region'
 import { useSite } from '../../lib/site'
 import Ask from './Ask'
+import Intro from '../../components/Intro'
 import ProfilePanel from './ProfilePanel'
 
 // The home page: the ask hero. For the client-first launch (site_settings.home_hero = 'job') the
@@ -16,6 +17,7 @@ export default function Home() {
   if (!site) return <section className="ask dark darkhero" aria-busy="true" style={{ minHeight: '100vh' }} />
   return (
     <>
+      <Intro />
       <Ask onOpen={setOpen} jobFirst={site.home_hero !== 'ask'} />
       <ProfilePanel c={open} onClose={() => setOpen(null)} />
     </>
