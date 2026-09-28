@@ -6,6 +6,7 @@ import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
 import { TODAY, nice, daysBetween } from '../../lib/store'
+import { planLabel } from '../../backend/tierFeatures'
 
 // Team: seats in the workspace. Who is in, who is invited, what each one can see, and which roles are
 // offered when you invite. Seats come from the plan; the owner takes the first one.
@@ -24,7 +25,7 @@ function TeamDemo() {
   const Row = ({ x }) => <div className={'r' + (sel === x.id ? ' on' : '')} onClick={() => setSel(x.id)} style={sel === x.id ? { borderColor: 'var(--sig-rim)', boxShadow: '0 0 0 3px var(--sig-bg)' } : undefined}><span className="av" style={{ background: x.g }} /><div><b>{x.n} · {x.r}</b><small>{x.em} · sees {x.sees.toLowerCase()}{x.st === 'Invited' ? ' · invited ' + nice(x.invited || TODAY) : x.last ? ' · active ' + (x.last === TODAY ? 'today' : nice(x.last)) : ''}</small></div><div className="do"><span className={'st ' + (x.st === 'You' ? 'now' : x.st === 'Invited' ? 'viewed' : 'ok')}>{x.st}</span>{x.st === 'Invited' ? <><button onClick={e => { e.stopPropagation(); remind(x) }}>Resend</button><button className="y" onClick={e => { e.stopPropagation(); F.acceptSeat(x.id) }}>Accepted</button></> : x.st !== 'You' && <button onClick={e => { e.stopPropagation(); F.editSeat(x.id) }}>Edit</button>}</div></div>
   return (
     <section className="view">
-      <div className="vh"><div><h1>Team</h1><p>Seats for the people who work in your workspace. Each one sees only what their role needs.</p></div><div className="acts"><Link className="btn g" to="/app/subscription">{s.plan.name} · {M.length} of {limit} seats</Link><button className="btn w" onClick={() => F.invite('team')}><Icon name="plus" size={15} />Invite</button></div></div>
+      <div className="vh"><div><h1>Team</h1><p>Seats for the people who work in your workspace. Each one sees only what their role needs.</p></div><div className="acts"><Link className="btn g" to="/app/subscription">{planLabel(s.plan.name)} · {M.length} of {limit} seats</Link><button className="btn w" onClick={() => F.invite('team')}><Icon name="plus" size={15} />Invite</button></div></div>
       <div className="grid">
         <div className="s12"><div className="kp">{[['Seats', M.length + ' of ' + limit, free ? free + ' free' : 'all taken · ', free ? '' : 'w', !free && <Link to="/app/subscription">move up</Link>], ['In', active.length, active.filter(x => x.last === TODAY).length + ' active today', 'n'], ['Invited', invited.length, invited.length ? 'waiting on ' + invited.map(x => x.n.split(' ')[0]).join(', ') : 'nobody waiting', ''], ['Roles offered', Object.keys(roles).filter(k => roles[k]).length, 'of ' + Object.keys(F.ROLES).length + ' built in', '']].map(([l, v, e, w, x]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}{x}</em></div>)}</div></div>
         <div className="card lg s8"><div className="h"><b>People</b><small className="lumi-by">{active.length} in · {invited.length} invited</small></div>
@@ -63,8 +64,8 @@ function TeamLive() {
   useEffect(() => { if (P?.id && elite) load() }, [P?.id, elite]) // eslint-disable-line react-hooks/exhaustive-deps
   if (!elite) return (
     <section className="view">
-      <div className="vh"><div><h1>Team</h1><p>Team is part of Elite. Bring in up to four people: second shooters, editors, an assistant.</p></div><div className="acts"><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
-      <div className="grid"><div className="card lg s7"><div className="h"><b>How it works on Elite</b></div><p className="note2">You invite someone by email. They accept and get their own LensTrybe workspace on Elite, and they show on your team with their role. They don't see your clients, jobs or money.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/subscription">Move up to Elite</Link></div></div></div>
+      <div className="vh"><div><h1>Team</h1><p>Team is part of Trybe Studio. Bring in up to four people: second shooters, editors, an assistant.</p></div><div className="acts"><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
+      <div className="grid"><div className="card lg s7"><div className="h"><b>How it works on Trybe Studio</b></div><p className="note2">You invite someone by email. They accept and get their own LensTrybe workspace on Trybe Studio, and they show on your team with their role. They don't see your clients, jobs or money.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/subscription">Move up to Trybe Studio</Link></div></div></div>
     </section>)
   if (!d) return <section className="view"><div className="vh"><div><h1>Team</h1><p>Loading your team…</p></div></div></section>
   const age = r => daysBetween(ymd(r.created_at), TODAY)
@@ -77,7 +78,7 @@ function TeamLive() {
   const run = async (id, fn, ok) => { if (busy) return; setBusy(id); try { await fn(); await load(); if (ok) toast(ok) } catch (e) { toast(e.message) } finally { setBusy('') } }
   const invite = () => {
     if (!free) return toast('Your team is full (' + MAX_TEAM + ' people). Remove someone or cancel an invite first.')
-    F.open({ title: 'Invite someone', sub: 'They get an email with a link. When they accept, they get their own Elite workspace and show on your team.', cta: 'Send invite', working: 'Sending',
+    F.open({ title: 'Invite someone', sub: 'They get an email with a link. When they accept, they get their own Trybe Studio workspace and show on your team.', cta: 'Send invite', working: 'Sending',
       fields: [{ k: 'em', l: 'Their email', type: 'email', required: true, placeholder: 'name@example.com' }, { k: 'r', l: 'Role', type: 'select', value: 'Second shooter', options: ROLE_OPTS, hint: 'A label so you know who does what. It does not give access to your workspace.' }],
       submit: async v => { try { await live.inviteTeam(v.em, v.r); await load(); toast('Invite sent to ' + v.em.trim() + '.') } catch (e) { toast(e.message); return false } } })
   }
@@ -90,7 +91,7 @@ function TeamLive() {
   const inList = people.filter(x => !x.inv), invList = people.filter(x => x.inv)
   return (
     <section className="view">
-      <div className="vh"><div><h1>Team</h1><p>You plus up to {MAX_TEAM} people on your Elite team. Each one gets their own LensTrybe workspace; they don't see yours.</p></div><div className="acts"><span className="btn g" style={{ cursor: 'default' }}>{used} of {MAX_TEAM} places</span><button className="btn w" onClick={invite}><Icon name="plus" size={15} />Invite</button></div></div>
+      <div className="vh"><div><h1>Team</h1><p>You plus up to {MAX_TEAM} people on your Trybe Studio team. Each one gets their own LensTrybe workspace; they don't see yours.</p></div><div className="acts"><span className="btn g" style={{ cursor: 'default' }}>{used} of {MAX_TEAM} places</span><button className="btn w" onClick={invite}><Icon name="plus" size={15} />Invite</button></div></div>
       <div className="grid">
         <div className="s12"><div className="kp">{[['Places', used + ' of ' + MAX_TEAM, free ? free + ' free' : 'all taken', free ? '' : 'w'], ['On the team', d.members.length, d.members.length ? d.members.map(x => (x.name || x.email).split(' ')[0]).join(', ') : 'nobody yet', 'n'], ['Invited', invites.filter(r => !r.expired).length, invites.some(r => !r.expired) ? 'waiting on ' + invites.filter(r => !r.expired).map(r => r.email.split('@')[0]).join(', ') : 'nobody waiting', ''], ['Expired invites', invites.filter(r => r.expired).length, invites.some(r => r.expired) ? 'resend to try again' : 'none', invites.some(r => r.expired) ? 'w' : '']].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
         <div className="card lg s8"><div className="h"><b>People</b><small className="lumi-by">{d.members.length} on the team · {invList.length} invited</small></div>
@@ -106,7 +107,7 @@ function TeamLive() {
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>{m.inv ? <><button className="btn w sm" disabled={!!busy} onClick={() => resend(m)}>Resend invite</button><button className="btn g sm" disabled={!!busy} onClick={() => cancel(m)}>Cancel</button></> : <button className="btn g sm" disabled={!!busy} onClick={() => remove(m)}>Remove</button>}</div>
           </div> : <div className="card lg"><div className="h"><b>How your team works</b></div>
             <div className="kv"><span>Invite</span><b>By email. The link lasts {TTL_DAYS} days.</b></div>
-            <div className="kv"><span>They get</span><b>Their own workspace on Elite</b></div>
+            <div className="kv"><span>They get</span><b>Their own workspace on Trybe Studio</b></div>
             <div className="kv"><span>They see</span><b>Only their own work, not yours</b></div>
             <div className="kv"><span>Role</span><b>A label so you know who does what</b></div>
             <div className="kv"><span>Remove</span><b>Takes them off your team list</b></div></div>}

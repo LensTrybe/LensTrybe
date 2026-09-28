@@ -8,6 +8,7 @@ import { fmt } from '../../lib/format'
 import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
+import { planLabel } from '../../backend/tierFeatures'
 
 // Everyone who has booked, enquired or been quoted, with the jobs and money behind each name.
 // People and the pipeline both come from the store: add a client here, they are in every sheet.
@@ -49,7 +50,7 @@ export default function Clients({ kind = 'clients' }) {
       </div>
       <div className="grid">
         <div className="s12"><div className="kp">
-          {(LIVE ? [['Clients', PEOPLE.length, PEOPLE.filter(p => !p.crm).length ? PEOPLE.filter(p => !p.crm).length + ' from threads, not saved yet' : 'all saved', ''], ['Came back', repeat + ' of ' + PEOPLE.filter(p => p.j).length, 'more than one job', ''], ['Paid, all time', fmt(life), 'across ' + PEOPLE.reduce((t, p) => t + p.j, 0) + ' jobs and invoices', 'n'], ['Saved contacts', String(PEOPLE.filter(p => p.crm).length), 'on your ' + s.plan.name + ' plan', '']] : [['Clients', PEOPLE.length, (2 + fresh) + ' new this month', ''], ['Came back', repeat + ' of ' + PEOPLE.filter(p => p.j).length, 'booked more than once', ''], ['Lifetime value', fmt(life), 'across ' + PEOPLE.reduce((t, p) => t + p.j, 0) + ' jobs', 'n'], ['From referrals', String(PEOPLE.filter(p => p.tags.some(t => t.startsWith('Referral'))).length + 2), 'Ana sent Harper', '']]).map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}
+          {(LIVE ? [['Clients', PEOPLE.length, PEOPLE.filter(p => !p.crm).length ? PEOPLE.filter(p => !p.crm).length + ' from threads, not saved yet' : 'all saved', ''], ['Came back', repeat + ' of ' + PEOPLE.filter(p => p.j).length, 'more than one job', ''], ['Paid, all time', fmt(life), 'across ' + PEOPLE.reduce((t, p) => t + p.j, 0) + ' jobs and invoices', 'n'], ['Saved contacts', String(PEOPLE.filter(p => p.crm).length), 'on your ' + planLabel(s.plan.name) + ' plan', '']] : [['Clients', PEOPLE.length, (2 + fresh) + ' new this month', ''], ['Came back', repeat + ' of ' + PEOPLE.filter(p => p.j).length, 'booked more than once', ''], ['Lifetime value', fmt(life), 'across ' + PEOPLE.reduce((t, p) => t + p.j, 0) + ' jobs', 'n'], ['From referrals', String(PEOPLE.filter(p => p.tags.some(t => t.startsWith('Referral'))).length + 2), 'Ana sent Harper', '']]).map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}
         </div></div>
 
         <div className={'card lg ' + (c ? 's8' : 's12')}>

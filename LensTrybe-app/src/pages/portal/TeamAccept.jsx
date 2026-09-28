@@ -28,7 +28,7 @@ export default function TeamAccept() {
   return (
     <TokenShell creative={studio} sub="Team invitation">
       <form className="pjob lg tdoc" onSubmit={go}>
-        <div className="pjhead"><div><p className="eb g">Team invitation</p><h1>Join {studio.business_name}</h1><p className="sub">You've been invited as {inv.role ? <b>{inv.role}</b> : 'a team member'}. You get your own LensTrybe workspace on Elite, and you show on their team.</p></div></div>
+        <div className="pjhead"><div><p className="eb g">Team invitation</p><h1>Join {studio.business_name}</h1><p className="sub">You've been invited as {inv.role ? <b>{inv.role}</b> : 'a team member'}. You get your own LensTrybe workspace on Trybe Studio, and you show on their team.</p></div></div>
         {signedAs && !matches ? <><p className="fine" style={{ color: 'var(--pink-t)' }}>You're logged in as {signedAs}, but this invitation is for {inv.email}. Log out first, then come back to this link.</p><div className="trow"><button className="btn w" type="button" onClick={async () => { await signOut(); setErr('') }}>Log out</button></div></> : matches ? <p className="fine">Logged in as {signedAs}.</p> : <>
           <div className="field"><label>Email</label><input value={inv.email} disabled /></div>
           <div className="two"><div className="field"><label htmlFor="ta-f">First name</label><input id="ta-f" value={f.first} onChange={e => u('first', e.target.value)} maxLength={80} autoComplete="given-name" /></div><div className="field"><label htmlFor="ta-l">Last name</label><input id="ta-l" value={f.last} onChange={e => u('last', e.target.value)} maxLength={80} autoComplete="family-name" /></div></div>

@@ -7,12 +7,12 @@ import Icon from '../../components/Icon'
 // from here without a code: an application is a request, a person decides, a code arrives by email.
 const TAKEN = 37 // places used so far; comes from founding_places_used() once Supabase is wired
 const GET = [
-  ['12 months of Expert, free', 'The top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The twelve months go to the first hundred creatives who use a code; after that it is six months, on the same price.'],
+  ['12 months of Trybe Complete, free', 'The top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The twelve months go to the first hundred creatives who use a code; after that it is six months, on the same price.'],
   ['$49 a month after that, for life', 'Locked in. It never goes up while you keep your founding deal. Everyone joining later pays $74.99.'],
   ['Zero commission, always', 'You keep 100% of every job. LensTrybe makes money from subscriptions, never from your work.'],
   ['A permanent Founding Creative badge', 'On your profile for good, even if you later change plans. The badge goes to the first hundred who use a code.'],
   ['A real say in what gets built', 'A direct line to Michael. Founding creatives shape the roadmap, and the workspace shows what they asked for.'],
-  ['Elite spotlight for the first quarter', 'Your profile sits in the home page rotation for the first ninety days after launch, the same slot Elite pays for.'],
+  ['Trybe Studio spotlight for the first quarter', 'Your profile sits in the home page rotation for the first ninety days after launch, the same slot Trybe Studio pays for.'],
 ]
 const ASK = [
   ['Get your profile live within 7 days', 'A finished listing, so clients landing on LensTrybe find real working creatives, not empty pages. The checklist in the workspace shows what is left.'],
@@ -21,7 +21,7 @@ const ASK = [
 ]
 const HOW = [
   ['You need a code', 'Founding places are invitation only. Each code is personal, works once, and expires fourteen days after it is sent.'],
-  ['Signing up takes a minute', 'Name, email, password, then the plan page with Expert already chosen and the founding price on it. No card today.'],
+  ['Signing up takes a minute', 'Name, email, password, then the plan page with Trybe Complete already chosen and the founding price on it. No card today.'],
   ['Then build your profile', 'Your workspace opens with the twelve-item checklist and a Founding tile that shows how you are tracking against the three asks.'],
 ]
 const DISC = ['Photographer', 'Videographer', 'Both', 'Drone operator', 'Editor', 'Content creator', 'Other']
@@ -53,14 +53,14 @@ export default function Founding() {
       </div>
 
       <form className="fdredeem lg rv" onSubmit={redeem}>
-        <div><b>Have a code?</b><span>It is filled into the signup for you. Expert is chosen, the founding price is on the plan page, and nothing is charged for a year.</span></div>
+        <div><b>Have a code?</b><span>It is filled into the signup for you. Trybe Complete is chosen, the founding price is on the plan page, and nothing is charged for a year.</span></div>
         <div className="fdcode"><input id="fcode" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setCerr('') }} placeholder="Your invite code" aria-label="Founding code" autoComplete="off" spellCheck={false} /><button type="submit" className="btn p">Redeem <Icon name="arrow" size={14} /></button></div>
         {cerr && <p className="fderr">{cerr}</p>}
       </form>
 
       <section className="fdsec rv"><h2>What you get</h2><div className="fdgrid">{GET.map(([t, d]) => <div key={t} className="lg fdcard"><b>{t}</b><p>{d}</p></div>)}</div></section>
       <section className="fdsec rv"><h2>What is asked in return</h2><p className="lede">This is a partnership, not a giveaway. A directory of half-finished profiles helps nobody, so the founding deal comes with three commitments.</p><div className="fdgrid three">{ASK.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Fall behind and you get an email and fourteen days to put it right. Nothing happens silently, and if the founding deal ends your account stays, it just moves to the standard price. The full terms are in the <Link to="/legal/founding">Founding Creative Agreement</Link>.</p></section>
-      <section className="fdsec rv"><h2>How it works</h2><div className="fdgrid three">{HOW.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Launching on the east coast on 1 October 2026, starting in South East Queensland. Anyone redeeming after the first hundred: Expert free for six months, the same $49 a month for life, no badge.</p></section>
+      <section className="fdsec rv"><h2>How it works</h2><div className="fdgrid three">{HOW.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Launching on the east coast on 1 October 2026, starting in South East Queensland. Anyone redeeming after the first hundred: Trybe Complete free for six months, the same $49 a month for life, no badge.</p></section>
 
       <section id="apply" className="fdapply rv">
         <div className="fdah"><h2>Want one of the places?</h2><p className="lede">Say who you are and show the work. Michael reads every one of these himself, and if you are a fit a code is on its way within a few days.</p></div>

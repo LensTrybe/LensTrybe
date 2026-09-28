@@ -35,7 +35,7 @@ export const ABOUT = {
   reviews: 'Verified reviews, requested three days after delivery.',
   marketplace: 'Sell presets, prints and guides.',
   collaborate: 'Second shooters, editors and pilots you work with.',
-  team: 'Seats for your team on Elite.',
+  team: 'Seats for your team on Trybe Studio.',
   insights: 'Views, enquiries, bookings and where they came from.',
   availability: 'The days you take work, the days you do not, and travel radius.',
   jobs: 'Open briefs from clients looking for someone like you.',

@@ -10,7 +10,7 @@ const SUMMARY = {
   privacy: 'What we collect, why, and what we never do with it. We do not sell your data and we do not show advertising.',
   cookies: 'The small number of cookies the site uses to keep you logged in and understand what is working.',
   refunds: 'Cancel anytime and keep access to the end of the period. Annual plans refunded in full within 14 days.',
-  founding: 'The terms of the Founding 100: Expert free for twelve months, then $49 a month locked for life.',
+  founding: 'The terms of the Founding 100: Trybe Complete free for twelve months, then $49 a month locked for life.',
 }
 
 // Inline markdown: [text](href) and **bold**

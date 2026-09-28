@@ -5,6 +5,7 @@ import Icon from '../../components/Icon'
 import { useToast } from '../../components/Toast'
 import { fmt } from '../../lib/format'
 import { ACTIONS, PLANS } from '../../data/workspace'
+import { planLabel } from '../../backend/tierFeatures'
 
 export function SectionHead({ eb, ebClass = 'g', title, em, children }) {
   return <div className="sh rv"><div><p className={'eb ' + ebClass}>{eb}</p><h2>{title} <em>{em}</em></h2></div><p>{children}</p></div>
@@ -60,7 +61,7 @@ export function Calculator() {
         <div className="sl"><label>Jobs a month <b>{j}</b></label><input type="range" min="1" max="20" value={j} onChange={e => setJ(+e.target.value)} /></div>
         <div className="sl"><label>Average job value <b>{fmt(v)}</b></label><input type="range" min="300" max="8000" step="100" value={v} onChange={e => setV(+e.target.value)} /></div>
         <div className="sl"><label>Marketplace commission elsewhere <b>{c}%</b></label><input type="range" min="5" max="25" value={c} onChange={e => setC(+e.target.value)} /></div>
-        <p className="fine">LensTrybe Expert at $74.99 a month, $899.88 a year. Founding creatives pay $0 for the first year, then $49 a month.</p>
+        <p className="fine">Trybe Complete at $74.99 a month, $899.88 a year. Founding creatives pay $0 for the first year, then $49 a month.</p>
       </div>
       <div className="out">
         <div className="o lg bad"><small>Commission taken elsewhere</small><b>{fmt(gone)}</b><span>a year, gone</span></div>
@@ -74,7 +75,7 @@ export function Calculator() {
 // Four plans, one line each.
 export function Plans({ annual = false }) {
   return (
-    <div className="plans lg rv">{PLANS.map(p => <div key={p.n} className={'plan' + (p.hot ? ' hot' : '')}><b>{p.n}{p.hot && <span className="tag">Most popular</span>}</b><span className="d">{p.d}</span><span className="pr">{annual ? p.a : p.m}{p.m !== 'Free' && <small>/mo</small>}<em>{p.free}</em></span><Link className="go" to="/join">{p.cta}</Link></div>)}</div>
+    <div className="plans lg rv">{PLANS.map(p => <div key={p.n} className={'plan' + (p.hot ? ' hot' : '')}><b>{planLabel(p.n)}{p.hot && <span className="tag">Most popular</span>}</b><span className="d">{p.d}</span><span className="pr">{annual ? p.a : p.m}{p.m !== 'Free' && <small>/mo</small>}<em>{p.free}</em></span><Link className="go" to="/join">{p.cta}</Link></div>)}</div>
   )
 }
 
@@ -86,11 +87,11 @@ export function FoundingBand() {
       <div className="a">
         <p className="eb p">Founding creative programme</p>
         <h2>The first hundred set the tone.</h2>
-        <p>Redeem a founding code and get Expert free for twelve months, then $49 a month locked for life, plus the permanent Founding Creative badge. In return: finish your profile in a week, run your next three jobs through the platform, and tell us one honest thing a month.</p>
+        <p>Redeem a founding code and get Trybe Complete free for twelve months, then $49 a month locked for life, plus the permanent Founding Creative badge. In return: finish your profile in a week, run your next three jobs through the platform, and tell us one honest thing a month.</p>
         <Link className="pill" to="/founding">Apply for a code <Icon name="arrow" size={14} /></Link>
       </div>
       <div className="b">
-        <div className="k"><b>$0 for 12 months</b><span>Expert, normally $74.99 a month</span></div>
+        <div className="k"><b>$0 for 12 months</b><span>Trybe Complete, normally $74.99 a month</span></div>
         <div className="k"><b>$49 a month, for life</b><span>After the first year. Never $74.99.</span></div>
         <div className="k"><span className="cnt"><b>37</b> of 100 places redeemed. A place is claimed when a code is redeemed, not when it is sent.</span><div className="meter"><i /></div></div>
       </div>

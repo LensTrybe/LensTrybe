@@ -300,7 +300,7 @@ export async function submitReview(creativeId, f) {
 // these two helpers translate. Tier gating is the database's (guard_tier_feature); we say it nicely.
 const TABLE = { q: 'quotes', inv: 'invoices', c: 'contracts' }
 const NAMES = { q: 'Quotes', inv: 'Invoicing', c: 'Contracts' }
-export const docError = (e, kind) => { const m = String(e?.message || e || ''); if (/TIER_REQUIRED/i.test(m)) return NAMES[kind] + ' are on the Expert plan and above. Upgrade in Account to send them.'; return m || 'Could not save. Try again.' }
+export const docError = (e, kind) => { const m = String(e?.message || e || ''); if (/TIER_REQUIRED/i.test(m)) return NAMES[kind] + ' are on the Trybe Complete plan and above. Upgrade in Account to send them.'; return m || 'Could not save. Try again.' }
 export const toLiveItems = items => (items || []).filter(it => it.d || Number(it.r)).map(it => ({ description: String(it.d || ''), quantity: Number(it.q) || 1, rate: Number(it.r) || 0 }))
 export const fromLiveItems = items => { const a = Array.isArray(items) ? items : []; return a.length ? a.map(it => ({ d: it.description || it.name || it.title || '', q: it.quantity ?? it.qty ?? 1, r: it.rate ?? it.price ?? it.amount ?? '' })) : [{ d: '', q: 1, r: '' }] }
 

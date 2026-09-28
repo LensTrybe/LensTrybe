@@ -9,6 +9,7 @@ import { imageUrl } from '../../backend/imageUrl'
 import * as live from '../../lib/live'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
+import { planLabel } from '../../backend/tierFeatures'
 
 // Marketplace: gear bought, sold and swapped between creatives on LensTrybe. Browse what others have
 // listed, keep your own listings and the conversations on them, save things to come back to.
@@ -117,7 +118,7 @@ function MarketLive() {
   const liveMine = d.mine.filter(x => x.st === 'live'), sold = d.mine.filter(x => x.st === 'sold')
   const unread = d.selling.reduce((t, x) => t + x.unread, 0)
   const run = async (key, fn) => { if (busy) return; setBusy(key); try { await fn() } catch (e) { toast(e.message) } finally { setBusy('') } }
-  const gatePost = () => { if (limit === 0) { F.confirm({ title: 'Selling is on Pro and above', body: 'Browsing, saving and messaging sellers is free on every plan. Pro lists 5 items at a time, Expert 15, Elite as many as you like.', cta: 'See plans', onYes: () => F.nav('/app/subscription') }); return false } if (liveMine.length >= limit) { toast('You have ' + liveMine.length + ' live listings, the most ' + plan + ' allows. Mark one sold or delete one first.'); return false } return true }
+  const gatePost = () => { if (limit === 0) { F.confirm({ title: 'Selling is on Trybe Essential and above', body: 'Browsing, saving and messaging sellers is free on every plan. Trybe Essential lists 5 items at a time, Trybe Complete 15, Trybe Studio as many as you like.', cta: 'See plans', onYes: () => F.nav('/app/subscription') }); return false } if (liveMine.length >= limit) { toast('You have ' + liveMine.length + ' live listings, the most ' + planLabel(plan) + ' allows. Mark one sold or delete one first.'); return false } return true }
   const fromGear = g => ({ t: g.n, cat: KIT_CAT[g.c] || (F.MCATS.includes(g.c) ? g.c : 'Other'), p: g.v ? Math.round(g.v * 0.6) : '', d: g.note || '' })
   const fields = (x = {}, kit) => [
     ...(kit && s.gear.length ? [{ k: 'gear', l: 'From your kit', type: 'select', value: x.gear || '', placeholder: 'Pick an item from Inventory', options: s.gear.map(g => [String(g.id), g.n + (g.c ? ' · ' + g.c : '')]), effect: (gid, v) => { const g = s.gear.find(y => String(y.id) === gid); if (!g) return {}; return { t: g.n, cat: KIT_CAT[g.c] || (F.MCATS.includes(g.c) ? g.c : 'Other'), p: g.v ? Math.round(g.v * 0.6) : v.p, d: v.d || g.note || '' } } }] : []),
@@ -136,7 +137,7 @@ function MarketLive() {
     submit: async v => { if ((v.photos || []).length > 5) { toast('Up to 5 photos.'); return false } try { await live.saveListing(P.id, recOf(v), x.id); await load(); toast('Listing updated.') } catch (e) { toast(e.message); return false } } })
   const remove = x => F.confirm({ title: 'Delete this listing?', body: x.t + '. Its photos go with it. Conversations about it stay in your threads.', cta: 'Delete', danger: true, onYes: () => run(x.id, async () => { await live.deleteListing(x); setSel(null); await load(); toast('Listing deleted.') }) })
   const markSold = x => F.confirm({ title: 'Mark as sold?', body: x.t + ' comes off the marketplace. You can relist it any time.', cta: 'Mark sold', onYes: () => run(x.id, async () => { await live.setListingStatus(x.id, 'sold'); await load(); toast('Marked sold.') }) })
-  const relist = x => run(x.id, async () => { if (liveMine.length >= limit) throw new Error('You have ' + liveMine.length + ' live listings, the most ' + plan + ' allows.'); await live.setListingStatus(x.id, 'active'); await load(); toast('Back in the marketplace.') })
+  const relist = x => run(x.id, async () => { if (liveMine.length >= limit) throw new Error('You have ' + liveMine.length + ' live listings, the most ' + planLabel(plan) + ' allows.'); await live.setListingStatus(x.id, 'active'); await load(); toast('Back in the marketplace.') })
   const save = x => run('sv' + x.id, async () => { const on = !savedIds.includes(x.id); await live.toggleSaved(P.id, x.id, on); await load(); toast(on ? 'Saved.' : 'Removed from saved.') })
   const send = async (x, text, ok) => { try { await live.messageSeller(me, x, text); await load(); toast(ok) } catch (e) { toast(e.message); return false } }
   const first = x => x.seller.n.split(' ')[0]
@@ -155,7 +156,7 @@ function MarketLive() {
       </div>
       <div className="grid">
         <div className="s12"><div className="kp">
-          {[['Live listings', String(d.browse.length), d.browse.length ? 'from ' + new Set(d.browse.map(x => x.seller.id)).size + ' creatives' : 'none right now', ''], ['Your listings', String(liveMine.length), limit === 0 ? 'selling is on Pro and above' : limit === Infinity ? 'no limit on Elite' : 'of ' + limit + ' on ' + plan, ''], ['Messages', String(unread), unread ? 'unread from buyers' : d.selling.length ? d.selling.length + ' conversations' : 'nothing waiting', unread ? 'w' : 'n'], ['Sold', String(sold.length), sold.length ? fmt(sold.reduce((t, x) => t + x.p, 0)) + ' listed value' : 'nothing yet', 'n']].map(([lb, v, e, w]) => <div key={lb} className="k lg"><small>{lb}</small><b>{v}</b><em className={w}>{e}</em></div>)}
+          {[['Live listings', String(d.browse.length), d.browse.length ? 'from ' + new Set(d.browse.map(x => x.seller.id)).size + ' creatives' : 'none right now', ''], ['Your listings', String(liveMine.length), limit === 0 ? 'selling is on Trybe Essential and above' : limit === Infinity ? 'no limit on Trybe Studio' : 'of ' + limit + ' on ' + planLabel(plan), ''], ['Messages', String(unread), unread ? 'unread from buyers' : d.selling.length ? d.selling.length + ' conversations' : 'nothing waiting', unread ? 'w' : 'n'], ['Sold', String(sold.length), sold.length ? fmt(sold.reduce((t, x) => t + x.p, 0)) + ' listed value' : 'nothing yet', 'n']].map(([lb, v, e, w]) => <div key={lb} className="k lg"><small>{lb}</small><b>{v}</b><em className={w}>{e}</em></div>)}
         </div></div>
         <div className={'card lg ' + (l || conv ? 's8' : 's12')}>
           <div className="h">

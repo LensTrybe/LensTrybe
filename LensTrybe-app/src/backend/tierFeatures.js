@@ -18,11 +18,15 @@ export const UNLIMITED = Number.POSITIVE_INFINITY
 
 export const TIER_ORDER = ['basic', 'pro', 'expert', 'elite']
 
+// Display names for each plan. The stored/internal names stay Basic, Pro, Expert and Elite.
+export const PLAN_LABEL = { basic: 'Trybe Free', pro: 'Trybe Essential', expert: 'Trybe Complete', elite: 'Trybe Studio' }
+export function planLabel(n) { const k = String(n || '').toLowerCase(); return PLAN_LABEL[k] || String(n || '') }
+
 export const TIER_META = {
-  basic: { name: 'Basic', monthly: 0, annual: 0, colour: '#8a8a9a', tagline: 'Get found. Build your presence.' },
-  pro: { name: 'Pro', monthly: 24.99, annual: 249.90, colour: '#1DB954', tagline: 'Look the part and take bookings.' },
-  expert: { name: 'Expert', monthly: 74.99, annual: 749.90, colour: '#a855f7', tagline: 'Run your whole business in one place.' },
-  elite: { name: 'Elite', monthly: 149.99, annual: 1499.90, colour: '#EAB308', tagline: 'Studio-level power for teams.' },
+  basic: { name: 'Trybe Free', monthly: 0, annual: 0, colour: '#8a8a9a', tagline: 'Get found. Build your presence.' },
+  pro: { name: 'Trybe Essential', monthly: 24.99, annual: 249.90, colour: '#1DB954', tagline: 'Look the part and take bookings.' },
+  expert: { name: 'Trybe Complete', monthly: 74.99, annual: 749.90, colour: '#a855f7', tagline: 'Run your whole business in one place.' },
+  elite: { name: 'Trybe Studio', monthly: 149.99, annual: 1499.90, colour: '#EAB308', tagline: 'Studio-level power for teams.' },
 }
 
 export const TIER_FEATURES = {
@@ -301,7 +305,7 @@ export const FEATURE_CATALOG = [
   { id: 'teamSeats', label: 'Team', say: (v) => (v ? `Team: you plus up to ${num(v - 1)} members` : null) },
   { id: 'studioProfile', label: 'Studio profile', say: (v) => (v ? 'Studio profile page' : null) },
   { id: 'homepageRotation', label: 'Homepage rotation', say: (v) => (v ? 'Featured in the homepage rotation' : null) },
-  { id: 'eliteSpotlight', label: 'Homepage spotlight', say: (v) => (v ? 'Elite spotlight on the homepage' : null) },
+  { id: 'eliteSpotlight', label: 'Homepage spotlight', say: (v) => (v ? 'Trybe Studio spotlight on the homepage' : null) },
 ]
 
 /**

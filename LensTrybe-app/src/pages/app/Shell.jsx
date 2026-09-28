@@ -47,6 +47,7 @@ import Jobs from './Jobs'
 import { EditProfile, ViewProfile, Subscription, Referrals, Founding, Settings, Support } from './Account'
 import { TOP, GROUPS, HIDDEN } from './nav'
 import '../../styles/workspace.css'
+import { planLabel } from '../../backend/tierFeatures'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
 const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money'], ['clients', 'Clients', 'user']]
@@ -168,7 +169,7 @@ export default function Shell() {
           {GROUPS.map(group)}
           <div className="sep" />
           <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && <span className="dot" aria-hidden="true" />}</NavLink>
-          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{s.plan.name}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button><button className="tg" onClick={async () => { await signOut(); nav('/login', { replace: true }) }} aria-label="Log out" title="Log out"><Icon name="out" size={15} /></button></div>
+          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{planLabel(s.plan.name)}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button><button className="tg" onClick={async () => { await signOut(); nav('/login', { replace: true }) }} aria-label="Log out" title="Log out"><Icon name="out" size={15} /></button></div>
         </aside>
         <header className="top">
           <CommandBar />

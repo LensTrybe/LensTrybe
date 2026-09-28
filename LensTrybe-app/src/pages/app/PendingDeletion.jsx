@@ -27,7 +27,7 @@ export default function PendingDeletion() {
         <p className="sub">This account is set to be permanently deleted on <b>{formatDeletionDate(when) || 'the end of the grace period'}</b>. {creative ? 'Your profile is hidden and your paid plan has been cancelled.' : ''} Reactivate now and everything is exactly as you left it.</p>
         <div className="lg chlist"><div className="chempty">
           <b>Change your mind?</b>
-          <p>{creative ? 'Reactivate before your paid period ends and your plan carries on as normal. After that you are on Basic and can pick a plan again from Settings.' : 'Your bookings, messages and saved creatives all come back.'}</p>
+          <p>{creative ? 'Reactivate before your paid period ends and your plan carries on as normal. After that you are on Trybe Free and can pick a plan again from Settings.' : 'Your bookings, messages and saved creatives all come back.'}</p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}><button className="btn p" onClick={reactivate} disabled={busy}>{busy ? 'One moment' : 'Reactivate my account'} <Icon name="arrow" size={14} /></button><button className="btn g" onClick={download} disabled={busy}>Download my data</button></div>
           {err && <p className="fine" style={{ color: 'var(--pink-t)' }}>{err}</p>}{ok && <p className="fine" style={{ color: 'var(--green-t)' }}>{ok}</p>}
         </div></div>

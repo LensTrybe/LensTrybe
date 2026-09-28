@@ -74,7 +74,7 @@ export default function Join() {
           <button type="button" className="btn w lg" onClick={() => nav('/onboarding?google=1')}>I'm a creative <Icon name="arrow" size={14} /></button>
           <button type="button" className="btn g lg" disabled={gBusy} onClick={asClient}>{gBusy ? 'One moment' : "I'm hiring"}</button>
           {err && <p className="jerr">{err}</p>}
-          <p className="tiny">Creatives pick a plan next (Basic is free). Clients never pay. Wrong Google account? <button type="button" className="forgot" onClick={async () => { await signOut(); nav('/login') }}>Log out</button></p>
+          <p className="tiny">Creatives pick a plan next (Trybe Free costs nothing). Clients never pay. Wrong Google account? <button type="button" className="forgot" onClick={async () => { await signOut(); nav('/login') }}>Log out</button></p>
         </div></div>
       </div>
     </section>

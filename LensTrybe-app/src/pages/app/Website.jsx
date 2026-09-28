@@ -7,6 +7,7 @@ import { useFlows } from '../../lib/flows'
 import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
+import { planLabel } from '../../backend/tierFeatures'
 
 // Website: your site, built from your profile and brand kit. Five pages on Expert, your own domain on Elite.
 // Pages on the left, the site on the right, publish when it looks right.
@@ -24,14 +25,14 @@ function WebsiteDemo() {
   const upd = (k, v) => { F.upd('pages', pg.id, { [k]: v }); setDirty(true) }
   const on = pages.filter(p => p.on).length
   const publish = () => { F.patch('site', { live: true, dirty: false, published: Date.now() }); setDirty(false); toast('Published. Live in about a minute.') }
-  const addPage = () => { if (on >= PLAN.pages) return F.confirm({ title: PLAN.pages + ' pages is the ' + PLAN.name + ' limit', body: 'Elite has no page limit and your own domain.', cta: 'See Elite', onYes: () => F.nav('/app/subscription') }); F.newPage(); setDirty(true) }
+  const addPage = () => { if (on >= PLAN.pages) return F.confirm({ title: PLAN.pages + ' pages is the ' + planLabel(PLAN.name) + ' limit', body: 'Trybe Studio has no page limit and your own domain.', cta: 'See Trybe Studio', onYes: () => F.nav('/app/subscription') }); F.newPage(); setDirty(true) }
   const removePage = p => F.confirm({ title: 'Remove ' + p.n + '?', body: 'It comes off the site on the next publish.', cta: 'Remove', danger: true, onYes: () => { F.del('pages', p.id); if (sel === p.id) setSel('home'); setDirty(true) } })
   const domain = () => F.open({ title: 'Connect your domain', sub: 'Point a CNAME at sites.lenstrybe.com and it is live in an hour.', cta: 'Connect', fields: [{ k: 'd', l: 'Domain', required: true, placeholder: 'maraokafor.com', value: s.site.custom || '' }], submit: v => { F.patch('site', { custom: v.d }); toast(v.d + ' connecting. CNAME → sites.lenstrybe.com.') } })
   const view = () => { window.open(PLAN.site ? profileUrl : profileUrl, '_blank', 'noopener') }
   return (
     <section className="view">
       <div className="vh">
-        <div><h1>Website</h1><p>{PLAN.site ? 'This is your public profile. Built from your pages and brand kit, ' + (PLAN.pages > 20 ? 'unlimited pages' : PLAN.pages + ' pages') + ' on ' + PLAN.name + (PLAN.domain ? ', on your own domain' : '') + '.' : 'On ' + PLAN.name + ' your public profile is the standard LensTrybe page. Expert turns it into a full website.'}</p></div>
+        <div><h1>Website</h1><p>{PLAN.site ? 'This is your public profile. Built from your pages and brand kit, ' + (PLAN.pages > 20 ? 'unlimited pages' : PLAN.pages + ' pages') + ' on ' + planLabel(PLAN.name) + (PLAN.domain ? ', on your own domain' : '') + '.' : 'On ' + planLabel(PLAN.name) + ' your public profile is the standard LensTrybe page. Trybe Complete turns it into a full website.'}</p></div>
         <div className="acts">
           {PLAN.site ? <>
             <span className={'syncb' + (live ? '' : ' off')}><i />{live ? 'Live · ' + (s.site.custom || s.site.domain) : 'Unpublished'}</span>
@@ -39,7 +40,7 @@ function WebsiteDemo() {
             <button className={'btn w' + (dirty ? '' : ' quiet')} onClick={publish}>{dirty ? 'Publish changes' : 'Published'}</button>
           </> : <>
             <button className="btn g" onClick={view}>View profile <Icon name="arrow" size={14} /></button>
-            <Link className="btn w" to="/app/subscription">Get the website on Expert</Link>
+            <Link className="btn w" to="/app/subscription">Get the website on Trybe Complete</Link>
           </>}
         </div>
       </div>
@@ -65,8 +66,8 @@ function WebsiteDemo() {
           <div className="card lg">
             <div className="h"><b>Domain</b></div>
             <div className="kv"><span>Now</span><b>{s.site.domain}</b></div>
-            <div className="kv"><span>Your own</span><b>{PLAN.domain ? (s.site.custom || 'Not connected') : 'Elite plan'}</b></div>
-            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}>{PLAN.domain ? <button className="btn g sm" onClick={domain}>{s.site.custom ? 'Change domain' : 'Connect a domain'}</button> : <Link className="btn g sm" to="/app/subscription">Move to Elite for your own domain</Link>}</div>
+            <div className="kv"><span>Your own</span><b>{PLAN.domain ? (s.site.custom || 'Not connected') : 'Trybe Studio plan'}</b></div>
+            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}>{PLAN.domain ? <button className="btn g sm" onClick={domain}>{s.site.custom ? 'Change domain' : 'Connect a domain'}</button> : <Link className="btn g sm" to="/app/subscription">Move to Trybe Studio for your own domain</Link>}</div>
           </div>
         </div>
 
@@ -88,12 +89,12 @@ function StandardProfile({ s, F }) {
   return (
     <div className="grid">
       <div className="s5 side">
-        <div className="card lg"><div className="h"><b>Your public profile</b><small className="lumi-by">Standard on {s.plan.name}</small></div>
+        <div className="card lg"><div className="h"><b>Your public profile</b><small className="lumi-by">Standard on {planLabel(s.plan.name)}</small></div>
           <p className="note2">Clients find you in the directory and see this page: cover photo, your work, packages, reviews and the enquiry form. It updates from your profile and brand kit on its own.</p>
-          <div className="brows one" style={{ marginTop: 8 }}>{[['Cover, name, tagline', 1], ['Portfolio grid', 1], ['Packages and prices', 1], ['Reviews', 1], ['Enquiry form and calendar', 1], ['Your own pages', 0], ['Brand kit fonts and colours', 0], ['Ask bar in one sentence', 0], ['Your own domain', 0]].map(([l, on]) => <label key={l} className="brow"><span>{l}</span><span className={'st ' + (on ? 'ok' : 'grey')}>{on ? 'Included' : 'Expert'}</span></label>)}</div>
-          <div className="acts" style={{ marginTop: 14 }}><Link className="btn w" to="/app/subscription">Move to Expert</Link><Link className="btn g" to="/app/profile">Edit profile</Link></div>
+          <div className="brows one" style={{ marginTop: 8 }}>{[['Cover, name, tagline', 1], ['Portfolio grid', 1], ['Packages and prices', 1], ['Reviews', 1], ['Enquiry form and calendar', 1], ['Your own pages', 0], ['Brand kit fonts and colours', 0], ['Ask bar in one sentence', 0], ['Your own domain', 0]].map(([l, on]) => <label key={l} className="brow"><span>{l}</span><span className={'st ' + (on ? 'ok' : 'grey')}>{on ? 'Included' : 'Trybe Complete'}</span></label>)}</div>
+          <div className="acts" style={{ marginTop: 14 }}><Link className="btn w" to="/app/subscription">Move to Trybe Complete</Link><Link className="btn g" to="/app/profile">Edit profile</Link></div>
         </div>
-        <div className="tlumi"><span className="lm" /><div>On Expert this page becomes a five-page site in your brand kit, with an ask bar that starts a thread from one sentence. Creatives on the website get about 40% more enquiries from the same profile views.</div></div>
+        <div className="tlumi"><span className="lm" /><div>On Trybe Complete this page becomes a five-page site in your brand kit, with an ask bar that starts a thread from one sentence. Creatives on the website get about 40% more enquiries from the same profile views.</div></div>
       </div>
       <div className="s7 side sticky">
         <div className="card lg sitep">
@@ -134,14 +135,14 @@ function WebsiteLive() {
   const copy = () => { const u = window.location.origin + siteUrl; try { navigator.clipboard?.writeText(u)?.catch(() => {}) } catch {} toast('Copied: ' + u) }
   if (!allowed.length) return (
     <section className="view">
-      <div className="vh"><div><h1>Website</h1><p>On {plan} your public profile is the standard LensTrybe page. Pro adds a two page website, Expert a five page one.</p></div>
+      <div className="vh"><div><h1>Website</h1><p>On {planLabel(plan)} your public profile is the standard LensTrybe page. Trybe Essential adds a two page website, Trybe Complete a five page one.</p></div>
         <div className="acts"><a className="btn g" href={'/creatives/' + P?.id} target="_blank" rel="noopener noreferrer">View profile <Icon name="arrow" size={14} /></a><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
       <div className="grid"><div className="card lg s7"><div className="h"><b>Your public profile</b></div><p className="note2">Clients find you in the directory and see your profile: cover photo, work, packages, reviews and the enquiry form. It updates from your profile on its own.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/profile">Edit profile</Link></div></div></div>
     </section>)
   return (
     <section className="view">
       <div className="vh">
-        <div><h1>Website</h1><p>{allowed.length > 2 ? 'Five pages' : 'Home and Contact'} on {plan}, built from your profile, photos, packages and reviews. Edit on the left, publish when it looks right.</p></div>
+        <div><h1>Website</h1><p>{allowed.length > 2 ? 'Five pages' : 'Home and Contact'} on {planLabel(plan)}, built from your profile, photos, packages and reviews. Edit on the left, publish when it looks right.</p></div>
         <div className="acts">
           <span className={'syncb' + (rows && rows.length ? '' : ' off')}><i />{rows && rows.length ? 'Live · lenstrybe.com/site/' + slug : 'Not published yet'}</span>
           <a className="btn g" href={siteUrl} target="_blank" rel="noopener noreferrer">View site <Icon name="arrow" size={14} /></a>
@@ -159,7 +160,7 @@ function WebsiteLive() {
               </div>)}
             </div>
             {dirty && rows?.length > 0 && <button className="lnk" style={{ marginTop: 10, opacity: .7 }} onClick={discard}>Undo unpublished changes</button>}
-            {allowed.length < 5 && <p className="note2" style={{ marginTop: 10 }}>Work, About and Pricing pages come with Expert. <Link className="lnk" to="/app/subscription">See plans</Link></p>}
+            {allowed.length < 5 && <p className="note2" style={{ marginTop: 10 }}>Work, About and Pricing pages come with Trybe Complete. <Link className="lnk" to="/app/subscription">See plans</Link></p>}
           </div>
           {pg && <div className="card lg">
             <div className="h"><b>{pg.n}</b><small className="lumi-by">Changes show on the right</small></div>
@@ -182,7 +183,7 @@ function WebsiteLive() {
             <div className="h"><b>Address</b></div>
             <div className="kv"><span>Your site</span><b>lenstrybe.com/site/{slug.length > 24 ? slug.slice(0, 8) + '…' : slug}</b></div>
             <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12, flexWrap: 'wrap' }}><button className="btn g sm" onClick={changeAddr}>{addr ? 'Change address' : 'Choose an address'}</button><button className="btn g sm" onClick={copy}>Copy link</button></div>
-            {/elite/i.test(plan) ? <p className="note2" style={{ marginTop: 10 }}>Want your own domain name, like yourname.com? <Link className="lnk" to="/app/support">Ask us</Link> and we will connect it.</p> : <p className="note2" style={{ marginTop: 10 }}>Your own domain name comes with Elite.</p>}
+            {/elite/i.test(plan) ? <p className="note2" style={{ marginTop: 10 }}>Want your own domain name, like yourname.com? <Link className="lnk" to="/app/support">Ask us</Link> and we will connect it.</p> : <p className="note2" style={{ marginTop: 10 }}>Your own domain name comes with Trybe Studio.</p>}
           </div>
         </div>
         <div className="s7 side sticky">

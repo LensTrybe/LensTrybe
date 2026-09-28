@@ -16,7 +16,7 @@ export default function WorkspacePeek() {
           </div>
         </div>
       </div>
-      <div className="pk-cta"><span><b>This is the workspace.</b> Lumi runs the admin, you approve in a tap. Every plan above Basic includes it.</span><span className="btn w sm">Open the workspace preview <Icon name="arrow" size={13} /></span></div>
+      <div className="pk-cta"><span><b>This is the workspace.</b> Lumi runs the admin, you approve in a tap. Every plan above Trybe Free includes it.</span><span className="btn w sm">Open the workspace preview <Icon name="arrow" size={13} /></span></div>
     </Link>
   )
 }

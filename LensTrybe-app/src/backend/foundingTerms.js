@@ -8,8 +8,8 @@
 // Body format (rendered by LegalBody): blank lines separate blocks, lines starting with
 // "• " make a list, **text** is bold and [text](/path) is a link.
 
-export const FOUNDING_TERMS_VERSION = '2026-09-17'
-export const FOUNDING_TERMS_UPDATED = '17 September 2026'
+export const FOUNDING_TERMS_VERSION = '2026-09-28'
+export const FOUNDING_TERMS_UPDATED = '28 September 2026'
 export const FOUNDING_TERMS_TITLE = 'Founding Creative Agreement'
 
 export const FOUNDING_TERMS_INTRO = `**The terms for the Founding 100.**
@@ -34,8 +34,8 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'you-get',
     title: '2. What you get',
-    body: `• **Expert free, for 12 months or 6.** Full access to our Expert plan (normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is the same either way, apart from the badge. Your dashboard shows the date your free period ends, and we email you about 7 days before.
-• **$49 a month for life after that.** When your free period ends, your Expert plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
+    body: `• **Trybe Complete free, for 12 months or 6.** Full access to our Trybe Complete plan (previously called Expert, normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is the same either way, apart from the badge. Your dashboard shows the date your free period ends, and we email you about 7 days before.
+• **$49 a month for life after that.** When your free period ends, your Trybe Complete plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
 • **A permanent Founding Creative badge** on your profile, for the first 100 to use a code. It stays for life, even if your founding deal ends. If the places were already taken when you used yours, you don't get the badge.
 • **Zero commission, always.** You keep 100% of what you earn. LensTrybe never takes a cut of your work.
 • **A real say.** Founding creatives get a direct line to us and help shape what we build next.`,
@@ -47,7 +47,7 @@ export const FOUNDING_TERMS_SECTIONS = [
 • We'll email you about 7 days before your free period ends, so there are no surprises. If you cancel before then, you won't be charged.
 • After your free period, your plan renews automatically at your founding rate until you cancel.
 • Prices are in Australian dollars.
-• Your founding rate applies to the Expert plan. If you move to a different plan, standard pricing for that plan applies.`,
+• Your founding rate applies to the Trybe Complete plan. If you move to a different plan, standard pricing for that plan applies.`,
   },
   {
     id: 'we-ask',
@@ -74,10 +74,10 @@ Your founding deal can also end if you tell us you want to leave the founding pr
 
 **When your founding deal ends:**
 • The rest of your free period ends and the $49 founding rate is gone for good.
-• Your plan continues at the standard price for your plan (for Expert, $74.99 a month or $749.90 a year, depending on the billing you chose).
+• Your plan continues at the standard price for your plan (for Trybe Complete, $74.99 a month or $749.90 a year, depending on the billing you chose).
 • Your first payment at the standard price is taken **7 days after the deal ends**, or on your original first payment date if that's sooner.
 • We'll email you when it ends, with the amount and the date of that first payment.
-• If you don't want to continue, switch to the free Basic plan or cancel before that date and you won't be charged.
+• If you don't want to continue, switch to the Trybe Free plan or cancel before that date and you won't be charged.
 • You keep your profile, all your work, and your Founding Creative badge if you had one. There are no penalties and no loss of data.
 
 If something outside your control is getting in the way, reply to any of our emails and talk to us. We'd rather help than end a deal.`,

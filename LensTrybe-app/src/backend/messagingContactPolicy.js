@@ -2,7 +2,7 @@ import { normalizeSubscriptionTier } from './tierFeatures'
 
 /** Shown when Basic/Pro thread owner policy blocks contact details in message body. */
 export const MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE =
-  'Sharing contact details is not available on your current plan. Upgrade to Expert or Elite to share contact information with clients.'
+  'Sharing contact details is not available on your current plan. Upgrade to Trybe Complete or Trybe Studio to share contact information with clients.'
 
 /** True when the creative who owns the thread is on Basic or Pro (contact sharing not allowed in messages). */
 export function threadOwnerTierContactSharingRestricted(creativeSubscriptionTierRaw) {

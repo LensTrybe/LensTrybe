@@ -7,7 +7,7 @@ import { fmt } from '../../lib/format'
 import { completeness } from '../../lib/complete'
 import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
-import { getFeatures, INSIGHT_WIDGETS } from '../../backend/tierFeatures'
+import { getFeatures, INSIGHT_WIDGETS, planLabel } from '../../backend/tierFeatures'
 
 // Insights: the whole business as numbers you can act on. Where enquiries come from, what they turn
 // into, what a booking is worth, how fast you reply and what that does to bookings, which months are
@@ -221,7 +221,7 @@ function InsightsLive() {
   const leadsOpen = TH.filter(t => t.stage <= 1), leadsWon = TH.filter(t => t.stage >= 4)
   const listed = P?.is_listed !== false
   const Card = ({ w, span = 's6', title, sub, children }) => can(w) ? <div className={'card lg ' + span}><div className="h"><b>{title}</b>{sub && <small className="lumi-by">{sub}</small>}</div>{children}</div>
-    : <div className={'card lg ' + span} style={{ position: 'relative', overflow: 'hidden' }}><div className="h"><b>{title}</b></div><div style={{ filter: 'blur(6px)', opacity: .5, pointerEvents: 'none' }}>{children}</div><div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}><div><b style={{ display: 'block', marginBottom: 6 }}>On {WIDGET_TIER[w] || 'Pro'} and above</b><Link className="btn g sm" to="/app/subscription">See plans</Link></div></div></div>
+    : <div className={'card lg ' + span} style={{ position: 'relative', overflow: 'hidden' }}><div className="h"><b>{title}</b></div><div style={{ filter: 'blur(6px)', opacity: .5, pointerEvents: 'none' }}>{children}</div><div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', textAlign: 'center', padding: 20 }}><div><b style={{ display: 'block', marginBottom: 6 }}>On {planLabel(WIDGET_TIER[w] || 'Pro')} and above</b><Link className="btn g sm" to="/app/subscription">See plans</Link></div></div></div>
   const KV = ({ l, v }) => <div className="kv"><span>{l}</span><b>{v}</b></div>
   return (
     <section className="view">
@@ -230,9 +230,9 @@ function InsightsLive() {
       <div className="grid">
         <div className="s12"><div className="kp">{[
           ['Profile', cmp.pct + '%', cmp.complete ? 'complete' : cmp.remaining + ' to go', cmp.complete ? 'n' : 'w'],
-          ['Enquiries', can('enquiries') ? String(enq.length) : '—', can('enquiries') ? (delta(enq.length, penq.length) || 'last ' + days + ' days') : 'on Pro and above', can('enquiries') ? 'n' : ''],
-          ['Bookings', can('bookings') ? String(bk.length) : '—', can('bookings') ? upcoming.length + ' coming up' : 'on Pro and above', 'n'],
-          ['Revenue this month', can('revenue') ? fmt(revMonth) : '—', can('revenue') ? (revPrev ? delta(revMonth, revPrev) + ' on last month' : 'paid invoices') : 'on Pro and above', 'n'],
+          ['Enquiries', can('enquiries') ? String(enq.length) : '—', can('enquiries') ? (delta(enq.length, penq.length) || 'last ' + days + ' days') : 'on Trybe Essential and above', can('enquiries') ? 'n' : ''],
+          ['Bookings', can('bookings') ? String(bk.length) : '—', can('bookings') ? upcoming.length + ' coming up' : 'on Trybe Essential and above', 'n'],
+          ['Revenue this month', can('revenue') ? fmt(revMonth) : '—', can('revenue') ? (revPrev ? delta(revMonth, revPrev) + ' on last month' : 'paid invoices') : 'on Trybe Essential and above', 'n'],
         ].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 
         <Card w="profile_strength" title="Profile strength" sub={cmp.done + ' of ' + cmp.total}>
@@ -249,7 +249,7 @@ function InsightsLive() {
 
         <Card w="revenue" span="s8" title="Money in" sub={depth === 'full' ? 'paid invoices, last 12 months' : 'this month'}>
           {depth === 'full' ? <><Bars rows={MONTHS} money /><div className="kv" style={{ marginTop: 10 }}><span>Last 12 months</span><b>{fmt(sum(MONTHS, m => m.v))}</b></div><div className="kv"><span>Average paid invoice</span><b>{fmt(avgJob)}</b></div></>
-            : <><div className="kv"><span>{MON[parse(TODAY).getMonth()]}</span><b>{fmt(revMonth)}</b></div><div className="kv"><span>Last month</span><b>{fmt(revPrev)}</b></div><p className="note2" style={{ marginTop: 8 }}>Expert shows twelve months, your best clients and cash flow.</p></>}
+            : <><div className="kv"><span>{MON[parse(TODAY).getMonth()]}</span><b>{fmt(revMonth)}</b></div><div className="kv"><span>Last month</span><b>{fmt(revPrev)}</b></div><p className="note2" style={{ marginTop: 8 }}>Trybe Complete shows twelve months, your best clients and cash flow.</p></>}
         </Card>
         <Card w="enquiries" span="s4" title="Enquiries" sub={'last ' + days + ' days'}>
           <KV l="New conversations" v={enq.length} /><KV l="You replied to" v={enq.filter(t => t.answered).length + ' of ' + enq.length} /><KV l="Waiting on you" v={TH.filter(t => t.need).length} /><KV l="Became jobs" v={enq.filter(t => t.stage >= 4).length} />

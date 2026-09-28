@@ -5,7 +5,7 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
-import { getFeatures } from '../../backend/tierFeatures'
+import { getFeatures, planLabel } from '../../backend/tierFeatures'
 import * as live from '../../lib/live'
 
 // Deliver: every gallery behind one branded link. Drop files, it uploads, the client gets a link
@@ -41,7 +41,7 @@ export default function Deliver() {
       </div>
       <div className="grid">
         <div className="s12"><div className="kp">
-          <div className="k lg stor"><small>Storage</small><b>{used} <span>of {LIVE ? capLive : CAP} GB</span></b><div className="bar"><i style={{ width: Math.min(100, (LIVE ? (capLive ? used / capLive : 1) : used / CAP) * 100) + '%' }} /></div><em className="n">{s.plan.name} plan · <Link to="/app/subscription" className="lnk">{LIVE && !capLive ? 'Deliver starts on Pro' : 'more on Elite'}</Link></em></div>
+          <div className="k lg stor"><small>Storage</small><b>{used} <span>of {LIVE ? capLive : CAP} GB</span></b><div className="bar"><i style={{ width: Math.min(100, (LIVE ? (capLive ? used / capLive : 1) : used / CAP) * 100) + '%' }} /></div><em className="n">{planLabel(s.plan.name)} plan · <Link to="/app/subscription" className="lnk">{LIVE && !capLive ? 'Deliver starts on Trybe Essential' : 'more on Trybe Studio'}</Link></em></div>
           {(LIVE ? [['Galleries', String(GALS.length), GALS.filter(x => x.exp < 7 && x.k !== 'done').length ? GALS.filter(x => x.exp < 7 && x.k !== 'done').length + ' expiring this week' : 'all links open', ''], ['Opened', String(GALS.filter(x => x.opened).length), 'galleries the client has opened', ''], ['Downloads', String(GALS.reduce((t, x) => t + (x.dl || 0), 0)), 'across every gallery', '']] : [['Delivering', String(GALS.filter(x => x.k === 'live').length), GALS.filter(x => x.k === 'live').map(x => x.n + ', ' + x.p + '%').join(' · ') || 'nothing uploading', ''], ['Opened this week', '17', 'across 3 galleries', 'n'], ['Downloads', String(GALS.reduce((t, x) => t + x.dl, 0)), 'this month', 'n']]).map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}
         </div></div>
 

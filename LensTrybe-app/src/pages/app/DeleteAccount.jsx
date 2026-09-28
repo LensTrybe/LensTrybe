@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import Icon from '../../components/Icon'
 import { accountAction, downloadMyData, formatDeletionDate } from '../../lib/account'
+import { planLabel } from '../../backend/tierFeatures'
 
 // Delete account, the live site's flow, in the workspace's own glass: what it affects (from the
 // delete-account preview), the offer to download everything first, a 6-digit code emailed to
@@ -32,7 +33,7 @@ export default function DeleteAccount({ kind = 'creative', demoStore, onClose, o
               <ul className="dellist">
                 {kind === 'creative' ? <>
                   <li>Straight away, your profile is hidden from search and the ask, your website goes offline and your listings are removed.</li>
-                  {sub && <li>Your {cap(sub.tier)} plan is cancelled now and will not renew. Reactivate before {formatDeletionDate(sub.next_charge_date || sub.current_period_end)} and it picks up where it left off.</li>}
+                  {sub && <li>Your {planLabel(sub.tier)} plan is cancelled now and will not renew. Reactivate before {formatDeletionDate(sub.next_charge_date || sub.current_period_end)} and it picks up where it left off.</li>}
                   <li>After {days} days, everything is permanently deleted: portfolio, clients, quotes, invoices, contracts, messages, files and reviews.</li>
                 </> : <>
                   <li>Your account is closed straight away.</li>

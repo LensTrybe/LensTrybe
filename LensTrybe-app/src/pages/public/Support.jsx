@@ -11,7 +11,7 @@ const TOPICS = [
 ]
 const FAQS = [
   ['start', 'What is LensTrybe?', 'A no-commission marketplace for Australian visual creatives, starting with photographers and videographers. Creatives keep everything they charge and pay a flat monthly subscription. Clients never pay to enquire or book.'],
-  ['start', 'How do I join as a creative?', 'Choose Join as a creative, pick a plan and set up your profile. Set up takes about ten minutes and you are live the same day. You can start on the free Basic plan and upgrade whenever you are ready.'],
+  ['start', 'How do I join as a creative?', 'Choose Join as a creative, pick a plan and set up your profile. Set up takes about ten minutes and you are live the same day. You can start on the Trybe Free plan and upgrade whenever you are ready.'],
   ['book', 'I am a client. How do I book a creative?', 'Say what you need in the ask bar on the home page, or browse Find a creative. Open a profile, pick a date and a package, and press Book. The quote, contract, deposit and files all live in one thread you can open from any phone.'],
   ['book', 'What happens after I book?', 'The creative gets your enquiry, a quote is built from their real rates, you sign the contract on your phone, pay the deposit, and the date locks on both calendars. Files arrive at one link after the shoot.'],
   ['book', 'Can I cancel or change a booking?', 'Yes. Open the thread and message the creative. Cancellation terms are in the contract you signed, in plain English, and the deposit terms are shown before you pay.'],
