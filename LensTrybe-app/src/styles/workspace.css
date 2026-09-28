@@ -1915,3 +1915,62 @@
 .ws .tour .skip:hover{color:var(--ink)}
 .ws .tour .skip.end{display:block;margin:10px auto 0}
 @media (prefers-reduced-motion:reduce){.ws .tour-dim,.ws .tour-ring{transition:none}.ws .tour-card{animation:none}}
+
+/* ── Phone overhaul (29 Sep, Michael: "items are squashed and don't fit") ───────────────────
+   Everything below applies to phones only. Nothing here changes the laptop layout. */
+@media (max-width:1180px){
+  /* Lumi slides over the page on tablets and phones, so it is solid, not see-through glass */
+  .ws .shell .dock,.ws .shell .dock.lg{background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 30px 80px -20px rgba(0,0,0,.45)}
+  .ws.dark .shell .dock,.ws.dark .shell .dock.lg{background:#12121a}
+}
+@media (max-width:900px){
+  /* every card is full width, whatever width it asks for on a laptop */
+  .ws .grid>*{grid-column:1/-1!important}
+  /* Lumi as a proper bottom sheet: tall, solid, above the tab bar */
+  .ws .shell .dock{inset:auto 8px calc(78px + env(safe-area-inset-bottom,0px)) 8px;height:auto;max-height:calc(100svh - 150px);min-height:60svh;border-radius:22px;z-index:70}
+  .ws .shell.dockopen~.dockbtn{display:none}
+  /* card headers: title on one line, filters and search underneath */
+  .ws .card .h{flex-wrap:wrap;row-gap:10px}
+  .ws .card .h .tfilt{flex:1 1 100%;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;min-width:0}
+  .ws .card .h .tfilt::-webkit-scrollbar{display:none}
+  .ws .card .h .tsearch{flex:1 1 100%;margin:0}
+  .ws .tfilt{flex-wrap:nowrap!important}
+}
+@media (max-width:560px){
+  /* list rows: icon and text on the first line (text allowed to wrap, not cut off), then the
+     amounts, badges and buttons on a second line, right-aligned */
+  .ws .need .r,.ws .ledger .lr,.ws .idea,.ws .tl .e:has(button){display:flex;flex-wrap:wrap;justify-content:flex-end;align-items:center;column-gap:8px;row-gap:10px}
+  .ws .need .r>:first-child,.ws .ledger .lr>:first-child,.ws .idea>:first-child,.ws .tl .e:has(button)>:first-child{flex:none}
+  .ws .need .r>:nth-child(2),.ws .ledger .lr>:nth-child(2),.ws .idea>:nth-child(2),.ws .tl .e:has(button)>:nth-child(2){flex:1 1 calc(100% - 60px);min-width:0}
+  .ws .idea>:first-child{width:64px}
+  .ws .need b,.ws .need small,.ws .ledger .lr b,.ws .ledger .lr small,.ws .idea b,.ws .idea small,.ws .tl .e b,.ws .tl .e small,.ws .up .d>div b,.ws .up .d>div small,.ws .up .d>div:nth-child(2) b,.ws .up .d>div:nth-child(2) small{white-space:normal;overflow:visible;text-overflow:clip;overflow-wrap:anywhere}
+  .ws .ledger .lr .dt{min-width:0;margin-right:auto}
+  .ws .need .do{flex-wrap:wrap;justify-content:flex-end}
+  /* client cards one per row */
+  .ws .cls,.ws .cls.narrow{grid-template-columns:minmax(0,1fr)}
+  /* review headers: name and details on one line, badges and stars under */
+  .ws .rev .rh{flex-wrap:wrap}
+  .ws .rev .rh>div{flex:1 1 calc(100% - 44px)}
+  /* a week of posts scrolls sideways instead of seven squeezed columns */
+  .ws .week{display:grid;grid-auto-flow:column;grid-auto-columns:132px;grid-template-columns:none!important;overflow-x:auto;scrollbar-width:none;padding-bottom:4px;min-height:0}
+  /* month bars and the reach chart fit the card */
+  .ws .mbars>*,.ws .mbars .mb{min-width:0}
+  .ws .mbars .mbv em,.ws .mbars .mbv small{font-size:8.5px}
+  /* key/value rows can wrap their value */
+  .ws .kv{gap:12px}.ws .kv b{text-align:right}
+  /* paper documents: long titles wrap */
+  .ws .paper .ctitle,.ws .paper h2,.ws .paper .ed{white-space:normal;overflow-wrap:anywhere;min-width:0}
+  /* the live website preview is shown smaller rather than cut off */
+  .ws .wsite{zoom:.72}
+}
+@media (max-width:560px){
+  .ws .up.mt .d>div:nth-child(3) b,.ws .up.mt .d>div:nth-child(3) small{white-space:normal;overflow:visible;text-overflow:clip}
+  .ws .up.mt .d{grid-template-columns:44px 36px minmax(0,1fr);row-gap:8px}
+  .ws .up.mt .d>:nth-child(n+4){grid-column:1/-1;justify-self:end}
+  .ws .tl .e>div{min-width:0}
+}
+@media (max-width:560px){
+  .ws .idea>:nth-child(2){flex-basis:calc(100% - 84px)}
+  .ws .paper.con .ctitle{font-size:17px;width:100%}
+  .ws .plans2{grid-template-columns:minmax(0,1fr)}
+}
