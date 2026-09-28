@@ -1789,16 +1789,17 @@
 .ws .gatepop li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--ink)}
 .ws .gatepop li svg{flex:none;margin-top:2px;color:var(--sig)}
 
-/* Clear glass (28 Sep). Same panels, same colour field behind them, but no frost: the blur that
-   turned every panel milky is gone, so the glass reads as glass. Rims, sheen and the pointer
-   highlight stay. */
-.ws .lg,.ws .lg.refract{-webkit-backdrop-filter:none;backdrop-filter:none}
+/* Crystal clear (28 Sep, Michael). No frost, no colour field, no sheen, no highlight sweeping
+   across a panel: every panel is one even, see-through surface with its rim. The layout, the
+   colours and the buttons are untouched. */
+.ws .aurora{display:none}
+.ws .lg,.ws .lg.refract{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--lg-flat)}
+.ws .lg::before,.ws .lg::after{display:none}
+.ws:not(.dark){--lg-flat:rgba(255,255,255,.55)}
+.ws.dark{--lg-flat:rgba(255,255,255,.045)}
+.ws.dark .main.lg{background:rgba(255,255,255,.03)}
+.ws.dark .main .card.lg,.ws.dark .main .kp .k.lg,.ws.dark .main .cl.lg{background:rgba(255,255,255,.045)}
 .ws .sheet{-webkit-backdrop-filter:none;backdrop-filter:none}
-.ws .lg::before{background:linear-gradient(118deg,var(--lg-sheen) 0%,rgba(255,255,255,.03) 26%,rgba(255,255,255,0) 50%)}
-.ws:not(.dark){--lg-tint:rgba(255,255,255,.5);--lg-tint-2:rgba(255,255,255,.3)}
-.ws.dark{--lg-tint:rgba(255,255,255,.07);--lg-tint-2:rgba(255,255,255,.03)}
-/* No blobs behind the workspace: a smooth wash from the top corners only, nothing that reads as a
-   circle through the clear glass. */
-.ws .aurora i{display:none}
-.ws .aurora{background:linear-gradient(165deg,rgba(159,214,203,.42) 0%,rgba(159,214,203,0) 42%),linear-gradient(200deg,rgba(243,179,207,.38) 0%,rgba(243,179,207,0) 44%),linear-gradient(0deg,rgba(201,179,238,.16) 0%,rgba(201,179,238,0) 40%)}
-.ws.dark .aurora{opacity:.5}
+.ws .sheet::before,.ws .sheet::after{display:none}
+.ws.dark .sheet{background:#101018}
+.ws:not(.dark) .sheet{background:#fff}
