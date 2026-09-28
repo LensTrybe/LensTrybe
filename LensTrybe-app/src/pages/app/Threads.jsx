@@ -30,7 +30,7 @@ export default function Threads() {
   }, [id, nav, T]) // eslint-disable-line react-hooks/exhaustive-deps
   return (
     <section className="view fill">
-      <div className="tw">
+      <div className={'tw' + (id ? ' open' : '')}>
         <aside className="tlist lg">
           <div className="tlh">
             <h1>Threads</h1>
@@ -91,6 +91,7 @@ function ThreadPane({ t, F }) {
   return (
     <div className="tp lg">
       <div className="tph">
+        <button type="button" className="tback" aria-label="All threads" onClick={() => F.nav('/app/threads')}><Icon name="back" size={16} /></button>
         <span className="av" style={{ background: t.g }} />
         <div className="tx"><h2>{t.n}</h2><p>{t.s}</p></div>
         <div className="acts">

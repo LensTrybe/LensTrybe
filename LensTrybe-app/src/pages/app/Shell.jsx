@@ -51,7 +51,7 @@ import { planLabel } from '../../backend/tierFeatures'
 import { Gate, usePlanGate, gateKeyFor } from './PlanGate'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
-const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money'], ['clients', 'Clients', 'user']]
+const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money']]
 // The bell: what happened since you last looked, each one a link to the thing.
 function Bell() {
   const { s } = useStore(); const { open, close } = useSheet(); const nav = useNavigate()
@@ -134,6 +134,26 @@ function LiveSync() {
     return () => { on = false; clearInterval(t); removeEventListener('visibilitychange', run); removeEventListener('lt-refresh', run) }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
   return null
+}
+
+// Phones have no sidebar, so the tab bar's More opens every page, grouped the same way, with the
+// name card (light/dark and Log out) at the foot (item 16, 29 Sep).
+function MoreMenu({ dark, setDark, active }) {
+  const { close } = useSheet(); const nav = useNavigate(); const { gate } = usePlanGate()
+  const go = k => { close(); nav('/app/' + k) }
+  const row = ([k, l, ic]) => <button key={k} type="button" className={'mrow' + (active(k) ? ' on' : '')} onClick={() => go(k)}><Icon name={ic} size={16} /><span>{l}</span>{gate(k) && <Icon name="lock" size={12} />}</button>
+  return (
+    <div className="more">
+      <div className="mgrp">{TOP.map(row)}{row(['lumi', 'Lumi', 'spark'])}</div>
+      {GROUPS.map(([g, , items]) => <div key={g} className="mgrp"><b>{g}</b>{items.map(row)}</div>)}
+      <MeCard dark={dark} setDark={setDark} />
+    </div>
+  )
+}
+function MoreTab({ dark, setDark, active }) {
+  const { open } = useSheet()
+  const inMore = !TABS.some(t => active(t[0]))
+  return <button type="button" className={inMore ? 'on' : ''} onClick={() => open({ title: 'Menu', noSubmit: true, cancel: 'Close', body: <MoreMenu dark={dark} setDark={setDark} active={active} /> })}><Icon name="menu" />More</button>
 }
 
 // The name card at the foot of the sidebar: who you are and your plan on one line each, then the
@@ -221,7 +241,7 @@ export default function Shell() {
         <Gate k="lumi" bar={false}><Dock onClose={() => { setDock(false); setDockM(false) }} /></Gate>
       </div>
       <button className="dockbtn" aria-label="Lumi" onClick={() => setDockM(d => !d)}><span className="lm" /></button>
-      <nav className="tabbar lg" aria-label="Sections">{TABS.map(([k, l, ic]) => <button key={k} className={active(k) ? 'on' : ''} onClick={() => nav('/app/' + k)}><Icon name={ic} />{l}</button>)}</nav>
+      <nav className="tabbar lg" aria-label="Sections">{TABS.map(([k, l, ic]) => <button key={k} className={active(k) ? 'on' : ''} onClick={() => nav('/app/' + k)}><Icon name={ic} />{l}</button>)}<MoreTab dark={dark} setDark={setDark} active={active} /></nav>
     </SheetProvider></div>
   )
 }

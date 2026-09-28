@@ -38,10 +38,10 @@
 .ws .nl.on svg{opacity:1;color:var(--sig)}
 .ws .nl .n{margin-left:auto;font-size:11px;font-weight:700;background:var(--sig);color:var(--sig-ink);padding:1px 7px;border-radius:99px;min-width:20px;text-align:center}
 .ws .nl .dot{margin-left:auto;width:7px;height:7px;border-radius:50%;background:var(--sig);box-shadow:0 0 8px var(--sig-glow)}
-.ws .rail .me{margin-top:auto;padding:10px;border-radius:16px;display:flex;align-items:center;gap:10px;font-size:12.5px}
-.ws .rail .me .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2c3a5e,#7fa8e8);flex:none;position:relative}
-.ws .rail .me .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--sig);border:2px solid var(--bg-2);box-shadow:0 0 8px var(--sig-glow)}
-.ws .rail .me b{display:block;font-size:13px}.ws .rail .me small{color:var(--ink-3)}
+.ws :is(.rail,.more) .me{margin-top:auto;padding:10px;border-radius:16px;display:flex;align-items:center;gap:10px;font-size:12.5px}
+.ws :is(.rail,.more) .me .av{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#2c3a5e,#7fa8e8);flex:none;position:relative}
+.ws :is(.rail,.more) .me .av::after{content:"";position:absolute;right:-1px;bottom:-1px;width:10px;height:10px;border-radius:50%;background:var(--sig);border:2px solid var(--bg-2);box-shadow:0 0 8px var(--sig-glow)}
+.ws :is(.rail,.more) .me b{display:block;font-size:13px}.ws :is(.rail,.more) .me small{color:var(--ink-3)}
 .ws .rail .tg{margin-left:auto;width:32px;height:32px;border-radius:50%;display:grid;place-items:center;color:var(--ink-2);background:var(--hov);transition:transform .35s var(--spring)}
 .ws .rail .tg:hover{transform:rotate(20deg)}
 
@@ -1815,22 +1815,22 @@
 
 /* The sidebar name card (29 Sep): name and plan on one line each, then a light/dark switch and a
    proper Log out button underneath, instead of two small grey circles squeezing the name. */
-.ws .rail .me{flex-direction:column;align-items:stretch;gap:10px;padding:12px}
-.ws .rail .me .who{display:flex;align-items:center;gap:10px;min-width:0}
-.ws .rail .me .who>div{min-width:0;flex:1}
-.ws .rail .me .who b,.ws .rail .me .who small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ws .rail .me .who b{font-size:13.5px;line-height:1.25}
-.ws .rail .me .who small{font-size:11.5px;margin-top:2px}
-.ws .rail .me .acts{display:flex;gap:8px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
-.ws .rail .me .thm{position:relative;display:grid;grid-template-columns:1fr 1fr;width:64px;height:30px;padding:3px;border-radius:999px;background:var(--hov);border:1px solid var(--line);flex:none;cursor:pointer}
-.ws .rail .me .thm span{position:relative;z-index:1;display:grid;place-items:center;color:var(--ink-3);transition:color .3s}
-.ws .rail .me .thm i{position:absolute;top:3px;left:3px;width:28px;height:22px;border-radius:999px;background:var(--bg-2);box-shadow:0 1px 3px rgba(0,0,0,.18),inset 0 0 0 1px var(--line);transition:transform .35s var(--spring)}
-.ws .rail .me .thm:not(.dk) span:first-of-type,.ws .rail .me .thm.dk span:last-of-type{color:var(--ink)}
-.ws .rail .me .thm.dk i{transform:translateX(28px)}
-.ws .rail .me .lo{flex:1;height:30px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;border:1px solid var(--line-2);font-size:12.5px;font-weight:600;color:var(--ink-2);transition:color .2s,background .2s,border-color .2s}
-.ws .rail .me .lo:hover{color:var(--ink);background:var(--hov);border-color:var(--ink-3)}
-.ws .rail .me .thm:focus-visible,.ws .rail .me .lo:focus-visible{outline:2px solid var(--sig-rim);outline-offset:2px}
-.ws .rail .me .who small .fd{display:inline-flex;vertical-align:-1px;margin-right:4px;font-style:normal;color:var(--sig)}
+.ws :is(.rail,.more) .me{flex-direction:column;align-items:stretch;gap:10px;padding:12px}
+.ws :is(.rail,.more) .me .who{display:flex;align-items:center;gap:10px;min-width:0}
+.ws :is(.rail,.more) .me .who>div{min-width:0;flex:1}
+.ws :is(.rail,.more) .me .who b,.ws :is(.rail,.more) .me .who small{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ws :is(.rail,.more) .me .who b{font-size:13.5px;line-height:1.25}
+.ws :is(.rail,.more) .me .who small{font-size:11.5px;margin-top:2px}
+.ws :is(.rail,.more) .me .acts{display:flex;gap:8px;align-items:center;padding-top:10px;border-top:1px solid var(--line)}
+.ws :is(.rail,.more) .me .thm{position:relative;display:grid;grid-template-columns:1fr 1fr;width:64px;height:30px;padding:3px;border-radius:999px;background:var(--hov);border:1px solid var(--line);flex:none;cursor:pointer}
+.ws :is(.rail,.more) .me .thm span{position:relative;z-index:1;display:grid;place-items:center;color:var(--ink-3);transition:color .3s}
+.ws :is(.rail,.more) .me .thm i{position:absolute;top:3px;left:3px;width:28px;height:22px;border-radius:999px;background:var(--bg-2);box-shadow:0 1px 3px rgba(0,0,0,.18),inset 0 0 0 1px var(--line);transition:transform .35s var(--spring)}
+.ws :is(.rail,.more) .me .thm:not(.dk) span:first-of-type,.ws :is(.rail,.more) .me .thm.dk span:last-of-type{color:var(--ink)}
+.ws :is(.rail,.more) .me .thm.dk i{transform:translateX(28px)}
+.ws :is(.rail,.more) .me .lo{flex:1;height:30px;display:flex;align-items:center;justify-content:center;gap:7px;border-radius:999px;border:1px solid var(--line-2);font-size:12.5px;font-weight:600;color:var(--ink-2);transition:color .2s,background .2s,border-color .2s}
+.ws :is(.rail,.more) .me .lo:hover{color:var(--ink);background:var(--hov);border-color:var(--ink-3)}
+.ws :is(.rail,.more) .me .thm:focus-visible,.ws :is(.rail,.more) .me .lo:focus-visible{outline:2px solid var(--sig-rim);outline-offset:2px}
+.ws :is(.rail,.more) .me .who small .fd{display:inline-flex;vertical-align:-1px;margin-right:4px;font-style:normal;color:var(--sig)}
 .ws:not(.dark) .rail .me .who small .fd{color:#0E7C3A}
 
 /* Light mode, "Sand" (Michael, 29 Sep: the old light was "loud and way too bright"). A warm paper
@@ -1843,3 +1843,56 @@
 .ws:not(.dark) .sf input,.ws:not(.dark) .sf select,.ws:not(.dark) .sf textarea{background:rgba(255,252,246,.8)}
 .ws:not(.dark) .sheetbk.on{background:rgba(42,38,32,.28)}
 .ws:not(.dark) .rail .me .who small .fd{color:var(--sig)}
+
+/* Phones and small tablets (item 16, 29 Sep). The page header's buttons wrap onto their own row
+   instead of pushing the page sideways, wide pieces shrink to the screen, and the tab bar is solid
+   so nothing shows through it. */
+@media (max-width:900px){
+  .ws{overflow-x:clip}
+  .ws .main{min-width:0;max-width:100%}
+  .ws .main>*{min-width:0;max-width:100%}
+  .ws .vh{align-items:flex-start}
+  .ws .vh>div:first-child{flex:1 1 100%}
+  .ws .vh .acts{flex:1 1 100%;flex-wrap:wrap}
+  .ws .vh .acts .tfilt,.ws .vh .acts .seg3{overflow-x:auto;scrollbar-width:none;flex:0 1 auto;min-width:0;padding-bottom:0}
+  .ws .tsearch{min-width:0;max-width:100%}
+  .ws .pubp .hero{aspect-ratio:auto;min-height:0}
+  .ws .pubp .hero .in,.ws .pubp .hero h2,.ws .pubp .hero p{max-width:100%;white-space:normal}
+  .ws .mbars{gap:3px}
+  .ws .mbars .mb small,.ws .mbars .mb em{font-size:9.5px}
+  .ws .tabbar{background:var(--bg-2);border:1px solid var(--line-2);box-shadow:0 10px 30px -12px rgba(0,0,0,.35)}
+  .ws.dark .tabbar{background:#15151d}
+  .ws .dockbtn{box-shadow:0 8px 24px -8px rgba(0,0,0,.4)}
+}
+/* Phones: the More menu, and Threads/Notes as list-then-item with a back arrow. */
+.ws .tback{display:none}
+.ws .more{display:flex;flex-direction:column;gap:14px}
+.ws .more .mgrp{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.ws .more .mgrp b{grid-column:1/-1;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin:4px 2px 0}
+.ws .more .mrow{display:flex;align-items:center;gap:10px;height:44px;padding:0 12px;border-radius:14px;background:var(--paper);border:1px solid var(--line);font-size:13.5px;font-weight:500;color:var(--ink);text-align:left;min-width:0}
+.ws .more .mrow span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ws .more .mrow svg{flex:none;color:var(--ink-2)}
+.ws .more .mrow.on{border-color:var(--sig-rim);background:var(--sig-bg)}
+.ws .more .me{margin-top:4px;padding:12px;border-radius:16px;background:var(--paper);border:1px solid var(--line)}
+@media (max-width:900px){
+  .ws .tw,.ws .tw.notes{grid-template-columns:minmax(0,1fr)}
+  .ws .tw:not(.open)>.tp{display:none}
+  .ws .tw.open>.tlist{display:none}
+  .ws .tlist{max-height:none}
+  .ws .tback{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;flex:none;color:var(--ink);background:var(--hov)}
+  .ws .tabbar button{min-width:0}
+  .ws .tph{flex-wrap:wrap;row-gap:10px}
+  .ws .tph .tx{flex:1 1 0}
+  .ws .tph .acts{flex:1 1 100%;justify-content:flex-end}
+  .ws .tph .av{width:34px;height:34px}
+  .ws .pubp .hero{min-height:300px}
+  .ws .ins .kp.six,.ws .kp.six{grid-template-columns:1fr 1fr}
+  .ws .ctas{flex-wrap:wrap}
+}
+/* Tablets held sideways and small laptops: the page title keeps room for itself and the buttons
+   wrap under it, instead of the title being squeezed one word per line (Calendar at 1024px). */
+@media (max-width:1180px){
+  .ws .vh{flex-wrap:wrap;row-gap:12px}
+  .ws .vh>div:first-child{flex:1 1 300px}
+  .ws .vh .acts{flex:0 1 auto;flex-wrap:wrap}
+}

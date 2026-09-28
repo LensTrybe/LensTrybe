@@ -966,3 +966,11 @@
 .pub .fdtop .fdhero{display:flex;flex-direction:column;align-items:center;text-align:center}
 .pub .fdtop h1{font-size:clamp(40px,5.6vw,80px)}
 .pub .lpane.unsc .eb{color:var(--neon-t)}
+
+/* Phones (item 16, 29 Sep): What's coming's status pills and discipline tiles fit the screen. */
+@media (max-width:560px){
+  .pub .seg{max-width:100%;overflow-x:auto;scrollbar-width:none}
+  .pub .seg button{flex:none;padding:7px 11px}
+  .pub .skillrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .pub .skill{min-width:0}.pub .skill b,.pub .skill span{min-width:0;overflow-wrap:anywhere}
+}
