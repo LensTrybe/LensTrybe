@@ -150,7 +150,7 @@ function MeCard({ dark, setDark }) {
   })
   return (
     <div className="me lg">
-      <div className="who"><span className="av" style={photo} /><div><b title={s.profile.n}>{s.profile.n}</b><small>{s.plan.founding && <em className="fd" title="Founding creative" aria-label="Founding creative"><Icon name="star" size={11} /></em>}{plan}</small></div></div>
+      <div className="who"><span className="av" style={photo} /><div><b title={s.profile.n}>{s.profile.n}</b><small>{!!s.plan.founding && <em className="fd" title="Founding creative" aria-label="Founding creative"><Icon name="star" size={11} /></em>}{plan}</small></div></div>
       <div className="acts">
         <button type="button" className={'thm' + (dark ? ' dk' : '')} role="switch" aria-checked={dark} aria-label="Dark mode" title={dark ? 'Switch to light' : 'Switch to dark'} onClick={() => setDark(d => !d)}>
           <i aria-hidden="true" /><span><Icon name="sun" size={14} /></span><span><Icon name="moon" size={14} /></span>

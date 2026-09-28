@@ -1832,3 +1832,14 @@
 .ws .rail .me .thm:focus-visible,.ws .rail .me .lo:focus-visible{outline:2px solid var(--sig-rim);outline-offset:2px}
 .ws .rail .me .who small .fd{display:inline-flex;vertical-align:-1px;margin-right:4px;font-style:normal;color:var(--sig)}
 .ws:not(.dark) .rail .me .who small .fd{color:#0E7C3A}
+
+/* Light mode, "Sand" (Michael, 29 Sep: the old light was "loud and way too bright"). A warm paper
+   page, panels a shade lighter, softer ink and a sage green for the signal colour. Layout, buttons
+   and spacing are unchanged; only the tone moves. Dark mode is untouched. */
+.ws:not(.dark){--bg:#e9e4da;--bg-2:#f4f0e9;--lg-flat:rgba(255,252,246,.42);--paper:rgba(255,252,246,.45);--paper-2:rgba(255,252,246,.6);--hov:rgba(42,38,32,.05);
+  --ink:#2a2620;--ink-2:#625b51;--ink-3:#978f84;--line:rgba(42,38,32,.08);--line-2:rgba(42,38,32,.14);
+  --sig:#4b7555;--green-t:#4b7555;--sig-bg:rgba(75,117,85,.1);--sig-rim:rgba(75,117,85,.3);--sig-glow:rgba(75,117,85,.16);--c-mint:75,117,85}
+.ws:not(.dark) .sheet{background:#f4f0e9}
+.ws:not(.dark) .sf input,.ws:not(.dark) .sf select,.ws:not(.dark) .sf textarea{background:rgba(255,252,246,.8)}
+.ws:not(.dark) .sheetbk.on{background:rgba(42,38,32,.28)}
+.ws:not(.dark) .rail .me .who small .fd{color:var(--sig)}
