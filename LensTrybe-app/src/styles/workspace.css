@@ -1772,3 +1772,19 @@
 
 /* square marks (SVG monograms have no size of their own) */
 .ws .lvb img[src$=".svg"],.ws .lvb img[src^="data:image/svg"]{width:64px;height:64px;max-width:none;max-height:none;border-radius:14px}
+
+/* Plan gate (item 7, 28 Sep): lock in the sidebar, slim banner on the page, upgrade pop-up on use */
+.ws .nl .lk{margin-left:auto;display:inline-flex;color:var(--ink-3);opacity:.8}
+.ws .nl .n+.lk{margin-left:8px}
+.ws .gatebar{display:flex;align-items:center;gap:12px;padding:10px 12px 10px 14px;margin:0 0 18px;border-radius:14px;background:var(--sig-bg);border:1px solid var(--sig-rim);color:var(--ink)}
+.ws .gatebar>svg{flex:none;color:var(--ink-2)}
+.ws .gatebar>div{flex:1;min-width:0}
+.ws .gatebar b{display:block;font-size:13.5px}
+.ws .gatebar span{display:block;font-size:12.5px;color:var(--ink-2);margin-top:1px}
+.ws .gatebar .btn{flex:none}
+@media (max-width:560px){.ws .gatebar{flex-wrap:wrap}.ws .gatebar .btn{width:100%;justify-content:center}}
+.ws .gatepop p{color:var(--ink-2);line-height:1.55;margin:0 0 14px}
+.ws .gatepop small{display:block;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);font-weight:700;margin-bottom:8px}
+.ws .gatepop ul{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.ws .gatepop li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--ink)}
+.ws .gatepop li svg{flex:none;margin-top:2px;color:var(--sig)}

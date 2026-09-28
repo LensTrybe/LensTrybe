@@ -48,6 +48,7 @@ import { EditProfile, ViewProfile, Subscription, Referrals, Founding, Settings, 
 import { TOP, GROUPS, HIDDEN } from './nav'
 import '../../styles/workspace.css'
 import { planLabel } from '../../backend/tierFeatures'
+import { Gate, usePlanGate, gateKeyFor } from './PlanGate'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
 const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money'], ['clients', 'Clients', 'user']]
@@ -151,7 +152,9 @@ export default function Shell() {
   const here = GROUPS.find(g => g[2].some(i => active(i[0])))?.[0] || null
   const [open, setOpen] = useState(here)
   useEffect(() => { if (here) setOpen(here) }, [here])
-  const item = ([k, l, ic]) => <NavLink key={k} to={'/app/' + k} className={'nl' + (active(k) ? ' on' : '')}><Icon name={ic} />{l}{k === 'threads' && need > 0 && <span className="n">{need}</span>}</NavLink>
+  const { gate } = usePlanGate()
+  const lock = k => gate(k) && <span className="lk" title={'On ' + gate(k).plan}><Icon name="lock" size={12} /></span>
+  const item = ([k, l, ic]) => <NavLink key={k} to={'/app/' + k} className={'nl' + (active(k) ? ' on' : '')}><Icon name={ic} />{l}{k === 'threads' && need > 0 && <span className="n">{need}</span>}{lock(k)}</NavLink>
   const group = ([g, ic, items]) => (
     <div key={g} className={'gp' + (open === g ? ' open' : '') + (here === g ? ' here' : '')}>
       <button type="button" className="gh" onClick={() => setOpen(o => o === g ? null : g)} aria-expanded={open === g}><Icon name={ic} />{g}<Icon name="chev" className="cv" size={13} /></button>
@@ -168,7 +171,7 @@ export default function Shell() {
           <div className="sep" />
           {GROUPS.map(group)}
           <div className="sep" />
-          <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && <span className="dot" aria-hidden="true" />}</NavLink>
+          <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && !gate('lumi') && <span className="dot" aria-hidden="true" />}{lock('lumi')}</NavLink>
           <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{planLabel(s.plan.name)}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button><button className="tg" onClick={async () => { await signOut(); nav('/login', { replace: true }) }} aria-label="Log out" title="Log out"><Icon name="out" size={15} /></button></div>
         </aside>
         <header className="top">
@@ -177,7 +180,7 @@ export default function Shell() {
           <button className={'ic lg hm' + (dock ? ' on' : '')} aria-label={dock ? 'Put Lumi away' : 'Show Lumi'} aria-pressed={dock} onClick={toggle}><span className="lm" /></button>
         </header>
         <main className="main lg" id="wsmain">
-          <Routes>
+          <Gate k={gateKeyFor(pathname)}><Routes>
             <Route index element={<Today />} />
             <Route path="thread/:id" element={<Thread />} />
             <Route path="project/:id" element={<ProjectDetail />} />
@@ -188,9 +191,9 @@ export default function Shell() {
             <Route path="contract/new" element={<ContractEditor />} />
             <Route path="contract/:id" element={<ContractEditor />} />
             {[...TOP, ...GROUPS.flatMap(g => g[2]), ...HIDDEN, ['lumi']].map(([k]) => { const C = BUILT[k]; return <Route key={k} path={k} element={C ? <C /> : <Soon id={k} />} /> })}
-          </Routes>
+          </Routes></Gate>
         </main>
-        <Dock onClose={() => { setDock(false); setDockM(false) }} />
+        <Gate k="lumi" bar={false}><Dock onClose={() => { setDock(false); setDockM(false) }} /></Gate>
       </div>
       <button className="dockbtn" aria-label="Lumi" onClick={() => setDockM(d => !d)}><span className="lm" /></button>
       <nav className="tabbar lg" aria-label="Sections">{TABS.map(([k, l, ic]) => <button key={k} className={active(k) ? 'on' : ''} onClick={() => nav('/app/' + k)}><Icon name={ic} />{l}</button>)}</nav>
