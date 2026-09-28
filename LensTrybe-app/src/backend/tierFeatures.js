@@ -95,8 +95,8 @@ export const TIER_FEATURES = {
     bookingsPerMonth: 5,
     repliesPerMonth: 20,
     shareContactDetails: false,
-    quotes: false,
-    invoicing: false,
+    quotes: true,
+    invoicing: true,
     contracts: false,
     crmRecords: 25,
     clientPortals: false,
@@ -348,7 +348,7 @@ export function planUpgradeLines(tier) {
 // full list lives in the comparison table below the cards.
 export const PLAN_CARD_FEATURES = {
   basic: ['portfolioPhotos', 'publicListing', 'searchScope', 'bookingsPerMonth', 'repliesPerMonth', 'marketplaceListings'],
-  pro: ['portfolioPhotos', 'portfolioVideos', 'website', 'bookingsPerMonth', 'repliesPerMonth', 'crmRecords', 'insights', 'lumiPerMonth', 'reviewRequests', 'searchScope'],
+  pro: ['portfolioPhotos', 'portfolioVideos', 'website', 'bookingsPerMonth', 'quotes', 'invoicing', 'repliesPerMonth', 'crmRecords', 'insights', 'lumiPerMonth', 'reviewRequests', 'searchScope'],
   expert: ['portfolioPhotos', 'website', 'bookingsPerMonth', 'quotes', 'invoicing', 'contracts', 'crmRecords', 'clientPortals', 'deliverGb', 'brandKit', 'lumiPerMonth', 'profilePoster', 'shareContactDetails'],
   elite: ['portfolioPhotos', 'crmRecords', 'deliverGb', 'teamSeats', 'studioProfile', 'customDomain', 'marketplaceListings', 'eliteSpotlight'],
 }

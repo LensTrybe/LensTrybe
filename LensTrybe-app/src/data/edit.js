@@ -18,7 +18,7 @@ export const ISSUES = [
         "### Pick up work from the job board",
         "Clients post jobs for free, with the date, the location and the budget up front. You can browse every job on any plan. Until 31 December, every plan, including Trybe Free, can reply to any job anywhere in Australia. After that, Trybe Essential replies to jobs in your own state, and Trybe Complete and Trybe Studio reply anywhere. Your reply includes your price, what's included and a short message, and the client picks who they want.",
         "### Run the job from one place",
-        "On Trybe Complete and Trybe Studio, everything after the enquiry lives in LensTrybe. Quotes the client can accept online. Contracts they sign on their phone. Invoices with payment tracking. A branded client portal where they see everything about their booking in one spot. And when the shoot is done, you deliver the files through **LensTrybe Deliver** with your branding.",
+        "From Trybe Essential up, you send quotes the client can accept online and invoices with payment tracking. On Trybe Complete and Trybe Studio, the rest of the job lives in LensTrybe too. Contracts they sign on their phone. A branded client portal where they see everything about their booking in one spot. And when the shoot is done, you deliver the files through **LensTrybe Deliver** with your branding.",
         "### Work with other creatives",
         "**Collaborate** is where you find a second shooter or post a collab. The **Marketplace** is where you buy and sell gear with other creatives. On Trybe Studio, you can bring up to four team members into your workspace.",
         "> LensTrybe takes no commission on your jobs, ever. We make our money from plans, and Trybe Free is free for good.",
@@ -27,8 +27,8 @@ export const ISSUES = [
         "Every plan keeps 100% of what you earn. Pick the one that fits where your business is now, and change it any time.",
       ], plans: [
         { n: 'Trybe Free', p: 'Free', s: 'Always free', who: 'Getting found and building your presence', d: 'A public profile in Find a Creative, 5 portfolio photos and 3 bookings a month.', tags: ['Profile', 'Find a Creative', 'Browse jobs'] },
-        { n: 'Trybe Essential', p: '$24.99/mo', s: 'or $249.90 a year', who: 'Looking the part and taking bookings', d: 'Your own website, 5 bookings a month, a client list, review requests, and job replies in your state.', tags: ['Website', 'Job replies in your state', 'Reviews'] },
-        { n: 'Trybe Complete', p: '$74.99/mo', s: 'or $749.90 a year', who: 'Running your whole business in one place', hot: true, d: 'Quotes, contracts, invoicing, client portals and Deliver, unlimited bookings, and job replies anywhere in Australia.', tags: ['Quotes', 'Contracts', 'Invoicing', 'Client portals'] },
+        { n: 'Trybe Essential', p: '$24.99/mo', s: 'or $249.90 a year', who: 'Looking the part and taking bookings', d: 'Your own website, quotes and invoices, 5 bookings a month, a client list, review requests, and job replies in your state.', tags: ['Website', 'Quotes', 'Invoicing', 'Job replies in your state'] },
+        { n: 'Trybe Complete', p: '$74.99/mo', s: 'or $749.90 a year', who: 'Running your whole business in one place', hot: true, d: 'Everything in Trybe Essential, plus contracts, client portals and Deliver, unlimited bookings, and job replies anywhere in Australia.', tags: ['Contracts', 'Client portals', 'Deliver', 'Reply anywhere'] },
         { n: 'Trybe Studio', p: '$149.99/mo', s: 'or $1,499.90 a year', who: 'Studios and teams', d: 'Everything in Trybe Complete, plus a team of up to four, your own domain and the homepage spotlight.', tags: ['Team', 'Own domain', 'Homepage spotlight'] },
       ], after: '**Annual plans get you two months free.**' },
       { k: 'checklist', label: 'The ten-minute checklist', h: 'Get into Find a Creative in *ten minutes*', body: [

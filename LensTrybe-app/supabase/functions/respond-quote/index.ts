@@ -1,0 +1,154 @@
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8'
+
+const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
+function json(body: Record<string, unknown>, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...cors, 'Content-Type': 'application/json' } }) }
+
+// ---- LensTrybe shared email template (inlined) ----
+const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
+const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
+function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;') }
+function panel(innerHtml: string) { return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;">${innerHtml}</td></tr></table>` }
+function fieldRow(label: string, valueHtml: string) { return `<div style="margin:0 0 12px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:${BRAND.faint};margin-bottom:3px;">${esc(label)}</div><div style="font-size:14px;color:${BRAND.text};line-height:1.55;">${valueHtml}</div></div>` }
+function emailShell(opts: { preheader?: string; kicker?: string; heading: string; intro?: string; panelHtml?: string; ctaText?: string; ctaUrl?: string; footNote?: string }) {
+  const { preheader = '', kicker = '', heading, intro = '', panelHtml = '', ctaText, ctaUrl, footNote = '' } = opts
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:${BRAND.pageBg};">
+<span style="display:none;max-height:0;overflow:hidden;opacity:0;color:${BRAND.pageBg};">${esc(preheader)}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.pageBg};padding:40px 16px;font-family:${BRAND.font};">
+<tr><td align="center">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.card};border:1px solid ${BRAND.border};border-radius:16px;overflow:hidden;">
+<tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
+<tr><td style="padding:22px 36px 8px;">
+${kicker ? `<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${BRAND.green};margin-bottom:10px;">${esc(kicker)}</div>` : ''}
+<h1 style="margin:0 0 ${intro ? '10px' : '4px'};font-size:23px;line-height:1.25;font-weight:800;color:${BRAND.text};">${heading}</h1>
+${intro ? `<p style="margin:0;color:${BRAND.muted};font-size:15px;line-height:1.6;">${intro}</p>` : ''}
+</td></tr>
+${panelHtml ? `<tr><td style="padding:18px 36px 0;">${panelHtml}</td></tr>` : ''}
+${ctaText && ctaUrl ? `<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${BRAND.green};"><a href="${ctaUrl}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:${BRAND.btnText};text-decoration:none;font-family:${BRAND.font};">${esc(ctaText)}</a></td></tr></table></td></tr>` : ''}
+${footNote ? `<tr><td style="padding:18px 36px 0;"><p style="margin:0;color:${BRAND.faint};font-size:12px;line-height:1.6;">${footNote}</p></td></tr>` : ''}
+<tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid ${BRAND.border};padding-top:18px;"><div style="font-size:12px;font-weight:400;letter-spacing:0.24em;color:${BRAND.text};">LENSTRYBE</div><div style="font-size:12px;color:${BRAND.faint};margin-top:2px;">Connect. Capture. Create.</div><a href="https://lenstrybe.com" style="font-size:12px;color:${BRAND.green};text-decoration:none;">lenstrybe.com</a></div></td></tr>
+</table></td></tr></table></body></html>`
+}
+async function sendEmail(resendKey: string, args: { to: string; subject: string; html: string; replyTo?: string }) {
+  const body: Record<string, unknown> = { from: FROM, to: [args.to], subject: args.subject, html: args.html }
+  if (args.replyTo) body.reply_to = args.replyTo
+  return fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+}
+function money(v: unknown) { const n = Number(v); if (!Number.isFinite(n)) return ''; try { return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(n) } catch { return `$${n}` } }
+// ---- end shared ----
+
+// A client accepts or declines a quote. Two ways in:
+//   { quote_id, portal_token, action }  from the client portal (the portal must own the quote)
+//   { view_token, action }              from the quote's own emailed link (/doc/quote/<view_token>),
+//                                       for creatives without client portals (Trybe Essential, 28 Sep)
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
+  if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+  const resendKey = Deno.env.get('RESEND_API_KEY')!
+  const supabase = createClient(supabaseUrl, serviceKey)
+
+  let body: Record<string, unknown>
+  try { body = await req.json() } catch { return json({ error: 'Invalid JSON' }, 400) }
+
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  const quoteIdIn = String(body.quote_id || body.quoteId || '')
+  const portalToken = String(body.portal_token || body.portalToken || '')
+  const viewToken = String(body.view_token || body.viewToken || '')
+  const action = String(body.action || '').toLowerCase()
+  // 'status' (view link only) tells the quote page whether to show the Accept and Decline buttons.
+  if (action !== 'accept' && action !== 'decline' && !(action === 'status' && viewToken)) return json({ error: 'action must be accept or decline' }, 400)
+
+  let quote: Record<string, any> | null = null
+  let clientEmail = '', clientNameFrom = ''
+  if (viewToken) {
+    if (!UUID_RE.test(viewToken)) return json({ error: 'Quote not found' }, 404)
+    const { data: allowed } = await supabase.rpc('rate_limit_hit', { p_key: 'respond-quote:view:' + viewToken, p_max: 20, p_window_seconds: 3600 })
+    if (allowed === false) return json({ error: 'Too many tries. Please wait a little and try again.' }, 429)
+    const { data } = await supabase.from('quotes').select('*').eq('view_token', viewToken).maybeSingle()
+    if (!data) return json({ error: 'Quote not found' }, 404)
+    quote = data; clientEmail = String(data.client_email || ''); clientNameFrom = String(data.client_name || '')
+  } else {
+    if (quoteIdIn && !UUID_RE.test(quoteIdIn)) return json({ error: 'Quote not found' }, 404)
+    if (portalToken && !UUID_RE.test(portalToken)) return json({ error: 'Invalid portal' }, 403)
+    if (!quoteIdIn || !portalToken) return json({ error: 'quote_id and portal_token required' }, 400)
+    // Authenticate via the portal token: it maps to a client + creative.
+    const { data: portal } = await supabase.from('client_portals').select('creative_id, client_email, client_name').eq('portal_token', portalToken).maybeSingle()
+    if (!portal) return json({ error: 'Invalid portal' }, 403)
+    const { data } = await supabase.from('quotes').select('*').eq('id', quoteIdIn).maybeSingle()
+    if (!data) return json({ error: 'Quote not found' }, 404)
+    // The quote must belong to this portal's client + creative.
+    if (data.creative_id !== portal.creative_id || (data.client_email || '').toLowerCase() !== (portal.client_email || '').toLowerCase()) {
+      return json({ error: 'This quote does not belong to your portal' }, 403)
+    }
+    quote = data; clientEmail = String(portal.client_email || ''); clientNameFrom = String(portal.client_name || '')
+  }
+  const quoteId = String(quote!.id)
+
+  const current = String(quote!.status || '').toLowerCase()
+  if (action === 'status') {
+    if (current === 'draft') return json({ error: 'Quote not found' }, 404)
+    const todayAu = new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
+    const expired = !!quote!.valid_until && String(quote!.valid_until).slice(0, 10) < todayAu
+    return json({ status: current, expired })
+  }
+  // Only respond to a quote that is still open.
+  if (current === 'accepted' || current === 'declined') return json({ error: 'This quote has already been responded to', status: current }, 409)
+  // Drafts (and any other non-sent state) cannot be accepted or declined.
+  if (current !== 'sent' && current !== 'viewed') return json({ error: 'This quote is not open for a response' }, 409)
+  // Expired quotes cannot be accepted or declined (valid_until is inclusive, Australian date).
+  if (quote!.valid_until) {
+    const todayAu = new Date().toLocaleDateString('en-CA', { timeZone: 'Australia/Sydney' })
+    if (String(quote!.valid_until).slice(0, 10) < todayAu) return json({ error: 'This quote has expired. Please contact your creative for an updated quote.' }, 410)
+  }
+
+  const newStatus = action === 'accept' ? 'accepted' : 'declined'
+  const { data: updated, error: upErr } = await supabase.from('quotes').update({ status: newStatus }).eq('id', quoteId).in('status', ['sent', 'viewed', 'Sent', 'Viewed']).select('id')
+  if (upErr) { console.error('respond-quote update failed', upErr); return json({ error: 'Could not save your response. Please try again.' }, 500) }
+  if (!Array.isArray(updated) || !updated.length) return json({ error: 'This quote has already been responded to' }, 409)
+
+  // Notify the creative.
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', quote!.creative_id).single()
+  const creativeEmail = profile?.business_email
+  const clientName = clientNameFrom || quote!.client_name || 'Your client'
+  const accepted = newStatus === 'accepted'
+
+  // In-app notification for the creative (best effort).
+  try {
+    await supabase.from('notifications').insert({
+      user_id: quote!.creative_id,
+      type: 'quote',
+      title: `${clientName} ${accepted ? 'accepted' : 'declined'} your quote`,
+      body: quote!.amount != null ? money(quote!.amount) : null,
+      link: '/dashboard/finance/quotes',
+      meta: { quote_id: quoteId, status: newStatus },
+    })
+  } catch (_e) { /* non-blocking */ }
+
+  if (creativeEmail) {
+    const panelHtml = panel(
+      fieldRow('Quote', `#${esc(String(quoteId).slice(0, 8).toUpperCase())}`) +
+      (quote!.amount != null ? fieldRow('Amount', esc(money(quote!.amount))) : '') +
+      fieldRow('Response', `<span style="color:${accepted ? BRAND.green : BRAND.text};text-transform:capitalize;">${esc(newStatus)}</span>`)
+    )
+    await sendEmail(resendKey, {
+      to: creativeEmail,
+      replyTo: clientEmail || undefined,
+      subject: accepted ? `${clientName} accepted your quote` : `${clientName} declined your quote`,
+      html: emailShell({
+        preheader: accepted ? `${clientName} accepted your quote` : `${clientName} declined your quote`,
+        kicker: accepted ? 'Quote accepted' : 'Quote declined',
+        heading: accepted ? `${esc(clientName)} accepted your quote` : `${esc(clientName)} declined your quote`,
+        intro: accepted ? 'Nice work. You can move ahead when you are ready.' : `${esc(clientName)} has declined this quote. You may want to follow up with them.`,
+        panelHtml,
+        ctaText: 'View in your dashboard',
+        ctaUrl: 'https://lenstrybe.com/dashboard/finance/quotes',
+        footNote: 'Tip: you can reply directly to this email to reach the client.',
+      }),
+    })
+  }
+
+  return json({ success: true, status: newStatus })
+})

@@ -23,7 +23,7 @@ import { planLabel } from '../../backend/tierFeatures'
 // charged until the free months end); then the check-email page, since confirmation is on.
 // The details arrive in router state from Join (the password is never in a URL); a refresh loses
 // them and goes back to Join with the non-secret fields restored.
-const PLANS = [['Basic', 'Free', 'Profile, enquiries, one skill', 'Free forever'], ['Pro', '$24.99', 'Quotes, invoices, contracts, job board', '3 months free'], ['Expert', '$74.99', 'Your own website, both skills, reply anywhere in Australia', '3 months free'], ['Elite', '$149.99', 'Custom domain, team of five, Trybe Studio spotlight', '3 months free']]
+const PLANS = [['Basic', 'Free', 'Profile, enquiries, one skill', 'Free forever'], ['Pro', '$24.99', 'Your own website, quotes and invoices', '3 months free'], ['Expert', '$74.99', 'Contracts, client portals, both skills, reply anywhere in Australia', '3 months free'], ['Elite', '$149.99', 'Custom domain, team of five, Trybe Studio spotlight', '3 months free']]
 
 export default function Onboard() {
   const { state, search } = useLocation(); const nav = useNavigate(); useSpecular([]); const { patch, set } = useStore()
