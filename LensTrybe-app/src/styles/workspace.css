@@ -1896,3 +1896,22 @@
   .ws .vh>div:first-child{flex:1 1 300px}
   .ws .vh .acts{flex:0 1 auto;flex-wrap:wrap}
 }
+
+/* The first-login tour (item 17). A dim veil with a hole over the thing being explained, a soft
+   signal-coloured ring round it, and a small card beside it. */
+.ws .tour{position:fixed;inset:0;z-index:200}
+.ws .tour-dim{position:absolute;inset:0;background:rgba(10,10,15,.55);transition:clip-path .45s var(--ease)}
+.ws:not(.dark) .tour-dim{background:rgba(42,38,32,.45)}
+.ws .tour-ring{position:absolute;border-radius:16px;box-shadow:0 0 0 2px var(--sig),0 0 0 7px var(--sig-bg),0 0 28px var(--sig-glow);pointer-events:none;transition:left .45s var(--ease),top .45s var(--ease),width .45s var(--ease),height .45s var(--ease)}
+.ws .tour-card{position:absolute;padding:18px 18px 14px;border-radius:20px;background:var(--bg-2);color:var(--ink);border:1px solid var(--line-2);box-shadow:0 30px 70px -20px rgba(0,0,0,.5);animation:tourin .35s var(--ease) both}
+.ws.dark .tour-card{background:#15151d}
+@keyframes tourin{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.ws .tour-card small{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--sig)}
+.ws .tour-card h3{font-size:18px;font-weight:600;letter-spacing:-.02em;margin:6px 0 6px}
+.ws .tour-card p{font-size:13.5px;line-height:1.55;color:var(--ink-2)}
+.ws .tour-f{display:flex;align-items:center;gap:8px;margin-top:14px}
+.ws .tour-f span{flex:1}
+.ws .tour .skip{font-size:12.5px;font-weight:600;color:var(--ink-3)}
+.ws .tour .skip:hover{color:var(--ink)}
+.ws .tour .skip.end{display:block;margin:10px auto 0}
+@media (prefers-reduced-motion:reduce){.ws .tour-dim,.ws .tour-ring{transition:none}.ws .tour-card{animation:none}}

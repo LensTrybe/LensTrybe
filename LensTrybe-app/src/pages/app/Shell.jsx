@@ -49,6 +49,7 @@ import { TOP, GROUPS, HIDDEN } from './nav'
 import '../../styles/workspace.css'
 import { planLabel } from '../../backend/tierFeatures'
 import { Gate, usePlanGate, gateKeyFor } from './PlanGate'
+import Tour from './Tour'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
 const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money']]
@@ -241,6 +242,7 @@ export default function Shell() {
         <Gate k="lumi" bar={false}><Dock onClose={() => { setDock(false); setDockM(false) }} /></Gate>
       </div>
       <button className="dockbtn" aria-label="Lumi" onClick={() => setDockM(d => !d)}><span className="lm" /></button>
+      <Tour />
       <nav className="tabbar lg" aria-label="Sections">{TABS.map(([k, l, ic]) => <button key={k} className={active(k) ? 'on' : ''} onClick={() => nav('/app/' + k)}><Icon name={ic} />{l}</button>)}<MoreTab dark={dark} setDark={setDark} active={active} /></nav>
     </SheetProvider></div>
   )

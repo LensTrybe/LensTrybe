@@ -7,6 +7,7 @@ import { PLANS } from '../../data/workspace'
 import { TODAY, nice, iso } from '../../lib/store'
 import { MOOD_NAMES } from '../../lib/stills'
 import SetupCard from './Setup'
+import { replayTour } from './Tour'
 import { completeness } from '../../lib/complete'
 import DeleteAccount from './DeleteAccount'
 import { useAuth } from '../../backend/AuthContext'
@@ -248,6 +249,7 @@ export function Settings() {
             <div className="brows one">
               <label className="brow"><span>Dark by default<small>Also from the sun and moon by your name</small></span><Sw on={dark} set={theme} /></label>
               <label className="brow"><span>Lumi docked<small>Open on wide screens, away on laptops</small></span><Sw on={dock} set={dockT} /></label>
+              <div className="brow" style={{ cursor: 'default' }}><span>The workspace tour<small>The one-minute look around from your first login</small></span><button type="button" className="btn g sm" onClick={replayTour}>Replay the tour</button></div>
               <label className="brow"><span>Draft the deposit invoice when a quote is accepted<small>It waits in Invoicing; nothing is sent until you say</small></span><Sw on={S.autoDep !== false} set={() => F.patch('settings', { autoDep: S.autoDep === false })} /></label>
             </div>
           </div>
