@@ -1797,3 +1797,8 @@
 .ws .lg::before{background:linear-gradient(118deg,var(--lg-sheen) 0%,rgba(255,255,255,.03) 26%,rgba(255,255,255,0) 50%)}
 .ws:not(.dark){--lg-tint:rgba(255,255,255,.5);--lg-tint-2:rgba(255,255,255,.3)}
 .ws.dark{--lg-tint:rgba(255,255,255,.07);--lg-tint-2:rgba(255,255,255,.03)}
+/* No blobs behind the workspace: a smooth wash from the top corners only, nothing that reads as a
+   circle through the clear glass. */
+.ws .aurora i{display:none}
+.ws .aurora{background:linear-gradient(165deg,rgba(159,214,203,.42) 0%,rgba(159,214,203,0) 42%),linear-gradient(200deg,rgba(243,179,207,.38) 0%,rgba(243,179,207,0) 44%),linear-gradient(0deg,rgba(201,179,238,.16) 0%,rgba(201,179,238,0) 40%)}
+.ws.dark .aurora{opacity:.5}
