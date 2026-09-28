@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useNavigate, useSearchParams, Navigate } from 'react-router-dom'
+import { Link, useSearchParams, Navigate } from 'react-router-dom'
 import { outside, waitlistTo } from '../../lib/region'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
@@ -11,7 +11,7 @@ import { LIVE } from '../../lib/mode'
 import { loadCreatives } from '../../lib/live'
 import DatePicker, { fmtDate } from '../../components/DatePicker'
 import SpecialtyPicker from '../../components/SpecialtyPicker'
-import { matchesSpecialty, TAG_FOR } from '../../lib/specialties'
+import { matchesSpecialty, keysForTag, specParts, specKey, DISC, SPECIALTIES } from '../../lib/specialties'
 import { fmt } from '../../lib/format'
 
 const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
@@ -20,14 +20,19 @@ const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
 // sentence bar that hands off to the ask, then a glass filter bar and the grid on light.
 export default function Directory() {
   if (outside()) return <Navigate to={waitlistTo('client')} replace />
-  const nav = useNavigate()
   const [params] = useSearchParams()
   const cv = useRef(null), slot = useRef(null), bar = useRef(null)
   const [q, setQ] = useState('')
   const [disc, setDisc] = useState('all')
-  const [spec, setSpec] = useState(() => { const s = params.get('s'); const name = s && Object.keys(TAG_FOR).find(k => TAG_FOR[k] === s); return new Set(name ? [name] : []) })
+  const [spec, setSpec] = useState(() => { const s = params.get('s'); return new Set(s ? keysForTag(s) : []) })
   const [budget, setBudget] = useState(8000), [date, setDate] = useState(null), [found, setFound] = useState(false)
   const [place, setPlace] = useState(''), [view, setView] = useState('grid'), [sort, setSort] = useState('match')
+  const [text, setText] = useState('')
+  // phones: the filter bar sits in the page under the opener; laptops: it rides the viewport (below)
+  const [narrow, setNarrow] = useState(() => typeof innerWidth === 'number' && innerWidth <= 900)
+  useEffect(() => { const on = () => setNarrow(innerWidth <= 900); addEventListener('resize', on); return () => removeEventListener('resize', on) }, [])
+  // Photo or Video: specialties picked for the other discipline no longer apply, so they go
+  useEffect(() => { if (disc === 'all') return; setSpec(prev => { const n = new Set([...prev].filter(k => DISC[specParts(k)[0]] === disc)); return n.size === prev.size ? prev : n }) }, [disc])
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   // The filter bar is always on screen: it rides at the foot of the viewport while the opener is showing,
   // travels up with the page as you scroll, and settles under the header where it stays.
@@ -49,7 +54,7 @@ export default function Directory() {
     place(); addEventListener('scroll', on, { passive: true }); addEventListener('resize', on)
     const ro = new ResizeObserver(on); ro.observe(b); ro.observe(document.body)
     return () => { removeEventListener('scroll', on); removeEventListener('resize', on); ro.disconnect(); cancelAnimationFrame(raf) }
-  }, [])
+  }, [narrow])
   // Live: every listed profile (a photo, a tagline and a skill), from the real project
   const [all, setAll] = useState(LIVE ? null : CREATIVES)
   useEffect(() => { if (!LIVE) return; let on = true; loadCreatives().then(l => on && setAll(l)).catch(() => on && setAll([])); return () => { on = false } }, [])
@@ -60,13 +65,32 @@ export default function Directory() {
     if (date) l = l.filter(x => freeOn(x, date))
     if (found) l = l.filter(x => x.found)
     if (place) l = l.filter(x => (x.c + ' ' + x.state).toLowerCase().includes(place.toLowerCase()) || (place === 'Sunshine Coast' && ['Noosa', 'Sunshine Beach', 'Maroochydore', 'Maleny'].includes(x.c)) || (place === 'Brisbane' && ['Brisbane', 'West End', 'Fortitude Valley'].includes(x.c)))
+    if (text) { const w = text.toLowerCase().split(/\s+/).filter(x => x.length > 2); l = l.filter(x => w.some(t => (x.n + ' ' + x.d + ' ' + x.c).toLowerCase().includes(t))) }
     if (sort === 'price') l = [...l].sort((a, b) => a.p - b.p)
     if (sort === 'rating') l = [...l].sort((a, b) => b.r - a.r || b.rv - a.rv)
     return l
-  }, [all, disc, spec, budget, date, found, place, sort])
-  const active = spec.size + (budget < 8000) + (date ? 1 : 0) + found + (place ? 1 : 0) + (disc !== 'all')
-  const clear = () => { setDisc('all'); setSpec(new Set()); setBudget(8000); setDate(null); setFound(false); setPlace('') }
-  const ask = e => { e.preventDefault(); if (q.trim()) nav('/?q=' + encodeURIComponent(q.trim() + (date && !/\d/.test(q) ? ' on ' + fmtDate(date) : ''))) }
+  }, [all, disc, spec, budget, date, found, place, sort, text])
+  const active = spec.size + (budget < 8000) + (date ? 1 : 0) + found + (place ? 1 : 0) + (disc !== 'all') + (text ? 1 : 0)
+  const clear = () => { setDisc('all'); setSpec(new Set()); setBudget(8000); setDate(null); setFound(false); setPlace(''); setText('') }
+  // The sentence sets this page's own filters (photo or video, specialty, place, budget) over the real
+  // creatives. Words it can't place narrow by name, tagline or town.
+  const ask = e => {
+    e.preventDefault(); const r = readSentence(q); if (!q.trim()) return
+    setDisc(r.disc); setSpec(new Set(r.spec)); if (r.place) setPlace(r.place); if (r.budget) setBudget(Math.min(8000, Math.max(500, r.budget)))
+    setText(r.found ? '' : q.trim())
+    document.getElementById('results')?.scrollIntoView({ behavior: 'smooth' })
+  }
+  const fbar = (
+            <div className="fbar lg" ref={bar}>
+            <div className="seg"><button className={disc === 'all' ? 'on' : ''} onClick={() => setDisc('all')}>All</button><button className={disc === 'photo' ? 'on' : ''} onClick={() => setDisc('photo')}>Photo</button><button className={disc === 'video' ? 'on' : ''} onClick={() => setDisc('video')}>Video</button></div>
+            <SpecialtyPicker value={spec} onChange={setSpec} disc={disc} />
+            <PlacePicker value={place} onChange={setPlace} />
+            <div className="bud"><span>Up to <b>{fmt(budget)}</b></span><input type="range" min="500" max="8000" step="100" value={budget} onChange={e => setBudget(+e.target.value)} aria-label="Budget, full day" /></div>
+            <DatePicker value={date} onChange={setDate} label="Any date" />
+            <label className={'tog' + (found ? ' on' : '')}><input type="checkbox" checked={found} onChange={e => setFound(e.target.checked)} /><i /><span>Founding only</span></label>
+            {active > 0 && <button className="clear" onClick={clear}>Clear</button>}
+          </div>
+  )
   return (
     <>
       <section className="hiw dirhero dark darkhero">
@@ -90,15 +114,7 @@ export default function Directory() {
         <Aurora />
         <section className="sec" id="results" style={{ paddingTop: 'clamp(28px,4vw,48px)' }}><div className="wrap">
           <div className="fslot" ref={slot} />
-          {createPortal(<div className="pub" style={{ display: 'contents' }}><div className="fbar lg" ref={bar}>
-            <div className="seg"><button className={disc === 'all' ? 'on' : ''} onClick={() => setDisc('all')}>All</button><button className={disc === 'photo' ? 'on' : ''} onClick={() => setDisc('photo')}>Photo</button><button className={disc === 'video' ? 'on' : ''} onClick={() => setDisc('video')}>Video</button></div>
-            <SpecialtyPicker value={spec} onChange={setSpec} disc={disc} />
-            <div className="sel"><Icon name="pin" size={14} /><select value={place} onChange={e => setPlace(e.target.value)} aria-label="Where"><option value="">Anywhere in QLD</option>{PLACES.map(p => <option key={p}>{p}</option>)}</select></div>
-            <div className="bud"><span>Up to <b>{fmt(budget)}</b></span><input type="range" min="500" max="8000" step="100" value={budget} onChange={e => setBudget(+e.target.value)} aria-label="Budget, full day" /></div>
-            <DatePicker value={date} onChange={setDate} label="Any date" />
-            <label className={'tog' + (found ? ' on' : '')}><input type="checkbox" checked={found} onChange={e => setFound(e.target.checked)} /><i /><span>Founding only</span></label>
-            {active > 0 && <button className="clear" onClick={clear}>Clear</button>}
-          </div></div>, document.body)}
+          {narrow ? fbar : createPortal(<div className="pub" style={{ display: 'contents' }}>{fbar}</div>, document.body)}
 
           <div className="rbar rv">
             <span><b>{list.length}</b> {list.length === 1 ? 'creative' : 'creatives'}{date ? ' free ' + fmtDate(date) : ''}, sorted by <b>{sort === 'match' ? 'best match' : sort}</b></span>
@@ -119,6 +135,48 @@ export default function Directory() {
         </div></section>
       </div>
     </>
+  )
+}
+
+// A sentence into filters. "A brand film for a café in Brisbane, $2,500" is video, Brand Film,
+// Brisbane, up to $2,500. Photo and video words decide the discipline; specialty names are looked up
+// in that discipline only.
+const VIDEO_W = /\b(video\w*|film\w*|reel\w*|footage|cinemat\w*)\b/, PHOTO_W = /\b(photo\w*|shoot\w*|headshot\w*|portrait\w*|pictures?|pics?)\b/
+const SPEC_ALIAS = { 'Brand Film': ['brand film', 'brand video', 'promo'], Wedding: ['wedding', 'elope'], Events: ['event', 'party', 'gala', 'launch'], 'Real Estate': ['real estate', 'property', 'listing'], 'Newborn & Family': ['newborn', 'family'], 'Music Video': ['music video', 'clip'], 'Social Media': ['social', 'reels', 'tiktok'], Headshots: ['headshot'], Corporate: ['corporate', 'conference'], Pet: ['pet', 'dog', 'cat'] }
+export function readSentence(q) {
+  const l = ' ' + String(q || '').toLowerCase() + ' '
+  const v = VIDEO_W.test(l), ph = PHOTO_W.test(l)
+  const disc = v && !ph ? 'video' : ph && !v ? 'photo' : 'all'
+  const spec = []
+  for (const [type, names] of Object.entries(SPECIALTIES)) {
+    if (disc !== 'all' && DISC[type] !== disc) continue
+    for (const n of names) if ((SPEC_ALIAS[n] || [n.toLowerCase()]).some(a => l.includes(a))) spec.push(specKey(type, n))
+  }
+  const place = PLACES.find(p => l.includes(p.toLowerCase())) || ''
+  const m = l.match(/\$\s?([\d,.]+)\s*(k)?/); const budget = m ? Math.round(parseFloat(m[1].replace(/,/g, '')) * (m[2] ? 1000 : 1)) : 0
+  return { disc, spec, place, budget, found: disc !== 'all' || spec.length > 0 || !!place || !!budget }
+}
+
+// Where: the same dropdown as the specialty and date pickers, not the browser's own select.
+function PlacePicker({ value, onChange }) {
+  const [open, setOpen] = useState(false)
+  const box = useRef(null)
+  useEffect(() => { if (!open) return; const off = e => { if (!box.current?.contains(e.target)) setOpen(false) }; const key = e => { if (e.key === 'Escape') setOpen(false) }; addEventListener('pointerdown', off); addEventListener('keydown', key); return () => { removeEventListener('pointerdown', off); removeEventListener('keydown', key) } }, [open])
+  const pick = v => { onChange(v); setOpen(false) }
+  return (
+    <div className={'dp sp pl' + (open ? ' open' : '')} ref={box}>
+      <button type="button" className={'dpb' + (value ? ' on' : '')} onClick={() => setOpen(o => !o)} aria-haspopup="listbox" aria-expanded={open}>
+        <Icon name="pin" size={14} /><span>{value || 'Anywhere in QLD'}</span>
+        {value ? <i onClick={e => { e.stopPropagation(); onChange('') }} aria-label="Clear place"><Icon name="x" size={12} /></i> : <em className="chev"><Icon name="back" size={12} /></em>}
+      </button>
+      {open && (
+        <div className="dpp spp plp" role="listbox" aria-label="Where">
+          <div className="spg">
+            {['', ...PLACES].map(p => <button key={p || 'any'} type="button" role="option" aria-selected={value === p} className={value === p ? 'on' : ''} onClick={() => pick(p)}><span>{p || 'Anywhere in QLD'}</span><i><Icon name="check" size={12} /></i></button>)}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

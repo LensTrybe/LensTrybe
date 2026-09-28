@@ -182,6 +182,8 @@ export function shapeProfile(p, extra = {}) {
     why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
     photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.filter(x => x.flag_status !== 'resolved_removed').map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported', reply: x.reply || '', featured: !!x.featured })).sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)),
     busy: extra.busy || [], slug: p.custom_domain || p.id,
+    // the specialties they picked, per discipline, so photo and video can be searched apart
+    specBy: p.specialties_by_type && typeof p.specialties_by_type === 'object' ? p.specialties_by_type : {}, specAny: Array.isArray(p.specialties) ? p.specialties : [],
   }
 }
 const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, website, site_service_areas, custom_domain, created_at'

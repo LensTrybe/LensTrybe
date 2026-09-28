@@ -914,3 +914,9 @@
 .pub .lalready b{font-size:13.5px;color:#fff}
 .pub .lalready>div{display:flex;flex-direction:column;gap:6px}
 .pub .lalready .alt{font-size:13px;font-weight:500;color:rgba(255,255,255,.7);padding:6px}
+
+/* Find a creative dropdowns (item 10, 28 Sep): solid panels, so the cards behind never show through */
+.pub .dp .dpp{background:#fff;-webkit-backdrop-filter:none;backdrop-filter:none;border:1px solid rgba(20,17,26,.08)}
+.pub .dp.dark .dpp{background:#12121a;border-color:rgba(255,255,255,.14)}
+.pub .plp{width:240px}
+.pub .plp .spg button i{border-radius:50%}
