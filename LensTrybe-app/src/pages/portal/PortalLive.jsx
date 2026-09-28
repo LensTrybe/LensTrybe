@@ -13,10 +13,11 @@ import '../../styles/public.css'
 import '../../styles/pages.css'
 import './portal.css'
 
-// The client's thread on a real portal token. Everything the creative and this client have is
-// in one timeline: messages both ways, quotes (accept or decline here), contracts (sign, PDF),
-// invoices (PDF), bookings, galleries and meetings, with the stage strip worked out from what
-// exists. No login: the link is the key, exactly like the live site's portal.
+// The client's portal on a real portal token (28 Sep, Michael chose "Waiting on you + two tabs").
+// The top card says what the job is, where it's up to, and everything waiting on the client with its
+// button right there (accept a quote, sign, pay, answer a meeting, open a new gallery). Below, two
+// tabs: Messages (just the conversation, message box pinned to the bottom) and Documents (quotes,
+// contracts, invoices, dates and galleries, grouped, newest first). No login: the link is the key.
 const low = s => String(s || '').toLowerCase()
 const firstItem = items => { try { const a = Array.isArray(items) ? items : JSON.parse(items || '[]'); const i = a[0]; return i ? (i.description || i.name || i.title || i.label || '') : '' } catch { return '' } }
 const fmtTime = t => { if (!t) return ''; const [h, m] = String(t).split(':').map(Number); const d = new Date(); d.setHours(h, m || 0); return d.toLocaleTimeString('en-AU', { hour: 'numeric', minute: '2-digit' }).toLowerCase() }
@@ -25,11 +26,11 @@ const av = url => { try { return imageUrl(url) || url } catch { return url } }
 export default function PortalLive({ token }) {
   useSpecular([])
   const [p, setP] = useState(undefined), [v, setV] = useState(''), [err, setErr] = useState(''), [busy, setBusy] = useState(''), [ok, setOk] = useState(''), [prog, setProg] = useState({})
-  const end = useRef(null)
+  const end = useRef(null), [tab, setTab] = useState('messages')
   const att = useAttach(m => setErr(m))
   const load = async () => { try { setP(await loadPortal(token)) } catch { setP(null) } }
   useEffect(() => { load() }, [token]) // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { end.current?.scrollIntoView({ block: 'end' }); const k = setTimeout(() => end.current?.scrollIntoView({ block: 'end' }), 600); return () => clearTimeout(k) }, [p])
+  useEffect(() => { if (tab !== 'messages') return; end.current?.scrollIntoView({ block: 'end' }); const k = setTimeout(() => end.current?.scrollIntoView({ block: 'end' }), 600); return () => clearTimeout(k) }, [p, tab])
   if (p === undefined) return <div className="pub pub-light portal"><Aurora /><main className="pwrap"><p className="fine" style={{ textAlign: 'center', paddingTop: 120 }}>Opening your thread.</p></main></div>
   if (p === null) return <div className="pub pub-light portal"><Aurora /><main className="pwrap"><div className="pjob lg" style={{ marginTop: 100 }}><p className="eb p">Link not recognised</p><h1>That link is not one of ours.</h1><p className="sub">It may have been trimmed by your email app. Open the newest email from your creative and tap the button in it, or ask them to send the link again.</p><Link className="btn p" to="/" style={{ marginTop: 14 }}>LensTrybe home</Link></div></main></div>
 
@@ -57,32 +58,62 @@ export default function PortalLive({ token }) {
   const respond = async (q, action) => { setBusy(q.id); setErr(''); try { await portalRespondQuote(token, q.id, action); setOk(action === 'accept' ? 'Quote accepted. ' + (c.business_name || 'Your creative') + ' has been told.' : 'Quote declined.'); await load() } catch (e) { setErr(e.message) } finally { setBusy('') } }
   const pdf = async (type, id) => { setBusy(id); setErr(''); try { await downloadDocumentPdf({ type, id, portalToken: token }) } catch (e) { setErr(e.message || 'Could not make the PDF.') } finally { setBusy('') } }
   const qst = q => low(q.status) === 'accepted' ? ['ok', 'Accepted'] : low(q.status) === 'declined' ? ['pink', 'Declined'] : ['live', 'Waiting on you']
+  // one card per quote, contract, invoice, date, gallery and meeting: used in Waiting on you and Documents
+  const card = it => {
+    if (it.k === 'quote') { const q = it.q, [st, stt] = qst(q), open = !['accepted', 'declined'].includes(low(q.status)); return <div key={q.id} className={'pcard lg' + (open ? ' now' : '')}><i className="pk"><Icon name={open ? 'doc' : 'check'} size={13} /></i><div><b>Quote{firstItem(q.items) ? ' · ' + firstItem(q.items) : ''}</b><small>{money(q.amount)} incl. GST{q.valid_until ? ' · valid until ' + nice(q.valid_until) : ''}</small>{open && <div className="ln" style={{ marginTop: 8, display: 'flex', gap: 8 }}><button className="btn p sm" disabled={busy === q.id} onClick={() => respond(q, 'accept')}>Accept quote</button><button className="pbtn" disabled={busy === q.id} onClick={() => respond(q, 'decline')}>Decline</button></div>}</div><span className={'st ' + st}>{stt}</span><button className="pbtn" disabled={busy === q.id} onClick={() => pdf('quote', q.id)}>PDF</button></div> }
+    if (it.k === 'contract') { const x = it.x, s = low(x.status), done = s === 'signed' || s === 'completed'; return <div key={x.id} className={'pcard lg' + (!done ? ' now' : '')}><i className="pk"><Icon name={done ? 'check' : 'sign'} size={13} /></i><div><b>Contract{x.title ? ' · ' + x.title : ''}</b><small>{done ? 'Signed ' + when(x.signed_at) : 'Ready for your signature'}</small></div><span className={'st ' + (done ? 'pink' : 'live')}>{done ? 'Signed' : 'To sign'}</span>{!done && x.signing_token ? <Link className="pbtn" to={'/sign/' + x.signing_token}>Read and sign</Link> : <button className="pbtn" disabled={busy === x.id} onClick={() => pdf('contract', x.id)}>PDF</button>}</div> }
+    if (it.k === 'invoice') { const i = it.i, s = low(i.status); return <div key={i.id} className={'pcard lg' + (!['paid'].includes(s) ? ' now' : '')}><i className="pk"><Icon name={s === 'paid' ? 'check' : 'money'} size={13} /></i><div><b>Invoice{firstItem(i.items) ? ' · ' + firstItem(i.items) : ''}</b><small>{money(i.amount)}{i.due_date ? ' · due ' + nice(i.due_date) : ''}{s === 'paid' ? ' · paid, thank you' : ''}</small></div><span className={'st ' + (s === 'paid' ? 'ok' : s === 'overdue' ? 'pink' : 'live')}>{s === 'paid' ? 'Paid' : s === 'overdue' ? 'Overdue' : 'Due'}</span><button className="pbtn" disabled={busy === i.id} onClick={() => pdf('invoice', i.id)}>PDF</button></div> }
+    if (it.k === 'booking') { const b = it.b, s = low(b.status); return <div key={b.id} className="pcard lg"><i className="pk cal"><Icon name="cal" size={13} /></i><div><b>{b.service || 'Booking'}{b.booking_date ? ' · ' + nice(b.booking_date) : ''}</b><small>{[b.all_day ? 'All day' : [fmtTime(b.start_time), fmtTime(b.end_time)].filter(Boolean).join(' to '), b.location].filter(Boolean).join(' · ') || 'Details to come'}</small>{b.response_note && <small>{b.response_note}</small>}</div><span className={'st ' + (['confirmed', 'accepted'].includes(s) ? 'ok' : b.cancelled_at ? 'pink' : 'live')}>{b.cancelled_at ? 'Cancelled' : ['confirmed', 'accepted'].includes(s) ? 'Confirmed' : 'Requested'}</span></div> }
+    if (it.k === 'delivery') { const d = it.d, gone = !!d.files_purged_at, exp = d.expires_at && d.expires_at < new Date().toISOString(); return <div key={d.id} className="pcard lg peek"><i className="pk"><Icon name="grid" size={13} /></i><div><b>{d.title || 'Your photos'}</b><small>{gone ? 'This gallery has been removed.' : exp ? 'This link has expired. Ask for it to be renewed.' : (d.file_count || 0) + ' files' + (d.expires_at ? ' · available until ' + nice(d.expires_at.slice(0, 10)) : '') + (d.password_protected ? ' · password from your creative' : '')}</small></div><span className={'st ' + (gone || exp ? 'pink' : 'ok')}>{gone ? 'Removed' : exp ? 'Expired' : d.is_final ? 'Final' : 'Ready'}</span>{!gone && !exp && <a className="pbtn" href={'/deliver/' + d.download_token}>Open gallery</a>}</div> }
+    if (it.k === 'meeting') { const m = it.m, s = low(m.status); return <div key={m.id} className="pcard lg"><i className="pk cal"><Icon name="chat" size={13} /></i><div><b>{m.title || 'Meeting'}{m.meeting_date ? ' · ' + nice(m.meeting_date) : ''}</b><small>{[fmtTime(m.start_time), m.meeting_type, m.location].filter(Boolean).join(' · ')}</small></div><span className={'st ' + (['confirmed', 'accepted'].includes(s) ? 'ok' : ['declined', 'cancelled'].includes(s) ? 'pink' : 'live')}>{['confirmed', 'accepted'].includes(s) ? 'Confirmed' : s === 'declined' ? 'Declined' : s === 'cancelled' ? 'Cancelled' : s === 'reschedule' ? 'Time suggested' : 'Proposed'}</span>{!['confirmed', 'accepted', 'declined', 'cancelled'].includes(s) && m.response_token && <a className="pbtn" href={'/meeting/' + m.response_token}>Respond</a>}</div> }
+    return null
+  }
+  // what needs the client now: open quotes, contracts to sign, invoices to pay, meetings to answer, a gallery that's in
+  const isOpen = it => {
+    if (it.k === 'quote') return !['accepted', 'declined', 'draft'].includes(low(it.q.status))
+    if (it.k === 'contract') return !['signed', 'completed', 'draft'].includes(low(it.x.status))
+    if (it.k === 'invoice') return !['paid', 'draft', 'void', 'cancelled'].includes(low(it.i.status))
+    if (it.k === 'meeting') return !['confirmed', 'accepted', 'declined', 'cancelled'].includes(low(it.m.status)) && !!it.m.response_token
+    // a gallery counts as new for a week after it's sent (the portal doesn't know when it was opened)
+    if (it.k === 'delivery') return (it.d.file_count || 0) > 0 && !it.d.files_purged_at && !(it.d.expires_at && it.d.expires_at < new Date().toISOString()) && (Date.now() - new Date(it.d.created_at || 0)) < 7 * 864e5
+    return false
+  }
+  const docs = items.filter(it => !['me', 'them'].includes(it.k))
+  const msgs = items.filter(it => ['me', 'them'].includes(it.k))
+  const waiting = docs.filter(isOpen)
+  const GROUPS = [['Quotes', ['quote']], ['Contracts', ['contract']], ['Invoices', ['invoice']], ['Dates and meetings', ['booking', 'meeting']], ['Galleries', ['delivery']]]
+  const reviewAsk = stage >= 6 && !p.reviews.length && c.id
   return (
     <div className="pub pub-light portal">
       <Aurora />
       <header className="phdr lg"><Link to="/" className="plogo"><Logo height={18} /></Link><span className="who"><span className="pav" style={c.avatar_url ? { backgroundImage: 'url(' + av(c.avatar_url) + ')', backgroundSize: 'cover', borderRadius: '50%' } : undefined} /><div><b>{c.business_name || 'Your creative'}</b><small>{c.tagline || [c.skill_types?.join(' and '), c.city].filter(Boolean).join(' · ') || 'On LensTrybe'}</small></div></span></header>
       <main className="pwrap">
-        <div className="pjob lg"><div className="pjhead"><div><p className="eb g">Your thread with {c.business_name || 'your creative'}</p><h1>Hi {first}.</h1><p className="sub">{upcoming ? [nice(upcoming.booking_date), upcoming.location, upcoming.service].filter(Boolean).join(' · ') : p.quotes.length ? 'Quote from ' + (c.business_name || 'your creative') : 'Everything about this job, in one place.'}</p></div><div className="pnext"><small>Next up</small><b>{upcoming ? 'Shoot day, ' + nice(upcoming.booking_date) : p.quotes.some(q => !['accepted', 'declined'].includes(low(q.status))) ? 'A quote to look at' : p.contracts.some(x => low(x.status) !== 'signed' && low(x.status) !== 'draft') ? 'A contract to sign' : owed > 0 ? money(owed) + ' to pay' : 'Nothing waiting on you'}</b>{owed > 0 && upcoming && <span>{money(owed)} outstanding</span>}</div></div>
-          <div className="pstage">{STAGES.map((s, i) => <span key={s} className={i < stage ? 'd' : i === stage ? 'c' : ''}><i>{i < stage ? <Icon name="check" size={9} /> : null}</i>{s}</span>)}</div></div>
-        <div className="pthread2">
-          {!items.length && <div className="tsys">Nothing here yet. Your enquiry is with {c.business_name || 'your creative'}.</div>}
-          {items.map((it, n) => {
-            if (it.k === 'me' || it.k === 'them') return <div key={it.id || n} className={'tm ' + it.k}>{it.text}{it.att && <Attachments items={it.att} ctx={{ threadId: it.thread, token }} />}<span className="w">{when(it.at)}</span></div>
-            if (it.k === 'quote') { const q = it.q, [st, stt] = qst(q), open = !['accepted', 'declined'].includes(low(q.status)); return <div key={q.id} className={'pcard lg' + (open ? ' now' : '')}><i className="pk"><Icon name={open ? 'doc' : 'check'} size={13} /></i><div><b>Quote{firstItem(q.items) ? ' · ' + firstItem(q.items) : ''}</b><small>{money(q.amount)} incl. GST{q.valid_until ? ' · valid until ' + nice(q.valid_until) : ''}</small>{open && <div className="ln" style={{ marginTop: 8, display: 'flex', gap: 8 }}><button className="btn p sm" disabled={busy === q.id} onClick={() => respond(q, 'accept')}>Accept quote</button><button className="pbtn" disabled={busy === q.id} onClick={() => respond(q, 'decline')}>Decline</button></div>}</div><span className={'st ' + st}>{stt}</span><button className="pbtn" disabled={busy === q.id} onClick={() => pdf('quote', q.id)}>PDF</button></div> }
-            if (it.k === 'contract') { const x = it.x, s = low(x.status), done = s === 'signed' || s === 'completed'; return <div key={x.id} className={'pcard lg' + (!done ? ' now' : '')}><i className="pk"><Icon name={done ? 'check' : 'sign'} size={13} /></i><div><b>Contract{x.title ? ' · ' + x.title : ''}</b><small>{done ? 'Signed ' + when(x.signed_at) : 'Ready for your signature'}</small></div><span className={'st ' + (done ? 'pink' : 'live')}>{done ? 'Signed' : 'To sign'}</span>{!done && x.signing_token ? <Link className="pbtn" to={'/sign/' + x.signing_token}>Read and sign</Link> : <button className="pbtn" disabled={busy === x.id} onClick={() => pdf('contract', x.id)}>PDF</button>}</div> }
-            if (it.k === 'invoice') { const i = it.i, s = low(i.status); return <div key={i.id} className={'pcard lg' + (!['paid'].includes(s) ? ' now' : '')}><i className="pk"><Icon name={s === 'paid' ? 'check' : 'money'} size={13} /></i><div><b>Invoice{firstItem(i.items) ? ' · ' + firstItem(i.items) : ''}</b><small>{money(i.amount)}{i.due_date ? ' · due ' + nice(i.due_date) : ''}{s === 'paid' ? ' · paid, thank you' : ''}</small></div><span className={'st ' + (s === 'paid' ? 'ok' : s === 'overdue' ? 'pink' : 'live')}>{s === 'paid' ? 'Paid' : s === 'overdue' ? 'Overdue' : 'Due'}</span><button className="pbtn" disabled={busy === i.id} onClick={() => pdf('invoice', i.id)}>PDF</button></div> }
-            if (it.k === 'booking') { const b = it.b, s = low(b.status); return <div key={b.id} className="pcard lg"><i className="pk cal"><Icon name="cal" size={13} /></i><div><b>{b.service || 'Booking'}{b.booking_date ? ' · ' + nice(b.booking_date) : ''}</b><small>{[b.all_day ? 'All day' : [fmtTime(b.start_time), fmtTime(b.end_time)].filter(Boolean).join(' to '), b.location].filter(Boolean).join(' · ') || 'Details to come'}</small>{b.response_note && <small>{b.response_note}</small>}</div><span className={'st ' + (['confirmed', 'accepted'].includes(s) ? 'ok' : b.cancelled_at ? 'pink' : 'live')}>{b.cancelled_at ? 'Cancelled' : ['confirmed', 'accepted'].includes(s) ? 'Confirmed' : 'Requested'}</span></div> }
-            if (it.k === 'delivery') { const d = it.d, gone = !!d.files_purged_at, exp = d.expires_at && d.expires_at < new Date().toISOString(); return <div key={d.id} className="pcard lg peek"><i className="pk"><Icon name="grid" size={13} /></i><div><b>{d.title || 'Your photos'}</b><small>{gone ? 'This gallery has been removed.' : exp ? 'This link has expired. Ask for it to be renewed.' : (d.file_count || 0) + ' files' + (d.expires_at ? ' · available until ' + nice(d.expires_at.slice(0, 10)) : '') + (d.password_protected ? ' · password from your creative' : '')}</small></div><span className={'st ' + (gone || exp ? 'pink' : 'ok')}>{gone ? 'Removed' : exp ? 'Expired' : d.is_final ? 'Final' : 'Ready'}</span>{!gone && !exp && <a className="pbtn" href={'/deliver/' + d.download_token}>Open gallery</a>}</div> }
-            if (it.k === 'meeting') { const m = it.m, s = low(m.status); return <div key={m.id} className="pcard lg"><i className="pk cal"><Icon name="chat" size={13} /></i><div><b>{m.title || 'Meeting'}{m.meeting_date ? ' · ' + nice(m.meeting_date) : ''}</b><small>{[fmtTime(m.start_time), m.meeting_type, m.location].filter(Boolean).join(' · ')}</small></div><span className={'st ' + (['confirmed', 'accepted'].includes(s) ? 'ok' : ['declined', 'cancelled'].includes(s) ? 'pink' : 'live')}>{['confirmed', 'accepted'].includes(s) ? 'Confirmed' : s === 'declined' ? 'Declined' : s === 'cancelled' ? 'Cancelled' : s === 'reschedule' ? 'Time suggested' : 'Proposed'}</span>{!['confirmed', 'accepted', 'declined', 'cancelled'].includes(s) && m.response_token && <a className="pbtn" href={'/meeting/' + m.response_token}>Respond</a>}</div> }
-            return null
-          })}
-          {stage >= 6 && !p.reviews.length && c.id && <div className="pcard lg"><i className="pk"><Icon name="chat" size={13} /></i><div><b>How was {c.business_name || 'it'}?</b><small>A minute of your time. Verified booking, posted to their profile.</small></div><Link className="pbtn" to={'/review/' + c.id + '?token=' + token}>Leave a review</Link></div>}
-          {ok && <div className="tsys">{ok}</div>}
-          {err && <div className="tsys" style={{ color: 'var(--pink-t)' }}>{err}</div>}
-          <div ref={end} />
+        <div className="pjob lg"><div className="pjhead"><div><p className="eb g">Your thread with {c.business_name || 'your creative'}</p><h1>Hi {first}.</h1><p className="sub">{upcoming ? [nice(upcoming.booking_date), upcoming.location, upcoming.service].filter(Boolean).join(' · ') : p.quotes.length ? 'Quote from ' + (c.business_name || 'your creative') : 'Everything about this job, in one place.'}</p></div></div>
+          <div className="pstage">{STAGES.map((s, i) => <span key={s} className={i < stage ? 'd' : i === stage ? 'c' : ''}><i>{i < stage ? <Icon name="check" size={9} /> : null}</i>{s}</span>)}</div>
+          <div className="pwait">
+            <p className="eb g">{waiting.length || reviewAsk ? 'Waiting on you' : 'All caught up'}</p>
+            {waiting.length || reviewAsk ? <div className="pwlist">{waiting.map(card)}{reviewAsk && <div className="pcard lg now"><i className="pk"><Icon name="chat" size={13} /></i><div><b>How was {c.business_name || 'it'}?</b><small>A minute of your time. Verified booking, posted to their profile.</small></div><Link className="pbtn" to={'/review/' + c.id + '?token=' + token}>Leave a review</Link></div>}</div>
+              : <p className="pnone">Nothing needs you right now. {c.business_name || 'Your creative'} will message you here when something does{upcoming ? <>, and your shoot is on <b>{nice(upcoming.booking_date)}</b></> : ''}.</p>}
+          </div>
         </div>
+        <div className="ptabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === 'messages'} className={tab === 'messages' ? 'on' : ''} onClick={() => setTab('messages')}><Icon name="chat" size={14} />Messages<i>{msgs.length}</i></button>
+          <button type="button" role="tab" aria-selected={tab === 'docs'} className={tab === 'docs' ? 'on' : ''} onClick={() => setTab('docs')}><Icon name="file" size={14} />Documents<i>{docs.length}</i></button>
+        </div>
+        {ok && <div className="tsys pmsg">{ok}</div>}
+        {err && <div className="tsys pmsg" style={{ color: 'var(--pink-t)' }}>{err}</div>}
+        {tab === 'messages' ? <>
+          <div className="pthread2">
+            {!msgs.length && <div className="tsys">No messages yet. Your enquiry is with {c.business_name || 'your creative'}.</div>}
+            {msgs.map((it, n) => <div key={it.id || n} className={'tm ' + it.k + (!it.text && it.att ? ' only' : '')}>{it.text}{it.att && <Attachments items={it.att} ctx={{ threadId: it.thread, token }} />}<span className="w">{when(it.at)}</span></div>)}
+            <div ref={end} />
+          </div>
         <div className="pcbox"><Pending files={att.files} onRemove={att.remove} busy={busy === 'send'} progress={prog} />
-        <div className="pcompose lg"><span className="lens" aria-hidden="true" /><AttachButton onFiles={att.add} count={att.files.length} disabled={busy === 'send'} /><input value={v} onChange={e => { setV(e.target.value); setErr('') }} onKeyDown={e => e.key === 'Enter' && send()} placeholder={att.files.length ? 'Add a note, or just send the files' : 'Message ' + (c.business_name || 'your creative')} disabled={busy === 'send'} /><button onClick={send} aria-label="Send" disabled={busy === 'send'}><Icon name="arrow" /></button></div></div>
+          <div className="pcompose lg"><span className="lens" aria-hidden="true" /><AttachButton onFiles={att.add} count={att.files.length} disabled={busy === 'send'} /><input value={v} onChange={e => { setV(e.target.value); setErr('') }} onKeyDown={e => e.key === 'Enter' && send()} placeholder={att.files.length ? 'Add a note, or just send the files' : 'Message ' + (c.business_name || 'your creative')} disabled={busy === 'send'} /><button onClick={send} aria-label="Send" disabled={busy === 'send'}><Icon name="arrow" /></button></div></div>
+        </> : <div className="pdocs">
+          {!docs.length && <div className="tsys">Quotes, contracts, invoices and galleries from {c.business_name || 'your creative'} show here.</div>}
+          {GROUPS.map(([g, ks]) => { const list = docs.filter(it => ks.includes(it.k)).slice().reverse(); return list.length ? <section key={g}><h2>{g}</h2><div className="pdl">{list.map(card)}</div></section> : null })}
+        </div>}
         <p className="fine" style={{ textAlign: 'center', marginTop: 10 }}>Photos, PDFs and files up to 50 MB each, straight from your phone or computer. Only you and {c.business_name || 'your creative'} can open them.</p>
         <p className="fine" style={{ textAlign: 'center', marginTop: 18 }}>This link is yours. No account, no password. Lose it and {c.business_name || 'your creative'} can resend it in a tap. <Link to="/" style={{ color: 'var(--green-t)' }}>lenstrybe.com</Link></p>
       </main>
