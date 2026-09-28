@@ -38,7 +38,7 @@ export default function Login() {
         <h1>Welcome <em>back.</em></h1>
         <div className="who" role="tablist" aria-label="I am a">
           <button type="button" role="tab" aria-selected={who === 'creative'} className={who === 'creative' ? 'on' : ''} onClick={() => setWho('creative')}>I'm a creative</button>
-          <button type="button" role="tab" aria-selected={who === 'client'} className={who === 'client' ? 'on' : ''} onClick={() => setWho('client')}>I'm a client</button>
+          <button type="button" role="tab" aria-selected={who === 'client'} className={who === 'client' ? 'on' : ''} onClick={() => setWho('client')}>I'm hiring</button>
         </div>
         <p className="hint">{who === 'creative' ? 'Straight to your workspace: today, threads, money and Lumi.' : 'Straight to your portal: your booking, documents and files, one link.'}</p>
         {state?.note && <div className="lalready"><b>{state.note}</b></div>}

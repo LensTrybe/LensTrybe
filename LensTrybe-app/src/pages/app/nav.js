@@ -1,7 +1,8 @@
 // The whole workspace, one list. Everything on the live sidebar is here under the same names,
-// with the three you open most (Today, Threads, Calendar) at the top and nothing nested twice.
+// with the Job board pinned first (client-first launch, 28 Sep), then the three you open most
+// (Today, Threads, Calendar), and nothing nested twice. The old one-item "Work" group is gone.
 export const TOP = [
-  ['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'],
+  ['jobs', 'Job board', 'megaphone'], ['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'],
   ['projects', 'Projects', 'briefcase'], ['notes', 'Notes', 'note'], ['inventory', 'Inventory', 'box'],
 ]
 export const GROUPS = [
@@ -10,7 +11,6 @@ export const GROUPS = [
   ['Portfolio', 'image', [['brand-kit', 'Brand kit', 'palette'], ['website', 'Website', 'globe'], ['deliver', 'Deliver', 'deliver']]],
   ['Content', 'pen', [['content-calendar', 'Content calendar', 'cal'], ['content-ideas', 'Content ideas', 'spark'], ['performance', 'Performance', 'chart'], ['channels', 'Channels', 'globe']]],
   ['Business', 'briefcase', [['reviews', 'Reviews', 'star'], ['marketplace', 'Marketplace', 'bag'], ['collaborate', 'Collaborate', 'users'], ['team', 'Team', 'users'], ['insights', 'Insights', 'chart']]],
-  ['Work', 'clock', [['jobs', 'Job board', 'briefcase']]],
   ['Account', 'user', [['profile', 'Edit profile', 'edit'], ['view-profile', 'View profile', 'eye'], ['subscription', 'Subscription', 'card'], ['referrals', 'Referrals', 'gift'], ['founding', 'Founding hub', 'star'], ['settings', 'Settings', 'settings'], ['support', 'Help and support', 'help']]],
 ]
 // Availability now lives as a tab on Calendar, CRM as a view on CRM & Contacts; their routes stay for old links
