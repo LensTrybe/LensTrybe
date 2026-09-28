@@ -5,6 +5,8 @@ import { CREATIVES, parseBrief, scoreCreative, TAG_LABEL } from '../../data/crea
 import Still from '../../components/Still'
 import Icon from '../../components/Icon'
 import { fmt } from '../../lib/format'
+import { LIVE } from '../../lib/mode'
+import { loadCreatives } from '../../lib/live'
 
 const HINTS = [
   ['Wedding in Noosa, 14 Nov', 'A wedding photographer in Noosa on 14 November, around $3,000'],
@@ -14,9 +16,10 @@ const HINTS = [
 ]
 const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 
-// The ask: one sentence in, a constellation of matches around the living lens.
-// jobFirst (the client-first launch): the same hero with no ask bar; one clear post-a-job pill leads
-// to the form (Michael, 28 Sep).
+// The ask: one sentence in, a constellation of matches around the living lens, with the Post a job
+// pill right under the bar (Michael, 28 Sep: the original hero back, Post a job kept). On the live
+// site the matches are the real listed creatives; the sample creatives are for the demo only.
+// jobFirst (site_settings.home_hero = 'job'): the same hero with no ask bar, only the pill.
 export default function Ask({ onOpen, jobFirst = false }) {
   const nav = useNavigate()
   const toJob = t => nav('/jobs' + (t && t.trim() ? '?q=' + encodeURIComponent(t.trim()) : ''))
@@ -30,6 +33,8 @@ export default function Ask({ onOpen, jobFirst = false }) {
   const [pos, setPos] = useState([])
   const aimAt = i => { const p = pos[i]; if (!p) return; lens.current?.aim({ x: p.x - p.cx, y: -(p.y - p.cy) }) }
   const touched = useRef(false)
+  const pool = useRef(LIVE ? [] : CREATIVES)
+  useEffect(() => { if (LIVE) loadCreatives().then(l => { pool.current = l }).catch(() => {}) }, [])
   const ph = 'A wedding photographer in Noosa on 14 November, around $3,000'
 
   useEffect(() => { lens.current = mountLens(cv.current); return () => lens.current?.destroy() }, [])
@@ -67,17 +72,20 @@ export default function Ask({ onOpen, jobFirst = false }) {
 
   const run = useCallback((text) => {
     const b = parseBrief(text)
-    const ranked = CREATIVES.map(x => ({ ...x, s: scoreCreative(x, b) })).sort((a, c) => c.s - a.s).slice(0, 6)
+    const ranked = pool.current.map(x => ({ ...x, s: scoreCreative(x, b) })).sort((a, c) => c.s - a.s).slice(0, 6)
     setBrief(b); setThink(true); lens.current?.think(true); setLine('')
     setTimeout(() => {
       setThink(false); lens.current?.think(false); lens.current?.live(true); setLive(true)
       setOrbs(ranked.map(o => ({ ...o, in: false })))
       requestAnimationFrame(() => layout(ranked.length))
+      if (!ranked.length) { setLine('Nobody is listed for that yet. Post it as a job and creatives who do that work will reply.'); return }
       const top = ranked[0], free = ranked.filter(x => x.free).length, inb = b.budget ? ranked.filter(x => x.p <= b.budget).length : null
       const first = n => n.split(' ')[0]
       const others = ranked.slice(1).filter(x => x.free).slice(0, 2).map(x => first(x.n))
       const tail = others.length ? ` ${others.join(' and ')} ${others.length > 1 ? 'are' : 'is'} also free that day.` : ''
-      const full = `${ranked.length} match. ${free} are free${b.date ? ' on ' + b.date : ''}${inb !== null ? ', ' + inb + ' inside your budget' : ''}. ${first(top.n)} is the closest fit: ${top.why}${tail}`
+      const full = LIVE
+        ? `${ranked.length} ${ranked.length === 1 ? 'creative' : 'creatives'} for this. ${first(top.n)} is the closest fit${top.why && top.why !== '.' ? ': ' + top.why : '.'} Tap any of them to see their work, or post it as a job and let them come to you.`
+        : `${ranked.length} match. ${free} are free${b.date ? ' on ' + b.date : ''}${inb !== null ? ', ' + inb + ' inside your budget' : ''}. ${first(top.n)} is the closest fit: ${top.why}${tail}`
       // the creatives arrive as Lumi names them: the closest fit blooms on its name, the rest follow in fit order
       const nameAt = full.indexOf(first(top.n) + ' is the closest'), tailAt = tail ? full.indexOf(tail) : -1
       const show = k => setOrbs(os => os.map((o, j) => j === k ? { ...o, in: true } : o))
@@ -110,7 +118,7 @@ export default function Ask({ onOpen, jobFirst = false }) {
         {jobFirst
           ? <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>Creatives <em>come to you.</em></span></span></h1>
           : <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>We'll <em>find them.</em></span></span></h1>}
-        <p className="sub">{jobFirst ? 'Post the job in a minute. Photographers and videographers who do that work reply with a real quote, and you pick one. Free for clients, no commissions, ever.' : 'One sentence. Photographers and videographers across Australia, matched on the work, the date, the place and the budget. No commissions, ever.'}</p>
+        <p className="sub">{jobFirst ? 'Post the job in a minute. Photographers and videographers who do that work reply with a real quote, and you pick one. Free for clients, no commissions, ever.' : 'One sentence. Photographers and videographers across South East Queensland, matched on the work, the place and the budget. Or post a job and let them come to you. No commissions, ever.'}</p>
         {jobFirst ? <>
           <Link className="jobpill big" to="/jobs"><i />Post a job<Icon name="arrow" size={16} /></Link>
         </> : <>
@@ -120,6 +128,7 @@ export default function Ask({ onOpen, jobFirst = false }) {
           <button type="button" className="mic" aria-label="Speak instead"><Icon name="mic" size={18} /></button>
           <button type="submit" className="go"><span>{jobFirst ? 'Post it' : 'Find them'}</span><Icon name="arrow" size={14} /></button>
         </form>
+        <Link className="jobpill under" to={'/jobs' + (q.trim() ? '?q=' + encodeURIComponent(q.trim()) : '')}><i />Post a job<Icon name="arrow" size={15} /></Link>
         {brief && <div className="brief">
           {brief.tags.length > 0 && <span className="lg"><i />{brief.tags.map(t => TAG_LABEL[t]).join(' + ')}</span>}
           {brief.place && <span className="lg"><i />{brief.place.replace(/\b\w/g, c => c.toUpperCase())}</span>}
@@ -127,15 +136,14 @@ export default function Ask({ onOpen, jobFirst = false }) {
           {brief.budget && <span className="lg"><i />Around {fmt(brief.budget)}</span>}
         </div>}
         <div className="hints">{HINTS.map(([l, t]) => <button key={l} type="button" className="lg" onClick={() => hint(t)}>{l}</button>)}</div>
-        <Link className="postjob" to={'/jobs' + (q.trim() ? '?q=' + encodeURIComponent(q.trim()) : '')}>{live ? 'Not quite right? Post it as a job and they reply to you' : 'Or post a job and let them come to you'}<Icon name="arrow" size={12} /></Link>
         </>}
       </div>
       <div className="cfield" ref={field}>
         {orbs.map((o, i) => (
           <div key={o.id} className={'orb' + (o.in ? ' in' : '') + (i === 0 ? ' best' : '')} onPointerEnter={() => aimAt(i)} onPointerLeave={() => lens.current?.aim(null)} style={{ left: pos[i]?.x, top: pos[i]?.y, '--fit': Math.max(0, Math.min(1, (o.s - 50) / 50)), '--sz': 'calc(' + (i === 0 ? 128 : i < 3 ? 110 : 92) + 'px * var(--k, 1))' }}>
-            <button type="button" aria-label={'Open ' + o.n} onClick={e => { document.documentElement.style.setProperty('--ox', e.clientX + 'px'); document.documentElement.style.setProperty('--oy', e.clientY + 'px'); onOpen(o) }}>
-              <div className="ph"><Still seed={o.seed} mood={o.mood} style={{ borderRadius: '50%' }} /><span className={'fit' + (o.s >= 80 ? '' : o.s >= 55 ? ' mid' : ' low')}>{i === 0 ? 'Closest fit · ' : ''}{o.s}%</span></div>
-              <b>{o.n}</b><small>{o.short} · {o.c}</small><span className={'av' + (o.free ? '' : ' no')}><i />{o.free ? 'Free on the date' : 'Booked that day'}</span>
+            <button type="button" aria-label={'Open ' + o.n} onClick={e => { if (o.live) return nav('/creatives/' + o.id); document.documentElement.style.setProperty('--ox', e.clientX + 'px'); document.documentElement.style.setProperty('--oy', e.clientY + 'px'); onOpen(o) }}>
+              <div className="ph">{o.avatar ? <img src={o.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <Still seed={o.seed} mood={o.mood} style={{ borderRadius: '50%' }} />}<span className={'fit' + (o.s >= 80 ? '' : o.s >= 55 ? ' mid' : ' low')}>{i === 0 ? 'Closest fit · ' : ''}{o.s}%</span></div>
+              <b>{o.n}</b><small>{o.short} · {o.c}</small><span className={'av' + (o.free ? '' : ' no')}><i />{o.live ? (o.free ? 'Taking bookings' : 'Not taking bookings') : o.free ? 'Free on the date' : 'Booked that day'}</span>
             </button>
           </div>
         ))}

@@ -656,3 +656,6 @@
 /* the hero's own headline waits under the intro and rises as it clears */
 .introing .pub .ask h1 .ln span{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.intro{display:none}}
+/* the Post a job pill under the ask bar (28 Sep) */
+.pub .ask .jobpill.under{margin-top:14px;animation:fadeup .9s var(--ease) .45s backwards}
+.pub .ask.live .jobpill.under{margin-top:10px;font-size:14px;padding:9px 18px}
