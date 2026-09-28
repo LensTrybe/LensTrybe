@@ -136,6 +136,31 @@ function LiveSync() {
   return null
 }
 
+// The name card at the foot of the sidebar: who you are and your plan on one line each, then the
+// light/dark switch and Log out. Logging out asks first (Michael, 29 Sep), so a stray tap never
+// drops someone out of their workspace.
+function MeCard({ dark, setDark }) {
+  const { s } = useStore(); const { confirm } = useSheet(); const nav = useNavigate()
+  const photo = s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover', backgroundPosition: 'center' } : undefined
+  const plan = planLabel(s.plan.name)
+  const out = () => confirm({
+    title: 'Log out of LensTrybe?', sub: 'Anything you have saved stays exactly where it is.', center: true,
+    cancel: 'Stay logged in', cta: 'Log out', working: 'Logging out',
+    onYes: async () => { await signOut(); nav('/login', { replace: true }) },
+  })
+  return (
+    <div className="me lg">
+      <div className="who"><span className="av" style={photo} /><div><b title={s.profile.n}>{s.profile.n}</b><small>{s.plan.founding && <em className="fd" title="Founding creative" aria-label="Founding creative"><Icon name="star" size={11} /></em>}{plan}</small></div></div>
+      <div className="acts">
+        <button type="button" className={'thm' + (dark ? ' dk' : '')} role="switch" aria-checked={dark} aria-label="Dark mode" title={dark ? 'Switch to light' : 'Switch to dark'} onClick={() => setDark(d => !d)}>
+          <i aria-hidden="true" /><span><Icon name="sun" size={14} /></span><span><Icon name="moon" size={14} /></span>
+        </button>
+        <button type="button" className="lo" onClick={out}><Icon name="out" size={14} />Log out</button>
+      </div>
+    </div>
+  )
+}
+
 export default function Shell() {
   const [dark, setDark] = useState(() => read('lt-dark', true))
   const [dock, setDock] = useState(() => read('lt-dock', typeof innerWidth === 'undefined' || innerWidth > 1600)), [dockM, setDockM] = useState(false)
@@ -172,7 +197,7 @@ export default function Shell() {
           {GROUPS.map(group)}
           <div className="sep" />
           <NavLink to="/app/lumi" className={'nl' + (active('lumi') ? ' on' : '')}><Icon name="spark" />Lumi{!dock && !gate('lumi') && <span className="dot" aria-hidden="true" />}{lock('lumi')}</NavLink>
-          <div className="me lg"><span className="av" style={s.profile.avatar && s.profile.avatar !== 'seed' ? { backgroundImage: 'url(' + s.profile.avatar + ')', backgroundSize: 'cover' } : undefined} /><div><b>{s.profile.n}</b><small>{planLabel(s.plan.name)}{s.plan.founding ? ' · Founding' : ''}</small></div><button className="tg" onClick={() => setDark(d => !d)} aria-label="Switch theme"><Icon name={dark ? 'sun' : 'moon'} size={15} /></button><button className="tg" onClick={async () => { await signOut(); nav('/login', { replace: true }) }} aria-label="Log out" title="Log out"><Icon name="out" size={15} /></button></div>
+          <MeCard dark={dark} setDark={setDark} />
         </aside>
         <header className="top">
           <CommandBar />
