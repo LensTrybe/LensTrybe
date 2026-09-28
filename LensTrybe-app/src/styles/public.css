@@ -619,40 +619,36 @@
 .pub .ask .jobpill.big{font-size:18px;padding:16px 30px;gap:12px;margin-top:6px;animation-delay:.5s}
 @media (max-width:700px){.pub .ask .jobpill.big{font-size:16px;padding:14px 22px}}
 
-/* ── The intro (item 9, 28 Sep). The mark as a lens: blink, focus in, focus out, lock, shutter,
-   flash, and the page is the photo. One timeline of CSS animations; .out clears it early. ── */
+/* ── The intro (item 9, 28 Sep). The hero's ring as a lens: blink, a slow focus in and out, lock,
+   shutter, then the page underneath is the photo. One timeline of CSS animations; .out clears it. ── */
 .intro{position:fixed;inset:0;z-index:200;background:#07070b;display:grid;place-items:center;cursor:pointer;overflow:hidden;
-  --s:min(44vh,58vw,400px);transition:opacity .6s var(--ease)}
+  --s:min(60vh,72vw,640px);transition:opacity .7s var(--ease)}
 .intro.out{opacity:0;pointer-events:none}
-.intro .ilens{position:relative;width:var(--s);height:var(--s);animation:iin .6s var(--ease) both,ipush 1.5s var(--ease) 1.25s both,isnap .32s var(--ease) 2.9s both}
-.intro .imark{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 30px 60px rgba(0,0,0,.6))}
-.intro .iring{transform-origin:206px 206px;animation:iturn 1.5s var(--ease) 1.25s both}
-.intro .iglass{transform-origin:206px 206px;animation:ifocus 1.5s var(--ease) 1.25s both}
-.intro .ihl{transform-origin:206px 206px;animation:ihl 1.5s var(--ease) 1.25s both}
-.intro .ilid{transform:translateY(0)}
-.intro .ilid.top{animation:ilidt .5s var(--ease) .75s both}
-.intro .ilid.bot{animation:ilidb .5s var(--ease) .75s both}
-.intro .iblade{fill:#1b1c26;stroke:#4a4c5e;stroke-width:3;transform-origin:346px 206px;transform:rotate(0deg);animation:iblade .55s cubic-bezier(.6,0,.2,1) 2.9s both}
-.intro .iflash{position:absolute;inset:0;background:#fff;opacity:0;animation:iflash .6s ease-out 3.02s both}
-.intro .ivf{position:absolute;width:12%;height:12%;border:2px solid rgba(255,255,255,.55);opacity:0;animation:ivfin .5s var(--ease) 1.1s both,ivflock .35s var(--ease) 2.65s both}
-.intro .ivf.a{top:-10%;left:-10%;border-right:0;border-bottom:0;border-top-left-radius:6px}
-.intro .ivf.b{top:-10%;right:-10%;border-left:0;border-bottom:0;border-top-right-radius:6px}
-.intro .ivf.c{bottom:-10%;left:-10%;border-right:0;border-top:0;border-bottom-left-radius:6px}
-.intro .ivf.d{bottom:-10%;right:-10%;border-left:0;border-top:0;border-bottom-right-radius:6px}
-@keyframes iin{from{opacity:0;transform:scale(.7)}to{opacity:1;transform:scale(1)}}
-@keyframes ilidt{0%,100%{transform:translateY(0)}45%,55%{transform:translateY(140px)}}
-@keyframes ilidb{0%,100%{transform:translateY(0)}45%,55%{transform:translateY(-140px)}}
-/* focus: the glass swells and blurs as the lens racks in, then settles back sharp */
-@keyframes ipush{0%,100%{transform:scale(1)}45%{transform:scale(1.14)}}
-@keyframes ifocus{0%{transform:scale(1);filter:blur(0)}45%{transform:scale(1.3);filter:blur(4px)}80%{transform:scale(.97);filter:blur(0)}100%{transform:scale(1)}}
-@keyframes ihl{0%,100%{transform:translate(0,0)}45%{transform:translate(-16px,-12px)}}
-@keyframes iturn{0%,100%{transform:rotate(0)}45%{transform:rotate(-24deg)}}
-@keyframes ivfin{from{opacity:0;transform:scale(1.4)}to{opacity:1;transform:scale(1)}}
-@keyframes ivflock{0%{border-color:rgba(255,255,255,.55)}50%{border-color:var(--neon);transform:scale(.92)}100%{border-color:var(--neon);transform:scale(1)}}
-/* shutter: the blades sweep in to a pinhole and back out, the body flinches, the flash fires */
-@keyframes iblade{0%{transform:rotate(0deg)}35%,50%{transform:rotate(86deg)}100%{transform:rotate(0deg)}}
-@keyframes isnap{0%,100%{transform:scale(1)}40%{transform:scale(.96)}}
-@keyframes iflash{0%{opacity:0}16%{opacity:1}100%{opacity:.92}}
+.intro .ilens{position:relative;width:var(--s);height:var(--s);animation:iin .7s var(--ease) both,ipush 2.4s var(--ease) 1.5s forwards}
+.intro .imark{width:100%;height:100%;display:block;overflow:visible;animation:iblink .5s var(--ease) .9s forwards,isnap .4s var(--ease) 4s forwards}
+/* the ring itself: the same crisp conic band as the small lens dots across the site, pink at the top, mint at the foot */
+.intro .ihalo{width:412px;height:412px;border-radius:50%;background:conic-gradient(from 0deg,var(--rose) 0%,#f0c6de 14%,var(--rose) 26%,var(--lilac) 42%,var(--mint) 58%,var(--mint) 74%,var(--lilac) 88%,var(--rose) 100%);
+  -webkit-mask:radial-gradient(circle,transparent 158px,#000 159px,#000 199px,transparent 200px);mask:radial-gradient(circle,transparent 158px,#000 159px,#000 199px,transparent 200px);animation:iturn 2.4s var(--ease) 1.5s forwards}
+.intro .iglass{transform-origin:206px 206px;animation:ifocus 2.4s var(--ease) 1.5s forwards}
+.intro .ihl{transform-origin:206px 206px;animation:ihl 2.4s var(--ease) 1.5s forwards}
+.intro .iblade{fill:#1d1d2b;stroke:#4a4c66;stroke-width:2.5;transform-origin:330px 206px;transform:rotate(0deg);animation:iblade .7s cubic-bezier(.6,0,.2,1) 4s both}
+.intro .ivf{position:absolute;width:10%;height:10%;border:1.5px solid rgba(255,255,255,.4);opacity:0;animation:ivfin .6s var(--ease) 1.3s both,ivflock .4s var(--ease) 3.6s forwards}
+.intro .ivf.a{top:-9%;left:-9%;border-right:0;border-bottom:0;border-top-left-radius:5px}
+.intro .ivf.b{top:-9%;right:-9%;border-left:0;border-bottom:0;border-top-right-radius:5px}
+.intro .ivf.c{bottom:-9%;left:-9%;border-right:0;border-top:0;border-bottom-left-radius:5px}
+.intro .ivf.d{bottom:-9%;right:-9%;border-left:0;border-top:0;border-bottom-right-radius:5px}
+@keyframes iin{from{opacity:0;transform:scale(.8)}to{opacity:1;transform:scale(1)}}
+@keyframes iblink{0%,100%{transform:scaleY(1)}45%,55%{transform:scaleY(.06)}}
+@keyframes isnap{0%,100%{transform:scale(1)}40%{transform:scale(.97)}}
+/* focus: the whole lens pushes in slowly and settles back with a small overshoot */
+@keyframes ipush{0%,100%{transform:scale(1)}45%{transform:scale(1.16)}82%{transform:scale(.985)}}
+@keyframes ifocus{0%,100%{transform:scale(1)}45%{transform:scale(1.2)}}
+@keyframes ihl{0%,100%{transform:translate(0,0)}45%{transform:translate(-14px,-10px)}}
+@keyframes iturn{0%,100%{transform:rotate(0)}45%{transform:rotate(-18deg)}}
+@keyframes ivfin{from{opacity:0;transform:scale(1.3)}to{opacity:1;transform:scale(1)}}
+@keyframes ivflock{0%{border-color:rgba(255,255,255,.4)}50%{border-color:var(--neon);transform:scale(.94)}100%{border-color:var(--neon);transform:scale(1)}}
+/* shutter: the blades sweep in to a pinhole and back out while the lens flinches */
+@keyframes iblade{0%{transform:rotate(0deg)}38%,52%{transform:rotate(88deg)}100%{transform:rotate(0deg)}}
 /* the hero's own headline waits under the intro and rises as it clears */
 .introing .pub .ask h1 .ln span{animation-play-state:paused}
 @media (prefers-reduced-motion:reduce){.intro{display:none}}
