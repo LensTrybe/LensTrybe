@@ -188,7 +188,14 @@ export default function Shell() {
   const nav = useNavigate(); const { pathname } = useLocation()
   useEffect(() => { try { localStorage.setItem('lt-dark', dark ? '1' : '0') } catch {} }, [dark])
   useEffect(() => { try { localStorage.setItem('lt-dock', dock ? '1' : '0') } catch {} }, [dock])
-  useEffect(() => { document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = '' } }, [])
+  // Laptops: the page itself stays still and each panel scrolls. Phones and tablets (900px and
+  // under) scroll the whole page, so the body must be left alone there (29 Sep: swiping did nothing).
+  useEffect(() => {
+    const mq = matchMedia('(min-width: 901px)')
+    const set = () => { document.body.style.overflow = mq.matches ? 'hidden' : '' }
+    set(); mq.addEventListener('change', set)
+    return () => { mq.removeEventListener('change', set); document.body.style.overflow = '' }
+  }, [])
   useEffect(() => { setDockM(false) }, [pathname])
   useEffect(() => { const a = e => setDark(e.detail.dark), b = e => setDock(e.detail.dock); addEventListener('lt-theme', a); addEventListener('lt-dock', b); return () => { removeEventListener('lt-theme', a); removeEventListener('lt-dock', b) } }, [])
   useSpecular([pathname, dock])
