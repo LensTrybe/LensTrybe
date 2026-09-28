@@ -56,7 +56,7 @@ export default function Legal() {
         <div className="legalgrid">
           <aside className="toc lg rv"><b>Contents</b>{d.sections.map((s, i) => <a key={s.id} href={'#' + s.id} className={active === s.id ? 'on' : ''}><i>{i + 1}</i>{s.title}</a>)}</aside>
           <article className="doc lg rv">
-            <div className="intro"><Body text={d.intro} /></div>
+            <div className="dintro"><Body text={d.intro} /></div>
             {d.sections.map((s, i) => <section key={s.id} id={s.id} className="dsec"><h2><span>{i + 1}</span>{s.title}</h2><Body text={s.body} /></section>)}
             <p className="fine">Questions about any of this: <a href="mailto:connect@lenstrybe.com">connect@lenstrybe.com</a>. Nothing here limits your rights under the Australian Consumer Law.</p>
           </article>

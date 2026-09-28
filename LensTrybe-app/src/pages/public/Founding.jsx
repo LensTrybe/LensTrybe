@@ -1,11 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
+import Aurora from '../../components/Aurora'
+import { mountLens } from '../../lib/lens'
+import { useFoundingTaken } from '../../lib/founding'
 
 // The Founding 100 offer: the one link to send in a DM instead of explaining the deal every time.
 // The terms live at /legal/founding; this page sells it and takes applications. Nobody signs up
 // from here without a code: an application is a request, a person decides, a code arrives by email.
-const TAKEN = 37 // places used so far; comes from founding_places_used() once Supabase is wired
 const GET = [
   ['12 months of Trybe Complete, free', 'The top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The twelve months go to the first hundred creatives who use a code; after that it is six months, on the same price.'],
   ['$49 a month after that, for life', 'Locked in. It never goes up while you keep your founding deal. Everyone joining later pays $74.99.'],
@@ -29,7 +31,10 @@ const REGIONS = ['South East Queensland', 'Brisbane', 'Gold Coast', 'Sunshine Co
 
 export default function Founding() {
   const nav = useNavigate()
-  const left = Math.max(0, 100 - TAKEN)
+  const taken = useFoundingTaken()
+  const left = taken == null ? null : Math.max(0, 100 - taken)
+  const cv = useRef(null)
+  useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   const [code, setCode] = useState(''), [cerr, setCerr] = useState('')
   const [f, setF] = useState({ name: '', biz: '', email: '', link: '', disc: '', region: '', note: '' }), [err, setErr] = useState(''), [sent, setSent] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
@@ -43,20 +48,28 @@ export default function Founding() {
   }
   const toApply = () => document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' })
   return (
-    <main className="page fdp"><div className="wrap">
-      <div className="fdhero rv">
-        <p className="eb p">Invitation only</p>
-        <h1>The first hundred creatives <em>on LensTrybe.</em></h1>
+    <>
+    <section className="hiw fdtop dark darkhero">
+      <canvas className="gl" ref={cv} aria-hidden="true" />
+      <div className="in">
+      <div className="fdhero">
+        <p className="eb">Invitation only</p>
+        <h1><span className="ln"><span>The first hundred</span></span> <span className="ln"><span>creatives <em>on LensTrybe.</em></span></span></h1>
         <p className="sub">A home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever. Michael is hand-picking a hundred creatives to start it with, and the deal they get never comes back.</p>
-        <div className="fdcount lg"><div className="n"><b>{left}</b><span>of 100 founding places left</span></div><div className="bar"><i style={{ width: (100 - left) + '%' }} /></div><small>A place is taken when a code is used, not when it is sent. More codes go out than there are places, so holding one does not hold a place.</small></div>
-        <div className="ctas"><button className="btn p lg" onClick={() => document.getElementById('fcode')?.focus()}>I have a code <Icon name="arrow" size={14} /></button><button className="btn g lg" onClick={toApply}>Ask for a code</button></div>
+        <div className="fdcount lg d"><div className="n"><b>{left ?? '…'}</b><span>of 100 founding places left</span></div><div className="bar"><i style={{ width: (left == null ? 0 : 100 - left) + '%' }} /></div><small>A place is taken when a code is used, not when it is sent. More codes go out than there are places, so holding one does not hold a place.</small></div>
+        <div className="ctas"><button className="btn w lg" onClick={() => document.getElementById('fcode')?.focus()}>I have a code <Icon name="arrow" size={14} /></button><button className="btn g lg" onClick={toApply}>Ask for a code</button></div>
       </div>
 
-      <form className="fdredeem lg rv" onSubmit={redeem}>
+      <form className="fdredeem lg d" onSubmit={redeem}>
         <div><b>Have a code?</b><span>It is filled into the signup for you. Trybe Complete is chosen, the founding price is on the plan page, and nothing is charged for a year.</span></div>
-        <div className="fdcode"><input id="fcode" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setCerr('') }} placeholder="Your invite code" aria-label="Founding code" autoComplete="off" spellCheck={false} /><button type="submit" className="btn p">Redeem <Icon name="arrow" size={14} /></button></div>
+        <div className="fdcode"><input id="fcode" value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setCerr('') }} placeholder="Your invite code" aria-label="Founding code" autoComplete="off" spellCheck={false} /><button type="submit" className="btn w">Redeem <Icon name="arrow" size={14} /></button></div>
         {cerr && <p className="fderr">{cerr}</p>}
       </form>
+      </div>
+    </section>
+
+    <div className="lt"><Aurora />
+    <main className="page fdp"><div className="wrap">
 
       <section className="fdsec rv"><h2>What you get</h2><div className="fdgrid">{GET.map(([t, d]) => <div key={t} className="lg fdcard"><b>{t}</b><p>{d}</p></div>)}</div></section>
       <section className="fdsec rv"><h2>What is asked in return</h2><p className="lede">This is a partnership, not a giveaway. A directory of half-finished profiles helps nobody, so the founding deal comes with three commitments.</p><div className="fdgrid three">{ASK.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Fall behind and you get an email and fourteen days to put it right. Nothing happens silently, and if the founding deal ends your account stays, it just moves to the standard price. The full terms are in the <Link to="/legal/founding">Founding Creative Agreement</Link>.</p></section>
@@ -78,5 +91,7 @@ export default function Founding() {
         )}
       </section>
     </div></main>
+    </div>
+    </>
   )
 }

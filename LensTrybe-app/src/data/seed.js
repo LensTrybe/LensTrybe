@@ -325,9 +325,8 @@ export const SEED = {
   ],
   pages: [
     { id: 'home', n: 'Home', on: 1, h: 'Weddings and real estate, told straight.', p: 'Sunshine Coast photographer. Documentary weddings, twilight listings, and the odd headshot.', secs: [['Hero', 1], ['Recent work', 1], ['Three things clients say', 1], ['Ask in one sentence', 1]] },
-    { id: 'work', n: 'Work', on: 1, h: 'Recent work', p: 'A few from this year. The rest is in the galleries.', secs: [['Weddings', 1], ['Real estate', 1], ['Brand and headshots', 1]] },
     { id: 'about', n: 'About', on: 1, h: 'Hi, I\'m Mara.', p: 'Eight years, four hundred weddings, one camera bag that is always too heavy.', secs: [['Portrait and story', 1], ['How I work', 1], ['Gear, for the nerds', 0]] },
-    { id: 'pricing', n: 'Pricing', on: 1, h: 'Straight prices.', p: 'Three packages, GST included, no surprises at the end.', secs: [['Packages', 1], ['What is included', 1], ['Questions', 1]] },
+    { id: 'gallery', n: 'Gallery', on: 1, h: 'Recent work', p: 'A few from this year. The rest is in the galleries.', secs: [['All work', 1]] },
     { id: 'contact', n: 'Contact', on: 1, h: 'Say what you need.', p: 'One sentence is enough. I reply within a day.', secs: [['Ask bar', 1], ['Booking link', 1], ['Where I work', 1]] },
   ],
   brand: { name: 'Mara Okafor Photography', tag: 'Weddings and real estate, Sunshine Coast', accent: '#8DF3D6', head: 'Instrument Serif', body: 'Inter', foot: 'Thank you for your business', phone: 1, site: 1, abn: 1, gst: 1, pay: 1, terms: 'Deposit 30% to lock the date. Balance seven days before.', lic: 'Personal use. Commercial licence on request.', wm: 1, paper: 'white', layout: 'classic', radius: 12, look: 'coastal', wmMode: 'text', wmPos: 'br', wmSize: 2, wmOpacity: 0.4, voice: { tone: ['Warm', 'Casual'], greet: 'Hi', signoff: 'Mara x', banned: 'Kindly, Please be advised, ASAP' }, over: { inv: {}, q: {}, c: {} }, everywhere: 1 },

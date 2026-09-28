@@ -6,6 +6,7 @@ import { useToast } from '../../components/Toast'
 import { fmt } from '../../lib/format'
 import { ACTIONS, PLANS } from '../../data/workspace'
 import { planLabel } from '../../backend/tierFeatures'
+import { useFoundingTaken } from '../../lib/founding'
 
 export function SectionHead({ eb, ebClass = 'g', title, em, children }) {
   return <div className="sh rv"><div><p className={'eb ' + ebClass}>{eb}</p><h2>{title} <em>{em}</em></h2></div><p>{children}</p></div>
@@ -61,7 +62,7 @@ export function Calculator() {
         <div className="sl"><label>Jobs a month <b>{j}</b></label><input type="range" min="1" max="20" value={j} onChange={e => setJ(+e.target.value)} /></div>
         <div className="sl"><label>Average job value <b>{fmt(v)}</b></label><input type="range" min="300" max="8000" step="100" value={v} onChange={e => setV(+e.target.value)} /></div>
         <div className="sl"><label>Marketplace commission elsewhere <b>{c}%</b></label><input type="range" min="5" max="25" value={c} onChange={e => setC(+e.target.value)} /></div>
-        <p className="fine">Trybe Complete at $74.99 a month, $899.88 a year. Founding creatives pay $0 for the first year, then $49 a month.</p>
+        <p className="fine">Trybe Complete at $74.99 a month, which is $899.88 over a year, or $749.90 a year on annual billing. Founding creatives pay $0 for the first year, then $49 a month.</p>
       </div>
       <div className="out">
         <div className="o lg bad"><small>Commission taken elsewhere</small><b>{fmt(gone)}</b><span>a year, gone</span></div>
@@ -81,6 +82,7 @@ export function Plans({ annual = false }) {
 
 // The founding programme, as a dark print on the light page.
 export function FoundingBand() {
+  const taken = useFoundingTaken()
   return (
     <div className="found rv">
       <Still seed={21} mood="night" />
@@ -93,7 +95,7 @@ export function FoundingBand() {
       <div className="b">
         <div className="k"><b>$0 for 12 months</b><span>Trybe Complete, normally $74.99 a month</span></div>
         <div className="k"><b>$49 a month, for life</b><span>After the first year. Never $74.99.</span></div>
-        <div className="k"><span className="cnt"><b>37</b> of 100 places redeemed. A place is claimed when a code is redeemed, not when it is sent.</span><div className="meter"><i /></div></div>
+        <div className="k"><span className="cnt"><b>{taken ?? '…'}</b> of 100 places redeemed. A place is claimed when a code is redeemed, not when it is sent.</span><div className="meter"><i style={{ width: Math.min(100, taken || 0) + '%' }} /></div></div>
       </div>
     </div>
   )

@@ -185,7 +185,7 @@ export function Card({ x, i = 0, date = null }) {
   const kind = x.t.includes('video') && !x.t.includes('photo') ? 'Videographer' : x.t.includes('video') ? 'Photo + video' : 'Photographer'
   return (
     <Link className="ccard lg" to={'/creatives/' + x.id} style={{ '--i': i }}>
-      <div className="img">{x.live && (x.cover || x.avatar) ? <img src={x.cover || x.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <Still seed={x.seed + 40} mood={x.mood} />}
+      <div className="img">{x.live && (x.cover || x.avatar) ? <CardImg src={x.cover || x.avatar} seed={x.seed} mood={x.mood} /> : <Still seed={x.seed + 40} mood={x.mood} />}
         <div className="tp"><span className="tag">{kind}</span>{!x.live && <span className={'av' + (free ? '' : ' busy')}><i />{free ? 'Free ' + when : 'Booked ' + when}</span>}</div>
       </div>
       <div className="bot">
@@ -210,4 +210,15 @@ function MapView({ list }) {
       {list.map(x => pins[x.id] && <Link key={x.id} className="pin" to={'/creatives/' + x.id} style={{ left: pins[x.id][0] + '%', top: pins[x.id][1] + '%' }}><span className="b">{x.n.split(' ')[0]} · from {fmt(x.p)}</span><span className="d" /></Link>)}
     </div>
   )
+}
+
+// A creative's card photo. Google sign-in avatars come as a 96px square and refuse to load when
+// the page sends its address along, so ask for a bigger one without it; anything that still fails
+// falls back to the same soft still the sample cards use, never a broken-image icon.
+const bigger = u => /googleusercontent\.com/.test(u) ? u.replace(/=s\d+(-c)?$/, '=s600-c') : u
+function CardImg({ src, seed, mood }) {
+  const [bad, setBad] = useState(false)
+  useEffect(() => setBad(false), [src])
+  if (bad) return <Still seed={(seed || 0) + 40} mood={mood} />
+  return <img src={bigger(src)} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
 }

@@ -131,13 +131,16 @@ export function EditConfirm() {
   const [q] = useSearchParams(); const [st, setSt] = useState('busy'); const [msg, setMsg] = useState('')
   const once = useRef(false)
   useEffect(() => { if (once.current) return; once.current = true; editConfirm(q.get('t') || '').then(() => setSt('ok')).catch(e => { setMsg(e.message); setSt('bad') }) }, [])
+  const cv = useRef(null)
+  useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   return (
     <section className="hiw edit dark darkhero" style={{ minHeight: '70vh' }}>
+      <canvas className="gl" ref={cv} aria-hidden="true" />
       <div className="in">
         <p className="eb">The Trybe Edit</p>
         <h1 className="mast"><span className="ln"><span>{st === 'ok' ? <>You're <em>subscribed.</em></> : st === 'bad' ? <>That link <em>didn't work.</em></> : 'Confirming…'}</span></span></h1>
         <p className="sub">{st === 'ok' ? 'A new issue of The Trybe Edit goes up on the 1st of every month.' : st === 'bad' ? (msg || 'Subscribe again and we will send a new link.') : ''}</p>
-        {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn" to="/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
+        {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn w" to="/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
       </div>
     </section>
   )

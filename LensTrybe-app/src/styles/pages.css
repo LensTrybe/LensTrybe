@@ -592,8 +592,8 @@
 .pub .toc a.on{background:#fff;color:var(--ink);font-weight:600;box-shadow:inset 0 0 0 1px rgba(141,243,214,.7)}
 .pub .toc a.on i{color:#0E7C3A}
 .pub .doc{padding:clamp(22px,3vw,40px);border-radius:28px;color:var(--ink)}
-.pub .doc .intro{font-size:16px;line-height:1.7;color:var(--ink);padding-bottom:22px;margin-bottom:8px;border-bottom:1px solid rgba(20,17,26,.1)}
-.pub .doc .intro p{color:var(--ink)}
+.pub .doc .dintro{font-size:16px;line-height:1.7;color:var(--ink);padding-bottom:22px;margin-bottom:8px;border-bottom:1px solid rgba(20,17,26,.1)}
+.pub .doc .dintro p{color:var(--ink)}
 .pub .dsec{padding:26px 0 8px;scroll-margin-top:96px}
 .pub .dsec h2{display:flex;gap:12px;align-items:baseline;font-size:21px;font-weight:600;letter-spacing:-.02em;margin-bottom:12px}
 .pub .dsec h2 span{font-size:12px;font-weight:700;color:#0E7C3A;font-variant-numeric:tabular-nums}
@@ -934,3 +934,35 @@
 @media (max-width:860px){.pub .hiwpts{grid-template-columns:1fr}}
 /* the both-sides demo is wider than a phone in places: keep it inside the screen */
 @media (max-width:600px){.pub .sync{min-width:0;overflow:hidden}.pub .sync>*{min-width:0;max-width:100%}.pub .link .lab{left:50%;transform:translateX(-50%)}.pub .durl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
+
+/* Design pass (28 Sep): Post a job and Join on phones. The hero grid sized itself to the widest
+   field (about 500px) and the page clipped the right half of the form. Let every column shrink. */
+.pub .hiw.join{grid-template-columns:minmax(0,1fr)}
+.pub .jgrid>*,.pub .lform .two>*,.pub .lform .lf{min-width:0}
+.pub .lform input,.pub .lform select,.pub .lform textarea{min-width:0;max-width:100%}
+/* the number field's up/down arrows sat on top of the example text in Safari */
+.pub input[type=number]{-moz-appearance:textfield;appearance:textfield}
+.pub input[type=number]::-webkit-inner-spin-button,.pub input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+
+/* Design pass (28 Sep): Founding opens on the dark lens like every other page, then the light page. */
+.pub .fdtop .fdhero{max-width:820px;margin:0 auto;gap:22px}
+.pub .fdtop .fdhero .sub{color:rgba(255,255,255,.72)}
+.pub .fdtop .fdcount .n span{color:rgba(255,255,255,.7)}
+.pub .fdtop .fdcount .n b{color:var(--neon-t)}
+.pub .fdtop .fdcount .bar{background:rgba(255,255,255,.12)}
+.pub .fdtop .fdcount .bar i{background:var(--neon)}
+.pub .fdtop .fdcount small{color:rgba(255,255,255,.55)}
+.pub .fdtop .fdredeem{width:100%;max-width:820px;margin:6px auto 0;text-align:left;color:#fff}
+.pub .fdtop .fdredeem span{color:rgba(255,255,255,.65)}
+.pub .fdtop .fdcode input{background:rgba(255,255,255,.07);border-color:rgba(255,255,255,.22);color:#fff}
+.pub .fdtop .fdcode input::placeholder{color:rgba(255,255,255,.4)}
+.pub .fdtop .fdcode input:focus{border-color:var(--neon)}
+.pub .lt .fdp{padding-top:clamp(64px,8vw,110px)}
+/* Unsubscribe: the same dark ground, lens and pane as Log in */
+.pub .lpane.unsc h1{font-size:clamp(28px,3.2vw,38px);color:#fff}
+.pub .lpane.unsc>p{color:rgba(255,255,255,.7)}
+.pub .lpane.unsc .fine{color:rgba(255,255,255,.5)}
+.pub .lpane.unsc .btn.g{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.25);color:#fff}
+.pub .fdtop .fdhero{display:flex;flex-direction:column;align-items:center;text-align:center}
+.pub .fdtop h1{font-size:clamp(40px,5.6vw,80px)}
+.pub .lpane.unsc .eb{color:var(--neon-t)}

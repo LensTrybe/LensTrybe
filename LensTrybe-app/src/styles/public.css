@@ -659,3 +659,16 @@
 /* the Post a job pill under the ask bar (28 Sep) */
 .pub .ask .jobpill.under{margin-top:14px;animation:fadeup .9s var(--ease) .45s backwards}
 .pub .ask.live .jobpill.under{margin-top:10px;font-size:14px;padding:9px 18px}
+
+/* Design pass (28 Sep): the join between a dark top and the light page. The dark used to bleed
+   260px into the light section and sat on top of its first heading; now it is a short shadow that
+   ends before any text. Pages with no dark top (legal) get none. The light area also fades into
+   the page colour at its foot, so the colour field doesn't stop in a hard line at the footer. */
+.pub .lt::before{height:96px;background:linear-gradient(180deg,rgba(7,7,11,.55) 0%,rgba(7,7,11,.18) 45%,rgba(7,7,11,0) 100%)}
+.pub .lt.legalpg::before{display:none}
+.pub .lt::after{content:"";position:absolute;left:0;right:0;bottom:0;height:180px;background:linear-gradient(180deg,rgba(246,245,243,0),var(--bg));pointer-events:none;z-index:0}
+/* a dark top with no lens canvas behind it (the Edit confirm page) still needs its dark ground */
+.pub .hiw.darkhero{background:#07070b}
+/* phones: the header links stay on one line (Log in and Join as a creative wrapped onto two) */
+.pub .top .r a,.pub .top .r button{white-space:nowrap}
+@media (max-width:420px){.pub .top .r a,.pub .top .r button{padding:9px 11px;font-size:13px}.pub .top .r{gap:2px}.pub .top .logo svg{height:18px}}

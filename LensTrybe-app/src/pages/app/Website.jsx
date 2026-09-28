@@ -12,7 +12,7 @@ import { planLabel } from '../../backend/tierFeatures'
 // Website: your site, built from your profile and brand kit. One page on Trybe Free (built for you),
 // Home and Gallery on Trybe Essential, Home, About, Gallery and Contact on Trybe Complete and Studio.
 // Pages on the left, the site on the right, publish when it looks right.
-const LIMIT = { Basic: 0, Pro: 0, Expert: 5, Elite: 99 }
+const LIMIT = { Basic: 0, Pro: 0, Expert: 4, Elite: 4 }
 const SITE_PLANS = ['Expert', 'Elite']
 
 export default function Website() { return LIVE ? <WebsiteLive /> : <WebsiteDemo /> }
@@ -26,14 +26,12 @@ function WebsiteDemo() {
   const upd = (k, v) => { F.upd('pages', pg.id, { [k]: v }); setDirty(true) }
   const on = pages.filter(p => p.on).length
   const publish = () => { F.patch('site', { live: true, dirty: false, published: Date.now() }); setDirty(false); toast('Published. Live in about a minute.') }
-  const addPage = () => { if (on >= PLAN.pages) return F.confirm({ title: PLAN.pages + ' pages is the ' + planLabel(PLAN.name) + ' limit', body: 'Trybe Studio has no page limit and your own domain.', cta: 'See Trybe Studio', onYes: () => F.nav('/app/subscription') }); F.newPage(); setDirty(true) }
-  const removePage = p => F.confirm({ title: 'Remove ' + p.n + '?', body: 'It comes off the site on the next publish.', cta: 'Remove', danger: true, onYes: () => { F.del('pages', p.id); if (sel === p.id) setSel('home'); setDirty(true) } })
   const domain = () => F.open({ title: 'Connect your domain', sub: 'Point a CNAME at sites.lenstrybe.com and it is live in an hour.', cta: 'Connect', fields: [{ k: 'd', l: 'Domain', required: true, placeholder: 'maraokafor.com', value: s.site.custom || '' }], submit: v => { F.patch('site', { custom: v.d }); toast(v.d + ' connecting. CNAME → sites.lenstrybe.com.') } })
   const view = () => { window.open(PLAN.site ? profileUrl : profileUrl, '_blank', 'noopener') }
   return (
     <section className="view">
       <div className="vh">
-        <div><h1>Website</h1><p>{PLAN.site ? 'This is your public profile. Built from your pages and brand kit, ' + (PLAN.pages > 20 ? 'unlimited pages' : PLAN.pages + ' pages') + ' on ' + planLabel(PLAN.name) + (PLAN.domain ? ', on your own domain' : '') + '.' : 'On ' + planLabel(PLAN.name) + ' your public profile is the standard LensTrybe page. Trybe Complete turns it into a full website.'}</p></div>
+        <div><h1>Website</h1><p>{PLAN.site ? 'This is your public profile. Built from your pages and brand kit, ' + 'Home, About, Gallery and Contact' + ' on ' + planLabel(PLAN.name) + (PLAN.domain ? ', on your own domain' : '') + '.' : 'On ' + planLabel(PLAN.name) + ' your public profile is the standard LensTrybe page. Trybe Complete turns it into a full website.'}</p></div>
         <div className="acts">
           {PLAN.site ? <>
             <span className={'syncb' + (live ? '' : ' off')}><i />{live ? 'Live · ' + (s.site.custom || s.site.domain) : 'Unpublished'}</span>
@@ -51,11 +49,11 @@ function WebsiteDemo() {
             <div className="h"><b>Pages</b><small className="lumi-by">{on} of {PLAN.pages}</small></div>
             <div className="pglist">
               {pages.map(p => <div key={p.id} className={'pgrow' + (sel === p.id ? ' on' : '') + (p.on ? '' : ' off')}>
-                <button type="button" className="pgn" onClick={() => setSel(p.id)}><Icon name={p.id === 'home' ? 'globe' : p.id === 'work' ? 'image' : p.id === 'about' ? 'user' : p.id === 'pricing' ? 'dollar' : 'chat'} size={15} /><span>{p.n}</span><small>/{p.id === 'home' ? '' : p.id}</small></button>
+                <button type="button" className="pgn" onClick={() => setSel(p.id)}><Icon name={p.id === 'home' ? 'globe' : p.id === 'gallery' ? 'image' : p.id === 'about' ? 'user' : p.id === 'pricing' ? 'dollar' : 'chat'} size={15} /><span>{p.n}</span><small>/{p.id === 'home' ? '' : p.id}</small></button>
                 <span className={'sw2' + (p.on ? ' on' : '')} role="switch" aria-checked={!!p.on} onClick={() => { F.upd('pages', p.id, { on: p.on ? 0 : 1 }); setDirty(true) }}><i /></span>
               </div>)}
             </div>
-            <button className="lnk" style={{ marginTop: 10 }} onClick={addPage}>Add a page</button>{pg && pg.id !== 'home' && <button className="lnk" style={{ marginTop: 10, marginLeft: 14, opacity: .6 }} onClick={() => removePage(pg)}>Remove {pg.n}</button>}
+            
           </div>
           {pg && <div className="card lg">
             <div className="h"><b>{pg.n}</b><small className="lumi-by">Edits show on the right</small></div>

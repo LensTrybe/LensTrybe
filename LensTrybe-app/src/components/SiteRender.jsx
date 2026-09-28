@@ -63,7 +63,7 @@ function DemoSite({ s, page, onPage, creative, compact = false, onEnquire }) {
   const revs = (s.reviews || []).filter(r => r.n >= 4).slice(0, 3)
   const H = fam(b.head), Bf = fam(b.body), rad = (b.radius ?? 12) + 'px'
   const logo = dark => (dark ? (b.logoLight || b.logo || b.mark) : (b.logo || b.mark)) ? <img src={dark ? (b.logoLight || b.logo || b.mark) : (b.logo || b.mark)} alt="" /> : <span className="wmark" style={{ background: acc }} />
-  const hero = pg?.id === 'work' ? 5 : pg?.id === 'about' ? 9 : pg?.id === 'pricing' ? 13 : pg?.id === 'contact' ? 17 : 3
+  const hero = pg?.id === 'gallery' ? 5 : pg?.id === 'about' ? 9 : pg?.id === 'pricing' ? 13 : pg?.id === 'contact' ? 17 : 3
   const sec = ([name]) => {
     if (name === 'Hero') return null
     if (KEYS.includes(name)) return <div key={name} className="ws-sec"><b>{name}</b><div className={'ws-grid' + (name === 'Recent work' ? ' six' : '')}>{GRID[name].map((sd, i) => <span key={sd} className="ws-ph" style={{ borderRadius: `calc(${rad} * .6)` }}><Still seed={sd} mood={['dusk', 'forest', 'golden', 'rose', 'cool', 'night'][(sd + i) % 6]} /></span>)}</div></div>
@@ -84,7 +84,7 @@ function DemoSite({ s, page, onPage, creative, compact = false, onEnquire }) {
     <div className={'wsite' + (compact ? ' compact' : '')} style={{ '--acc': acc, '--pp': P[2], '--pi': P[3], '--rad': rad, fontFamily: Bf, background: P[2], color: P[3] }}>
       <nav className="ws-nav"><span className="ws-brand" style={{ fontFamily: H }}>{logo(b.paper === 'dark')}{b.name}</span>{pages.map(p => <button key={p.id} type="button" className={pg?.id === p.id ? 'on' : ''} onClick={() => onPage?.(p.id)}>{p.n}</button>)}<button type="button" className="ws-cta" style={{ background: acc, color: onColour(acc), borderRadius: rad }} onClick={() => onPage?.('contact')}>Ask</button></nav>
       {pg && <>
-        <div className="ws-hero"><Still seed={hero} mood={pg.id === 'about' ? 'rose' : pg.id === 'work' ? 'cool' : 'golden'} /><div className="in"><h2 style={{ fontFamily: H }}>{pg.h}</h2><p>{pg.p}</p>{pg.id === 'home' && <button type="button" className="ws-heroask" style={{ borderRadius: rad }} onClick={() => onPage?.('contact')}>A wedding photographer in Noosa on 14 November, around $3,000 <b style={{ background: acc, color: onColour(acc), borderRadius: rad }}>Ask</b></button>}</div></div>
+        <div className="ws-hero"><Still seed={hero} mood={pg.id === 'about' ? 'rose' : pg.id === 'gallery' ? 'cool' : 'golden'} /><div className="in"><h2 style={{ fontFamily: H }}>{pg.h}</h2><p>{pg.p}</p>{pg.id === 'home' && <button type="button" className="ws-heroask" style={{ borderRadius: rad }} onClick={() => onPage?.('contact')}>A wedding photographer in Noosa on 14 November, around $3,000 <b style={{ background: acc, color: onColour(acc), borderRadius: rad }}>Ask</b></button>}</div></div>
         <div className="ws-body">{pg.secs.filter(x => x[1]).map(sec)}</div>
       </>}
       <footer className="ws-foot"><span style={{ color: acc }}>{b.foot}</span><span>{b.name}{b.phone ? ' · ' + s.settings.phone : ''}{b.abn ? ' · ABN ' + s.settings.abn : ''}</span></footer>
