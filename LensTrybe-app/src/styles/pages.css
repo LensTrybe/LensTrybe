@@ -920,3 +920,17 @@
 .pub .dp.dark .dpp{background:#12121a;border-color:rgba(255,255,255,.14)}
 .pub .plp{width:240px}
 .pub .plp .spg button i{border-radius:50%}
+
+/* How it works (28 Sep): the two pills, the three-point rows, and a button under a step */
+.pub .hiwpills{display:inline-flex;gap:4px;padding:5px;border-radius:999px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.18);animation:fadeup .9s var(--ease) .1s backwards}
+.pub .hiwpills button{height:40px;padding:0 20px;border-radius:999px;font-size:14px;font-weight:600;color:rgba(255,255,255,.75);transition:background .25s,color .25s}
+.pub .hiwpills button:hover{color:#fff}
+.pub .hiwpills button.on{background:#fff;color:#0a0a0f}
+.pub .hiwpts{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.pub .hiwpts .card{border-radius:20px;padding:20px;display:grid;gap:6px;align-content:start}
+.pub .hiwpts b{font-size:16px;color:var(--ink)}
+.pub .hiwpts span{font-size:14px;line-height:1.55;color:var(--ink-2)}
+.pub .hiwcta{margin-top:18px}
+@media (max-width:860px){.pub .hiwpts{grid-template-columns:1fr}}
+/* the both-sides demo is wider than a phone in places: keep it inside the screen */
+@media (max-width:600px){.pub .sync{min-width:0;overflow:hidden}.pub .sync>*{min-width:0;max-width:100%}.pub .link .lab{left:50%;transform:translateX(-50%)}.pub .durl{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
