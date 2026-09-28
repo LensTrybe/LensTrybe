@@ -97,6 +97,11 @@
    "name": "Creative community feed",
    "status": "building",
    "description": "A place for creatives on LensTrybe to share work, ask questions and find people to collaborate with. Groups, mentions and collaboration posts are being built now."
+  },
+  {
+   "name": "LensTrybe accounting",
+   "status": "planned",
+   "description": "Your books inside LensTrybe, built for creatives. Full bookkeeping alongside your quotes, invoices and expenses, so you no longer need a separate accounting subscription."
   }
  ],
  "SKILLS": [
