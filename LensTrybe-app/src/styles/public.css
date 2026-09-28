@@ -636,7 +636,7 @@
 .intro .ihl{position:absolute;left:17.8%;top:20.6%;width:34%;height:22%;border-radius:50%;background:#fff;opacity:.07;animation:ihl 2.4s var(--ease) 1.5s forwards}
 /* six blades, each pivoting on a point just outside the glass edge, sweeping in to a pinhole */
 .intro .ibl{position:absolute;inset:0}
-.intro .iblade{position:absolute;left:102.5%;top:50%;width:400%;height:400%;background:#1d1d2b;border-left:2px solid #4a4c66;border-top:2px solid #4a4c66;transform-origin:0 0;transform:rotate(0deg);animation:iblade .7s cubic-bezier(.6,0,.2,1) 4s forwards}
+.intro .iblade{position:absolute;left:102.5%;top:50%;width:400%;height:400%;background:linear-gradient(90deg,#262638 0,#1a1a27 9%,#141420 100%);transform-origin:0 0;transform:rotate(0deg);animation:iblade .7s cubic-bezier(.6,0,.2,1) 4s forwards}
 .intro .ivf{position:absolute;width:10%;height:10%;border:1.5px solid rgba(255,255,255,.4);opacity:0;animation:ivfin .6s var(--ease) 1.3s both,ivflock .4s var(--ease) 3.6s forwards}
 .intro .ivf.a{top:-9%;left:-9%;border-right:0;border-bottom:0;border-top-left-radius:5px}
 .intro .ivf.b{top:-9%;right:-9%;border-left:0;border-bottom:0;border-top-right-radius:5px}
