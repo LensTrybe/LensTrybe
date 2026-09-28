@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { NavLink, Routes, Route, useNavigate, useLocation, Link } from 'react-router-dom'
 import Logo from '../../components/Logo'
+import Aurora from '../../components/Aurora'
 import Icon from '../../components/Icon'
 import { SheetProvider, useSheet } from '../../components/Sheet'
 import { useStore, nice } from '../../lib/store'
@@ -162,6 +163,7 @@ export default function Shell() {
   )
   return (
     <div className={'ws' + (dark ? ' dark' : '')}><SheetProvider><LiveSync />
+      <Aurora />
       <div className={'shell' + (dock ? '' : ' nodock') + (dockM ? ' dockopen' : '')}>
         <aside className="rail lg" aria-label="Workspace navigation">
           <div className="lg-h"><Link to="/"><Logo white={dark} height={18} /></Link></div>
