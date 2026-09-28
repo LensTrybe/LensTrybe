@@ -20,7 +20,7 @@ export default function Deliver() {
   const list = useMemo(() => GALS.filter(g => f === 'all' || g.k === f), [GALS, f])
   const g = GALS.find(x => x.id === sel) || list[0]
   const capLive = LIVE ? (getFeatures(auth.profile?.subscription_tier || 'basic').deliverGb || 0) : CAP
-  const used = LIVE ? Math.round(GALS.reduce((t, x) => t + (x.gb || 0), 0) * 100) / 100 : Math.round(GALS.reduce((t, x) => t + (x.gb || 0), 0) * 10) / 10 + 4.8
+  const used = LIVE ? Math.round(GALS.reduce((t, x) => t + (x.gb || 0), 0) * 100) / 100 : Math.round((GALS.reduce((t, x) => t + (x.gb || 0), 0) + 4.8) * 10) / 10
   // live actions: the real rows, then a refresh
   const run = async (key, fn, msg) => { if (busy) return; setBusy(key); try { await fn(); await F.refreshLive(); if (msg) toast(msg) } catch (e) { toast(e.message) } finally { setBusy('') } }
   const livePick = target => { const gg = GALS.find(x => x.id === target) || g; if (!gg) return; file.current.onchange = e => { const fs = [...e.target.files]; e.target.value = ''; if (!fs.length) return; run('up', async () => { const n = await live.addDeliveryFiles(auth.user.id, gg.live, fs, (i, t) => setBusy('up:' + i + '/' + t)); if (n < fs.length) throw new Error((fs.length - n) + ' file(s) did not upload. Try them again.') }, fs.length + (fs.length === 1 ? ' file' : ' files') + ' added to ' + gg.d + '.') }; file.current.click() }
