@@ -1,9 +1,9 @@
 // The whole workspace, one list. Everything on the live sidebar is here under the same names,
-// with the Job board pinned first (client-first launch, 28 Sep), then the three you open most
-// (Today, Threads, Calendar), and nothing nested twice. The old one-item "Work" group is gone.
+// with the three you open most first (Today, Threads, Calendar) and the Job board after Inventory
+// (Michael, 29 Sep), and nothing nested twice. The old one-item "Work" group is gone.
 export const TOP = [
-  ['jobs', 'Job board', 'megaphone'], ['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'],
-  ['projects', 'Projects', 'briefcase'], ['notes', 'Notes', 'note'], ['inventory', 'Inventory', 'box'],
+  ['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'],
+  ['projects', 'Projects', 'briefcase'], ['notes', 'Notes', 'note'], ['inventory', 'Inventory', 'box'], ['jobs', 'Job board', 'megaphone'],
 ]
 export const GROUPS = [
   ['Clients', 'users', [['clients', 'CRM & Contacts', 'book'], ['meetings', 'Meetings', 'cal']]],
