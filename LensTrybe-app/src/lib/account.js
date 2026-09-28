@@ -78,3 +78,16 @@ export async function loadEditIssues() {
   if (error) throw new Error('Could not load The Trybe Edit.')
   return data || []
 }
+
+// A founding place application from /founding. founding-apply saves it (one row per email),
+// emails the admins and raises their bell. The demo pretends.
+export async function foundingApply(f) {
+  if (!LIVE) { await wait(600); return { ok: true } }
+  const { data, error } = await supabase.functions.invoke('founding-apply', { body: {
+    name: f.name.trim(), business_name: (f.biz || f.name).trim(), email: f.email.trim(),
+    portfolio_url: f.link.trim(), creative_type: f.disc || '', region: f.region.trim(), note: f.note.trim(),
+  } })
+  if (error) throw new Error(await fnError(error, 'Something went wrong sending that. Try again.'))
+  if (data?.error) throw new Error(data.error)
+  return data || {}
+}

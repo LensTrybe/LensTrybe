@@ -4,6 +4,7 @@ import Icon from '../../components/Icon'
 import Aurora from '../../components/Aurora'
 import { mountLens } from '../../lib/lens'
 import { useFoundingTaken } from '../../lib/founding'
+import { foundingApply } from '../../lib/account'
 
 // The Founding 100 offer: the one link to send in a DM instead of explaining the deal every time.
 // The terms live at /legal/founding; this page sells it and takes applications. Nobody signs up
@@ -39,12 +40,17 @@ export default function Founding() {
   const [f, setF] = useState({ name: '', biz: '', email: '', link: '', disc: '', region: '', note: '' }), [err, setErr] = useState(''), [sent, setSent] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   const redeem = e => { e.preventDefault(); const c = code.trim().toUpperCase(); if (!/^[A-Z0-9][A-Z0-9-]{2,62}[A-Z0-9]$/.test(c)) return setCerr('That does not look like a code. Copy it from your invite email.'); nav('/join?code=' + encodeURIComponent(c)) }
-  const apply = e => {
+  const [busy, setBusy] = useState(false)
+  const apply = async e => {
     e.preventDefault()
+    if (busy) return
     if (!f.name.trim()) return setErr('Your name, so the reply can start with it.')
     if (!/.+@.+\..+/.test(f.email)) return setErr('A real email, that is where the code goes.')
     if (!f.link.trim()) return setErr('An Instagram handle or a website. The work is what decides it.')
-    setSent(true); document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    setBusy(true)
+    try { await foundingApply(f); setSent(true); document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
+    catch (x) { setErr(x.message || 'Something went wrong sending that. Try again.') }
+    finally { setBusy(false) }
   }
   const toApply = () => document.getElementById('apply')?.scrollIntoView({ behavior: 'smooth' })
   return (
@@ -86,7 +92,7 @@ export default function Founding() {
             <div className="two"><div className="field"><label htmlFor="fa-d">What you do <small>optional</small></label><select id="fa-d" value={f.disc} onChange={e => u('disc', e.target.value)}><option value="">Choose one</option>{DISC.map(d => <option key={d}>{d}</option>)}</select></div><div className="field"><label htmlFor="fa-r">Where you work <small>optional</small></label><input id="fa-r" list="fa-regions" value={f.region} onChange={e => u('region', e.target.value)} placeholder="Brisbane and the Sunshine Coast" /><datalist id="fa-regions">{REGIONS.map(r => <option key={r} value={r} />)}</datalist></div></div>
             <div className="field"><label htmlFor="fa-t">Anything else <small>optional</small></label><textarea id="fa-t" rows={3} value={f.note} onChange={e => u('note', e.target.value)} placeholder="What you shoot, how long you have been at it, what you would want from the platform." /></div>
             {err && <p className="fderr">{err}</p>}
-            <div className="row"><button type="submit" className="btn p lg">Send my application <Icon name="arrow" size={14} /></button><span className="fine">Applications are read in the order they arrive. Read the <Link to="/legal/privacy">privacy policy</Link>.</span></div>
+            <div className="row"><button type="submit" className="btn p lg" disabled={busy} style={busy ? { opacity: .6 } : undefined}>{busy ? 'Sending…' : <>Send my application <Icon name="arrow" size={14} /></>}</button><span className="fine">Applications are read in the order they arrive. Read the <Link to="/legal/privacy">privacy policy</Link>.</span></div>
           </form>
         )}
       </section>
