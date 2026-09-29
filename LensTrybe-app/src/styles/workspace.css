@@ -1974,3 +1974,7 @@
   .ws .paper.con .ctitle{font-size:17px;width:100%}
   .ws .plans2{grid-template-columns:minmax(0,1fr)}
 }
+/* company marks in Settings > Connected */
+.ws .need .av.brand{display:grid;place-items:center;background:var(--bg-2);border:1px solid var(--line);color:var(--ink-2);overflow:hidden}
+.ws .need .av.brand img{width:24px;height:24px;object-fit:contain}
+.ws .need .av.brand b{font-size:15px;color:var(--ink-2)}

@@ -203,6 +203,18 @@ function FoundingDemo() {
   )
 }
 
+// Integrations that aren't built yet, shown honestly in the live workspace.
+const SOON_INTS = [['Xero', 'Invoices, payments and expenses copied into your books.'], ['Instagram', 'Post from the content calendar and see how posts did.'], ['TikTok', 'Post from the content calendar.'], ['Dropbox', 'Back up delivered galleries to a folder.']]
+// A company's mark beside its name. Official logo files go in public/logos/<name>.svg (from each
+// company's own brand or press page); until one is there, a plain initial tile shows instead.
+const LOGO = { Xero: 'xero', Instagram: 'instagram', TikTok: 'tiktok', Dropbox: 'dropbox', Stripe: 'stripe', 'Google Calendar': 'google-calendar' }
+function Brand({ n }) {
+  const [ok, setOk] = useState(true)
+  const f = LOGO[n]
+  if (n === 'Calendar') return <span className="av brand"><Icon name="cal" size={18} /></span>
+  return <span className="av brand">{f && ok ? <img src={'/logos/' + f + '.svg'} alt="" onError={() => setOk(false)} /> : <b>{n[0]}</b>}</span>
+}
+
 /* Settings: account, notifications, calendar sync and integrations. */
 export function Settings() {
   const F = useFlows(); const { s, toast } = F; const S = s.settings
@@ -229,13 +241,13 @@ export function Settings() {
   const del = () => setDelOpen(true)
   return (
     <section className="view">
-      <Head h="Settings" p="Account, notifications, calendar sync and what's connected."><button className="btn g" onClick={F.resetAll}>Reset demo data</button><button className={'btn w' + (dirty ? '' : ' quiet')} onClick={save}>{dirty ? 'Save' : 'Saved'}</button></Head>
+      <Head h="Settings" p="Account, notifications, calendar sync and what's connected.">{!LIVE && <button className="btn g" onClick={F.resetAll}>Reset demo data</button>}<button className={'btn w' + (dirty ? '' : ' quiet')} onClick={save}>{dirty ? 'Save' : 'Saved'}</button></Head>
       <div className="grid">
         <div className="s6 side">
           <div className="card lg"><div className="h"><b>Account</b></div>
             <div className="fields two">{LIVE ? <Fld l="Email" v={email} set={() => {}} type="email" readOnly /> : <Fld l="Email" v={acc.email} set={set('email')} type="email" />}<Fld l="Phone" v={acc.phone} set={set('phone')} type="tel" /></div>
             <div className="fields two"><Fld l="Business name" v={acc.biz} set={set('biz')} /><Fld l="ABN" v={acc.abn} set={set('abn')} /></div>
-            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}><button className="btn g sm" onClick={changeEmailSheet}>Change email</button><button className="btn g sm" onClick={password}>Change password</button><button className="btn g sm" onClick={twofa}>Two-factor · {S.twofa === false ? 'off' : 'on'}</button></div>
+            <div className="ctas" style={{ display: 'flex', gap: 6, marginTop: 12 }}><button className="btn g sm" onClick={changeEmailSheet}>Change email</button><button className="btn g sm" onClick={password}>Change password</button>{!LIVE && <button className="btn g sm" onClick={twofa}>Two-factor · {S.twofa === false ? 'off' : 'on'}</button>}</div>
           </div>
           <div className="card lg"><div className="h"><b>Notifications</b></div>
             <div className="brows one">{[['enq', 'New enquiry', 'Push and email, straight away'], ['pay', 'Payment received', 'Push'], ['lumi', 'Lumi needs a yes', 'Push, batched at 7 am and 5 pm'], ['week', 'Weekly summary', 'Email, Monday 7 am'], ['jobs', 'New jobs that fit you', 'Email and bell when a client posts one, at most 3 emails a day'], ['mkt', 'The Trybe Edit', 'The newsletter and occasional LensTrybe news']].map(([k, a, b]) => <label key={k} className="brow"><span>{a}<small>{b}</small></span>{k === 'mkt' ? <Sw on={!!news} set={toggleNews} /> : k === 'jobs' ? <Sw on={jobAl} set={toggleJobAl} /> : <Sw on={S.notif[k]} set={() => F.patch('settings', { notif: { ...S.notif, [k]: S.notif[k] ? 0 : 1 } })} />}</label>)}</div>
@@ -243,7 +255,13 @@ export function Settings() {
         </div>
         <div className="s6 side">
           <div className="card lg"><div className="h"><b>Connected</b></div>
-            <div className="need">{Object.entries(S.ints).map(([a, on]) => <div key={a} className="r" style={{ cursor: 'default' }}><span className="av" style={{ background: on ? 'linear-gradient(135deg,#1c452f,#7fd0aa)' : 'var(--hov)' }} /><div><b>{a}</b><small>{on ? DESC[a] || 'Connected' : 'Not connected'}</small></div><div className="do">{on ? <button onClick={() => manage(a)}>Manage</button> : <button className="y" onClick={() => connect(a)}>Connect</button>}</div></div>)}</div>
+            {LIVE ? <div className="need">
+              {/* Honest list (29 Sep): only the calendar link is real today. It is one-way: your
+                  LensTrybe bookings appear in Google, Apple or Outlook. The rest are on the way. */}
+              <div className="r" style={{ cursor: 'default' }}><Brand n="Calendar" /><div><b>Your calendar</b><small>Google, Apple or Outlook. Your bookings show up there; one-way for now.</small></div><div className="do"><button className="y" onClick={() => F.calFeed()}>Subscribe</button></div></div>
+              {SOON_INTS.map(([a, why]) => <div key={a} className="r" style={{ cursor: 'default' }}><Brand n={a} /><div><b>{a}</b><small>{why}</small></div><div className="do"><span className="st grey">Coming soon</span></div></div>)}
+              <p className="note2" style={{ margin: '4px 2px 0' }}>Want one of these sooner? <Link to="/upcoming" className="lnk">See what's coming</Link> or tell us in Help and support.</p>
+            </div> : <div className="need">{Object.entries(S.ints).map(([a, on]) => <div key={a} className="r" style={{ cursor: 'default' }}><Brand n={a} /><div><b>{a}</b><small>{on ? DESC[a] || 'Connected' : 'Not connected'}</small></div><div className="do">{on ? <button onClick={() => manage(a)}>Manage</button> : <button className="y" onClick={() => connect(a)}>Connect</button>}</div></div>)}</div>}
           </div>
           <div className="card lg"><div className="h"><b>Workspace</b></div>
             <div className="brows one">
