@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { lockDown } from './previewGuard'
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
@@ -22,6 +23,7 @@ function previewing() {
   } catch { return new URLSearchParams(location.search).has('preview') && inArea }
 }
 export const PREVIEW = previewing()
+if (PREVIEW) lockDown(PREVIEW_AREA)
 
 export const supabase = supabaseUrl && supabaseAnonKey && import.meta.env.VITE_LT_MODE !== 'demo' && !PREVIEW ? createClient(supabaseUrl, supabaseAnonKey, {
   auth: {

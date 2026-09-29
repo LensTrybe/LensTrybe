@@ -18,6 +18,12 @@ import * as live from '../../lib/live'
 import { useNavigate } from 'react-router-dom'
 import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive } from './AccountLive'
 import { planLabel } from '../../backend/tierFeatures'
+import { shrink } from '../../lib/shrink'
+
+// A portfolio piece in the demo: a sample still (a number) or a photo the visitor picked (a data: URL).
+function Shot({ sd }) {
+  return typeof sd === 'string' ? <img src={sd} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} />
+}
 
 const Tiles = ({ t }) => <div className="s12"><div className="kp">{t.map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 const Head = ({ h, p, children }) => <div className="vh"><div><h1>{h}</h1><p>{p}</p></div><div className="acts">{children}</div></div>
@@ -48,7 +54,7 @@ export function EditProfile() {
   const publish = () => { if (LIVE) return livePublish(); F.set('profile', { ...p, shots, strength }); F.set('packages', pk.filter(x => x[0].trim())); if (p.h || p.bio) F.upd('pages', 'home', { h: p.h, p: (p.bio.split('. ')[0] || '') + (p.bio ? '.' : '') }); setDirty(false); toast('Published. Profile and website updated.') }
   const pickAvatar = e => { const x = e.target.files?.[0]; if (!x) return; if (LIVE) { e.target.value = ''; return liveAvatar(x) } const r = new FileReader(); r.onload = () => set('avatar')(r.result); r.readAsDataURL(x); e.target.value = '' }
   const setPkAt = (i, j, v) => { setPk(a => a.map((x, k) => k === i ? x.map((y, l) => l === j ? v : y) : x)); setDirty(true) }
-  const addPhotos = () => { file.current.onchange = e => { const n = e.target.files.length; if (!n) return; if (LIVE) { const fs = Array.from(e.target.files); e.target.value = ''; return liveAddPhotos(fs) } set('shots')([...shots, ...Array.from({ length: n }, (_, i) => shots.length + i + 20)]); toast(n + (n === 1 ? ' photo' : ' photos') + ' added. Publish when happy.'); e.target.value = '' }; file.current.click() }
+  const addPhotos = () => { file.current.onchange = e => { const n = e.target.files.length; if (!n) return; if (LIVE) { const fs = Array.from(e.target.files); e.target.value = ''; return liveAddPhotos(fs) } const fs = Array.from(e.target.files); e.target.value = ''; Promise.all(fs.map(f => shrink(f))).then(urls => { const got = urls.map((u, i) => u || shots.length + i + 20); set('shots')([...shots, ...got]); toast(n + (n === 1 ? ' photo' : ' photos') + ' added. Publish when happy.') }) }; file.current.click() }
   const addFilm = () => F.open({ title: 'Add a film', sub: 'From a delivered gallery, or a link.', cta: 'Add', fields: [{ k: 'from', l: 'Film', type: 'select', value: '', options: [['', 'Paste a link instead'], ...s.galleries.filter(g => g.films).map(g => [g.id, g.n + ' · ' + g.films + (g.films > 1 ? ' films' : ' film')])] }, { k: 'url', l: 'Link', placeholder: 'vimeo.com/…', when: v => !v.from }], submit: v => { set('film')(v.from || v.url); toast('Film added. Publish when happy.') } })
   const removeShot = i => set('shots')(shots.filter((_, j) => j !== i))
   return (
@@ -58,7 +64,7 @@ export function EditProfile() {
       <div className="grid">
         <div className="s7 side">
           <div className="card lg"><div className="h"><b>Portfolio</b><small className="lumi-by">{LIVE ? (busy === 'shots' ? 'Uploading' : 'Tap a photo for cover or remove · ' + items.length + ' so far') : 'Tap a photo to remove · ' + shots.length + ' of 40 on ' + planLabel(s.plan.name)}</small></div>
-            {LIVE ? <div className="strip2">{items.map(it => <span key={it.id} className="sg" style={{ cursor: 'pointer' }} onClick={() => liveRemove(it)} title={it.featured ? 'Cover' : 'Cover or remove'}><img src={it.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />{it.featured && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos} disabled={busy === 'shots'}><Icon name="plus" size={16} /></button></div> : <div className="strip2">{shots.map((sd, i) => <span key={sd + '-' + i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>}
+            {LIVE ? <div className="strip2">{items.map(it => <span key={it.id} className="sg" style={{ cursor: 'pointer' }} onClick={() => liveRemove(it)} title={it.featured ? 'Cover' : 'Cover or remove'}><img src={it.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />{it.featured && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos} disabled={busy === 'shots'}><Icon name="plus" size={16} /></button></div> : <div className="strip2">{shots.map((sd, i) => <span key={i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Shot sd={sd} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>}
           </div>
           <div className="card lg"><div className="h"><b>About you</b></div>
             <div className="avrow"><span className="avbig" onClick={() => avf.current?.click()}>{p.avatar && p.avatar !== 'seed' ? <img src={p.avatar} alt="" /> : <Still seed={3} mood="golden" />}</span><div><b>{p.avatar ? 'Profile photo' : 'Add a profile photo'}</b><small>Square works best. It shows in search, on your card and on the home page.</small><button className="act2" onClick={() => avf.current?.click()} disabled={busy === 'av'}>{busy === 'av' ? 'Uploading' : p.avatar ? 'Change' : 'Choose a photo'}</button><input ref={avf} type="file" accept="image/*" hidden onChange={pickAvatar} /></div></div>
@@ -107,7 +113,7 @@ export function ViewProfile() {
           <div className="pgrid2">
             <div>
               <b>Recent work</b>
-              <div className="strip2">{(p.shots || [0, 1, 2, 3, 4, 5]).slice(0, 6).map((sd, i) => <span key={sd + '-' + i} className="sg"><Still seed={sd * 5 + 3} mood={MOOD_NAMES[sd % 6]} /></span>)}</div>
+              <div className="strip2">{(p.shots || [0, 1, 2, 3, 4, 5]).slice(0, 6).map((sd, i) => <span key={i} className="sg"><Shot sd={sd} /></span>)}</div>
               <b style={{ marginTop: 18 }}>About</b>
               <p className="note2">{p.bio}</p>
             </div>

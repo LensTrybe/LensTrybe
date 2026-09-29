@@ -66,3 +66,4 @@ p{margin:0}
 .previewbar .pv-go{background:#1DB954;color:#04120a}
 .previewbar .pv-out{color:#c9c9d4;background:rgba(255,255,255,.08)}
 @media (max-width:900px){.previewbar{left:12px;right:12px;transform:none;width:auto;bottom:calc(84px + env(safe-area-inset-bottom));border-radius:16px;padding:10px 12px;font-size:12.5px}.previewbar span{flex:1 1 100%;text-align:center}.previewbar.pv-portal{bottom:calc(12px + env(safe-area-inset-bottom))}}
+.previewbar.pv-note{box-shadow:0 14px 40px -12px rgba(0,0,0,.6),0 0 0 1px rgba(29,185,84,.55)}
