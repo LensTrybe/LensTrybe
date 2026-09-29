@@ -1,7 +1,7 @@
 {
   "terms": {
     "title": "Terms and Conditions",
-    "updated": "28 September 2026",
+    "updated": "29 September 2026",
     "intro": "These Terms and Conditions (\"Terms\") are the agreement between you and LensTrybe (\"LensTrybe\", \"we\", \"us\", \"our\") for your use of the LensTrybe website, app and services at lenstrybe.com (the \"Platform\").\n\nPlease read them carefully. By creating an account or using the Platform you agree to these Terms, our [Privacy Policy](/privacy), our [Cookies Policy](/cookies) and our [Refund Policy](/refunds). If you don't agree, please don't use the Platform.\n\nNothing in these Terms excludes, restricts or modifies any right or remedy you have under the Australian Consumer Law or any other law that cannot be excluded. See [section 16](#consumer-law).",
     "sections": [
       {
@@ -21,8 +21,8 @@
       },
       {
         "id": "plans",
-        "title": "Creative plans, trials and billing",
-        "body": "### Plans\nCreatives can use the free Trybe Free plan or subscribe to a paid plan (currently Trybe Essential, Trybe Complete and Trybe Studio). The features, limits and prices of each plan are shown on our pricing page and in your dashboard at the time you subscribe. Prices are in Australian dollars and include GST where applicable.\n\n### Free trials\nNew paid subscriptions may include a free trial. You add a card when you start the trial, and we charge it automatically when the trial ends unless you cancel before then. The trial length and first charge date are shown before you confirm, and in Settings > Subscription. We'll email you a reminder about 7 days before your trial ends.\n\n### Automatic renewal\nPaid plans are billed monthly or annually in advance and renew automatically at the end of each billing period until you cancel. For annual plans, we'll email you a reminder about 7 days before each renewal. By subscribing, you authorise us (through our payment provider, Revolut) to charge your saved payment method for each renewal.\n\n### Changing plans\nUpgrades take effect straight away. We charge the difference for the rest of your current billing period, and the new price applies from your next renewal. Switching from monthly to annual starts a new annual period straight away, with credit for the unused part of your current month. Changes made during a free trial cost nothing until the trial ends. Downgrades take effect at your next renewal, and you keep your current features until then.\n\n### Cancelling\nYou can cancel at any time online in Settings > Subscription or Settings > Danger Zone. Cancelling stops future renewals. You keep your paid features until the end of the period you have already paid for, then your account moves to the Trybe Free plan. Refunds are covered by our [Refund Policy](/refunds).\n\n### Failed payments\nIf a renewal payment fails, we'll tell you by email and try again each day. If payment still hasn't succeeded after 3 attempts or 7 days (whichever comes first), your account moves to the Trybe Free plan. Your profile and data stay safe, and you can choose a paid plan again at any time.\n\n### Price changes\nWe may change our prices. We will give you at least 30 days' notice by email before a new price applies to your subscription. If you don't want to continue at the new price, you can cancel before it takes effect and you won't be charged the new price.\n\n### Founding Creatives, referrals and promotions\nIf you joined through the Founding Creative programme, the [Founding Creative Agreement](/founding-agreement) you accepted also applies. If it conflicts with these Terms, the Founding Creative Agreement applies to the extent of the conflict. Referral rewards, discounts and other promotions apply as described when they are offered, have no cash value and can't be transferred."
+        "title": "Creative plans, free months and billing",
+        "body": "### Plans\nCreatives can use the free Trybe Free plan or subscribe to a paid plan (currently Trybe Essential, Trybe Complete and Trybe Studio). The features, limits and prices of each plan are shown on our pricing page and in your dashboard at the time you subscribe. Prices are in Australian dollars and include GST where applicable.\n\n### Free months\nNew paid subscriptions may start with free months (currently your first three months free). You add a card when you subscribe, and we charge it automatically when the free months end unless you cancel before then. How long they last and the first charge date are shown before you confirm, and in Settings > Subscription. We'll email you a reminder about 7 days before your free months end.\n\n### Automatic renewal\nPaid plans are billed monthly or annually in advance and renew automatically at the end of each billing period until you cancel. For annual plans, we'll email you a reminder about 7 days before each renewal. By subscribing, you authorise us (through our payment provider, Revolut) to charge your saved payment method for each renewal.\n\n### Changing plans\nUpgrades take effect straight away. We charge the difference for the rest of your current billing period, and the new price applies from your next renewal. Switching from monthly to annual starts a new annual period straight away, with credit for the unused part of your current month. Changes made during your free months cost nothing until they end. Downgrades take effect at your next renewal, and you keep your current features until then.\n\n### Cancelling\nYou can cancel at any time online in Settings > Subscription or Settings > Danger Zone. Cancelling stops future renewals. You keep your paid features until the end of the period you have already paid for, then your account moves to the Trybe Free plan. Refunds are covered by our [Refund Policy](/refunds).\n\n### Failed payments\nIf a renewal payment fails, we'll tell you by email and try again each day. If payment still hasn't succeeded after 3 attempts or 7 days (whichever comes first), your account moves to the Trybe Free plan. Your profile and data stay safe, and you can choose a paid plan again at any time.\n\n### Price changes\nWe may change our prices. We will give you at least 30 days' notice by email before a new price applies to your subscription. If you don't want to continue at the new price, you can cancel before it takes effect and you won't be charged the new price.\n\n### Founding Creatives, referrals and promotions\nIf you joined through the Founding Creative programme, the [Founding Creative Agreement](/founding-agreement) you accepted also applies. If it conflicts with these Terms, the Founding Creative Agreement applies to the extent of the conflict. Referral rewards, discounts and other promotions apply as described when they are offered, have no cash value and can't be transferred."
       },
       {
         "id": "clients",
@@ -113,7 +113,7 @@
   },
   "privacy": {
     "title": "Privacy Policy",
-    "updated": "28 September 2026",
+    "updated": "29 September 2026",
     "intro": "This Privacy Policy explains how LensTrybe (\"LensTrybe\", \"we\", \"us\", \"our\") collects, uses, stores and shares personal information when you use lenstrybe.com and our services (the \"Platform\").\n\nWe handle personal information in line with the Australian Privacy Principles in the Privacy Act 1988 (Cth). We don't sell your personal information, and we don't use it for third-party advertising.\n\nIf you have a question at any time, email [privacy@lenstrybe.com](mailto:privacy@lenstrybe.com).",
     "sections": [
       {
@@ -129,7 +129,7 @@
       {
         "id": "use",
         "title": "How we use it",
-        "body": "We use personal information to:\n\n• create and manage accounts and verify sign-ins\n• show Creatives' public profiles and portfolios, and help Clients find the right Creative\n• provide the business tools, including sending the quotes, invoices, contracts, portal links, delivery links, meeting invites and review requests Creatives ask us to send\n• let users message each other and notify you about activity on your account\n• process subscriptions, trials, plan changes and failed payments\n• generate PDF copies of invoices, quotes and contracts\n• provide Lumi, our AI assistant, when you choose to use it\n• keep the Platform safe, including moderating content, preventing fraud and spam, and enforcing our [Terms](/terms)\n• respond to support requests, complaints and feedback\n• understand how the Platform is used so we can improve it\n• send you service emails, and marketing emails if you've agreed to receive them\n• meet our legal obligations\n\nWe only use your information for these purposes, for purposes related to them that you would reasonably expect, or where you have agreed or the law permits it."
+        "body": "We use personal information to:\n\n• create and manage accounts and verify sign-ins\n• show Creatives' public profiles and portfolios, and help Clients find the right Creative\n• provide the business tools, including sending the quotes, invoices, contracts, portal links, delivery links, meeting invites and review requests Creatives ask us to send\n• let users message each other and notify you about activity on your account\n• process subscriptions, free months, plan changes and failed payments\n• generate PDF copies of invoices, quotes and contracts\n• provide Lumi, our AI assistant, when you choose to use it\n• keep the Platform safe, including moderating content, preventing fraud and spam, and enforcing our [Terms](/terms)\n• respond to support requests, complaints and feedback\n• understand how the Platform is used so we can improve it\n• send you service emails, and marketing emails if you've agreed to receive them\n• meet our legal obligations\n\nWe only use your information for these purposes, for purposes related to them that you would reasonably expect, or where you have agreed or the law permits it."
       },
       {
         "id": "public",
@@ -252,7 +252,7 @@
   },
   "refunds": {
     "title": "Refund Policy",
-    "updated": "28 September 2026",
+    "updated": "29 September 2026",
     "intro": "This Refund Policy explains how cancellations and refunds work for LensTrybe's paid Creative plans. It forms part of our [Terms and Conditions](/terms).\n\nClient accounts and the Trybe Free plan are free, so there's nothing to refund.\n\nNothing in this policy limits your rights under the Australian Consumer Law. See [section 5](#consumer-law).",
     "sections": [
       {
@@ -262,8 +262,8 @@
       },
       {
         "id": "trials",
-        "title": "Free trials",
-        "body": "If your plan starts with a free trial, you won't be charged if you cancel before the trial ends. Your first charge date is shown before you confirm your plan and in Settings > Subscription, and we'll email you a reminder about 7 days before it."
+        "title": "Free months",
+        "body": "If your plan starts with free months, you won't be charged if you cancel before they end. Your first charge date is shown before you confirm your plan and in Settings > Subscription, and we'll email you a reminder about 7 days before it."
       },
       {
         "id": "monthly",
