@@ -23,6 +23,8 @@ const cookie = (name, value, days) => name + '=' + value + '; Path=/; Max-Age=' 
 
 export default function middleware(req) {
   const url = new URL(req.url); const h = req.headers
+  // LensTrybe HQ, the staff intranet: never area-gated, never indexed, never framed.
+  if (url.hostname.startsWith('hq.')) return next({ headers: { 'X-Robots-Tag': 'noindex, nofollow', 'X-Frame-Options': 'DENY', 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' } })
   const jar = h.get('cookie') || ''
   const home = url.pathname === '/'
   if (url.searchParams.get('seq') === '1') {
