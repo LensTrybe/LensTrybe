@@ -101,7 +101,13 @@ export default function Ask({ onOpen, jobFirst = false }) {
   }, [layout])
 
   useEffect(() => { if (live && line) { const t = setTimeout(() => layout(orbs.length), 250); return () => clearTimeout(t) } }, [live, line.length > 0, orbs.length, layout])
-  useEffect(() => { const on = () => layout(orbs.length); addEventListener('resize', on); return () => removeEventListener('resize', on) }, [orbs.length, layout])
+  // Only the results view is laid out by hand. Before a search the hero keeps its resting lens: a
+  // resize (Safari fires one when its toolbars show or hide while scrolling) used to run the results
+  // layout on the empty hero, which dropped the lens below the chips and stretched the page.
+  useEffect(() => {
+    const on = () => { if (live) return layout(orbs.length); lens.current?.layout({ cy: .5, r: .34 }); if (field.current?.parentElement) field.current.parentElement.style.minHeight = '' }
+    addEventListener('resize', on); return () => removeEventListener('resize', on)
+  }, [live, orbs.length, layout])
   useEffect(() => { if (live) { const t = setTimeout(() => layout(orbs.length), 900); return () => clearTimeout(t) } else { lens.current?.layout({ cy: .5, r: .34 }); if (field.current?.parentElement) field.current.parentElement.style.minHeight = '' } }, [live, orbs.length, layout])
 
   const [params] = useSearchParams()
