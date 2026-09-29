@@ -236,7 +236,7 @@ Deno.serve(async (req) => {
         const first = String(t.name || '').split(' ')[0]
         const paras = text.split(/\n{2,}/).map(p => esc(p).replace(/\n/g, '<br>'))
         const err = await sendMail(t.email, 'Re: ' + (t.subject || 'Your LensTrybe support request'), mail(first ? `Hi ${first}` : 'Hi there', [...paras, '<span style="color:#9a9aa8;">The LensTrybe Team</span>'], undefined,
-          `You're getting this because you contacted LensTrybe support. Reply to this email to keep the conversation going.`), 'LensTrybe Support <noreply@mail.lenstrybe.com>')
+          `You're getting this because you contacted LensTrybe support. Reply to this email to keep the conversation going.`, 'LensTrybe Support'), 'LensTrybe Support <noreply@mail.lenstrybe.com>')
         if (err) return bad(err, 502)
         const stamp = new Date().toLocaleString('en-AU', { timeZone: 'Australia/Brisbane', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' })
         const notes = `[${stamp}, ${me.name} replied by email]\n${text}` + (t.admin_notes ? '\n\n' + t.admin_notes : '')

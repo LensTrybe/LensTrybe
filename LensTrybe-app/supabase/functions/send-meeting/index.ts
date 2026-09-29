@@ -1,5 +1,6 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8'
+import { meetingRequestHtml } from './emails.ts'
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -69,19 +70,7 @@ serve(async (req) => {
     const link = `${APP_BASE}/meeting/${encodeURIComponent(String(m.response_token))}`
     const when = whenLabel(m.meeting_date, m.start_time, m.end_time)
 
-    const html = `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;max-width:560px;margin:0 auto;padding:40px;color:#111">
-        <div style="margin-bottom:28px"><a href="https://lenstrybe.com" style="text-decoration:none"><img src="https://lenstrybe.com/email-logo.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px" /></a></div>
-      <div style="font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#1DB954;margin-bottom:8px">Meeting request</div>
-      <div style="font-size:24px;font-weight:800;margin-bottom:6px">${esc(m.title)}</div>
-      <div style="font-size:14px;color:#555;margin-bottom:20px">${esc(hostName)} would like to meet with you. Let them know if this time works.</div>
-      <div style="background:#f6f6f7;border-radius:12px;padding:18px 20px;margin-bottom:24px">
-        <div style="font-size:14px;color:#111;margin-bottom:6px"><strong>When:</strong> ${esc(when)}</div>
-        ${m.location ? `<div style="font-size:14px;color:#111;margin-bottom:6px"><strong>Where:</strong> ${esc(m.location)}</div>` : ''}
-        ${m.description ? `<div style="font-size:14px;color:#111"><strong>Details:</strong> ${nl2br(m.description)}</div>` : ''}
-      </div>
-      <a href="${esc(link)}" style="display:inline-block;background:#1DB954;color:#04120a;font-weight:700;text-decoration:none;padding:13px 26px;border-radius:10px;font-size:15px">Accept, decline or propose a time</a>
-      <div style="font-size:13px;color:#777;margin-top:22px">Or paste this link into your browser:<br>${esc(link)}</div>
-    </body></html>`
+    const html = meetingRequestHtml({ hostName, title: m.title, when, location: m.location, description: m.description, link })
 
     const send = await fetch('https://api.resend.com/emails', {
       method: 'POST',

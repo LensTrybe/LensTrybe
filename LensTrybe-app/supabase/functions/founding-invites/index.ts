@@ -35,9 +35,8 @@
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, CRON_SECRET
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { inviteEmail, reminderEmail, inviteSubject, reminderSubject } from './emails.ts'
 
-const GREEN = '#1DB954'
-const PINK = '#FF2D78'
 const FROM = 'Michael from LensTrybe <noreply@mail.lenstrybe.com>'
 const REPLY_TO = 'connect@lenstrybe.com'
 const SITE = 'https://lenstrybe.com'
@@ -52,10 +51,6 @@ const REMINDERS_PER_RUN = 25
 // Gap between reminder sends, so a run trickles rather than bursts.
 const SEND_GAP_MS = 350
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
-
-// Section 17 of the Spam Act: every commercial message must accurately identify who sent it
-// and how to reach them.
-const SENDER_LINE = 'LensTrybe, Brisbane, Queensland, Australia. Reply to this email or write to connect@lenstrybe.com.'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -72,10 +67,6 @@ function safeEqual(a: string, b: string) {
   let r = 0
   for (let i = 0; i < a.length; i++) r |= a.charCodeAt(i) ^ b.charCodeAt(i)
   return r === 0
-}
-
-function esc(s: unknown) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 function clean(s: unknown, max = 200) {
@@ -108,14 +99,6 @@ function randomSuffix() {
 
 function addDays(days: number, from = Date.now()) {
   return new Date(from + days * 86400000).toISOString()
-}
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Brisbane' })
-}
-
-function inviteLink(code: string) {
-  return `${SITE}/join/creative?code=${encodeURIComponent(code)}`
 }
 
 // ---------------------------------------------------------------------------
@@ -161,111 +144,6 @@ async function subscriber(sb: SupabaseClient, email: string): Promise<{ token: s
     console.error('founding-invites subscriber', error.message)
   }
   return { token: null, optedOut: false }
-}
-
-// ---------------------------------------------------------------------------
-// Emails
-// ---------------------------------------------------------------------------
-function shell(inner: string, footerNote: string, unsubUrl: string | null) {
-  // A live link when we have a token, plain text only in the admin preview.
-  const unsub = unsubUrl
-    ? `<a href="${esc(unsubUrl)}" style="color:#8a8a98;text-decoration:underline;">Unsubscribe</a>`
-    : 'Unsubscribe'
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-<tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
-${inner}
-<tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;line-height:1.6;color:#6a6a78;">${footerNote}<br><br>Would you rather not hear from us? ${unsub} and we will not email you again.<br><br>${SENDER_LINE}<br>Connect. Capture. Create.</div></td></tr>
-</table></td></tr></table></body></html>`
-}
-
-function button(href: string, label: string) {
-  return `<tr><td style="padding:6px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(href)}" style="display:inline-block;padding:14px 32px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">${esc(label)}</a></td></tr></table></td></tr>`
-}
-
-function codeBox(code: string, expiresIso: string) {
-  return `<tr><td style="padding:18px 36px 16px;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:rgba(29,185,84,0.08);border:1px solid rgba(29,185,84,0.35);border-radius:12px;"><tr><td style="padding:16px 18px;">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${GREEN};margin-bottom:6px;">Your personal code</div>
-<div style="font-size:26px;font-weight:800;color:#fff;letter-spacing:0.06em;font-family:'SF Mono',Menlo,Consolas,monospace;">${esc(code)}</div>
-<div style="font-size:12.5px;color:#9a9aa8;margin-top:6px;">Works once, just for you. Expires ${esc(fmtDate(expiresIso))}.</div>
-</td></tr></table></td></tr>`
-}
-
-const signOff = `<p style="margin:18px 0 0;color:#9a9aa8;font-size:15px;line-height:1.6;">Any questions at all, just reply to this email. It comes straight to me.</p>
-<p style="margin:18px 0 0;color:#fff;font-size:15px;line-height:1.5;">Michael<br><span style="color:#9a9aa8;font-size:13.5px;">Founder, LensTrybe</span></p>`
-
-function inviteEmail(first: string, code: string, expiresIso: string, note: string, unsubUrl: string | null) {
-  const name = first || 'there'
-  const noteBlock = note
-    ? `<tr><td style="padding:4px 36px 10px;"><div style="border-left:3px solid ${PINK};padding:4px 0 4px 14px;color:#e6e6ee;font-size:15px;line-height:1.6;white-space:pre-wrap;">${esc(note)}</div></td></tr>`
-    : ''
-  const li = (t: string) => `<li style="margin:0 0 7px;">${t}</li>`
-  const inner = `
-<tr><td style="padding:22px 36px 6px;">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">Founding creative invite</div>
-<h1 style="margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:800;color:#fff;">Hi ${esc(name)}, I'd love you on board</h1>
-</td></tr>
-${noteBlock}
-<tr><td style="padding:4px 36px 6px;">
-<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm building LensTrybe: a home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever.</p>
-<p style="margin:0 0 6px;color:#9a9aa8;font-size:15px;line-height:1.6;">I'm hand-picking creatives for the founding 100, and I'd like you to be one of them. The places go to the first 100 who use their code.</p>
-</td></tr>
-<tr><td style="padding:12px 36px 0;">
-<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;">What you get</div>
-<ul style="color:#e6e6ee;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 14px;">
-${li('Our <strong style="color:#fff;">Expert plan free for 12 months</strong> from the day you join (normally $74.99 a month), or 6 months if the 100 places have already gone')}
-${li('Then <strong style="color:#fff;">$49 a month, or $588 a year, locked in for life</strong>')}
-${li('A Founding Creative badge on your profile, for the first 100 to claim a place')}
-${li('A direct line to me, and a real say in what we build next')}
-</ul>
-<div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:8px;">What I ask in return</div>
-<ul style="color:#e6e6ee;font-size:14px;line-height:1.5;padding-left:20px;margin:0 0 4px;">
-${li('Get your profile 100% complete within 7 days of joining')}
-${li('Run your next 3 real client jobs through LensTrybe within 6 months')}
-${li('Share a little feedback each month. A sentence or two is plenty.')}
-</ul>
-</td></tr>
-${codeBox(code, expiresIso)}
-${button(inviteLink(code), 'Claim my founding place')}
-<tr><td style="padding:14px 36px 0;">
-<p style="margin:0 0 10px;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The button takes you to sign up with your code already filled in. Just tap <strong style="color:#fff;">Apply</strong> and follow the steps. You'll add a card at the end, but you won't be charged anything during your free period, and you can cancel any time.</p>
-<p style="margin:0;color:#9a9aa8;font-size:13.5px;line-height:1.6;">The full details are in the <a href="${SITE}/founding-agreement" style="color:${GREEN};font-weight:600;text-decoration:none;">Founding Creative Agreement</a>.</p>
-${signOff}
-</td></tr>`
-  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative, at a business address published on your own website. If it's not for you, no need to do anything. The code simply expires.", unsubUrl)
-}
-
-function reminderEmail(first: string, code: string, expiresIso: string, left: number | null, unsubUrl: string | null) {
-  const name = first || 'there'
-  const scarcity = left !== null && left <= 40
-    ? `<p style="margin:12px 0 0;color:#9a9aa8;font-size:15px;line-height:1.6;">For what it's worth, <strong style="color:#fff;">${left} of the 100 places are left</strong>.</p>`
-    : ''
-  const inner = `
-<tr><td style="padding:22px 36px 6px;">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">Your founding place</div>
-<h1 style="margin:0 0 12px;font-size:23px;line-height:1.3;font-weight:800;color:#fff;">Hi ${esc(name)}, your place is still here</h1>
-<p style="margin:0 0 12px;color:#9a9aa8;font-size:15px;line-height:1.6;">Just a quick nudge in case my last email got buried. Your founding invite is still open: Expert free, then $49 a month locked in for life, and no commission on your jobs, ever. Places go to the first 100 to use a code, so the sooner you claim it the better.</p>
-<p style="margin:0;color:#9a9aa8;font-size:15px;line-height:1.6;">Your code expires on <strong style="color:#fff;">${esc(fmtDate(expiresIso))}</strong>. After that the place goes to the next creative on my list.</p>
-${scarcity}
-</td></tr>
-${codeBox(code, expiresIso)}
-${button(inviteLink(code), 'Claim my founding place')}
-<tr><td style="padding:14px 36px 0;">
-<p style="margin:0;color:#9a9aa8;font-size:13.5px;line-height:1.6;">Tap the button, then <strong style="color:#fff;">Apply</strong> next to your code. Everything's in the <a href="${SITE}/founding-agreement" style="color:${GREEN};font-weight:600;text-decoration:none;">Founding Creative Agreement</a>.</p>
-${signOff}
-</td></tr>`
-  return shell(inner, "You're getting this because Michael invited you personally to join LensTrybe as a founding creative, at a business address published on your own website. If it's not for you, no need to do anything. The code simply expires.", unsubUrl)
-}
-
-function inviteSubject(first: string) {
-  return first ? `${first}, I'd like you in LensTrybe's founding 100` : "An invitation to LensTrybe's founding 100"
-}
-function reminderSubject(first: string, left: number | null) {
-  const scarce = left !== null && left <= 40 ? `, ${left} places left` : ''
-  return first ? `${first}, your founding place is still open${scarce}` : `Your founding place is still open${scarce}`
 }
 
 async function sendEmail(to: string, subject: string, html: string, unsubToken: string | null): Promise<string | null> {

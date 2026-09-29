@@ -1,0 +1,198 @@
+import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import { encode as base64Encode } from 'https://deno.land/std@0.168.0/encoding/base64.ts'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.8'
+import { contractEmail } from './emails.ts'
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const STORAGE_PREFIX = 'https://lqafxisymvrazipaozfk.supabase.co/storage/v1/'
+function esc(s: unknown) { return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;') }
+function nl2br(s: unknown) { return esc(s).replace(/\r?\n/g, '<br>') }
+function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
+function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
+function fmtDate(d: unknown) { if (!d) return ''; const dt = new Date(String(d).length <= 10 ? d + 'T00:00:00' : String(d)); if (Number.isNaN(dt.getTime())) return ''; return dt.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) }
+function safeStorageUrl(u: unknown): string | null {
+  if (typeof u !== 'string' || !u.startsWith(STORAGE_PREFIX)) return null
+  try { const p = new URL(u); if (p.protocol !== 'https:' || p.host !== 'lqafxisymvrazipaozfk.supabase.co' || !p.pathname.startsWith('/storage/v1/')) return null; return p.toString() } catch { return null }
+}
+function jsonRes(body: Record<string, unknown>, status = 200) { return new Response(JSON.stringify(body), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }) }
+async function getAuthUser(admin: any, req: Request) {
+  const token = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim()
+  if (!token) return null
+  try { const { data, error } = await admin.auth.getUser(token); if (error || !data?.user) return null; return data.user } catch { return null }
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+  if (req.method !== 'POST') return jsonRes({ error: 'Method not allowed' }, 405)
+
+  try {
+    const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
+    const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
+
+    // Only the signed-in creative who owns the contract can send it.
+    const user = await getAuthUser(admin, req)
+    if (!user) return jsonRes({ error: 'Not authenticated' }, 401)
+
+    let body: any = {}
+    try { body = await req.json() } catch { return jsonRes({ error: 'Invalid request' }, 400) }
+    // Accept only an id. (Older clients sent the whole record; only its id is used.)
+    const contractId = String(body?.contract_id ?? body?.contractId ?? body?.contract?.id ?? '')
+    if (!UUID_RE.test(contractId)) return jsonRes({ error: 'contract_id required' }, 400)
+
+    const { data: contract, error: loadErr } = await admin.from('contracts').select('*').eq('id', contractId).maybeSingle()
+    if (loadErr) console.error('send-contract load failed', loadErr)
+    if (!contract || contract.creative_id !== user.id) return jsonRes({ error: 'Contract not found' }, 404)
+    if (!isEmail(contract.client_email)) return jsonRes({ error: 'Add a valid client email to this contract before sending.' }, 400)
+
+    const allowed = await admin.rpc('rate_limit_hit', { p_key: 'send-contract:' + user.id, p_max: 60, p_window_seconds: 3600 })
+    if (allowed.error) console.error('send-contract rate limit check failed', allowed.error)
+    else if (allowed.data === false) return jsonRes({ error: 'Too many contracts sent recently. Please try again later.' }, 429)
+
+    const { data: prof } = await admin.from('profiles').select('business_name, business_email').eq('id', user.id).maybeSingle()
+    const profile: any = prof || {}
+    const businessName = profile.business_name || 'Creative'
+    const shortId = String(contract.id).slice(0, 8).toUpperCase()
+    const isUploaded = contract.contract_type === 'uploaded'
+
+    let attachments: any[] = []
+    let downloadUrl = ''
+    let attachmentIsPdf = false
+
+    if (isUploaded) {
+      // Uploaded contracts: link to the file in our own storage only.
+      const fileUrl = safeStorageUrl(contract.contract_file_url)
+      if (!fileUrl) return jsonRes({ error: 'This contract file could not be found. Please upload it again.' }, 400)
+      downloadUrl = fileUrl
+    } else {
+      // Written contract: generate an HTML attachment. Contract text is plain text, so it is escaped.
+      const contractHtml = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Contract</title></head>
+<body style="font-family:Arial,sans-serif;max-width:680px;margin:0 auto;padding:48px;color:#111">
+  <table width="100%" style="margin-bottom:40px">
+    <tr>
+      <td>
+        <div style="font-size:26px;font-weight:800;color:#111;margin-bottom:4px">${esc(businessName)}</div>
+        <div style="font-size:13px;color:#666">${esc(profile.business_email ?? '')}</div>
+      </td>
+      <td style="text-align:right">
+        <div style="font-size:30px;font-weight:800;color:#111">CONTRACT</div>
+        <div style="font-size:13px;color:#666">#${esc(shortId)}</div>
+        <div style="font-size:13px;color:#666">${esc(fmtDate(contract.created_at))}</div>
+      </td>
+    </tr>
+  </table>
+
+  <div style="margin-bottom:24px">
+    <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px">Between</div>
+    <div style="font-size:15px;font-weight:600">${esc(businessName)}</div>
+    <div style="font-size:13px;color:#666;margin-top:8px">and</div>
+    <div style="font-size:15px;font-weight:600;margin-top:8px">${esc(contract.client_name)}</div>
+    <div style="font-size:13px;color:#666">${esc(contract.client_email)}</div>
+  </div>
+
+  ${contract.project_name ? `
+  <div style="margin-bottom:24px;padding:12px 16px;background:#f9fafb;border-radius:8px">
+    <span style="font-size:12px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.06em">Project: </span>
+    <span style="font-size:14px;color:#111">${esc(contract.project_name)}</span>
+    ${contract.project_date ? `<span style="font-size:13px;color:#666;margin-left:12px">&middot; ${esc(fmtDate(contract.project_date))}</span>` : ''}
+  </div>` : ''}
+
+  <div style="border-top:1px solid #e5e7eb;padding-top:24px;margin-bottom:32px;font-size:14px;line-height:1.8;white-space:pre-wrap">${esc(contract.content ?? '')}</div>
+
+  ${contract.notes ? `
+  <div style="background:#f9fafb;border-radius:8px;padding:16px;margin-bottom:24px">
+    <div style="font-size:11px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:0.06em;margin-bottom:8px">Notes</div>
+    <div style="font-size:13px;color:#374151">${nl2br(contract.notes)}</div>
+  </div>` : ''}
+
+  <div style="margin-top:40px;padding-top:20px;border-top:1px solid #e5e7eb;font-size:12px;color:#999;text-align:center">
+    This contract was created via LensTrybe &middot; ${esc(businessName)}
+  </div>
+</body>
+</html>`
+
+      // Branded PDF from document-pdf (same renderer as the in-app and portal downloads).
+      // Falls back to the plain HTML copy if PDF generation is unavailable.
+      let pdfAttachment: any = null
+      try {
+        const pdfRes = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/document-pdf`, {
+          method: 'POST',
+          headers: {
+            Authorization: req.headers.get('Authorization') || '',
+            apikey: Deno.env.get('SUPABASE_ANON_KEY') || '',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ type: 'contract', id: contract.id }),
+        })
+        const pdfJson: any = await pdfRes.json().catch(() => ({}))
+        if (pdfRes.ok && pdfJson?.content_base64) {
+          pdfAttachment = { filename: pdfJson.filename || `Contract-${shortId}.pdf`, content: pdfJson.content_base64 }
+        } else {
+          console.error('send-contract pdf generation failed', pdfRes.status, pdfJson?.error)
+        }
+      } catch (e) {
+        console.error('send-contract pdf generation error', e instanceof Error ? e.message : e)
+      }
+      attachments = [pdfAttachment || {
+        filename: `Contract-${shortId}.html`,
+        content: base64Encode(new TextEncoder().encode(contractHtml)),
+      }]
+      attachmentIsPdf = !!pdfAttachment
+    }
+
+    // Review-and-sign link for written contracts that aren't signed yet.
+    const signUrl = (!isUploaded && contract.signing_token && String(contract.status || '').toLowerCase() !== 'signed')
+      ? `https://lenstrybe.com/sign/${encodeURIComponent(String(contract.signing_token))}`
+      : ''
+
+    const email = contractEmail({
+      business: profile.business_name || 'Your creative',
+      subjectName: plain(profile.business_name || 'Your Creative', 120),
+      projectName: contract.project_name,
+      subjectProject: contract.project_name ? plain(contract.project_name, 120) : '',
+      isUploaded,
+      downloadUrl,
+      attachmentIsPdf,
+      signUrl,
+    })
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: 'LensTrybe <noreply@mail.lenstrybe.com>',
+        to: [contract.client_email],
+        reply_to: isEmail(profile.business_email) ? profile.business_email : 'connect@lenstrybe.com',
+        subject: email.subject,
+        html: email.html,
+        attachments,
+      }),
+    })
+
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      // Resend answers 429 when the account's daily sending quota is gone. Telling
+      // someone to try again in that state is wrong advice, because it cannot succeed
+      // until the quota resets. Name the real reason instead.
+      if (res.status === 429 || /quota/i.test(JSON.stringify(data ?? ''))) {
+        console.error('send-contract resend DAILY QUOTA exhausted', res.status, data)
+        return jsonRes({ error: 'Our email service has hit its daily sending limit, so this was not sent. That is a problem on our end, not with your contract. Sending will work again once the limit resets.' }, 503)
+      }
+      console.error('send-contract resend error', res.status, data)
+      return jsonRes({ error: 'Could not send the contract email. Please try again.' }, 502)
+    }
+    return jsonRes({ success: true, id: (data as any)?.id ?? null })
+  } catch (err) {
+    console.error('send-contract failed', err)
+    return jsonRes({ error: 'Could not send the contract. Please try again.' }, 500)
+  }
+})

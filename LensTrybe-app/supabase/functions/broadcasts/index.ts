@@ -15,9 +15,8 @@
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
 
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1'
+import { emailHtml } from './emails.ts'
 
-const GREEN = '#1DB954'
-const PINK = '#FF2D78'
 const FROM = 'LensTrybe <noreply@mail.lenstrybe.com>'
 const REPLY_TO = 'connect@lenstrybe.com'
 const SITE = 'https://lenstrybe.com'
@@ -41,10 +40,6 @@ function safeEqual(a: string, b: string) {
   return r === 0
 }
 
-function esc(s: unknown) {
-  return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-}
-
 function oneLine(s: unknown, max: number) {
   return String(s ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 }
@@ -59,31 +54,6 @@ function cleanUrl(s: unknown) {
   if (u.startsWith('/') && !u.startsWith('//')) return u.slice(0, 500)
   if (/^https:\/\/[^\s]+$/i.test(u)) return u.slice(0, 500)
   return undefined // invalid
-}
-
-function absoluteUrl(u: string) {
-  return u.startsWith('/') ? SITE + u : u
-}
-
-function emailHtml(title: string, body: string, ctaLabel: string | null, ctaUrl: string | null, unsubUrl: string) {
-  const paras = body.split(/\n\n+/).map((p) =>
-    `<p style="margin:0 0 14px;color:#c9c9d4;font-size:15px;line-height:1.65;">${esc(p).replace(/\n/g, '<br>')}</p>`).join('')
-  const cta = ctaLabel && ctaUrl
-    ? `<tr><td style="padding:6px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${GREEN};"><a href="${esc(absoluteUrl(ctaUrl))}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:#04120a;text-decoration:none;">${esc(ctaLabel)}</a></td></tr></table></td></tr>`
-    : ''
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;background:#0a0a0f;font-family:Inter,Arial,sans-serif;">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0f;padding:40px 16px;"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#14141c;border:1px solid rgba(255,255,255,0.08);border-radius:16px;">
-<tr><td style="padding:32px 36px 0;"><a href="https://lenstrybe.com" style="display:inline-block;text-decoration:none;"><img src="https://lenstrybe.com/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;outline:none;text-decoration:none;width:180px;height:38px;" /></a></td></tr>
-<tr><td style="padding:22px 36px 4px;">
-<div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${PINK};margin-bottom:10px;">From the LensTrybe team</div>
-<h1 style="margin:0 0 14px;font-size:22px;line-height:1.3;font-weight:800;color:#fff;">${esc(title)}</h1>
-${paras}
-</td></tr>
-${cta}
-<tr><td style="padding:26px 36px 32px;"><div style="border-top:1px solid rgba(255,255,255,0.08);padding-top:16px;font-size:12px;line-height:1.6;color:#6a6a78;">You're getting this because you signed up for LensTrybe emails. <a href="${esc(unsubUrl)}" style="color:#9a9aa8;">Unsubscribe</a>. Questions? Just reply to this email.<br>Connect. Capture. Create.</div></td></tr>
-</table></td></tr></table></body></html>`
 }
 
 async function sendBatch(emails: Record<string, unknown>[]) {

@@ -9,6 +9,8 @@
 // bell, so they hear about it without opening Meetings. Both are best effort; the save is what counts.
 // Secrets: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
 
+import { meetingResponseHtml } from './emails.ts'
+
 const cors = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type' }
 const URL = Deno.env.get('SUPABASE_URL')!
 const KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SERVICE_ROLE_KEY') || ''
@@ -32,22 +34,6 @@ function whenLabel(date: string | null, start: string | null, end: string | null
   return `${day} · ${to12(start)}${end && TIME_RE.test(end) ? ' to ' + to12(end) : ''}`
 }
 
-const BRAND = { green: '#1DB954', btnText: '#04120a', pageBg: '#0a0a0f', card: '#14141c', panel: '#1b1b26', border: 'rgba(255,255,255,0.08)', text: '#ffffff', muted: '#9a9aa8', faint: '#6a6a78', font: `Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif` }
-function emailShell(o: { kicker: string; heading: string; intro: string; panelHtml: string; ctaText: string; ctaUrl: string }) {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
-<body style="margin:0;padding:0;background:${BRAND.pageBg};">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.pageBg};padding:40px 16px;font-family:${BRAND.font};"><tr><td align="center">
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:${BRAND.card};border:1px solid ${BRAND.border};border-radius:16px;overflow:hidden;">
-<tr><td style="padding:32px 36px 0;"><a href="${APP}" style="display:inline-block;text-decoration:none;"><img src="${APP}/email-logo-white.png" width="180" height="38" alt="LensTrybe" style="display:block;border:0;width:180px;height:38px;" /></a></td></tr>
-<tr><td style="padding:22px 36px 8px;"><div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:${BRAND.green};margin-bottom:10px;">${esc(o.kicker)}</div>
-<h1 style="margin:0 0 10px;font-size:23px;line-height:1.25;font-weight:800;color:${BRAND.text};">${esc(o.heading)}</h1>
-<p style="margin:0;color:${BRAND.muted};font-size:15px;line-height:1.6;">${esc(o.intro)}</p></td></tr>
-<tr><td style="padding:18px 36px 0;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${BRAND.panel};border:1px solid ${BRAND.border};border-radius:12px;"><tr><td style="padding:18px 20px;color:${BRAND.text};font-size:14px;line-height:1.6;">${o.panelHtml}</td></tr></table></td></tr>
-<tr><td style="padding:24px 36px 4px;"><table role="presentation" cellpadding="0" cellspacing="0"><tr><td style="border-radius:10px;background:${BRAND.green};"><a href="${o.ctaUrl}" style="display:inline-block;padding:13px 30px;font-size:15px;font-weight:700;color:${BRAND.btnText};text-decoration:none;font-family:${BRAND.font};">${esc(o.ctaText)}</a></td></tr></table></td></tr>
-<tr><td style="padding:28px 36px 32px;"><div style="border-top:1px solid ${BRAND.border};padding-top:18px;"><div style="font-size:12px;letter-spacing:0.24em;color:${BRAND.text};">LENSTRYBE</div><div style="font-size:12px;color:${BRAND.faint};margin-top:2px;">Connect. Capture. Create.</div><a href="${APP}" style="font-size:12px;color:${BRAND.green};text-decoration:none;">lenstrybe.com</a></div></td></tr>
-</table></td></tr></table></body></html>`
-}
-
 // Tell the creative. Never throws.
 async function tellCreative(m: Record<string, any>, response: string) {
   try {
@@ -65,8 +51,7 @@ async function tellCreative(m: Record<string, any>, response: string) {
     const u = ur.ok ? await ur.json() : null
     const to = isEmail(u?.email) ? u.email : null
     if (!to) return
-    const panel = `<div><strong>${esc(m.title || 'Meeting')}</strong></div><div style="color:${BRAND.muted};margin-top:4px;">Proposed: ${esc(when)}</div>${suggested ? `<div style="margin-top:8px;"><strong>Suggested instead:</strong> ${esc(suggested)}</div>` : ''}${m.client_message ? `<div style="margin-top:8px;color:${BRAND.muted};">“${esc(m.client_message)}”</div>` : ''}`
-    const html = emailShell({ kicker: 'Meeting', heading: title, intro: response === 'accepted' ? 'It is confirmed on their side. It is in your Meetings, and on your calendar if you added it there.' : response === 'declined' ? 'They said no to this one. Suggest another time from Meetings when you are ready.' : 'Have a look at the time they suggested and confirm or counter it from Meetings.', panelHtml: panel, ctaText: 'Open Meetings', ctaUrl: `${APP}/dashboard/clients/meetings` })
+    const html = meetingResponseHtml({ response, title, meetingTitle: m.title || 'Meeting', when, suggested, message: m.client_message })
     await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: `Bearer ${RESEND}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ from: 'LensTrybe <noreply@mail.lenstrybe.com>', to: [to], subject: title, html }) })
   } catch (e) { console.error('meeting-respond tellCreative', e) }
 }

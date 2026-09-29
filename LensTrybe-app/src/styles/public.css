@@ -307,7 +307,7 @@
 .pub .foot .g{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:center}
 .pub .foot .logo svg{height:20px;width:auto}
 .pub .foot nav{display:flex;gap:18px;flex-wrap:wrap}
-.pub .foot nav a:hover{color:#fff}
+.pub .foot nav a:hover{color:#14111a} /* the footer always sits on the light page */
 
 .pub 
 .dawn{height:220px;margin-top:-220px;position:relative;z-index:2;background:linear-gradient(180deg,rgba(246,245,243,0) 0%,rgba(246,245,243,.5) 45%,#f6f5f3 100%);pointer-events:none}
