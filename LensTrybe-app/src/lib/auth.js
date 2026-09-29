@@ -138,7 +138,8 @@ export async function signUpCreative(f) {
     userId = data?.user?.id
     if (!userId) return { error: 'The account could not be created. Try again in a moment.' }
     needsConfirm = !data.session
-    try { await supabase.functions.invoke('send-welcome-email', { body: { user_id: userId } }) } catch { /* the email is a nicety, the account is made */ }
+    // The welcome email waits until the address is confirmed (AuthContext sends it on the first
+    // signed-in visit), so the first thing in their inbox is the confirm link, not a welcome.
   }
   if (tier !== 'basic') {
     let result

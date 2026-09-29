@@ -15,4 +15,15 @@ export const TEMPLATES = [
     para("If you didn't request this change, contact us at connect@lenstrybe.com.", { small: true })] }) },
 ]
 export function previews() { return TEMPLATES.map(t => ({ id: t.file, name: 'Supabase login email: ' + t.subject, audience: 'anyone', from: 'LensTrybe <noreply@mail.lenstrybe.com> (set in Supabase SMTP)', subject: t.subject, html: t.html.replaceAll(LINK, 'https://lenstrybe.com/auth/v1/verify?token=example') })) }
-if (import.meta.main) for (const t of TEMPLATES) await Deno.writeTextFile(new URL(`./${t.file}.html`, import.meta.url), t.html)
+// At the swap (lenstrybe.com runs Next): the same emails with the button pointing at lenstrybe.com
+// instead of the Supabase project's own address, which made iCloud file the confirm email as junk
+// (29 Sep). Next's /auth/confirm and /reset-password swap the token for a session. Paste these
+// three (swap-*.html) into Supabase on launch day, not before: the old site has neither page.
+const SWAP_LINK: Record<string, string> = {
+  'confirm-signup': 'https://lenstrybe.com/auth/confirm?token_hash={{ .TokenHash }}&type=email',
+  'reset-password': 'https://lenstrybe.com/reset-password?token_hash={{ .TokenHash }}&type=recovery',
+  'change-email': 'https://lenstrybe.com/auth/confirm?token_hash={{ .TokenHash }}&type=email_change',
+}
+export const SWAP = TEMPLATES.map(t => ({ ...t, file: 'swap-' + t.file, html: t.html.replaceAll(LINK, SWAP_LINK[t.file].replaceAll('&', '&amp;')) }))
+
+if (import.meta.main) for (const t of [...TEMPLATES, ...SWAP]) await Deno.writeTextFile(new URL(`./${t.file}.html`, import.meta.url), t.html)

@@ -21,6 +21,7 @@ import Login from './pages/public/Login'
 import Reset from './pages/public/Reset'
 import CheckEmail from './pages/public/CheckEmail'
 import BookingGone from './pages/public/BookingGone'
+import AuthConfirm from './pages/public/AuthConfirm'
 import Waitlist from './pages/public/Waitlist'
 import Unsubscribe from './pages/public/Unsubscribe'
 import Upcoming from './pages/public/Upcoming'
@@ -73,6 +74,7 @@ export default function App() {
           <Route path="/reset-password" element={<Reset />} />
           <Route path="/check-email" element={<CheckEmail />} />
           <Route path="/booking-unavailable" element={<BookingGone />} />
+          <Route path="/auth/confirm" element={<AuthConfirm />} />
           <Route path="/waitlist" element={<Waitlist />} />
           <Route path="/unsubscribe" element={<Unsubscribe />} />
           <Route path="/unsubscribe/:token" element={<Unsubscribe />} />

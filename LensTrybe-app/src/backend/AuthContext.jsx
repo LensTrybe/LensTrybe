@@ -51,6 +51,19 @@ export function AuthProvider({ children }) {
     return () => subscription.unsubscribe()
   }, [])
 
+  // The welcome email goes out once the account is real: a confirmed address and a creative or
+  // client row. Only for accounts made in the last week, once per device; send-welcome-email also
+  // sends it only once per account. Covers email sign-up (after the confirm link) and Google.
+  const confirmed = !!(user?.email_confirmed_at || user?.confirmed_at)
+  const hasRow = !!(profile || clientAccount)
+  useEffect(() => {
+    if (!supabase || !user?.id || !confirmed || !hasRow) return
+    if (Date.now() - new Date(user.created_at || 0).getTime() > 7 * 86400000) return
+    const k = 'lt-welcome-' + user.id
+    try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1') } catch { /* private mode: the server still sends it once */ }
+    supabase.functions.invoke('send-welcome-email', { body: {} }).catch(() => {})
+  }, [user?.id, confirmed, hasRow]) // eslint-disable-line react-hooks/exhaustive-deps
+
   // opts.silent: refresh profile in place without flipping `loading` (which unmounts
   // protected routes). Used after in-page changes like an admin plan switch.
   async function fetchUserData(userId, opts = {}) {
