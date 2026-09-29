@@ -61,8 +61,8 @@ export const TIER_FEATURES = {
     deliverGb: 0,
     brandKit: false,
     insights: 'none',
-    lumiPerMonth: 0,
-    lumiPerDay: 0,
+    lumiPerMonth: 5,
+    lumiPerDay: 5,
     profilePoster: false,
 
     // Community, team and work
@@ -103,8 +103,8 @@ export const TIER_FEATURES = {
     deliverGb: 1,
     brandKit: false,
     insights: 'basic',
-    lumiPerMonth: 5,
-    lumiPerDay: 3,
+    lumiPerMonth: 50,
+    lumiPerDay: 15,
     profilePoster: false,
 
     reviewRequests: true,
@@ -144,8 +144,8 @@ export const TIER_FEATURES = {
     deliverGb: 50,
     brandKit: true,
     insights: 'full',
-    lumiPerMonth: 100,
-    lumiPerDay: 25,
+    lumiPerMonth: 200,
+    lumiPerDay: 40,
     profilePoster: true,
 
     reviewRequests: true,
@@ -188,7 +188,7 @@ export const TIER_FEATURES = {
     // Capped rather than unlimited so one heavy user cannot run up an open ended model
     // bill. 500 a month is far more than any creative uses in practice.
     lumiPerMonth: 500,
-    lumiPerDay: 50,
+    lumiPerDay: 60,
     profilePoster: true,
 
     reviewRequests: true,
@@ -295,7 +295,7 @@ export const FEATURE_CATALOG = [
   { id: 'deliverGb', label: 'Deliver storage', say: (v) => (v ? `LensTrybe Deliver: ${gb(v)}` : null) },
   { id: 'brandKit', label: 'Brand kit', say: (v) => (v ? 'Brand kit across your documents and site' : null) },
   { id: 'insights', label: 'Business insights', say: (v) => ({ none: null, basic: 'Profile and enquiry insights', full: 'Full business insights and cash flow' }[v]) },
-  { id: 'lumiPerMonth', label: 'Lumi AI', say: (v) => (!v ? null : v <= 5 ? `Lumi, your AI assistant: ${v} messages a month` : 'Lumi, your AI assistant') },
+  { id: 'lumiPerMonth', label: 'Lumi AI', say: (v) => (!v ? null : `Lumi, your AI assistant: ${v} messages a month`) },
   { id: 'profilePoster', label: 'Profile poster', say: (v) => (v ? 'Promote an offer when clients open your profile' : null) },
   { id: 'reviewRequests', label: 'Review requests', say: (v) => (v ? 'Request reviews from past clients' : null) },
   { id: 'importedReviews', label: 'Imported reviews', say: (v) => (v ? `Import ${many(v, 'review', 'reviews')} from elsewhere` : null) },

@@ -4,8 +4,11 @@ import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { fmt } from '../../lib/format'
 import { nice, iso } from '../../lib/store'
+import { LIVE } from '../../lib/mode'
 
-const IDX = [{ k: 'Do', n: 'Invoice Coastline Realty $1,026', m: 'from quote Q-0418' }, { k: 'Do', n: 'Block 3 Dec', m: 'calendar' }, { k: 'Do', n: 'Book Harper', m: 'new booking' }, { k: 'Do', n: 'Quote Northshore', m: 'new quote' }, { k: 'Do', n: 'Chase INV-0220', m: 'money' }, { k: 'Do', n: 'Note: keys for Coastline', m: 'notes' }, { k: 'Ask', n: 'How did August go', m: 'Lumi' }, { k: 'Ask', n: 'What Saturdays are free in December', m: 'Lumi' }, { k: 'Open', n: 'Harper and Leo', m: 'thread' }, { k: 'Open', n: 'Blackwood Events', m: 'thread' }, { k: 'Open', n: 'Open calendar', m: 'view' }, { k: 'Open', n: 'Open money', m: 'view' }, { k: 'Open', n: 'Open inventory', m: 'view' }]
+const DEMO_IDX = [{ k: 'Do', n: 'Invoice Coastline Realty $1,026', m: 'from quote Q-0418' }, { k: 'Do', n: 'Block 3 Dec', m: 'calendar' }, { k: 'Do', n: 'Book Harper', m: 'new booking' }, { k: 'Do', n: 'Quote Northshore', m: 'new quote' }, { k: 'Do', n: 'Chase INV-0220', m: 'money' }, { k: 'Do', n: 'Note: keys for Coastline', m: 'notes' }, { k: 'Ask', n: 'How did August go', m: 'Lumi' }, { k: 'Ask', n: 'What Saturdays are free in December', m: 'Lumi' }, { k: 'Open', n: 'Harper and Leo', m: 'thread' }, { k: 'Open', n: 'Blackwood Events', m: 'thread' }, { k: 'Open', n: 'Open calendar', m: 'view' }, { k: 'Open', n: 'Open money', m: 'view' }, { k: 'Open', n: 'Open inventory', m: 'view' }]
+// Live suggestions: nothing named after the demo's sample clients.
+const IDX = LIVE ? [{ k: 'Ask', n: 'Who owes me money', m: 'Lumi' }, { k: 'Ask', n: 'What needs a reply', m: 'Lumi' }, { k: 'Ask', n: 'What is coming up this month', m: 'Lumi' }, { k: 'Do', n: 'New invoice', m: 'invoicing' }, { k: 'Do', n: 'New quote', m: 'quotes' }, { k: 'Open', n: 'Open calendar', m: 'view' }, { k: 'Open', n: 'Open money', m: 'view' }, { k: 'Open', n: 'Open job board', m: 'view' }, { k: 'Open', n: 'Open settings', m: 'view' }] : DEMO_IDX
 // Lumi's answers, read from the store so they are true to what is on screen.
 export function answer(q, s) {
   q = q.toLowerCase()
@@ -30,7 +33,9 @@ export default function CommandBar() {
       setThink(false)
       const who = s.people.find(p => l.includes(p.n.split(' ')[0].toLowerCase()) || l.includes(p.id))
       const money = l.match(/\$?(\d[\d,]*)/); const amt = money ? Number(money[1].replace(/,/g, '')) : ''
-      if (l.startsWith('invoice')) { const q = who && s.ledger.find(r => r.t === who.id && r.k === 'q' && r.st === 'ok'); if (q) F.invoiceFromQuote(q.id); else F.newDoc('inv', { client: who?.id, v: amt }) }
+      if (l.startsWith('new invoice')) F.newDoc('inv', {})
+      else if (l.startsWith('new quote')) F.newDoc('q', {})
+      else if (l.startsWith('invoice')) { const q = who && s.ledger.find(r => r.t === who.id && r.k === 'q' && r.st === 'ok'); if (q) F.invoiceFromQuote(q.id); else F.newDoc('inv', { client: who?.id, v: amt }) }
       else if (l.startsWith('quote')) F.newDoc('q', { client: who?.id, v: amt })
       else if (l.startsWith('contract')) F.newDoc('c', { client: who?.id, v: amt })
       else if (l.startsWith('expense') || l.startsWith('log ')) F.newDoc('exp', { v: amt })
@@ -43,9 +48,10 @@ export default function CommandBar() {
       else if (l.startsWith('note')) F.newNote({ t: v.replace(/^note:?\s*/i, '') })
       else if (l.startsWith('meet') || l.startsWith('call ')) F.newMeeting({ client: who?.id })
       else if (l.startsWith('post')) F.newPost({ t: v.replace(/^post:?\s*/i, '') })
-      else if (l.startsWith('open ') || l.startsWith('go to ')) { const n = l.replace(/^(open|go to) /, ''); const t = s.threads.find(x => x.n.toLowerCase().includes(n)); const page = ['today', 'threads', 'bookings', 'calendar', 'projects', 'notes', 'inventory', 'meetings', 'clients', 'crm', 'money', 'finance', 'invoicing', 'quotes', 'contracts', 'expenses', 'tax', 'brand-kit', 'website', 'deliver', 'content-calendar', 'content-ideas', 'reviews', 'marketplace', 'collaborate', 'team', 'insights', 'availability', 'jobs', 'profile', 'subscription', 'referrals', 'founding', 'settings', 'support', 'lumi'].find(k => n.replace(/ /g, '-').startsWith(k) || k.startsWith(n.replace(/ /g, '-'))); if (t) nav('/app/thread/' + t.id); else if (page) nav('/app/' + (page === 'calendar' ? 'bookings' : page === 'finance' ? 'money' : page)); else toast('Nothing called ' + n + ' yet.') }
+      else if (l.startsWith('open ') || l.startsWith('go to ')) { const n = l.replace(/^(open|go to) /, '').replace(/^job ?board$/, 'jobs'); const t = s.threads.find(x => x.n.toLowerCase().includes(n)); const page = ['today', 'threads', 'bookings', 'calendar', 'projects', 'notes', 'inventory', 'meetings', 'clients', 'crm', 'money', 'finance', 'invoicing', 'quotes', 'contracts', 'expenses', 'tax', 'brand-kit', 'website', 'deliver', 'content-calendar', 'content-ideas', 'reviews', 'marketplace', 'collaborate', 'team', 'insights', 'availability', 'jobs', 'profile', 'subscription', 'referrals', 'founding', 'settings', 'support', 'lumi'].find(k => n.replace(/ /g, '-').startsWith(k) || k.startsWith(n.replace(/ /g, '-'))); if (t) nav('/app/thread/' + t.id); else if (page) nav('/app/' + (page === 'calendar' ? 'bookings' : page === 'finance' ? 'money' : page)); else toast('Nothing called ' + n + ' yet.') }
+      else if (/^(how|what|who|which|when|why|can|could|should|is|are|do|does|write|draft|help)\b/.test(l) || l.endsWith('?')) nav('/app/lumi?q=' + encodeURIComponent(v))
       else if (who && s.threads.find(t => t.id === who.id)) nav('/app/thread/' + who.id)
-      else if (l.startsWith('how') || l.startsWith('what') || l.startsWith('who') || l.startsWith('which') || l.endsWith('?')) { nav('/app/lumi?q=' + encodeURIComponent(v)) }
+      else if (LIVE) nav('/app/lumi?q=' + encodeURIComponent(v))
       else toast('Not sure yet. Try: invoice, quote, book, block, chase, note, open, or ask a question.')
       setQ('')
     }, 500)
@@ -53,7 +59,7 @@ export default function CommandBar() {
   return (
     <form className={'cmd lg chroma' + (think ? ' think' : '')} onSubmit={e => { e.preventDefault(); if (q.trim()) run(q.trim()) }} autoComplete="off">
       <span className="ring" aria-hidden="true" />
-      <input ref={ref} value={q} onChange={e => { setQ(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} placeholder="Ask or do anything. Try: invoice Coastline, block 3 Dec, how did August go" aria-label="Command" />
+      <input ref={ref} value={q} onChange={e => { setQ(e.target.value); setOpen(true) }} onFocus={() => setOpen(true)} placeholder={LIVE ? 'Ask or do anything. Try: new invoice, block 3 Dec, who owes me money' : 'Ask or do anything. Try: invoice Coastline, block 3 Dec, how did August go'} aria-label="Command" />
       <kbd>⌘K</kbd>
       <button className="go" type="submit"><span>Do it</span><Icon name="arrow" size={14} className="ar" /></button>
       {open && hits.length > 0 && <div className="sugg lg" role="listbox">{hits.map(h => <div key={h.n} className="s" role="option" onClick={() => run(h.n)}><span className="k">{h.k}</span><span>{h.n}</span><span className="m">{h.m}</span></div>)}</div>}

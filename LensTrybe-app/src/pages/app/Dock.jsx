@@ -1,11 +1,35 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { answer } from './CommandBar'
+import { LIVE } from '../../lib/mode'
+import LumiChat from './LumiChat'
+import { useLumiUsage, usageLine } from '../../lib/lumi'
 
 // Lumi, docked: approvals first, questions second. Each approval runs the real flow, so a yes here
 // is the same as a yes on Today or in the thread.
-export default function Dock({ onClose }) {
+export default function Dock(props) { return LIVE ? <LiveDock {...props} /> : <DemoDock {...props} /> }
+
+// Live: no scripted approvals, just Lumi. The conversation carries on as they move between
+// pages, and opens in full on the Lumi page.
+function LiveDock({ onClose }) {
+  const [c, setC] = useState({ id: null, messages: [] }); const u = useLumiUsage(); const nav = useNavigate()
+  const change = n => setC(o => ({ ...o, ...n, id: n.id || o.id }))
+  return (
+    <aside className="dock lg live" aria-label="Lumi">
+      <div className="dh"><span className="lm" /><div><b>Lumi</b><small>{usageLine(u, true) || 'Looks at your threads, calendar and money'}</small></div>
+        {c.messages.length > 0 && <button className="hide" onClick={() => setC({ id: null, messages: [] })} aria-label="New chat" title="New chat"><Icon name="plus" size={15} /></button>}
+        <button className="hide" onClick={onClose} aria-label="Put Lumi away" title="Put Lumi away"><Icon name="x" size={15} /></button></div>
+      {c.id && <button type="button" className="lfull" onClick={() => nav('/app/lumi?c=' + c.id, { state: { messages: c.messages } })}>Open this chat in full <Icon name="arrow" size={12} /></button>}
+      <LumiChat convoId={c.id} messages={c.messages} onChange={change}
+        empty={<><b>Ask about your business.</b><p>Lumi looks up your invoices, bookings, quotes, clients and enquiries before answering, and knows the page you're on.</p></>}
+        chips={['Who owes me money?', 'What needs a reply?', "What's coming up?"]} />
+    </aside>
+  )
+}
+
+function DemoDock({ onClose }) {
   const F = useFlows(); const { s, toast, upd } = F
   const [tab, setTab] = useState(0), [chat, setChat] = useState([{ l: 'Ask me anything about your business. I read the threads, the calendar, the money and your inbox before I answer.' }]), [q, setQ] = useState('')
   const acts = s.actions, left = acts.filter(a => !a.done).length

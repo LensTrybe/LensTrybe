@@ -10,12 +10,12 @@ import { useSite, jobsOpen, untilLabel } from '../../lib/site'
 import { planLabel } from '../../backend/tierFeatures'
 
 const ROWS = [
-  ['Public profile and listing', '✓', '✓', '✓', '✓'], ['Portfolio photos', '5', '20 + video', '40 + video', 'Unlimited'], ['Bookings a month', '3', '5', 'Unlimited', 'Unlimited'], ['Quotes clients can accept', '', '✓', '✓', '✓'], ['Branded invoices and payment', '', '✓', '✓', '✓'], ['Contracts and e-signatures', '', '', '✓', '✓'], ['CRM client records', '', '25', '500', 'Unlimited'], ['Branded client portals', '', '', '✓', '✓'], ['Deliver storage', '', '', '50 GB', '200 GB'], ['Your website', 'One page', 'Home and gallery', 'Home, about, gallery, contact', 'Home, about, gallery, contact, own domain'], ['Lumi, your AI assistant', '', '5 messages a month', 'Unlimited', 'Unlimited'], ['Team members', '', '', '', 'Up to 5'], ['Trybe Studio spotlight on the homepage', '', '', '', '✓'],
+  ['Public profile and listing', '✓', '✓', '✓', '✓'], ['Portfolio photos', '5', '20 + video', '40 + video', 'Unlimited'], ['Bookings a month', '3', '5', 'Unlimited', 'Unlimited'], ['Quotes clients can accept', '', '✓', '✓', '✓'], ['Branded invoices and payment', '', '✓', '✓', '✓'], ['Contracts and e-signatures', '', '', '✓', '✓'], ['CRM client records', '', '25', '500', 'Unlimited'], ['Branded client portals', '', '', '✓', '✓'], ['Deliver storage', '', '', '50 GB', '200 GB'], ['Your website', 'One page', 'Home and gallery', 'Home, about, gallery, contact', 'Home, about, gallery, contact, own domain'], ['Lumi, your AI assistant, messages a month', '5', '50', '200', '500'], ['Team members', '', '', '', 'Up to 5'], ['Trybe Studio spotlight on the homepage', '', '', '', '✓'],
 ]
 const KEYS = {
   Basic: ['A one-page website', 'Five portfolio photos', 'Three bookings a month', 'Found by the ask bar'],
-  Pro: ['Twenty photos plus video', 'Quotes clients can accept', 'Branded invoices and payment', 'CRM for 25 clients', 'Home and gallery pages', 'Lumi, five messages a month'],
-  Expert: ['Unlimited bookings', 'Contracts and e-signatures', 'Branded client portals', '50 GB delivery', 'Four page website', 'Lumi, unlimited'],
+  Pro: ['Twenty photos plus video', 'Quotes clients can accept', 'Branded invoices and payment', 'CRM for 25 clients', 'Home and gallery pages', 'Lumi, 50 messages a month'],
+  Expert: ['Unlimited bookings', 'Contracts and e-signatures', 'Branded client portals', '50 GB delivery', 'Four page website', 'Lumi, 200 messages a month'],
   Elite: ['Everything in Trybe Complete', 'Team of five', 'Your own domain', '200 GB delivery', 'Trybe Studio spotlight on the homepage', 'Unlimited CRM'],
 }
 const FAQ = [

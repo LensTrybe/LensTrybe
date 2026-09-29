@@ -22,7 +22,7 @@ const STEPS = [
   { at: ['.rail a[href="/app/bookings"]', '.tabbar button:nth-child(3)'], t: 'Calendar', b: 'Bookings, pencilled dates and days off. Drag a booking to move it; LensTrybe asks before it tells the client.' },
   { at: ['.rail .gp:has(a[href="/app/money"]) .gh', '.tabbar button:nth-child(4)'], t: 'Finance', b: 'Quotes, invoices, contracts, expenses and tax, all tied to the client they belong to.' },
   { at: ['.setup'], optional: true, t: 'Your profile checklist', b: 'Your profile is your website. Work through this list and it goes live in Find a creative.' },
-  { at: ['.top .cmd'], t: 'Ask or do anything', b: 'Type what you need, like "invoice Coastline" or "block 3 Dec", and Lumi does it or takes you there.' },
+  { at: ['.top .cmd'], t: 'Ask or do anything', b: 'Type what you need, like "new invoice" or "block 3 Dec", and it happens. Anything else goes to Lumi, who can look up your own numbers.' },
   { at: ['.rail .me', '.tabbar button:last-child'], t: 'You', b: 'Switch light and dark, log out, and replay this tour any time from Settings.' },
   { t: 'That\'s the tour', b: 'Finish your profile first: clients can find you once it has a photo, a line about you and one kind of work.', last: true },
 ]

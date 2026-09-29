@@ -54,7 +54,7 @@ export const DIALS = [
 ]
 export const PLANS = [
   { n: 'Basic', d: 'Get found. Public profile, five photos, three bookings a month.', m: 'Free', a: 'Free', free: 'Forever', cta: 'Get started' },
-  { n: 'Pro', d: 'Look the part. Portfolio video, your own page, quotes and invoices, CRM for 25 clients, Lumi lite.', m: '$24.99', a: '$20.83', free: '3 months free', cta: 'Start Trybe Essential' },
-  { n: 'Expert', d: 'Run the whole business. Unlimited bookings, contracts, branded portals, a four page website, Lumi unlimited.', m: '$74.99', a: '$62.49', free: '3 months free', cta: 'Start Trybe Complete', hot: true },
+  { n: 'Pro', d: 'Look the part. Portfolio video, your own page, quotes and invoices, CRM for 25 clients, 50 Lumi messages a month.', m: '$24.99', a: '$20.83', free: '3 months free', cta: 'Start Trybe Essential' },
+  { n: 'Expert', d: 'Run the whole business. Unlimited bookings, contracts, branded portals, a four page website, 200 Lumi messages a month.', m: '$74.99', a: '$62.49', free: '3 months free', cta: 'Start Trybe Complete', hot: true },
   { n: 'Elite', d: 'Studios. Team of five, your own domain, 200GB delivery, Trybe Studio spotlight on the homepage.', m: '$149.99', a: '$124.99', free: '3 months free', cta: 'Start Trybe Studio' },
 ]

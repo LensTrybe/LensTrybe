@@ -197,6 +197,8 @@ export default function Shell() {
     return () => { mq.removeEventListener('change', set); document.body.style.overflow = '' }
   }, [])
   useEffect(() => { setDockM(false) }, [pathname])
+  // The Lumi page is Lumi in full, so the dock steps aside there.
+  const onLumi = pathname.startsWith('/app/lumi')
   useEffect(() => { const a = e => setDark(e.detail.dark), b = e => setDock(e.detail.dock); addEventListener('lt-theme', a); addEventListener('lt-dock', b); return () => { removeEventListener('lt-theme', a); removeEventListener('lt-dock', b) } }, [])
   useSpecular([pathname, dock])
   const toggle = () => { if (innerWidth <= 1180) setDockM(d => !d); else setDock(d => !d) }
@@ -217,7 +219,7 @@ export default function Shell() {
   return (
     <div className={'ws' + (dark ? ' dark' : '')}><SheetProvider><LiveSync />
       <Aurora />
-      <div className={'shell' + (dock ? '' : ' nodock') + (dockM ? ' dockopen' : '')}>
+      <div className={'shell' + (dock && !onLumi ? '' : ' nodock') + (dockM && !onLumi ? ' dockopen' : '')}>
         <aside className="rail lg" aria-label="Workspace navigation">
           <div className="lg-h"><Link to="/"><Logo white={dark} height={18} /></Link></div>
           {TOP.map(item)}
@@ -248,7 +250,7 @@ export default function Shell() {
         </main>
         <Gate k="lumi" bar={false}><Dock onClose={() => { setDock(false); setDockM(false) }} /></Gate>
       </div>
-      <button className="dockbtn" aria-label="Lumi" onClick={() => setDockM(d => !d)}><span className="lm" /></button>
+      {!onLumi && <button className="dockbtn" aria-label="Lumi" onClick={() => setDockM(d => !d)}><span className="lm" /></button>}
       <Tour />
       <nav className="tabbar lg" aria-label="Sections">{TABS.map(([k, l, ic]) => <button key={k} className={active(k) ? 'on' : ''} onClick={() => nav('/app/' + k)}><Icon name={ic} />{l}</button>)}<MoreTab dark={dark} setDark={setDark} active={active} /></nav>
     </SheetProvider></div>
