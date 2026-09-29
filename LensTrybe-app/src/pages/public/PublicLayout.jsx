@@ -45,7 +45,7 @@ export default function PublicLayout() {
     <div className={'pub' + (darkTop ? '' : ' pub-light')}>
       {!darkTop && <Aurora />}
       <header className={'top' + (lite ? ' lite' : '')}>
-        <Link className="logo" to="/" aria-label="LensTrybe home"><span className="lw"><Logo white /></span><span className="li"><Logo /></span></Link>
+        <Link className="logo" to="/" aria-label="LensTrybe home"><span className="lw"><Logo onDark height={26} /></span><span className="li"><Logo height={26} /></span><span className="tagline">Connect. Capture. Create.</span></Link>
         <div className="r lg" ref={nav} onPointerOver={e => glide(e.target.closest("a"))} onPointerLeave={() => glide(null)}>
           <i className="glide" aria-hidden="true" />
           <NavLink to="/how-it-works" className="hide-m">How it works</NavLink>
