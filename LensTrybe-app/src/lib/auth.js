@@ -45,7 +45,9 @@ export async function signIn(email, password, demoKind = 'creative') {
     const m = String(error.message || '').toLowerCase()
     return { error: error.message, code: m.includes('invalid login credentials') ? 'invalid' : m.includes('not confirmed') ? 'unconfirmed' : 'other' }
   }
-  return { kind: await accountKind(data.user?.id) }
+  // fresh: the account was made in the last hour (first log in after confirming the email).
+  const fresh = Date.now() - new Date(data.user?.created_at || 0).getTime() < 3600e3
+  return { kind: await accountKind(data.user?.id), fresh }
 }
 
 // Google. A session flag tells AuthContext this is a return from Google; lt_google_kind says what

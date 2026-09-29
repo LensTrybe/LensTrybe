@@ -27,7 +27,10 @@ export default function Login() {
     if (r.error) return setErr(r.error)
     if (!r.kind) return setErr('That account has no profile yet. Finish signing up first.')
     try { sessionStorage.removeItem('returnTo') } catch { /* ignore */ }
-    nav(next || (LIVE ? homeFor(r.kind) : r.kind === 'client' ? '/portal/harper-leo' : '/app'), { replace: true })
+    // A brand new creative starts on Today with the welcome tour, not on a workspace page left over
+    // in this tab from before (returnTo), unless they were in the middle of posting a job.
+    const first = LIVE && r.fresh && r.kind === 'creative' && !next.startsWith('/jobs')
+    nav(first ? '/app/today?welcome=1' : next || (LIVE ? homeFor(r.kind) : r.kind === 'client' ? '/portal/harper-leo' : '/app'), { replace: true })
   }
   const google = async () => { const r = await signInWithGoogle(next, ''); if (r.error) setErr(r.error); else if (!LIVE) nav(who === 'client' ? '/portal/harper-leo' : '/app') }
   return (
