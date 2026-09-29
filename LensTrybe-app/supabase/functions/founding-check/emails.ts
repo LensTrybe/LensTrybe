@@ -25,8 +25,10 @@ export function warnEmail(name: string, outstanding: string[], graceEnds: string
 }
 
 // Monthly feedback nudge. Never affects the deal.
-export function nudgeEmail(name: string) {
+// unsubscribe: the address's unsubscribe page (Spam Act), when there is one.
+export function nudgeEmail(name: string, unsubscribe?: string | null) {
   return layout({
+    unsubscribe,
     preheader: NUDGE_SUBJECT,
     blocks: [
       heading('Founding creatives', `Hi ${name}, got a minute?`),
@@ -48,7 +50,7 @@ export function previews() {
     {
       id: 'feedback-nudge', name: 'Monthly founding feedback nudge', audience: 'creative',
       subject: NUDGE_SUBJECT, from: FROM_PREVIEW,
-      html: nudgeEmail('Coastline Photo'),
+      html: nudgeEmail('Coastline Photo', 'https://lenstrybe.com/unsubscribe/8f3c1d2e-example'),
     },
   ]
 }

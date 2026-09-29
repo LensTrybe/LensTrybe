@@ -18,7 +18,7 @@ export function reviewRequestEmail(d: ReviewRequestData): { subject: string, htm
   const html = layout({
     preheader: `Leave ${businessName} a quick review on LensTrybe`,
     blocks: [
-      heading('Review request', `${greeting.replace(/,$/, '')} how was working with ${businessName}?`),
+      heading('Review request', `${greeting} how was working with ${businessName}?`),
       para(`${businessName} would love a quick review of your experience. Your words help other clients know what to expect.`),
       ...(d.message
         ? [para(`A note from ${businessName}`, { small: true }), quote(d.message)]

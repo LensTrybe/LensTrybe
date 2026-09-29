@@ -17,6 +17,17 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 function isEmail(s: unknown): s is string { return typeof s === 'string' && s.length <= 254 && /^[^\s@<>,;"'()]+@[^\s@<>,;"'()]+\.[^\s@<>,;"'()]+$/.test(s) }
 function plain(s: unknown, max = 200) { return String(s ?? '').replace(/[\r\n\t]+/g, ' ').replace(/[<>"]/g, '').trim().slice(0, max) }
 
+// The creative's time zone from their state. Anywhere unknown counts as Brisbane, where LensTrybe is.
+const ZONES: Record<string, string> = { QLD: 'Australia/Brisbane', NSW: 'Australia/Sydney', ACT: 'Australia/Sydney', VIC: 'Australia/Melbourne', TAS: 'Australia/Hobart', SA: 'Australia/Adelaide', NT: 'Australia/Darwin', WA: 'Australia/Perth' }
+function zoneFor(state: unknown, country: unknown): string {
+  const st = String(state || '').trim().toUpperCase()
+  if (ZONES[st]) return ZONES[st]
+  const c = String(country || '').trim().toLowerCase()
+  if (c === 'new zealand' || c === 'nz') return 'Pacific/Auckland'
+  if (c === 'united kingdom' || c === 'uk' || c === 'gb') return 'Europe/London'
+  return 'Australia/Brisbane'
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405)
@@ -41,11 +52,13 @@ Deno.serve(async (req) => {
   if (claimErr) { console.error('notify-contract-signed claim failed', claimErr); return json({ error: 'Could not send the notification' }, 500) }
   if (!Array.isArray(claimed) || !claimed.length) return json({ success: true, skipped: true })
 
-  const { data: profile } = await supabase.from('profiles').select('business_name, business_email').eq('id', contract.creative_id).maybeSingle()
+  const { data: profile } = await supabase.from('profiles').select('business_name, business_email, state, country').eq('id', contract.creative_id).maybeSingle()
   const creativeEmail = isEmail(profile?.business_email) ? profile.business_email : null
 
   const clientName = plain(contract.client_name || 'Your client', 100) || 'Your client'
-  const signedAt = contract.signed_at ? new Date(contract.signed_at).toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' }) : new Date().toLocaleString('en-AU', { dateStyle: 'medium', timeStyle: 'short' })
+  // Shown in the creative's own time zone (from their state), e.g. "29 Sept 2026, 7:42 pm AEST".
+  const tz = zoneFor(profile?.state, profile?.country)
+  const signedAt = new Date(contract.signed_at || Date.now()).toLocaleString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', timeZone: tz, timeZoneName: 'short' })
 
   // In-app notification for the creative (best effort).
   try {

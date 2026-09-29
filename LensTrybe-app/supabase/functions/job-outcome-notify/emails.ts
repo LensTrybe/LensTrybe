@@ -1,5 +1,5 @@
 // Emails sent by job-outcome-notify, in the LensTrybe "Night" design (see email.ts).
-import { layout, heading, para, strong, esc, button, facts, FROM } from './email.ts'
+import { layout, heading, para, strong, esc, button, facts, FROM, dollars } from './email.ts'
 
 // To the creative whose reply the poster accepted.
 export function quoteAcceptedHtml(d: { name: string, who: string, title: string, price: number, threadsUrl: string }) {
@@ -8,7 +8,7 @@ export function quoteAcceptedHtml(d: { name: string, who: string, title: string,
     blocks: [
       heading('Job board', 'Your quote was accepted'),
       para(`${d.name ? `Hi ${esc(d.name)}, ` : ''}${strong(d.who)} wants to go ahead. They've messaged you, so reply in your threads to sort out the details.`, { html: true }),
-      facts([['Job', d.title], ['Your price', `AUD ${Number.isFinite(d.price) ? d.price.toFixed(2) : '0.00'}`]]),
+      facts([['Job', d.title], ['Your price', dollars(Number.isFinite(d.price) ? d.price : 0)]]),
       button('Open your threads', d.threadsUrl),
       para("They're also in your CRM as a lead.", { small: true }),
     ],

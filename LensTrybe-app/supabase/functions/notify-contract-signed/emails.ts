@@ -31,6 +31,6 @@ export function contractSignedEmail(d: ContractSignedData): { subject: string, h
 }
 
 export function previews() {
-  const m = contractSignedEmail({ clientName: 'Jo Harper', clientEmail: 'jo.harper@gmail.com', title: 'Wedding photography agreement, Maleny', signedAt: '29 Sept 2026, 7:42 pm' })
+  const m = contractSignedEmail({ clientName: 'Jo Harper', clientEmail: 'jo.harper@gmail.com', title: 'Wedding photography agreement, Maleny', signedAt: '29 Sept 2026, 7:42 pm AEST' })
   return [{ id: 'signed', name: 'Client signed a contract (to the creative)', audience: 'creative', subject: m.subject, from: FROM_PREVIEW, html: m.html }]
 }

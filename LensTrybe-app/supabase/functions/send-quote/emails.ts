@@ -18,7 +18,7 @@ export function quoteEmail(d: QuoteEmailData): { subject: string, html: string }
       heading('New quote', 'You have a new quote'),
       para(`${strong(d.business)} has sent you a quote for ${strong(d.amount)}.`, { html: true }),
       button('View your quote', d.docUrl),
-      para('Open it any time with the button above. You can save a PDF copy from there. You can accept or decline it from your client portal.', { small: true }),
+      para('Open it any time with the button above to accept or decline it. You can save a PDF copy from there too.', { small: true }),
     ],
     why: `You're getting this because ${d.business} sent you a quote through LensTrybe.`,
   })

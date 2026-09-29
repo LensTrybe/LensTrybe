@@ -1,5 +1,5 @@
 // Emails sent by send-message-notification, in the LensTrybe "Night" design (see email.ts).
-import { layout, heading, para, strong, link, button, facts, quote, lines, esc, planName, FROM } from './email.ts'
+import { layout, heading, para, strong, link, button, facts, quote, lines, esc, planName, FROM, dollars } from './email.ts'
 
 // To a job's poster (creative or client): a creative applied for their job.
 export function jobApplicationHtml(d: { fromName: string, title: string, toName: string, price: number, includes: string, cover: string, ctaUrl: string }) {
@@ -10,7 +10,7 @@ export function jobApplicationHtml(d: { fromName: string, title: string, toName:
       para(`Regarding ${strong(d.title)}`, { html: true }),
       d.toName ? para(`Hi ${d.toName},`) : '',
       para(`${d.fromName} has applied for your job "${d.title}".`),
-      facts([['Offer', `AUD ${Number.isFinite(d.price) ? d.price.toFixed(2) : '0.00'}`]]),
+      facts([['Offer', dollars(Number.isFinite(d.price) ? d.price : 0)]]),
       para(`${strong("What's included:")} ${lines(d.includes)}`, { html: true }),
       d.cover ? quote(d.cover, 'Cover message') : '',
       button('View applications on LensTrybe', d.ctaUrl),
@@ -31,7 +31,7 @@ export function cappedEnquiryHtml(d: { fromName: string, threadSubject: string, 
       d.hi ? para(d.hi) : '',
       para(`${d.fromName} got in touch about ${d.subjectLine}.`),
       para(`You have used all ${esc(d.cap)} of your replies this month on the ${esc(planName(d.tier))} plan, so you cannot reply until your limit resets on ${strong(d.resetLabel)}.`, { html: true }),
-      para('Trybe Complete gives you unlimited replies, contact sharing, client portals and a full website.'),
+      para('Trybe Complete and Trybe Studio give you unlimited replies, contact sharing, client portals and a full website.'),
       button('Upgrade to Trybe Complete', d.upgradeUrl),
       para(`Your enquiry is waiting in ${link('your messages', d.messagesUrl)}.`, { html: true, small: true }),
     ],

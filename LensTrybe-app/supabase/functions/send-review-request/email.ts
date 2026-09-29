@@ -102,7 +102,7 @@ ${o.blocks.filter(Boolean).join('\n')}
 }
 
 // Plan names people see. The ids underneath stay basic/pro/expert/elite.
-export const PLAN: Record<string, string> = { basic: 'Trybe Free', pro: 'Trybe Essential', expert: 'Trybe Complete', elite: 'Trybe Studio' }
+export const PLAN: Record<string, string> = { basic: 'Trybe Free', pro: 'Trybe Essential', expert: 'Trybe Complete', elite: 'Trybe Studio', vip: 'Trybe Studio' }
 export const planName = (t: unknown) => PLAN[String(t || 'basic').toLowerCase()] || String(t || '')
 export const money = (minor: number, currency = 'AUD') => (Number(minor || 0) / 100).toLocaleString('en-AU', { style: 'currency', currency })
 export const dollars = (v: unknown) => '$' + (Number(v) || 0).toLocaleString('en-AU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })

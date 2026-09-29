@@ -43,16 +43,55 @@ function daysSince(iso: string | null): number {
   return Math.floor((Date.now() - new Date(iso).getTime()) / 86400000)
 }
 
-async function sendEmail(to: string, subject: string, html: string) {
+async function sendEmail(to: string, subject: string, html: string, unsubToken: string | null = null) {
   const key = Deno.env.get('RESEND_API_KEY')
   if (!key) return
+  const payload: Record<string, unknown> = { from: FROM, to, reply_to: 'connect@lenstrybe.com', subject, html }
+  // RFC 8058 one-click unsubscribe, the same as founding-invites.
+  if (unsubToken) {
+    const base = Deno.env.get('SUPABASE_URL') || ''
+    payload.headers = {
+      'List-Unsubscribe': `<${unsubscribeUrl(unsubToken)}>, <${base}/functions/v1/email-preferences?token=${unsubToken}>`,
+      'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+    }
+  }
   try {
     await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: FROM, to, subject, html }),
+      body: JSON.stringify(payload),
     })
   } catch (_e) { /* best effort */ }
+}
+
+// The monthly feedback nudge is a reminder, so it carries an unsubscribe link (Spam Act). It uses
+// the same email_subscribers row as founding invites and the Edit, so unsubscribing once stops
+// every non-essential email; the deal-at-risk warning is a service message and still goes.
+// A new row is made with source 'founding-invite', which does not sign anyone up to the Edit.
+const SITE = 'https://lenstrybe.com'
+function unsubscribeUrl(token: string) { return `${SITE}/unsubscribe/${token}` }
+// deno-lint-ignore no-explicit-any
+async function findSubscriber(sb: any, e: string) {
+  const pattern = e.replace(/[%_\\]/g, (m) => '\\' + m)
+  const { data } = await sb.from('email_subscribers').select('token, status').ilike('email', pattern).limit(1)
+  return (data ?? [])[0] as { token: string; status: string } | undefined
+}
+// deno-lint-ignore no-explicit-any
+async function subscriber(sb: any, email: string): Promise<{ token: string | null; optedOut: boolean }> {
+  const e = String(email || '').trim().toLowerCase()
+  if (!e) return { token: null, optedOut: false }
+  const found = await findSubscriber(sb, e)
+  if (found) return { token: found.token, optedOut: found.status === 'unsubscribed' }
+  const { data: made, error } = await sb.from('email_subscribers')
+    .insert({ email: e, status: 'subscribed', source: 'founding-invite', consented_at: new Date().toISOString() })
+    .select('token, status').maybeSingle()
+  if (made) return { token: made.token as string, optedOut: made.status === 'unsubscribed' }
+  if (error) {
+    const again = await findSubscriber(sb, e)
+    if (again) return { token: again.token, optedOut: again.status === 'unsubscribed' }
+    console.error('founding-check subscriber', error.message)
+  }
+  return { token: null, optedOut: false }
 }
 
 Deno.serve(async (req) => {
@@ -106,7 +145,8 @@ Deno.serve(async (req) => {
       const updates: Record<string, unknown> = {}
 
       if (feedbackDue && !nudgedRecently && f.business_email) {
-        await sendEmail(f.business_email, NUDGE_SUBJECT, nudgeEmail(f.business_name || 'there'))
+        const sub = await subscriber(sb, f.business_email)
+        if (!sub.optedOut) await sendEmail(f.business_email, NUDGE_SUBJECT, nudgeEmail(f.business_name || 'there', sub.token ? unsubscribeUrl(sub.token) : null), sub.token)
         updates.founding_feedback_nudged_at = new Date().toISOString()
         counts.feedback_nudged = (counts.feedback_nudged || 0) + 1
       }
