@@ -30,7 +30,7 @@ export default function CheckEmail() {
           {!LIVE && <button type="button" className="btn w lg" onClick={() => nav(next)}>Open the link (demo) <Icon name="arrow" size={14} /></button>}
           {err && <p className="jerr">{err}</p>}
           {sent > 0 && <p className="tiny" style={{ color: 'var(--neon-t)' }}>Sent again. Give it a minute to arrive.</p>}
-          <button type="button" className="alt" disabled={!!cool} onClick={resend} style={cool ? { opacity: .5 } : undefined}>{cool ? 'Send it again in ' + cool + 's' : "Didn't get it? Send it again"}</button>
+          <button type="button" className="alt" disabled={!!cool} onClick={resend} style={{ color: 'var(--neon-t)', fontWeight: 600, ...(cool ? { opacity: .5 } : {}) }}>{cool ? 'Send it again in ' + cool + 's' : "Didn't get it? Send it again"}</button>
           <p className="tiny">Nothing after a few minutes: check spam, or the address might have a typo. <Link to={client ? '/join/client' : '/join'} style={{ color: 'var(--neon-t)', fontWeight: 600 }}>Go back and fix it</Link>.</p>
         </div>
         <p className="lfoot">Already confirmed? <Link to="/login">Log in</Link>. Wrong kind of account? {client ? <Link to="/join">Join as a creative</Link> : <Link to="/join/client">Make a client account</Link>}.</p>
