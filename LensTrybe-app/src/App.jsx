@@ -3,7 +3,6 @@ import { ToastProvider } from './components/Toast'
 import { StoreProvider } from './lib/store'
 import { AuthProvider } from './backend/AuthContext'
 import { SubscriptionProvider } from './backend/SubscriptionContext'
-import ModeBadge from './components/ModeBadge'
 import PreviewBar from './components/PreviewBar'
 import RefractFilter from './components/RefractFilter'
 import PublicLayout from './pages/public/PublicLayout'
@@ -107,7 +106,6 @@ export default function App() {
         <Route path="/doc/:type/:token" element={<DocView />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <ModeBadge />
     </ToastProvider></StoreProvider></SubscriptionProvider></AuthProvider>
   )
 }

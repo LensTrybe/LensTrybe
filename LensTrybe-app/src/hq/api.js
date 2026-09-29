@@ -27,9 +27,8 @@ export async function api(action, extra = {}) {
 }
 export const authCall = (action, extra = {}) => call('hq-auth', { action, ...extra })
 
-// Where HQ's "open on the site" links go. The new site lives at next.lenstrybe.com until the swap;
-// change this to https://lenstrybe.com then (item 22).
-export const SITE = 'https://next.lenstrybe.com'
+// Where HQ's "open on the site" links go. The new site has been lenstrybe.com since the swap (30 Sep 2026).
+export const SITE = 'https://lenstrybe.com'
 
 export const PLAN = { basic: 'Trybe Free', pro: 'Trybe Essential', expert: 'Trybe Complete', elite: 'Trybe Studio' }
 export const money = minor => '$' + (Number(minor || 0) / 100).toLocaleString('en-AU', { minimumFractionDigits: 0, maximumFractionDigits: 2 })
