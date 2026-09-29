@@ -1,12 +1,12 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
-import { api, PLAN, money, day, when, ago } from './api'
+import { api, PLAN, money, day, when, ago, SITE } from './api'
 import { useLoad, Head, Tile, Pill, Empty, Err, Loading, useFlash, Modal, Search, Seg, csv } from './ui'
 import { can } from './HqApp'
 export { Founding, Broadcasts } from './growth'
 
-const PUBLIC = 'https://lenstrybe.com'
+const PUBLIC = SITE
 const n = (c, w) => `${c} ${w}${c === 1 ? '' : 's'}`
 
 // ---------------------------------------------------------------------------------------------
