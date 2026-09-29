@@ -105,7 +105,7 @@ function TaxLive() {
     return { ...q, inv, exp, inc, ex, gstIn: gst ? Math.round(inc / 11 * 100) / 100 : 0, gstOut: gst ? Math.round(exp.filter(r => r.gst !== false).reduce((t, r) => t - r.v, 0) / 11 * 100) / 100 : 0, st: lodged[q.id] ? 'lodged' : q.b >= TODAY ? 'open' : q.due >= TODAY ? 'due' : 'past' }
   })
   const [sel, setSel] = useState(QS[0].id); const q = QS.find(x => x.id === sel) || QS[0], net = q.gstIn - q.gstOut
-  const fy0 = Number(TODAY.slice(5, 7)) >= 7 ? Number(TODAY.slice(0, 4)) : Number(TODAY.slice(0, 4)) - 1, FA = fy0 + '-07-01', FB = (fy0 + 1) + '-06-30', FYL = 'FY ' + fy0 + '–' + String(fy0 + 1).slice(2)
+  const fy0 = Number(TODAY.slice(5, 7)) >= 7 ? Number(TODAY.slice(0, 4)) : Number(TODAY.slice(0, 4)) - 1, FA = fy0 + '-07-01', FB = (fy0 + 1) + '-06-30', FYL = 'FY ' + fy0 + '-' + String(fy0 + 1).slice(2)
   const fyInc = s.ledger.filter(r => r.k === 'inv' && r.st === 'ok' && r.date >= FA && r.date <= FB).reduce((t, r) => t + r.v, 0)
   const fyExp = s.ledger.filter(r => r.k === 'exp' && r.date >= FA && r.date <= FB)
   const fyDed = fyExp.filter(r => r.ded !== false).reduce((t, r) => t - r.v, 0)

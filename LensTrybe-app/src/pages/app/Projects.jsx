@@ -28,7 +28,7 @@ export default function Projects() {
     <button key={p.id} type="button" className={'pj ' + (p.stage) + (drag === p.id ? ' lift' : '')} {...dragProps(p)} onClick={() => nav('/app/project/' + p.id)}>
       <span className="th"><Still seed={p.s} mood={p.m} /></span>
       <div className="tx"><b>{p.n}</b><small>{p.d ? nice(p.d) : 'No date'}{p.at ? ' · ' + p.at : ''}</small>{next && <em><Icon name="check" size={11} />{next[0]}</em>}</div>
-      <div className="ft"><span className="pv">{p.v ? fmt(p.v) : '—'}{p.v > 0 && <small>{pd >= p.v ? 'paid' : pd ? fmt(pd) + ' paid' : 'nothing paid'}</small>}</span>{n > 0 && <span className="prog" title={d + ' of ' + n}><i style={{ width: (d / n * 100) + '%' }} /></span>}</div>
+      <div className="ft"><span className="pv">{p.v ? fmt(p.v) : '·'}{p.v > 0 && <small>{pd >= p.v ? 'paid' : pd ? fmt(pd) + ' paid' : 'nothing paid'}</small>}</span>{n > 0 && <span className="prog" title={d + ' of ' + n}><i style={{ width: (d / n * 100) + '%' }} /></span>}</div>
     </button>) }
   return (
     <section className="view">
@@ -69,8 +69,8 @@ export default function Projects() {
                 <button key={x.id} type="button" className="pr" onClick={() => nav('/app/project/' + x.id)}>
                   <span className="th"><Still seed={x.s} mood={x.m} /></span>
                   <div className="tx"><b>{x.n}</b><small>{nice(x.d)}{x.at ? ' · ' + x.at : ''}{x.type ? ' · ' + x.type : ''}</small><span className="prog"><i style={{ width: (n ? d / n * 100 : 0) + '%' }} /></span><small className="pl">{n ? d + ' of ' + n + ' on the lists' : 'No checklist yet'}{(x.tasks || []).filter(t => !t[1]).length ? ' · ' + (x.tasks || []).filter(t => !t[1]).length + ' tasks open' : ''}</small></div>
-                  <span className={'st stg ' + (st?.c || 'grey')}><i />{st?.n || '—'}</span>
-                  <span className="pv">{x.v ? fmt(x.v) : '—'}<small>{pd >= x.v && x.v ? 'paid' : pd ? fmt(pd) + ' paid' : 'nothing paid'}</small></span>
+                  <span className={'st stg ' + (st?.c || 'grey')}><i />{st?.n || '·'}</span>
+                  <span className="pv">{x.v ? fmt(x.v) : '·'}<small>{pd >= x.v && x.v ? 'paid' : pd ? fmt(pd) + ' paid' : 'nothing paid'}</small></span>
                 </button>) })}
               {!list.length && <div className="tempty">Nothing here. <button className="lnk" onClick={() => F.newProject({ then: id => nav('/app/project/' + id) })}>Start a project</button></div>}
             </div>

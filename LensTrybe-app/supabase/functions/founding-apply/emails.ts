@@ -31,7 +31,7 @@ export function applicationEmail(a: Application) {
       ]),
       para(`Email: ${link(a.email, `mailto:${a.email}`)}<br>Their work: <span style="word-break:break-all;">${link(shown, a.portfolio)}</span>`, { html: true }),
       a.note ? quote(a.note, 'Their note') : '',
-      button('Review in the admin panel', `${APP}/dashboard/admin`),
+      button('Review in LensTrybe HQ', 'https://hq.lenstrybe.com/founding'),
       para('Reply to this email to write to them directly. Invite them from the Applications card, which fills in the invite form with their details.', { small: true }),
     ],
     why: "You're getting this because you're a LensTrybe admin and someone applied for a founding place.",

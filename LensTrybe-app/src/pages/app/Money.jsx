@@ -10,7 +10,7 @@ import { LIVE } from '../../lib/mode'
 // One ledger, five doors. Finance hub shows all of it; Invoicing, Quotes, Contracts and Expenses
 // are the same ledger with one kind in focus, so nothing lives in two places.
 const KIND = {
-  money: { h: 'Finance hub', p: LIVE ? 'Everything in and out, one ledger, ready for tax time.' : 'Everything in and out, one ledger. GST handled, Xero synced nightly.', kinds: null, tabs: [['all', 'All'], ['inv', 'Invoices'], ['q', 'Quotes'], ['c', 'Contracts'], ['exp', 'Expenses']], cta: 'New quote', mk: 'q' },
+  money: { h: 'Finance hub', p: 'Everything in and out, one ledger, ready for tax time.', kinds: null, tabs: [['all', 'All'], ['inv', 'Invoices'], ['q', 'Quotes'], ['c', 'Contracts'], ['exp', 'Expenses']], cta: 'New quote', mk: 'q' },
   invoicing: { h: 'Invoicing', p: 'Invoices from quotes, branded, paid by card or transfer, chased on their own.', kinds: ['inv'], tabs: [['all', 'All'], ['open', 'Open'], ['paid', 'Paid']], cta: 'New invoice', mk: 'inv' },
   quotes: { h: 'Quotes', p: 'Quotes from your packages that clients accept on their phone.', kinds: ['q'], tabs: [['all', 'All'], ['open', 'Waiting'], ['accepted', 'Accepted']], cta: 'New quote', mk: 'q' },
   contracts: { h: 'Contracts', p: 'Plain English contracts from your templates, signed on their phone. Your own paper files here too.', kinds: ['c'], tabs: [['all', 'All'], ['draft', 'Drafts'], ['sent', 'Waiting'], ['signed', 'Signed'], ['uploaded', 'Uploaded'], ['templates', 'Templates']], cta: 'New contract', mk: 'c' },
@@ -20,7 +20,7 @@ const IC = { inv: 'dollar', q: 'file', c: 'fileCheck', exp: 'receipt' }
 const month = TODAY.slice(0, 7)
 const FY0 = Number(TODAY.slice(0, 4)) - (Number(TODAY.slice(5, 7)) >= 7 ? 0 : 1) // Australian financial year starts 1 July
 const FY0s = FY0 + '-07-01', FY0e = (FY0 + 1) + '-06-30'
-const fyOf = y => ({ a: y + '-07-01', b: (y + 1) + '-06-30', l: 'FY ' + y + '–' + String(y + 1).slice(2) })
+const fyOf = y => ({ a: y + '-07-01', b: (y + 1) + '-06-30', l: 'FY ' + y + '-' + String(y + 1).slice(2) })
 
 export default function Money({ kind = 'money' }) {
   const K = KIND[kind]; const F = useFlows(); const { s, nav } = F
@@ -64,7 +64,7 @@ export default function Money({ kind = 'money' }) {
     const n = (a, one, many) => a.length + ' ' + (a.length === 1 ? one : many)
     if (kind === 'money') return [['Paid this month', fmt(sum(paidM)), n(paidM, 'invoice', 'invoices'), ''], ['Owed to you', fmt(sum(owed.filter(r => r.st !== 'grey'))), owed.filter(r => r.st !== 'grey').length ? n(owed.filter(r => r.st !== 'grey'), 'invoice', 'invoices') + (overdue.length ? ', ' + overdue.length + ' overdue' : '') : 'nothing open', overdue.length ? 'w' : ''], ['Quoted, waiting', fmt(sum(quoted.filter(r => r.st !== 'grey'))), n(quoted.filter(r => r.st !== 'grey'), 'quote', 'quotes') + ' open', 'n'], [gst ? 'GST in this year' : 'Set aside this year', fmt(Math.round(gst ? sum(paidFy) / 11 : sum(paidFy) * rate / 100)), gst ? 'a tenth of what was paid, for the BAS' : rate + '% of ' + fmt(sum(paidFy)) + ' paid', '']]
     if (kind === 'invoicing') return [['Paid this month', fmt(sum(paidM)), n(paidM, 'invoice', 'invoices'), ''], ['Owed to you', fmt(sum(owed.filter(r => r.st !== 'grey'))), nextDue?.due ? 'next due ' + nice(nextDue.due) : owed.length ? owed.length + (owed.length === 1 ? ' invoice' : ' invoices') : 'nothing open', owed.length ? 'w' : ''], ['Overdue', String(overdue.length), overdue.length ? fmt(sum(overdue)) + ' past due' : 'none', overdue.length ? 'w' : 'n'], ['Paid this year', fmt(sum(paidFy)), n(paidFy, 'invoice', 'invoices') + ' · ' + fyOf(FY0).l, '']]
-    if (kind === 'quotes') return [['Waiting', fmt(sum(quoted.filter(r => r.st !== 'grey'))), n(quoted.filter(r => r.st !== 'grey'), 'quote', 'quotes'), quoted.length ? 'w' : ''], ['Accepted this year', fmt(sum(accFy)), n(accFy, 'quote', 'quotes'), ''], ['Acceptance rate', sentQ.length ? Math.round(accQ.length / sentQ.length * 100) + '%' : '—', accQ.length + ' of ' + sentQ.length + ' sent', ''], ['Drafts', String(qs.filter(r => r.st === 'grey').length), 'not sent yet', 'n']]
+    if (kind === 'quotes') return [['Waiting', fmt(sum(quoted.filter(r => r.st !== 'grey'))), n(quoted.filter(r => r.st !== 'grey'), 'quote', 'quotes'), quoted.length ? 'w' : ''], ['Accepted this year', fmt(sum(accFy)), n(accFy, 'quote', 'quotes'), ''], ['Acceptance rate', sentQ.length ? Math.round(accQ.length / sentQ.length * 100) + '%' : '·', accQ.length + ' of ' + sentQ.length + ' sent', ''], ['Drafts', String(qs.filter(r => r.st === 'grey').length), 'not sent yet', 'n']]
     if (kind === 'contracts') return [['Signed this year', String(fyRows.filter(r => r.k === 'c' && r.st === 'pink').length), n(signed, 'signed in all', 'signed in all'), ''], ['Drafts', String(drafts.length), drafts[0] ? drafts[0].who + ', ready to send' : 'none waiting', drafts.length ? 'w' : ''], ['Waiting to sign', String(cs.filter(r => r.st === 'sent').length), 'sent, not signed yet', 'n'], ['Templates', String(TPL.length), TPL.slice(0, 3).map(t => t.n.split(' ·')[0].split(',')[0]).join(' · ') || 'none yet', '']]
     return null
   }
@@ -100,8 +100,8 @@ export default function Money({ kind = 'money' }) {
                 <span className="ic"><Icon name={r.up ? 'folder' : IC[r.k]} size={15} /></span>
                 <div><b>{r.who}</b><small>{r.id}{r.k === 'exp' ? <> · <i className={'cdot ' + (EC.find(c => c[0] === r.cat)?.[1] || 'grey')} />{r.cat}{r.d && ' · ' + r.d}{r.proj && projName(r.proj) && ' · ' + projName(r.proj)}{r.ded === false && <em className="nd"> · not deductible</em>}</> : <> · {r.d}</>}{r.up && <> · {r.up.name}</>}{r.sched?.length > 1 && <> · deposit {fmt(r.sched[0][1])} {nice(r.sched[0][2])}, balance {nice(r.sched[1][2])}</>}</small></div>
                 <small className="dt">{nice(r.date)}</small>
-                {r.k === 'exp' ? <span className="gstc" title="GST in this expense">{r.gst === false ? '—' : 'GST ' + fmt(Math.round(-r.v / 11))}</span> : <span className={'st ' + r.st}>{r.stt}</span>}
-                <span className={'amt' + (r.v < 0 ? ' neg' : '')}>{r.v < 0 ? '−' + fmt(-r.v) : r.v ? fmt(r.v) : '—'}</span>
+                {r.k === 'exp' ? <span className="gstc" title="GST in this expense">{r.gst === false ? '·' : 'GST ' + fmt(Math.round(-r.v / 11))}</span> : <span className={'st ' + r.st}>{r.stt}</span>}
+                <span className={'amt' + (r.v < 0 ? ' neg' : '')}>{r.v < 0 ? '−' + fmt(-r.v) : r.v ? fmt(r.v) : '·'}</span>
                 <span className="acts2" onClick={e => e.stopPropagation()}>
                   {r.k === 'inv' && r.st !== 'ok' && <button className="act2" onClick={() => F.markPaid(r.id)}>Paid</button>}
                   {r.k === 'q' && r.st !== 'ok' && <button className="act2" onClick={() => F.markAccepted(r.id)}>Accepted</button>}

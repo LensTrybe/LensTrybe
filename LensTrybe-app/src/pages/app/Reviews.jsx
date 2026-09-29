@@ -39,7 +39,7 @@ export default function Reviews() {
       </div>
       <div className="grid">
         <div className="s12"><div className="kp">
-          {[['Rating', avg ? avg.toFixed(1) : '—', scored.length + ' public reviews · ' + scored.filter(r => r.src === 'LensTrybe').length + (LIVE ? ' from clients' : ' verified'), ''], ['This month', String(month.length), month.length ? month.map(r => r.who.split(' ')[0]).slice(0, 3).join(', ') : 'none yet', ''], ['Replied', rate + '%', answered + ' of ' + pub.length + ' · replies lift repeat bookings', rate < 80 ? 'w' : ''], ['Asked → left', asked.length ? Math.round(got / asked.length * 100) + '%' : '—', got + ' of ' + asked.length + ' asked · ' + waiting.length + ' waiting', 'n']].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}
+          {[['Rating', avg ? avg.toFixed(1) : '·', scored.length + ' public reviews · ' + scored.filter(r => r.src === 'LensTrybe').length + (LIVE ? ' from clients' : ' verified'), ''], ['This month', String(month.length), month.length ? month.map(r => r.who.split(' ')[0]).slice(0, 3).join(', ') : 'none yet', ''], ['Replied', rate + '%', answered + ' of ' + pub.length + ' · replies lift repeat bookings', rate < 80 ? 'w' : ''], ['Asked → left', asked.length ? Math.round(got / asked.length * 100) + '%' : '·', got + ' of ' + asked.length + ' asked · ' + waiting.length + ' waiting', 'n']].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}
         </div></div>
 
         <div className="card lg s8">

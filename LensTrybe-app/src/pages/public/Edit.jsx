@@ -130,7 +130,7 @@ export function EditIssue() {
 export function EditConfirm() {
   const [q] = useSearchParams(); const [st, setSt] = useState('busy'); const [msg, setMsg] = useState('')
   const once = useRef(false)
-  useEffect(() => { if (once.current) return; once.current = true; editConfirm(q.get('t') || '').then(() => setSt('ok')).catch(e => { setMsg(e.message); setSt('bad') }) }, [])
+  useEffect(() => { if (once.current) return; once.current = true; if (!q.get('t')) { setSt('bad'); return } editConfirm(q.get('t')).then(() => setSt('ok')).catch(e => { setMsg(e.message); setSt('bad') }) }, [])
   const cv = useRef(null)
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   return (

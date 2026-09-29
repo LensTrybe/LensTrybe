@@ -96,7 +96,7 @@ function InsightsDemo() {
 
         <div className="card lg s7"><div className="h"><b>From a view to a review</b><small className="lumi-by">Each step as a share of the one before</small></div>
           <div className="funnel">{FUNNEL.map(([l, n, to], i) => { const prevN = i ? FUNNEL[i - 1][1] : n; const w = i ? Math.max(4, Math.round(n / Math.max(FUNNEL[1][1], 1) * 100)) : 100; return <Link key={l} to={to} className="fr"><span className="fl">{l}</span><span className="fb"><i style={{ width: (i ? Math.min(100, w) : 100) + '%' }} className={i ? '' : 'top'} /></span><b>{n.toLocaleString()}</b><small>{i === 1 ? '1 in ' + Math.round(prevN / Math.max(n, 1)) : i ? pct(n, prevN) + '%' : ''}</small></Link> })}</div>
-          {P.length > 0 && <div className="fcmp">{[['Views', views, pviews], ['Enquiries', E.length, P.length], ['Quoted', quoted.length, P.filter(e => e.quoted).length], ['Booked', booked.length, pbooked.length], ['Value', rev, prev, 1]].map(([l, a, b, m]) => <div key={l}><small>{l}</small><b>{m ? fmt(a) : a.toLocaleString()}</b><em className={a >= b ? '' : 'w'}>{b ? delta(a, b) : '—'} <span>· {m ? fmt(b) : b.toLocaleString()} before</span></em></div>)}</div>}
+          {P.length > 0 && <div className="fcmp">{[['Views', views, pviews], ['Enquiries', E.length, P.length], ['Quoted', quoted.length, P.filter(e => e.quoted).length], ['Booked', booked.length, pbooked.length], ['Value', rev, prev, 1]].map(([l, a, b, m]) => <div key={l}><small>{l}</small><b>{m ? fmt(a) : a.toLocaleString()}</b><em className={a >= b ? '' : 'w'}>{b ? delta(a, b) : '·'} <span>· {m ? fmt(b) : b.toLocaleString()} before</span></em></div>)}</div>}
           <div className="fq"><div className="fqh"><span>Quarter</span><span>Enquiries</span><span>Booked</span><span>Rate</span><span>Value</span></div>{QTRS.map(q => <div key={q.l} className={'fqr' + (q.now ? ' now' : '')}><span>{q.l}{q.now ? ' · so far' : ''}</span><span>{q.n}</span><span>{q.b}</span><span>{pct(q.b, q.n)}%</span><span>{fmt(q.v)}</span></div>)}</div>
           <div className="fnote">{E.length ? <>One enquiry for every <b>{Math.round(views / Math.max(E.length, 1))}</b> views, one booking for every <b>{Math.round(E.length / Math.max(booked.length, 1) * 10) / 10}</b> enquiries. {delivered.length ? <>{pct(reviewed.length, delivered.length)}% of delivered jobs left a review.</> : ''}</> : 'No enquiries in this period.'}</div>
         </div>
@@ -115,9 +115,9 @@ function InsightsDemo() {
         </div>
 
         <div className="card lg s4"><div className="h"><b>What converts</b><small className="lumi-by">Booked rate by how you replied</small></div>
-          {SPEED.map(([l, n, r]) => <div key={l} className="kv"><span>{l}<small className="sub"> · {n}</small></span><b className={r >= 40 ? 'good' : r < 20 && n ? 'warn' : ''}>{n ? r + '% booked' : '—'}</b></div>)}
+          {SPEED.map(([l, n, r]) => <div key={l} className="kv"><span>{l}<small className="sub"> · {n}</small></span><b className={r >= 40 ? 'good' : r < 20 && n ? 'warn' : ''}>{n ? r + '% booked' : '·'}</b></div>)}
           <div style={{ height: 8 }} />
-          {QUOTE.map(([l, n, r]) => <div key={l} className="kv"><span>{l}<small className="sub"> · {n}</small></span><b className={r >= 40 ? 'good' : ''}>{n ? r + '% booked' : '—'}</b></div>)}
+          {QUOTE.map(([l, n, r]) => <div key={l} className="kv"><span>{l}<small className="sub"> · {n}</small></span><b className={r >= 40 ? 'good' : ''}>{n ? r + '% booked' : '·'}</b></div>)}
         </div>
         <div className="card lg s4"><div className="h"><b>Why jobs were lost</b><small className="lumi-by">Enquiries that did not book</small></div>
           {LOST.length ? <div className="cats">{LOST.map(([k, n]) => <div key={k} className="cat"><div className="r"><b>{k}</b><span>{n}</span></div><div className="bar"><i className="grey" style={{ width: pct(n, LOST[0][1]) + '%' }} /></div></div>)}</div> : <div className="tempty">Nothing lost yet in this period. Recent enquiries are still open.</div>}
@@ -126,7 +126,7 @@ function InsightsDemo() {
         </div>
         <div className="card lg s4"><div className="h"><b>Lead time</b><small className="lumi-by">Enquiry to job, typical</small></div>
           {TYPES.filter(t => t.b).map(t => <div key={t.k} className="kv"><span>{t.k}</span><b>{t.lead >= 60 ? Math.round(t.lead / 30) + ' months' : t.lead >= 14 ? Math.round(t.lead / 7) + ' weeks' : t.lead + ' days'}</b></div>)}
-          <div className="kv"><span>Busiest month ahead</span><b>{busiest?.n ? busiest.l + ' · ' + busiest.n + ' job' + (busiest.n > 1 ? 's' : '') : '—'}</b></div>
+          <div className="kv"><span>Busiest month ahead</span><b>{busiest?.n ? busiest.l + ' · ' + busiest.n + ' job' + (busiest.n > 1 ? 's' : '') : '·'}</b></div>
           <div className="kv"><span>Weekend jobs</span><b>{pct(booked.filter(e => [0, 6].includes(parse(e.job).getDay())).length, booked.length)}%</b></div>
         </div>
 
@@ -139,23 +139,23 @@ function InsightsDemo() {
         </div>
         <div className="card lg s4"><div className="h"><b>Getting paid</b><Link to="/app/invoicing">Invoices <Icon name="arrow" size={12} /></Link></div>
           <div className="kv"><span>Outstanding</span><b className={owed.length ? 'warn' : ''}>{owed.length ? fmt(owedV) + ' · ' + owed.length : 'Nothing'}</b></div>
-          <div className="kv"><span>Days to be paid</span><b>{payDays || '—'}</b></div>
+          <div className="kv"><span>Days to be paid</span><b>{payDays || '·'}</b></div>
           <div className="kv"><span>Deposit taken</span><b>{depRate}% of bookings</b></div>
           <div className="kv"><span>Quotes accepted</span><b>{pct(booked.length, quoted.length)}%</b></div>
           <div className="kv"><span>Paid this period</span><b>{fmt(sum(INV.filter(r => r.stt === 'Paid' && r.date >= from), r => r.v))}</b></div>
-          <div className="kv"><span>Average invoice</span><b>{INV.length ? fmt(sum(INV, r => r.v) / INV.length) : '—'}</b></div>
-          <div className="kv"><span>Longest outstanding</span><b>{owed.length ? Math.max(...owed.map(r => daysBetween(r.date, TODAY))) + ' days · ' + owed.slice().sort((a, b) => a.date < b.date ? -1 : 1)[0].who : '—'}</b></div>
+          <div className="kv"><span>Average invoice</span><b>{INV.length ? fmt(sum(INV, r => r.v) / INV.length) : '·'}</b></div>
+          <div className="kv"><span>Longest outstanding</span><b>{owed.length ? Math.max(...owed.map(r => daysBetween(r.date, TODAY))) + ' days · ' + owed.slice().sort((a, b) => a.date < b.date ? -1 : 1)[0].who : '·'}</b></div>
           <div className="kv"><span>Booked but no deposit</span><b className={booked.filter(e => !e.dep).length ? 'warn' : ''}>{booked.filter(e => !e.dep).length}</b></div>
         </div>
         <div className="card lg s4"><div className="h"><b>Reviews</b><Link to="/app/reviews">Reviews <Icon name="arrow" size={12} /></Link></div>
-          <div className="kv"><span>Rating</span><b className="good">{rating ? rating.toFixed(1) + ' ★' : '—'}<small className="sub"> · {RV.length}</small></b></div>
+          <div className="kv"><span>Rating</span><b className="good">{rating ? rating.toFixed(1) + ' ★' : '·'}<small className="sub"> · {RV.length}</small></b></div>
           <div className="kv"><span>You replied to</span><b>{pct(replied, RV.length)}%</b></div>
-          <div className="kv"><span>Requests that came back</span><b>{RQ.length ? pct(rqDone, RQ.length) + '%' : '—'}</b></div>
-          <div className="kv"><span>Delivered jobs reviewed</span><b>{delivered.length ? pct(reviewed.length, delivered.length) + '%' : '—'}</b></div>
+          <div className="kv"><span>Requests that came back</span><b>{RQ.length ? pct(rqDone, RQ.length) + '%' : '·'}</b></div>
+          <div className="kv"><span>Delivered jobs reviewed</span><b>{delivered.length ? pct(reviewed.length, delivered.length) + '%' : '·'}</b></div>
           <div className="kv"><span>Featured on the site</span><b>{RV.filter(r => r.featured).length} of 3</b></div>
           <div className="kv"><span>Five stars</span><b>{pct(RV.filter(r => r.n === 5).length, RV.length)}%</b></div>
           <div className="kv"><span>Under four, kept private</span><b>{RV.filter(r => r.n < 4).length}</b></div>
-          <div className="kv"><span>Newest</span><b>{RV.length ? nice(RV.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0].date) + ' · ' + RV.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0].who.split(' ')[0] : '—'}</b></div>
+          <div className="kv"><span>Newest</span><b>{RV.length ? nice(RV.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0].date) + ' · ' + RV.slice().sort((a, b) => a.date < b.date ? 1 : -1)[0].who.split(' ')[0] : '·'}</b></div>
         </div>
 
         <div className="card lg s8 vis"><div className="h"><b>Visibility</b><small className="lumi-by">Profile and site views by {days <= 90 ? 'day' : 'week'} · {sum(V, v => v.search).toLocaleString()} search appearances · {sum(V, v => v.ask)} ask bar</small></div>
@@ -164,7 +164,7 @@ function InsightsDemo() {
             <path className="l" d={LINE.map((x, i) => (i ? 'L' : 'M') + (i * 10 + 5) + ' ' + (100 - (x.p + x.w) / lmax * 92).toFixed(1)).join(' ')} />
             <path className="p" d={LINE.map((x, i) => (i ? 'L' : 'M') + (i * 10 + 5) + ' ' + (100 - x.p / lmax * 92).toFixed(1)).join(' ')} />
           </svg></div><div className="vax"><span>{nice(LINE[0]?.d || from)}</span><span>{nice(TODAY)}</span></div>
-          <div className="vkeys"><span><i className="a" />Site and profile together</span><span><i className="b" />Profile on LensTrybe</span><span className="r">Best {days <= 90 ? 'day' : 'week'}: {(() => { const b = LINE.slice().sort((a, c) => c.p + c.w - a.p - a.w)[0]; return b ? nice(b.d) + ' · ' + (b.p + b.w) : '—' })()}</span></div>
+          <div className="vkeys"><span><i className="a" />Site and profile together</span><span><i className="b" />Profile on LensTrybe</span><span className="r">Best {days <= 90 ? 'day' : 'week'}: {(() => { const b = LINE.slice().sort((a, c) => c.p + c.w - a.p - a.w)[0]; return b ? nice(b.d) + ' · ' + (b.p + b.w) : '·' })()}</span></div>
         </div>
         <div className="card lg s4"><div className="h"><b>Profile strength</b><b className={strength >= 80 ? 'good' : 'warn'}>{strength}%</b></div>
           <div className="bar2"><i style={{ width: strength + '%' }} /></div>
@@ -230,9 +230,9 @@ function InsightsLive() {
       <div className="grid">
         <div className="s12"><div className="kp">{[
           ['Profile', cmp.pct + '%', cmp.complete ? 'complete' : cmp.remaining + ' to go', cmp.complete ? 'n' : 'w'],
-          ['Enquiries', can('enquiries') ? String(enq.length) : '—', can('enquiries') ? (delta(enq.length, penq.length) || 'last ' + days + ' days') : 'on Trybe Essential and above', can('enquiries') ? 'n' : ''],
-          ['Bookings', can('bookings') ? String(bk.length) : '—', can('bookings') ? upcoming.length + ' coming up' : 'on Trybe Essential and above', 'n'],
-          ['Revenue this month', can('revenue') ? fmt(revMonth) : '—', can('revenue') ? (revPrev ? delta(revMonth, revPrev) + ' on last month' : 'paid invoices') : 'on Trybe Essential and above', 'n'],
+          ['Enquiries', can('enquiries') ? String(enq.length) : '·', can('enquiries') ? (delta(enq.length, penq.length) || 'last ' + days + ' days') : 'on Trybe Essential and above', can('enquiries') ? 'n' : ''],
+          ['Bookings', can('bookings') ? String(bk.length) : '·', can('bookings') ? upcoming.length + ' coming up' : 'on Trybe Essential and above', 'n'],
+          ['Revenue this month', can('revenue') ? fmt(revMonth) : '·', can('revenue') ? (revPrev ? delta(revMonth, revPrev) + ' on last month' : 'paid invoices') : 'on Trybe Essential and above', 'n'],
         ].map(([l, v, e, w]) => <div key={l} className="k lg"><small>{l}</small><b>{v}</b><em className={w}>{e}</em></div>)}</div></div>
 
         <Card w="profile_strength" title="Profile strength" sub={cmp.done + ' of ' + cmp.total}>
@@ -258,7 +258,7 @@ function InsightsLive() {
           <KV l="Confirmed" v={bk.length} /><KV l="Coming up" v={upcoming.length} />{upcoming[0] && <KV l="Next" v={nice(upcoming.sort((a, b) => a.d < b.d ? -1 : 1)[0].d) + ' · ' + upcoming[0].n.split(' · ')[0]} />}
         </Card>
         <Card w="reviews" span="s4" title="Reviews">
-          <KV l="Rating" v={RV.length ? '★ ' + rating.toFixed(1) : '—'} /><KV l="Reviews" v={RV.length} /><KV l="You replied to" v={RV.filter(r => r.reply).length} /><Link className="lnk" to="/app/reviews">Ask for a review</Link>
+          <KV l="Rating" v={RV.length ? '★ ' + rating.toFixed(1) : '·'} /><KV l="Reviews" v={RV.length} /><KV l="You replied to" v={RV.filter(r => r.reply).length} /><Link className="lnk" to="/app/reviews">Ask for a review</Link>
         </Card>
         <Card w="quotes" span="s4" title="Quotes" sub={'last ' + days + ' days'}>
           <KV l="Sent" v={Q.length} /><KV l="Accepted" v={qAcc.length + (Q.length ? ' · ' + pct(qAcc.length, Q.length) + '%' : '')} /><KV l="Waiting" v={qOpen.length + (qOpen.length ? ' · ' + fmt(sum(qOpen, r => r.v)) : '')} /><KV l="Accepted value" v={fmt(sum(qAcc, r => r.v))} />

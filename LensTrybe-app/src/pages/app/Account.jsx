@@ -16,7 +16,7 @@ import { changeEmail, downloadMyData, newsletterStatus, sendPasswordReset, setNe
 import { signOut } from '../../lib/auth'
 import * as live from '../../lib/live'
 import { useNavigate } from 'react-router-dom'
-import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive } from './AccountLive'
+import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive, FAQS } from './AccountLive'
 import { planLabel } from '../../backend/tierFeatures'
 import { shrink } from '../../lib/shrink'
 
@@ -136,7 +136,7 @@ function SubscriptionDemo() {
   const cur = s.plan.name, pending = s.plan.pending
   const gb = Math.round((s.galleries.reduce((t, x) => t + (x.gb || 0), 0) + 4.8) * 10) / 10
   const move = p => F.confirm({ title: 'Move to ' + planLabel(p.n) + '?', body: ['Basic', 'Pro'].includes(p.n) && cur !== 'Basic' ? <>Downgrades apply at the end of the period, 1 Oct. You keep {planLabel(cur)} until then. {cur === 'Expert' && 'Your founding rate is lost if you move down.'}</> : <>{planLabel(p.n)} from 1 Oct at {annual ? p.a : p.m} a month{annual ? ', billed yearly' : ''}. {cur === 'Expert' ? 'Your founding rate carries over as a $49 credit each month.' : ''}</>, cta: 'Move to ' + planLabel(p.n), onYes: () => { F.patch('plan', { pending: p.n, annual }); toast(planLabel(p.n) + ' from 1 Oct.' + (cur === 'Expert' && p.n === 'Elite' ? ' Founding credit applied.' : '')) } })
-  const payment = () => F.open({ title: 'Payment method', sub: 'Visa ···· 6411 · expires 08/28. Cards are handled by Stripe; we never see the number.', cta: 'Open Stripe', body: <>To change the card, Stripe opens in a new tab with your account already found.</>, submit: () => { window.open('https://billing.stripe.com', '_blank', 'noopener'); return true } })
+  const payment = () => F.open({ title: 'Payment method', sub: 'Visa ···· 6411 · expires 08/28. Cards are handled by Revolut; we never see the number.', cta: 'Change card', body: <>Revolut's secure card window opens to take the new card. Nothing is charged.</>, submit: () => { toast('Card updated.'); return true } })
   const cancel = () => F.confirm({ title: 'Cancel ' + planLabel(cur) + '?', body: <>You keep access to 1 Oct and your data stays for 90 days. {cur === 'Expert' && <b>Your founding rate does not come back.</b>} Sorry to see you go.</>, cta: 'Cancel my plan', danger: true, onYes: () => { F.patch('plan', { pending: 'Basic', cancelled: true }); toast('Cancelled from 1 Oct. Email confirmation sent.') } })
   const keep = () => { F.patch('plan', { pending: null, cancelled: false }); toast('Staying on ' + cur + '.') }
   return (
@@ -261,13 +261,13 @@ export function Settings() {
         </div>
         <div className="s6 side">
           <div className="card lg"><div className="h"><b>Connected</b></div>
-            {LIVE ? <div className="need">
-              {/* Honest list (29 Sep): only the calendar link is real today. It is one-way: your
+            {<div className="need">
+              {/* Honest list (29 Sep), in live and the demo alike: only the calendar link is real today. It is one-way: your
                   LensTrybe bookings appear in Google, Apple or Outlook. The rest are on the way. */}
               <div className="r" style={{ cursor: 'default' }}><Brand n="Calendar" /><div><b>Your calendar</b><small>Google, Apple or Outlook. Your bookings show up there; one-way for now.</small></div><div className="do"><button className="y" onClick={() => F.calFeed()}>Subscribe</button></div></div>
               {SOON_INTS.map(([a, why]) => <div key={a} className="r" style={{ cursor: 'default' }}><Brand n={a} /><div><b>{a}</b><small>{why}</small></div><div className="do"><span className="st grey">Coming soon</span></div></div>)}
               <p className="note2" style={{ margin: '4px 2px 0' }}>Want one of these sooner? <Link to="/upcoming" className="lnk">See what's coming</Link> or tell us in Help and support.</p>
-            </div> : <div className="need">{Object.entries(S.ints).map(([a, on]) => <div key={a} className="r" style={{ cursor: 'default' }}><Brand n={a} /><div><b>{a}</b><small>{on ? DESC[a] || 'Connected' : 'Not connected'}</small></div><div className="do">{on ? <button onClick={() => manage(a)}>Manage</button> : <button className="y" onClick={() => connect(a)}>Connect</button>}</div></div>)}</div>}
+            </div>}
           </div>
           <div className="card lg"><div className="h"><b>Workspace</b></div>
             <div className="brows one">
@@ -289,7 +289,7 @@ export function Settings() {
 export function Support() { return LIVE ? <SupportLive /> : <SupportDemo /> }
 function SupportDemo() {
   const F = useFlows(); const { s, toast } = F; const [q, setQ] = useState(''), [open, setOpen] = useState(0), [about, setAbout] = useState('Billing'), [msg, setMsg] = useState('')
-  const FAQ = [['How do I get paid?', 'Clients pay by card or transfer on the invoice. Card payouts land daily via Stripe; transfers go straight to you.'], ['Can Lumi send things without asking?', 'Only what you switch on in Availability and Lumi. Everything else waits for your yes, and everything is undoable for 24 hours.'], ['What happens if a client cancels?', 'Your contract terms apply. The deposit stays yours by default; Lumi handles the message and the calendar.'], ['How do I move to Trybe Studio?', 'Subscription, then Move up. Your founding discount carries over as a credit.'], ['Where do gallery files live?', 'Australian servers, encrypted. 50 GB on Trybe Complete, 200 GB on Trybe Studio, and galleries expire when you say.']]
+  const FAQ = FAQS // the same answers as the live workspace, so the demo never promises more
   const send = () => { if (!msg.trim()) return toast('Say what happened first.'); const id = 'LT-' + Date.now().toString(36).toUpperCase().slice(-5); F.add('tickets', { about, msg, st: 'Open' }, 'any'); setMsg(''); toast('Sent · ' + id + '. A person replies to ' + s.settings.email + ' within a business day.') }
   return (
     <section className="view">

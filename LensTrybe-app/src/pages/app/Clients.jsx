@@ -67,7 +67,7 @@ export default function Clients({ kind = 'clients' }) {
               {list.map(p => (
                 <button key={p.id} type="button" className={'cl lg' + (sel === p.id ? ' on' : '')} onClick={() => setSel(sel === p.id ? null : p.id)}>
                   <div className="top2"><span className="av" style={{ background: p.g }} /><div><b>{p.n}</b><small>{p.t}</small></div></div>
-                  <div className="nums"><div>Jobs<b>{p.j}</b></div><div>{LIVE ? 'Paid' : 'Lifetime'}<b>{p.v ? fmt(p.v) : '—'}</b></div><div>Last<b style={{ fontSize: 12 }}>{p.l ? nice(p.l) : '—'}</b></div></div>
+                  <div className="nums"><div>Jobs<b>{p.j}</b></div><div>{LIVE ? 'Paid' : 'Lifetime'}<b>{p.v ? fmt(p.v) : '·'}</b></div><div>Last<b style={{ fontSize: 12 }}>{p.l ? nice(p.l) : '·'}</b></div></div>
                   <div className="tags">{(p.tags || []).map(t => <span key={t}>{t}</span>)}{LIVE && !p.crm && <span style={{ opacity: .7 }}>Not saved</span>}</div>
                 </button>
               ))}
