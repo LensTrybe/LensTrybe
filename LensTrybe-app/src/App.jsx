@@ -4,6 +4,7 @@ import { StoreProvider } from './lib/store'
 import { AuthProvider } from './backend/AuthContext'
 import { SubscriptionProvider } from './backend/SubscriptionContext'
 import ModeBadge from './components/ModeBadge'
+import PreviewBar from './components/PreviewBar'
 import RefractFilter from './components/RefractFilter'
 import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
@@ -45,6 +46,7 @@ export default function App() {
   return (
     <AuthProvider><SubscriptionProvider><StoreProvider><ToastProvider>
       <RefractFilter />
+      <PreviewBar />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />

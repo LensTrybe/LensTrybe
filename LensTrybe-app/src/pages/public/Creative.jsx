@@ -72,7 +72,7 @@ function CreativeDemo({ id }) {
           <div className="field"><label htmlFor="e-type">Job type</label><select id="e-type">{c.pk.map(([n]) => <option key={n}>{n}</option>)}<option>Something else</option></select></div>
           <div className="field"><label htmlFor="e-msg">Message</label><textarea id="e-msg" rows="3" value={msg} onChange={e => setMsg(e.target.value)} placeholder={`Hi ${first}, we're getting married at Maleny Manor on ${sel} Nov...`} /></div>
           <button className="btn p" onClick={() => toast(`Enquiry sent. ${first} usually replies in ${c.resp}.`)}>Send enquiry <Icon name="arrow" size={14} /></button>
-          <p className="fine">No fee to enquire. {first} replies with a quote you can accept, sign and pay in one place. LensTrybe never takes a cut. <Link to="/portal/harper-leo" style={{ color: 'var(--green-t)' }}>See what the thread looks like</Link>.</p>
+          <p className="fine">No fee to enquire. {first} replies with a quote you can accept, sign and pay in one place. LensTrybe never takes a cut. <a href="/portal/harper-leo?preview" style={{ color: 'var(--green-t)' }}>See what the thread looks like</a>.</p>
         </aside>
       </div>
     </div></main>

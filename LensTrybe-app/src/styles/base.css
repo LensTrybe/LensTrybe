@@ -58,3 +58,11 @@ p{margin:0}
 .btn.busy{opacity:.85;transform:none;cursor:progress}
 .btn .spin{width:14px;height:14px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:btnspin .7s linear infinite;flex:none}
 @keyframes btnspin{to{transform:rotate(360deg)}}
+
+/* Workspace and portal preview: sample data, and the way out. */
+.previewbar{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:1000;width:max-content;display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;max-width:calc(100% - 24px);padding:8px 8px 8px 16px;border-radius:999px;background:#0a0a0f;color:#e8e8ee;font:500 13px/1.35 Inter,system-ui,sans-serif;box-shadow:0 14px 40px -12px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.1)}
+.previewbar b{color:#fff}
+.previewbar a{text-decoration:none;font-weight:650;border-radius:999px;padding:7px 13px;white-space:nowrap}
+.previewbar .pv-go{background:#1DB954;color:#04120a}
+.previewbar .pv-out{color:#c9c9d4;background:rgba(255,255,255,.08)}
+@media (max-width:900px){.previewbar{left:12px;right:12px;transform:none;width:auto;bottom:calc(84px + env(safe-area-inset-bottom));border-radius:16px;padding:10px 12px;font-size:12.5px}.previewbar span{flex:1 1 100%;text-align:center}.previewbar.pv-portal{bottom:calc(12px + env(safe-area-inset-bottom))}}

@@ -1,11 +1,10 @@
-import { Link } from 'react-router-dom'
 import Icon from '../../components/Icon'
 
 // A glimpse of the creative workspace, on the pricing page, so a creative can see what the plan buys.
 // Static glass mock of the Today screen: the morning brief and the overnight approvals.
 export default function WorkspacePeek() {
   return (
-    <Link className="peek lg d" to="/app" aria-label="Open the workspace preview">
+    <a className="peek lg d" href="/app/today?preview" aria-label="Open the workspace preview">
       <div className="pk-top"><span className="dots"><i /><i /><i /></span><span className="url">app.lenstrybe.com/today</span><span className="live"><i />Live preview</span></div>
       <div className="pk-body">
         <div className="pk-main">
@@ -17,6 +16,6 @@ export default function WorkspacePeek() {
         </div>
       </div>
       <div className="pk-cta"><span><b>This is the workspace.</b> Lumi runs the admin, you approve in a tap. Every plan above Trybe Free includes it.</span><span className="btn w sm">Open the workspace preview <Icon name="arrow" size={13} /></span></div>
-    </Link>
+    </a>
   )
 }

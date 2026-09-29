@@ -1,0 +1,402 @@
+<!doctype html>
+<html lang="en" data-resolution="portrait">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1080, height=1920" />
+    <title>LensTrybe — post a job reel</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      @font-face { font-family: "Inter"; src: url("assets/fonts/Inter-var.woff2") format("woff2"); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body { width: 1080px; height: 1920px; overflow: hidden; background: #07070b; }
+      body { font-family: "Inter", system-ui, sans-serif; color: #f4f2f7; -webkit-font-smoothing: antialiased; }
+      #root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #07070b; }
+      #gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+      .clip { position: absolute; inset: 0; overflow: hidden; }
+      .sc { position: absolute; inset: 0; }
+      .serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+      .grad { background: linear-gradient(90deg, #9AC4C5, #D996BA 55%, #C6A5E5); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
+      .eb { font-size: 25px; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #A9F5DF; }
+
+      /* ---------- hook ---------- */
+      #hook { position: absolute; left: 0; right: 0; top: 590px; text-align: center; padding: 0 70px; }
+      #hook h1 { margin-top: 26px; font-size: 94px; font-weight: 600; letter-spacing: -0.045em; line-height: 1.02; color: #fff; text-shadow: 0 2px 40px rgba(0,0,0,0.6); }
+      #hook .ln { display: block; overflow: hidden; padding: 0.04em 0.1em 0.2em; }
+      #hook .ln > span { display: inline-block; }
+      #hook .serif { font-size: 1.08em; }
+      #hook p.sub { margin: 30px auto 0; max-width: 820px; font-size: 36px; line-height: 1.4; color: rgba(244,242,247,0.8); text-shadow: 0 2px 20px rgba(0,0,0,0.8); }
+
+      /* ---------- the form ---------- */
+      #head2 { position: absolute; left: 0; right: 0; top: 250px; text-align: center; font-size: 62px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.06; color: #fff; }
+      .card { position: absolute; left: 80px; top: 420px; width: 860px; border-radius: 42px; background: rgba(14,14,22,0.8); border: 2px solid rgba(255,255,255,0.16);
+        box-shadow: 0 60px 140px -40px rgba(0,0,0,1), inset 0 1px 0 rgba(255,255,255,0.14); -webkit-backdrop-filter: blur(22px) saturate(150%); backdrop-filter: blur(22px) saturate(150%); }
+      #card1 { height: 1062px; } #card2 { height: 736px; opacity: 0; }
+      .card > * { position: absolute; left: 40px; right: 40px; }
+      .steps { top: 40px; height: 56px; display: flex; gap: 12px; }
+      .steps span { display: flex; align-items: center; gap: 10px; padding: 0 20px 0 10px; border-radius: 999px; font-size: 23px; font-weight: 600; color: rgba(244,242,247,0.55); background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.1); }
+      .steps i { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 19px; background: rgba(255,255,255,0.1); }
+      .steps .on { color: #fff; border-color: rgba(141,243,214,0.5); background: rgba(141,243,214,0.1); }
+      .steps .on i { background: #8DF3D6; color: #0a0a0f; box-shadow: 0 0 14px rgba(141,243,214,0.6); }
+      .lab { font-size: 19px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(244,242,247,0.62); height: 24px; display: flex; justify-content: space-between; }
+      .lab em { font-style: normal; text-transform: none; letter-spacing: 0; color: rgba(244,242,247,0.55); font-weight: 500; }
+      .inp { position: absolute; left: 0; right: 0; top: 32px; height: 76px; border-radius: 18px; background: rgba(255,255,255,0.06); border: 2px solid rgba(255,255,255,0.14); padding: 0 22px; display: flex; align-items: center; font-size: 27px; color: #fff; white-space: nowrap; overflow: hidden; }
+      .inp .ph { color: rgba(244,242,247,0.5); }
+      .inp .car { display: inline-block; width: 3px; height: 32px; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; margin-left: 2px; opacity: 0; flex: none; }
+      .inp .ring { position: absolute; inset: -2px; border-radius: 18px; border: 2px solid rgba(141,243,214,0.8); box-shadow: 0 0 0 6px rgba(141,243,214,0.14); opacity: 0; }
+      .inp .chev { margin-left: auto; color: rgba(244,242,247,0.6); flex: none; }
+      .fld { height: 108px; }
+      .half { width: 380px; } .right { left: auto; right: 40px; }
+      .area { height: 170px; align-items: flex-start; padding-top: 18px; white-space: normal; font-size: 25px; line-height: 1.42; display: block; }
+      .btn { height: 88px; border-radius: 999px; background: #fff; color: #0a0a0f; font-size: 29px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 14px; }
+      .tiny { font-size: 21px; line-height: 1.45; color: rgba(244,242,247,0.62); text-align: center; }
+      .sum { top: 118px; height: 120px; border-radius: 22px; background: rgba(255,255,255,0.05); border: 1.5px solid rgba(255,255,255,0.12); padding: 22px 26px; }
+      .sum b { display: block; font-size: 28px; color: #fff; }
+      .sum span { display: block; margin-top: 6px; font-size: 22px; color: rgba(244,242,247,0.7); }
+      .sum .edit { position: absolute; right: 26px; top: 24px; font-size: 21px; font-weight: 600; color: #A9F5DF; }
+
+      #touch { position: absolute; left: 0; top: 0; width: 96px; height: 96px; margin: -48px 0 0 -48px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 3px solid rgba(255,255,255,0.85); box-shadow: 0 0 30px rgba(141,243,214,0.5); opacity: 0; z-index: 20; }
+      .toast { position: absolute; left: 70px; right: 70px; top: 250px; padding: 28px 34px; border-radius: 26px; background: #14111a; color: #fff; font-size: 29px; font-weight: 500; line-height: 1.4; box-shadow: 0 30px 70px -20px rgba(0,0,0,0.8), 0 0 0 1.5px rgba(255,255,255,0.14); display: flex; gap: 18px; align-items: flex-start; opacity: 0; z-index: 21; }
+      .toast i { flex: none; width: 16px; height: 16px; margin-top: 12px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 14px rgba(141,243,214,0.7); }
+
+      /* ---------- the job page (light surface) ---------- */
+      #page { background: #f6f5f3; color: #14111a; }
+      .blob { position: absolute; border-radius: 50%; }
+      #bl1 { left: -260px; top: -200px; width: 900px; height: 900px; background: radial-gradient(closest-side, rgba(154,196,197,0.55), rgba(154,196,197,0)); }
+      #bl2 { right: -300px; top: 520px; width: 1000px; height: 1000px; background: radial-gradient(closest-side, rgba(217,150,186,0.42), rgba(217,150,186,0)); }
+      #bl3 { left: -200px; bottom: -300px; width: 1000px; height: 1000px; background: radial-gradient(closest-side, rgba(198,165,229,0.4), rgba(198,165,229,0)); }
+      .pg { position: absolute; left: 70px; width: 880px; }
+      #pEb { top: 250px; color: #0E7C3A; font-size: 22px; }
+      #pH1 { top: 290px; font-size: 68px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.04; }
+      #pLead { top: 442px; font-size: 25px; color: #5B5766; }
+      #stage { top: 500px; display: flex; gap: 10px; }
+      #stage > span { position: relative; white-space: nowrap; display: flex; align-items: center; gap: 9px; height: 52px; padding: 0 16px 0 8px; border-radius: 999px; font-size: 20px; font-weight: 600; color: #5B5766; background: rgba(255,255,255,0.7); border: 1.5px solid rgba(20,17,26,0.1); }
+      #stage i { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 17px; background: rgba(20,17,26,0.08); }
+      #stage .d i { background: #0E7C3A; color: #fff; }
+      #stage .c { color: #14111a; border-color: rgba(20,17,26,0.35); }
+      #stage .c i { background: #14111a; color: #fff; }
+      .stv { position: absolute; inset: -1.5px; white-space: nowrap; border-radius: 999px; opacity: 0; display: flex; align-items: center; gap: 9px; padding: 0 16px 0 8px; font-size: 20px; font-weight: 600; }
+      .stv.done { background: #fff; border: 1.5px solid rgba(14,124,58,0.35); color: #14111a; }
+      .stv.done i { background: #0E7C3A !important; color: #fff; }
+      .stv.cur { background: #14111a; color: #fff; }
+      .stv.cur i { background: #8DF3D6 !important; color: #0a0a0f; }
+      .h3 { top: 580px; font-size: 34px; font-weight: 600; letter-spacing: -0.02em; }
+      .h3 small { margin-left: 14px; font-size: 22px; font-weight: 500; color: #5B5766; letter-spacing: 0; }
+      #h3b { opacity: 0; }
+      .panel { background: rgba(255,255,255,0.92); border: 2px solid rgba(20,17,26,0.08); border-radius: 32px; box-shadow: 0 30px 70px -30px rgba(40,30,60,0.35); }
+      #wait { top: 650px; height: 150px; padding: 32px; display: flex; gap: 22px; align-items: flex-start; }
+      #wait .lm { width: 36px; height: 36px; border-radius: 50%; flex: none; background: conic-gradient(from 90deg, #8DF3D6, #D996BA, #C6A5E5, #8DF3D6); }
+      #wait b { font-size: 28px; } #wait p { margin-top: 6px; font-size: 22px; color: #5B5766; line-height: 1.4; }
+      .q { opacity: 0; padding: 30px 32px; }
+      #qA { top: 650px; height: 452px; } #qB { top: 1126px; height: 296px; }
+      .qh { display: flex; gap: 20px; align-items: center; }
+      .av { position: relative; width: 88px; height: 88px; border-radius: 50%; overflow: hidden; flex: none; }
+      .av canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+      .qh b { display: block; font-size: 31px; letter-spacing: -0.01em; }
+      .qh small { display: block; margin-top: 4px; font-size: 20px; color: #5B5766; }
+      .price { margin-left: auto; text-align: right; }
+      .price b { font-size: 40px; letter-spacing: -0.02em; } .price small { font-size: 18px; }
+      .incl { margin-top: 20px; font-size: 22px; line-height: 1.42; color: #14111a; }
+      .msg { margin-top: 10px; font-size: 22px; line-height: 1.42; color: #5B5766; }
+      .hold { margin-top: 10px; display: flex; gap: 10px; align-items: center; font-size: 21px; font-weight: 600; color: #0E7C3A; }
+      .ctas { position: absolute; left: 32px; right: 32px; bottom: 30px; height: 66px; display: flex; gap: 12px; }
+      .bk { height: 66px; padding: 0 30px; border-radius: 999px; background: #14111a; color: #f6f5f3; font-size: 24px; font-weight: 600; display: flex; align-items: center; gap: 12px; }
+      .bg { height: 66px; padding: 0 28px; border-radius: 999px; background: #fff; color: #14111a; border: 1.5px solid rgba(20,17,26,0.16); font-size: 24px; font-weight: 600; display: flex; align-items: center; }
+      .done-st { position: absolute; left: 32px; bottom: 36px; opacity: 0; padding: 12px 22px; border-radius: 999px; font-size: 22px; font-weight: 700; }
+      #accA { background: rgba(29,185,84,0.16); color: #0E7C3A; }
+      #accB { background: rgba(20,17,26,0.07); color: #5B5766; }
+      #qA .okring { position: absolute; inset: -2px; border-radius: 32px; border: 3px solid #1DB954; box-shadow: 0 0 0 8px rgba(29,185,84,0.14); opacity: 0; }
+
+      /* ---------- lockup ---------- */
+      #lock { position: absolute; left: 0; right: 0; top: 700px; text-align: center; }
+      #logo { width: 640px; height: 134px; display: block; margin: 0 auto; }
+      #tag { margin-top: 70px; font-size: 84px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.04; color: #fff; text-shadow: 0 2px 30px rgba(0,0,0,0.6); }
+      #tag .serif { font-size: 1.08em; }
+      #url { display: inline-block; margin-top: 40px; padding: 16px 34px; border-radius: 999px; border: 2px solid rgba(141,243,214,0.6); font-size: 34px; font-weight: 600; color: #fff; background: rgba(14,14,22,0.6); }
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="main" data-start="0" data-duration="31" data-width="1080" data-height="1920">
+      <canvas id="gl" width="810" height="1440"></canvas>
+
+      <!-- ===== 1 · hook ===== -->
+      <section id="s1" class="clip" data-start="0" data-duration="3.4" data-track-index="0">
+        <div class="sc" id="s1Sc">
+          <div id="hook">
+            <p class="eb" id="hEb">Post a job · free for clients</p>
+            <h1><span class="ln"><span id="hl1">Say what you need.</span></span><span class="ln"><span id="hl2">They <span class="serif grad">come to you.</span></span></span></h1>
+            <p class="sub" id="hSub">Photographers and videographers reply with a real quote. You pick one.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 2 · the form ===== -->
+      <section id="s2" class="clip" data-start="2.8" data-duration="14.9" data-track-index="1">
+        <div class="sc" id="s2Sc">
+          <div id="head2"><span style="display:block">Say what you need.</span><span class="serif grad">They come to you.</span></div>
+
+          <div class="card" id="card1">
+            <div class="steps"><span class="on"><i>1</i>The job</span><span><i>2</i>You</span><span><i>3</i>Quotes arrive</span></div>
+            <div class="fld" style="top:118px"><div class="lab">What do you need</div><div class="inp" id="i-title"><span class="ph">Wedding photographer, Montville</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half" style="top:246px"><div class="lab">Kind of job</div><div class="inp"><span>Wedding</span><svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+            <div class="fld half right" style="top:246px"><div class="lab">Who</div><div class="inp"><span>Photographer</span><svg class="chev" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></div></div>
+            <div class="fld half" style="top:374px"><div class="lab">Where</div><div class="inp" id="i-where"><span class="ph">Montville, QLD</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half right" style="top:374px"><div class="lab">When <em>Flexible?</em></div><div class="inp" id="i-when"><span class="ph">dd/mm/yyyy</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half" style="top:502px"><div class="lab">Budget (AUD)</div><div class="inp" id="i-budget"><span class="ph">Most pay $2,500 to $4,500</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half right" style="top:502px"><div class="lab">How long</div><div class="inp" id="i-hrs"><span class="ph">Half day, 2 hours, full day</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld" style="top:630px;height:202px"><div class="lab">The brief</div><div class="inp area" id="i-brief"><span class="ph">What is happening, who is there, what you want back and when. A few honest lines beat a long list.</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="btn" id="btnNext" style="top:856px">Next, your details <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            <p class="tiny" style="top:962px">Takes about a minute. Your contact details stay private until you accept a quote.</p>
+          </div>
+
+          <div class="card" id="card2">
+            <div class="steps"><span class="on"><i>1</i>The job</span><span class="on"><i>2</i>You</span><span><i>3</i>Quotes arrive</span></div>
+            <div class="sum"><b>Wedding photographer, Maleny</b><span>Wedding · Maleny, QLD · Sat 14 Nov · $3,500</span><span class="edit">Edit</span></div>
+            <div class="fld" style="top:262px"><div class="lab">Your name</div><div class="inp" id="i-name"><span class="ph">Harper Ellis, or your business</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half" style="top:390px"><div class="lab">Email</div><div class="inp" id="i-email"><span class="ph">you@email.com</span><span class="tx"></span><i class="car"></i><span class="ring"></span></div></div>
+            <div class="fld half right" style="top:390px"><div class="lab">Phone <em>optional</em></div><div class="inp"><span class="ph">04xx xxx xxx</span></div></div>
+            <div class="btn" id="btnPost" style="top:530px">Post the job <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+            <p class="tiny" style="top:636px">Quotes land on one page and in your inbox. The job comes down after 30 days or when you pick someone.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 3 · quotes arrive (the job page) ===== -->
+      <section id="s3" class="clip" data-start="17.1" data-duration="10.4" data-track-index="2">
+        <div class="sc" id="page">
+          <div class="blob" id="bl1"></div><div class="blob" id="bl2"></div><div class="blob" id="bl3"></div>
+          <p class="pg eb" id="pEb">Your job · 30 days left on the board</p>
+          <h1 class="pg" id="pH1">Wedding photographer, Maleny</h1>
+          <p class="pg" id="pLead">Wedding · Maleny, QLD · Sat 14 Nov · Full day · $3,500 budget</p>
+          <div class="pg" id="stage">
+            <span class="d" id="sg0"><i>✓</i>Posted</span>
+            <span class="c" id="sg1"><i>2</i>Quotes arriving<span class="stv done" id="sg1d"><i>✓</i>Quotes arriving</span></span>
+            <span id="sg2"><i>3</i>Pick one<span class="stv done" id="sg2d"><i>✓</i>Pick one</span></span>
+            <span id="sg3"><i>4</i>Booked<span class="stv cur" id="sg3c"><i>✓</i>Booked</span></span>
+          </div>
+          <p class="pg h3" id="h3a">Quotes<small>Creatives who fit are being told now</small></p>
+          <p class="pg h3" id="h3b">2 quotes<small>Compare, ask a question, pick one</small></p>
+          <div class="pg panel" id="wait"><span class="lm"></span><div><b>Waiting for the first quote</b><p>Nothing to do yet. We email you each time one lands.</p></div></div>
+
+          <div class="pg panel q" id="qA"><span class="okring" id="okA"></span>
+            <div class="qh"><span class="av"><canvas id="avA" width="176" height="176"></canvas></span><div><b>Mara Okafor</b><small>Noosaville · ★ 4.9 from 41 reviews · replied today</small></div><div class="price"><b>$3,680</b><small>incl. GST</small></div></div>
+            <p class="incl"><b>Included:</b> Full day on site, edited gallery within 7 days, one round of changes, travel included</p>
+            <p class="msg">Hi Harper, I would love to do this. Weddings are my kind of work and Sat 14 Nov is open.</p>
+            <p class="hold"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>Holding Sat 14 Nov for you until Monday</p>
+            <div class="ctas" id="ctaA"><div class="bk" id="acceptA">Accept this quote <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div><div class="bg">See their work</div></div>
+            <span class="done-st" id="accA">Accepted · You're booked with Mara</span>
+          </div>
+          <div class="pg panel q" id="qB">
+            <div class="qh"><span class="av"><canvas id="avB" width="176" height="176"></canvas></span><div><b>Tane Walker</b><small>Maroochydore · ★ 4.8 from 27 reviews · replied today</small></div><div class="price"><b>$3,150</b><small>incl. GST</small></div></div>
+            <p class="incl"><b>Included:</b> Full day, 350 edited photos within 10 days</p>
+            <div class="ctas" id="ctaB"><div class="bk">Accept this quote</div><div class="bg">See their work</div></div>
+            <span class="done-st" id="accB">Closed, you booked someone else</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== 4 · lockup ===== -->
+      <section id="s4" class="clip" data-start="26.8" data-duration="4.2" data-track-index="3">
+        <div class="sc" id="s4Sc">
+          <div id="lock">
+            <img id="logo" src="assets/brand/logo-white.svg" alt="LensTrybe" />
+            <p id="tag"><span style="display:block">Post a job.</span><span class="serif grad">Free, always.</span></p>
+            <p id="url">lenstrybe.com/jobs</p>
+          </div>
+        </div>
+      </section>
+
+      <div id="touch"></div>
+      <div class="toast" id="toast1"><i></i><span>Posted. Creatives who fit will see it in the next few minutes.</span></div>
+      <div class="toast" id="toast2"><i></i><span>Booked with Mara. Everyone else has been told.</span></div>
+
+      <!-- ===== sound: no music, SFX only ===== -->
+      <audio id="typing" src="assets/sfx/typing.wav" data-start="0" data-duration="31" data-track-index="10" data-volume="0.75"></audio>
+      <audio id="sHook" src="assets/sfx/impactSoft_medium_001.ogg" data-start="0.3" data-duration="0.18" data-track-index="11" data-volume="0.5"></audio>
+      <audio id="sCard" src="assets/sfx/drop_002.ogg" data-start="2.95" data-duration="0.19" data-track-index="12" data-volume="0.55"></audio>
+      <audio id="t1" src="assets/sfx/click_003.ogg" data-start="3.2" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t2" src="assets/sfx/click_003.ogg" data-start="5.3" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t3" src="assets/sfx/click_003.ogg" data-start="6.45" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t4" src="assets/sfx/click_003.ogg" data-start="8.0" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t5" src="assets/sfx/click_003.ogg" data-start="8.7" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t6" src="assets/sfx/click_003.ogg" data-start="9.6" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t7" src="assets/sfx/click2.ogg" data-start="12.9" data-duration="0.055" data-track-index="14" data-volume="0.8"></audio>
+      <audio id="sStep" src="assets/sfx/switch_002.ogg" data-start="13.1" data-duration="0.6" data-track-index="15" data-volume="0.4"></audio>
+      <audio id="t8" src="assets/sfx/click_003.ogg" data-start="13.8" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t9" src="assets/sfx/click_003.ogg" data-start="14.65" data-duration="0.01" data-track-index="13" data-volume="0.8"></audio>
+      <audio id="t10" src="assets/sfx/click2.ogg" data-start="16.2" data-duration="0.055" data-track-index="14" data-volume="0.8"></audio>
+      <audio id="sPosted" src="assets/sfx/bong_001.ogg" data-start="16.35" data-duration="0.12" data-track-index="16" data-volume="0.7"></audio>
+      <audio id="sPage" src="assets/sfx/drop_001.ogg" data-start="17.2" data-duration="0.11" data-track-index="17" data-volume="0.55"></audio>
+      <audio id="sQ1" src="assets/sfx/impactGlass_light_001.ogg" data-start="18.8" data-duration="0.2" data-track-index="18" data-volume="0.6"></audio>
+      <audio id="sQ2" src="assets/sfx/impactGlass_light_001.ogg" data-start="20.4" data-duration="0.2" data-track-index="19" data-volume="0.5"></audio>
+      <audio id="t11" src="assets/sfx/click2.ogg" data-start="24.4" data-duration="0.055" data-track-index="14" data-volume="0.8"></audio>
+      <audio id="sBooked" src="assets/sfx/impactBell_heavy_000.ogg" data-start="24.55" data-duration="1.48" data-track-index="20" data-volume="0.45"></audio>
+      <audio id="sLock" src="assets/sfx/impactSoft_medium_001.ogg" data-start="27.05" data-duration="0.18" data-track-index="11" data-volume="0.55"></audio>
+    </div>
+
+    <script>
+      var D = 31;
+
+      // ---------- seeded stand-in photography (lib/stills.js) ----------
+      var MOODS = { golden: { base: ['#120c0a', '#2a1a12'], gels: [['245,158,11', .5], ['255,45,120', .3], ['29,185,84', .28]] },
+                    cool:   { base: ['#080c14', '#101a2a'], gels: [['74,158,255', .5], ['29,185,84', .35], ['217,150,186', .25]] } };
+      function rng(seed) { var s = seed * 9301 + 49297; return function () { s = (s * 9301 + 49297) % 233280; return s / 233280; }; }
+      function paintStill(cv, seed, moodName) {
+        var W = cv.width, H = cv.height, mood = MOODS[moodName], R = rng(seed), ctx = cv.getContext('2d');
+        var bg = ctx.createLinearGradient(0, 0, W, H); bg.addColorStop(0, mood.base[0]); bg.addColorStop(1, mood.base[1]); ctx.fillStyle = bg; ctx.fillRect(0, 0, W, H);
+        var hy = H * (.55 + R() * .25); ctx.fillStyle = 'rgba(255,255,255,.025)'; ctx.fillRect(0, hy, W, H - hy);
+        ctx.fillStyle = 'rgba(0,0,0,.35)'; ctx.fillRect(0, 0, W, H * (.08 + R() * .1));
+        mood.gels.forEach(function (g, i) { var x = W * (i === 0 ? .15 + R() * .3 : .55 + R() * .4), y = H * (R() * .7), rad = Math.max(W, H) * (.35 + R() * .35); var gr = ctx.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(' + g[0] + ',' + g[1] + ')'); gr.addColorStop(.5, 'rgba(' + g[0] + ',' + (g[1] * .25) + ')'); gr.addColorStop(1, 'rgba(' + g[0] + ',0)'); ctx.fillStyle = gr; ctx.fillRect(0, 0, W, H); });
+        var n = 5 + Math.floor(R() * 8);
+        for (var i = 0; i < n; i++) { var x = W * R(), y = H * R(), rad = (6 + R() * 30) * 1.5, g = mood.gels[i % mood.gels.length]; var gr = ctx.createRadialGradient(x, y, 0, x, y, rad); gr.addColorStop(0, 'rgba(' + g[0] + ',' + (.22 + R() * .25) + ')'); gr.addColorStop(.8, 'rgba(' + g[0] + ',.08)'); gr.addColorStop(1, 'rgba(' + g[0] + ',0)'); ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(x, y, rad, 0, 7); ctx.fill(); }
+        var v = ctx.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .3, W / 2, H / 2, Math.max(W, H) * .75); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.6)'); ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+      }
+      paintStill(document.getElementById('avA'), 3, 'golden');
+      paintStill(document.getElementById('avB'), 7, 'cool');
+
+      // ---------- the living lens (lib/lens.js), seek-driven ----------
+      var VS = 'attribute vec2 p;void main(){gl_Position=vec4(p,0.,1.);}';
+      var FS = 'precision highp float;uniform vec2 uRes;uniform float uT;uniform float uPulse;uniform float uCy;uniform float uR;uniform float uFade;' +
+        'float hash(vec2 p){return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453);}' +
+        'void main(){vec2 uv=(gl_FragCoord.xy-.5*uRes)/uRes.y;vec2 c=uv-vec2(0.,0.5-uCy);float d=length(c);float ang=atan(c.y,c.x);' +
+        'float R=uR+0.012*uPulse;float t=fract(ang/6.2831+uT*.02);' +
+        'vec3 mint=vec3(.604,.769,.773),rose=vec3(.851,.588,.729),lilac=vec3(.776,.647,.898);' +
+        'vec3 col=t<.5?mix(mint,rose,t*2.):mix(rose,lilac,(t-.5)*2.);col=mix(col,mint,smoothstep(.86,1.,t));' +
+        'float sweep=pow(.5+.5*cos(ang-uT*.5),10.);' +
+        'vec3 room=vec3(.027,.027,.043);room+=vec3(.114,.725,.329)*.06*(1.-smoothstep(.2,1.1,length(uv-vec2(-.35,.4))));room+=vec3(1.,.176,.47)*.05*(1.-smoothstep(.2,1.1,length(uv-vec2(.35,-.4))));' +
+        'vec3 o=room;float inner=1.-smoothstep(R-.08,R-.05,d);float g=smoothstep(-.3,.3,c.x+c.y*.6);' +
+        'vec3 glass=mix(vec3(.55,.9,.8),vec3(.98,.68,.82),g);glass=mix(glass,vec3(.85,.78,.98),smoothstep(.55,.9,g));' +
+        'float spec=pow(max(0.,1.-length(c-vec2(-.06,.07))*7.),3.);o=mix(o,glass*.22+o*.55+spec*.28,inner);' +
+        'float ring=smoothstep(.045,0.,abs(d-R)-.011);float glow=exp(-abs(d-R)*9.)*.45;' +
+        'o+=col*(ring*.62+glow)*(.75+.35*sweep);o*=1.-.6*smoothstep(.025,0.,abs(d-(R-.045))-.011);o+=col*exp(-abs(d-R)*7.)*.06;' +
+        'vec3 v=mix(room,o,uFade);v*=1.-.35*smoothstep(.4,1.1,length(uv));v+=(hash(gl_FragCoord.xy)-.5)/255.;gl_FragColor=vec4(v,1.);}';
+      var cv = document.getElementById('gl'), gl = cv.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: true }), U = null;
+      if (gl) {
+        var sh = function (t, s) { var x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x; };
+        var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr);
+        var buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW);
+        var loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+        U = {}; ['uRes', 'uT', 'uPulse', 'uCy', 'uR', 'uFade'].forEach(function (k) { U[k] = gl.getUniformLocation(pr, k); });
+        gl.viewport(0, 0, cv.width, cv.height);
+      }
+      function ss(a, b, t) { var x = Math.min(1, Math.max(0, (t - a) / (b - a))); return x * x * (3 - 2 * x); }
+      function drawLens(t) {
+        if (!U) return;
+        var fade = ss(0.05, 1.2, t), cy = 0.43, R = 0.2;
+        var k = ss(2.8, 3.7, t); cy += (0.52 - cy) * k; R += (0.3 - R) * k; fade *= 1 - 0.55 * k;
+        var e = ss(26.8, 27.6, t); cy += (0.43 - cy) * e; R += (0.2 - R) * e; fade += (1 - fade) * e;
+        var pulse = t > 16.2 && t < 17.2 ? (0.5 + 0.5 * Math.sin((t - 16.2) * 12)) : 0;
+        gl.uniform2f(U.uRes, cv.width, cv.height); gl.uniform1f(U.uT, t); gl.uniform1f(U.uPulse, pulse);
+        gl.uniform1f(U.uCy, cy); gl.uniform1f(U.uR, R); gl.uniform1f(U.uFade, fade);
+        gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      }
+
+      // ---------- typing: must match build-typing.py ----------
+      var FIELDS = [
+        { id: 'i-title',  text: 'Wedding photographer, Maleny', t0: 3.35, t1: 5.0,  on: 3.2,  off: 5.3 },
+        { id: 'i-where',  text: 'Maleny, QLD',                  t0: 5.45, t1: 6.1,  on: 5.3,  off: 6.45 },
+        { id: 'i-when',   text: '14/11/2026',                   t0: 6.6,  t1: 7.3,  on: 6.45, off: 8.0 },
+        { id: 'i-budget', text: '3500',                         t0: 8.15, t1: 8.5,  on: 8.0,  off: 8.7 },
+        { id: 'i-hrs',    text: 'Full day',                     t0: 8.85, t1: 9.35, on: 8.7,  off: 9.6 },
+        { id: 'i-brief',  text: 'Garden ceremony at 3pm, about 80 guests. Relaxed, natural photos, not too posed.', t0: 9.75, t1: 12.55, on: 9.6, off: 12.9 },
+        { id: 'i-name',   text: 'Harper Ellis',                 t0: 13.95, t1: 14.55, on: 13.8, off: 14.65 },
+        { id: 'i-email',  text: 'harper@email.com',             t0: 14.8, t1: 15.6, on: 14.65, off: 16.2 }
+      ];
+      FIELDS.forEach(function (f) { var el = document.getElementById(f.id); f.tx = el.querySelector('.tx'); f.ph = el.querySelector('.ph'); f.car = el.querySelector('.car'); f.ring = el.querySelector('.ring'); });
+      function typeAt(t) {
+        FIELDS.forEach(function (f) {
+          var n = Math.round(f.text.length * Math.min(1, Math.max(0, (t - f.t0) / (f.t1 - f.t0))));
+          f.tx.textContent = f.text.slice(0, n);
+          f.ph.style.display = n ? 'none' : '';
+          var active = t >= f.on && t < f.off;
+          f.ring.style.opacity = active ? '1' : '0';
+          var typing = t >= f.t0 && t <= f.t1 + 0.05;
+          f.car.style.opacity = active && (typing || Math.floor(t * 2.6) % 2 === 0) ? '1' : '0';
+        });
+      }
+
+      // ---------- timeline ----------
+      var tl = gsap.timeline({ paused: true });
+      var drv = { t: 0 };
+      tl.to(drv, { t: 1, duration: D, ease: 'none', onUpdate: function () { var t = tl.time(); drawLens(t); typeAt(t); } }, 0);
+
+      // taps (touch indicator) at fixed layout points
+      function tap(x, y, at) {
+        tl.fromTo('#touch', { x: x, y: y, opacity: 0, scale: 0.6 }, { opacity: 0.95, scale: 1, duration: 0.12, ease: 'power2.out', immediateRender: false }, at - 0.06);
+        tl.to('#touch', { opacity: 0, scale: 1.25, duration: 0.3, ease: 'power2.out' }, at + 0.12);
+      }
+      function press(sel, at) { tl.to(sel, { scale: 0.96, duration: 0.08, ease: 'power2.in', yoyo: true, repeat: 1 }, at - 0.02); }
+
+      // 1 · hook
+      tl.fromTo('#hEb', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0.2);
+      tl.fromTo('#hl1', { yPercent: 110 }, { yPercent: 0, duration: 0.9, ease: 'expo.out' }, 0.3);
+      tl.fromTo('#hl2', { yPercent: 110 }, { yPercent: 0, duration: 0.9, ease: 'expo.out' }, 0.65);
+      tl.fromTo('#hSub', { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 1.2);
+      tl.fromTo('#hook', { scale: 1 }, { scale: 1.04, duration: 3, ease: 'none' }, 0);
+      tl.to('#hook', { opacity: 0, y: -80, filter: 'blur(10px)', duration: 0.45, ease: 'power2.in' }, 2.75);
+
+      // 2 · the job
+      tl.fromTo('#head2', { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out' }, 2.95);
+      tl.fromTo('#card1', { opacity: 0, y: 120, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.75, ease: 'power3.out' }, 2.9);
+      tap(510, 608, 3.2);   // what do you need
+      tap(310, 864, 5.3);   // where
+      tap(710, 864, 6.45);  // when
+      tap(310, 992, 8.0);   // budget
+      tap(710, 992, 8.7);   // how long
+      tap(510, 1167, 9.6);  // the brief
+      tap(510, 1310, 12.9); press('#btnNext', 12.9);
+      tl.fromTo('#card1', { scale: 1 }, { scale: 1.02, duration: 9.3, ease: 'none', immediateRender: false }, 3.7);
+
+      // 2 · you
+      tl.to('#card1', { opacity: 0, x: -90, duration: 0.4, ease: 'power2.in' }, 13.05);
+      tl.fromTo('#card2', { opacity: 0, x: 90 }, { opacity: 1, x: 0, duration: 0.5, ease: 'power3.out' }, 13.25);
+      tap(510, 752, 13.8);  // your name
+      tap(310, 880, 14.65); // email
+      tap(510, 994, 16.2); press('#btnPost', 16.2);
+      tl.to('#head2', { opacity: 0, duration: 0.25 }, 16.2);
+      tl.fromTo('#toast1', { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 16.32);
+      tl.to('#toast1', { opacity: 0, y: -20, duration: 0.3, ease: 'power2.in' }, 17.2);
+
+      // 3 · quotes arrive: the page opens out of the Post button
+      tl.fromTo('#page', { clipPath: 'circle(0px at 510px 994px)' }, { clipPath: 'circle(2300px at 510px 994px)', duration: 0.8, ease: 'power3.inOut' }, 17.15);
+      tl.fromTo('#bl1', { x: 0, y: 0 }, { x: 120, y: 80, duration: 10, ease: 'sine.inOut' }, 17.1);
+      tl.fromTo('#bl2', { x: 0, y: 0 }, { x: -140, y: -60, duration: 10, ease: 'sine.inOut' }, 17.1);
+      tl.fromTo('#bl3', { x: 0 }, { x: 110, duration: 10, ease: 'sine.inOut' }, 17.1);
+      tl.fromTo(['#pEb', '#pH1', '#pLead', '#stage', '#h3a'], { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6, ease: 'power3.out', stagger: 0.07 }, 17.55);
+      tl.fromTo('#wait', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 17.9);
+      // first quote lands
+      tl.to('#wait', { opacity: 0, scale: 0.97, duration: 0.3, ease: 'power2.in' }, 18.65);
+      tl.fromTo('#qA', { opacity: 0, y: 60, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.4)' }, 18.8);
+      tl.to('#h3a', { opacity: 0, duration: 0.25 }, 18.8);
+      tl.fromTo('#h3b', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 18.85);
+      // second quote
+      tl.fromTo('#qB', { opacity: 0, y: 60, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.6, ease: 'back.out(1.4)' }, 20.4);
+      tl.fromTo('#page', { scale: 1 }, { scale: 1.02, duration: 6.5, ease: 'none', transformOrigin: '50% 40%', immediateRender: false }, 18.0);
+      // pick one: accept Mara
+      tap(247, 1032 + 12, 24.4); press('#acceptA', 24.4);
+      tl.to('#ctaA', { opacity: 0, duration: 0.2 }, 24.55);
+      tl.fromTo('#accA', { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.4, ease: 'back.out(2)' }, 24.6);
+      tl.fromTo('#okA', { opacity: 0 }, { opacity: 1, duration: 0.4 }, 24.6);
+      tl.to('#ctaB', { opacity: 0, duration: 0.2 }, 24.75);
+      tl.fromTo('#accB', { opacity: 0 }, { opacity: 1, duration: 0.3 }, 24.8);
+      tl.to('#qB', { opacity: 0.55, duration: 0.4 }, 24.8);
+      tl.fromTo('#sg1d', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 24.6);
+      tl.fromTo('#sg2d', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 24.7);
+      tl.fromTo('#sg3c', { opacity: 0 }, { opacity: 1, duration: 0.25 }, 24.8);
+      tl.to(['#pEb', '#pH1'], { opacity: 0, duration: 0.2 }, 24.5);
+      tl.fromTo('#toast2', { opacity: 0, y: -30 }, { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 24.6);
+      tl.to('#toast2', { opacity: 0, y: -20, duration: 0.3, ease: 'power2.in' }, 26.6);
+
+      // 4 · lockup
+      tl.to('#page', { opacity: 0, duration: 0.5, ease: 'power1.inOut' }, 26.75);
+      tl.fromTo('#logo', { opacity: 0, scale: 0.9, filter: 'blur(10px)' }, { opacity: 1, scale: 1, filter: 'blur(0px)', duration: 0.9, ease: 'power3.out' }, 27.05);
+      tl.fromTo('#tag', { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.8, ease: 'power3.out' }, 27.5);
+      tl.fromTo('#url', { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power2.out' }, 28.0);
+      tl.fromTo('#lock', { scale: 1 }, { scale: 1.03, duration: 3.9, ease: 'sine.out' }, 27.05);
+
+      window.__timelines['main'] = tl;
+      tl.seek(0);
+    </script>
+  </body>
+</html>

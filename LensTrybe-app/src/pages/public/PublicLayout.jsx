@@ -59,13 +59,13 @@ export default function PublicLayout() {
           <button className="mb" aria-label="Menu" onClick={() => setMenu(m => !m)}><Icon name="menu" /></button>
         </div>
       </header>
-      {menu && <nav className="mnav lg" aria-label="Menu"><NavLink to="/how-it-works">How it works</NavLink>{away ? <NavLink to={waitlistTo()}>Join the waitlist</NavLink> : <><NavLink to="/creatives">Find a creative</NavLink><NavLink to="/jobs">Post a job</NavLink></>}<NavLink to="/pricing">Pricing</NavLink><NavLink to="/founding">Founding programme</NavLink><NavLink to="/edit">The Trybe Edit</NavLink><NavLink to="/upcoming">Upcoming features</NavLink><NavLink to="/support">Support</NavLink><NavLink to="/app">Workspace preview</NavLink></nav>}
+      {menu && <nav className="mnav lg" aria-label="Menu"><NavLink to="/how-it-works">How it works</NavLink>{away ? <NavLink to={waitlistTo()}>Join the waitlist</NavLink> : <><NavLink to="/creatives">Find a creative</NavLink><NavLink to="/jobs">Post a job</NavLink></>}<NavLink to="/pricing">Pricing</NavLink><NavLink to="/founding">Founding programme</NavLink><NavLink to="/edit">The Trybe Edit</NavLink><NavLink to="/upcoming">Upcoming features</NavLink><NavLink to="/support">Support</NavLink><a href="/app/today?preview">Workspace preview</a></nav>}
       {away && !wl && <div className="areabar"><span>LensTrybe hasn't opened {regionCookie() === 'INTL' ? 'outside Australia' : 'in ' + regionName(regionCookie())} yet. Have a look around; joining, posting a job and the ask open with your area.</span><Link to={waitlistTo()}>Join the waitlist</Link></div>}
       <Outlet />
       <footer className="foot">
         <div className="wrap"><div className="g">
           <span className="logo"><Logo height={20} /></span>
-          <nav><Link to="/support">Support</Link><Link to="/legal/terms">Terms</Link><Link to="/legal/privacy">Privacy</Link><Link to="/legal/refunds">Refunds</Link><Link to="/edit">The Trybe Edit</Link><Link to="/upcoming">Upcoming features</Link><Link to="/app">Workspace preview</Link><Link to="/portal/harper-leo">Client portal preview</Link></nav>
+          <nav><Link to="/support">Support</Link><Link to="/legal/terms">Terms</Link><Link to="/legal/privacy">Privacy</Link><Link to="/legal/refunds">Refunds</Link><Link to="/edit">The Trybe Edit</Link><Link to="/upcoming">Upcoming features</Link><a href="/app/today?preview">Workspace preview</a><a href="/portal/harper-leo?preview">Client portal preview</a></nav>
           <span>© 2026 LensTrybe · connect@lenstrybe.com · Photographers and videographers at launch, six more disciplines after.</span>
         </div></div>
       </footer>
