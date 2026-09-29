@@ -137,6 +137,7 @@ export async function signUpCreative(f) {
       },
     })
     if (error) return { error: friendly(error.message) }
+    if (taken(data)) return { error: 'There is already an account with that email. Log in, or reset the password if it has slipped.', code: 'exists' }
     userId = data?.user?.id
     if (!userId) return { error: 'The account could not be created. Try again in a moment.' }
     needsConfirm = !data.session
@@ -151,6 +152,11 @@ export async function signUpCreative(f) {
   }
   return { ok: true, userId, needsConfirm }
 }
+
+// With email confirmation on, signing up with an address that already has an account returns a
+// look-alike user with no identities and sends NO email (so nobody can probe which emails exist).
+// Say so on the page instead of showing "check your inbox" for an email that will never come.
+const taken = data => !!data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0
 
 // Create a client account. Resolves { ok, needsConfirm } or { error }.
 export async function signUpClient(f) {
@@ -167,6 +173,7 @@ export async function signUpClient(f) {
     options: { emailRedirectTo: origin() + '/portal', data: { account_type: 'client', first_name: f.first, last_name: f.last, company_name: f.co || '', marketing_opt_in: f.news ? 'true' : 'false', ...(jobDraft ? { job_draft: jobDraft } : {}) } },
   })
   if (error) return { error: friendly(error.message) }
+  if (taken(data)) return { error: 'There is already an account with that email. Log in, or reset the password if it has slipped.', code: 'exists' }
   if (data.session) {
     // confirmation off: the trigger has made the row, nothing else to insert
     return { ok: true, needsConfirm: false }
