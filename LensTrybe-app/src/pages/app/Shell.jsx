@@ -48,13 +48,44 @@ import { EditProfile, ViewProfile, Subscription, Referrals, Founding, Settings, 
 import { TOP, GROUPS, HIDDEN } from './nav'
 import '../../styles/workspace.css'
 import { planLabel } from '../../backend/tierFeatures'
+import { supabase } from '../../backend/supabaseClient'
 import { Gate, usePlanGate, gateKeyFor } from './PlanGate'
 import Tour from './Tour'
 
 const BUILT = { today: Today, threads: Threads, bookings: Bookings, projects: Projects, notes: Notes, inventory: Inventory, meetings: Meetings, tax: Tax, 'brand-kit': BrandKit, website: Website, 'content-calendar': ContentCalendar, 'content-ideas': ContentIdeas, performance: Performance, channels: Channels, reviews: Reviews, marketplace: Marketplace, collaborate: Collaborate, team: Team, insights: Insights, availability: Availability, jobs: Jobs, money: Money, invoicing: () => <Money kind="invoicing" />, quotes: () => <Money kind="quotes" />, contracts: () => <Money kind="contracts" />, expenses: () => <Money kind="expenses" />, deliver: Deliver, clients: Clients, crm: () => <Clients kind="crm" />, profile: EditProfile, 'view-profile': ViewProfile, subscription: Subscription, referrals: Referrals, founding: Founding, settings: Settings, support: Support, lumi: Lumi }
 const TABS = [['today', 'Today', 'today'], ['threads', 'Threads', 'chat'], ['bookings', 'Calendar', 'cal'], ['money', 'Money', 'money']]
+// Live: the bell is the notifications table (the creative's own rows only, by RLS). Everything
+// the platform raises lands here: enquiries, messages, quotes accepted, bookings, job alerts, reviews
+// and LensTrybe HQ broadcasts. Old-site links (/dashboard/...) forward to the matching /app page.
+function LiveBell() {
+  const { open, close } = useSheet(); const nav = useNavigate(); const auth = useAuth()
+  const [items, setItems] = useState([])
+  const uid = auth.user?.id
+  useEffect(() => {
+    if (!uid) return
+    let off = false
+    const load = () => supabase.from('notifications').select('id, type, title, body, link, read, created_at').eq('user_id', uid).order('created_at', { ascending: false }).limit(30).then(({ data }) => { if (!off) setItems(data || []) })
+    load(); const t = setInterval(load, 60e3)
+    return () => { off = true; clearInterval(t) }
+  }, [uid])
+  const unread = items.filter(x => !x.read).length
+  const ago = iso => { const m = (Date.now() - new Date(iso)) / 60e3; return m < 60 ? Math.max(1, Math.round(m)) + 'm' : m < 1440 ? Math.round(m / 60) + 'h' : new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'short' }) }
+  const show = () => {
+    const ids = items.filter(x => !x.read).map(x => x.id)
+    if (ids.length) { supabase.from('notifications').update({ read: true }).in('id', ids).then(() => {}); setItems(v => v.map(x => ({ ...x, read: true }))) }
+    const go = to => { close(); if (to) nav(to.startsWith('/') ? to : '/app/today') }
+    open({ title: 'Notifications', sub: unread ? unread + ' new' : 'All caught up', cta: 'Done', cancel: 'Close', submit: () => {},
+      body: <div className="tl">{items.map(x => <div key={x.id} className={'e' + (x.type === 'broadcast' ? ' bc' : '')} onClick={() => go(x.link)} style={{ cursor: x.link ? 'pointer' : 'default' }}><span className="t" style={{ width: 'auto' }}>{ago(x.created_at)}</span><div><b>{x.type === 'broadcast' && <em className="from">From LensTrybe · </em>}{x.title}{!x.read && <i className="new" />}</b>{x.body && <small style={{ display: 'block', color: 'var(--ink-3)', marginTop: 2, lineHeight: 1.45 }}>{x.body}</small>}</div></div>)}{!items.length && <p className="tempty">Quiet. Nothing new.</p>}</div> })
+  }
+  return <button className="ic lg" aria-label={'Notifications' + (unread ? ', ' + unread + ' new' : '')} onClick={show}><Icon name="bell" />{unread > 0 && <i />}</button>
+}
+
 // The bell: what happened since you last looked, each one a link to the thing.
 function Bell() {
+  if (LIVE) return <LiveBell />
+  return <DemoBell />
+}
+function DemoBell() {
   const { s } = useStore(); const { open, close } = useSheet(); const nav = useNavigate()
   const items = [
     ...s.galleries.flatMap(g => g.log.filter(l => l[0].startsWith('Today') || l[0] === 'Just now').map(l => ({ w: l[0], t: l[1], to: '/app/deliver' }))),

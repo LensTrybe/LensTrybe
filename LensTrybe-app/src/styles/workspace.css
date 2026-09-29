@@ -2028,3 +2028,9 @@
   .ws .lchat .in textarea{font-size:16px}
 }
 @media (max-width:900px){.ws .lpane .tph{flex-wrap:nowrap}.ws .lpane .tph .acts{flex:none}}
+
+/* Live bell: HQ broadcasts and the unread mark. */
+.ws .tl .e .from{font-style:normal;color:var(--sig);font-weight:600}
+.ws .tl .e .new{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--sig);margin-left:6px;vertical-align:1px}
+.ws .sheet .tl .e.bc{align-items:start}
+.ws .sheet .tl .e.bc b,.ws .sheet .tl .e.bc small{white-space:normal}
