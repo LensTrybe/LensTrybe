@@ -62,6 +62,9 @@ export function imageUrl(url, width, quality = DEFAULT_QUALITY) {
   const rendered = base.replace(PUBLIC_OBJECT, RENDER_IMAGE)
   const params = new URLSearchParams(query || '')
   params.set('width', String(target))
+  // Without this, Storage keeps the original height and crops the sides: a 1616 x 1080 landscape
+  // asked for at 840 wide came back 840 x 1080, the middle strip only. contain keeps the whole photo.
+  params.set('resize', 'contain')
   params.set('quality', String(Math.max(20, Math.min(100, Math.round(quality)))))
   return `${rendered}?${params.toString()}`
 }

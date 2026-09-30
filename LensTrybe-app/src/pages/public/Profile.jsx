@@ -44,7 +44,7 @@ function Lightbox({ photos, at, onClose, onAt }) {
     window.addEventListener('keydown', k); const o = document.body.style.overflow; document.body.style.overflow = 'hidden'
     return () => { window.removeEventListener('keydown', k); document.body.style.overflow = o }
   }, [go, onClose])
-  useEffect(() => { [1, -1].forEach(d => { const p = photos[(at + d + photos.length) % photos.length]; if (p) { const im = new Image(); im.src = imageUrl(p.url, 1400) } }) }, [at, photos])
+  useEffect(() => { [1, -1].forEach(d => { const p = photos[(at + d + photos.length) % photos.length]; if (p) { const im = new Image(); im.src = p.url } }) }, [at, photos])
   const p = photos[at]
   return <div className="pf-lb" onTouchStart={e => { t0.current = e.touches[0].clientX }} onTouchEnd={e => { if (t0.current == null) return; const dx = e.changedTouches[0].clientX - t0.current; if (Math.abs(dx) > 50) go(dx < 0 ? 1 : -1); t0.current = null }}>
     <div className="pf-lb-top"><span>{at + 1} / {photos.length}</span><button onClick={onClose} aria-label="Close"><Ic n="close" s={22} /></button></div>
@@ -58,8 +58,8 @@ function Lightbox({ photos, at, onClose, onAt }) {
 function LbImg({ p, onClick }) {
   const [ok, setOk] = useState(false)
   return <div className="pf-lb-stage" onClick={onClick}>
-    <img src={imageUrl(p.url, 420)} alt="" aria-hidden="true" className="pf-lb-img lo" />
-    <img src={imageUrl(p.url, 1400)} alt={p.alt || ''} className={'pf-lb-img hi' + (ok ? ' ok' : '')} onLoad={() => setOk(true)} />
+    {!ok && <img src={imageUrl(p.url, 420)} alt="" aria-hidden="true" className="pf-lb-img lo" />}
+    <img src={p.url} alt={p.alt || ''} className={'pf-lb-img hi' + (ok ? ' ok' : '')} onLoad={() => setOk(true)} />
     {!ok && <span className="pf-lb-spin" />}
   </div>
 }
@@ -309,7 +309,7 @@ const CSS = `
 .pf-foot{max-width:1280px;margin:0 auto;padding:40px 32px 48px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;color:var(--di);font-size:13px}.pf-foot img{height:22px;display:block;opacity:.8}.pf-foot a:last-child{margin-left:auto;color:var(--mu)}
 .pf-dock{display:none}
 .pf-lb{position:fixed;inset:0;z-index:80;background:#000;display:grid;place-items:center;animation:pffade .2s ease}@keyframes pffade{from{opacity:0}}
-.pf-lb-stage{position:relative;display:grid;place-items:center;width:100vw;height:100dvh}.pf-lb-img{grid-area:1/1;width:100vw;height:100dvh;object-fit:contain;user-select:none;-webkit-user-select:none}.pf-lb-img.lo{animation:pffade .2s ease;filter:blur(6px);transform:scale(1.001)}.pf-lb-img.hi{opacity:0;transition:opacity .35s}.pf-lb-img.hi.ok{opacity:1}.pf-lb-spin{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:pfspin .8s linear infinite}
+.pf-lb-stage{position:relative;display:grid;place-items:center;width:100vw;height:100dvh;padding:64px 96px}.pf-lb-img{grid-area:1/1;max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;user-select:none;-webkit-user-select:none}.pf-lb-img.lo{width:100%;height:100%;animation:pffade .2s ease;filter:blur(8px)}.pf-lb-img.hi{opacity:0;transition:opacity .35s}.pf-lb-img.hi.ok{opacity:1}.pf-lb-spin{position:absolute;width:28px;height:28px;border-radius:50%;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;animation:pfspin .8s linear infinite}
 .pf-lb-top{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:16px 16px 16px 22px;font-size:14px;color:rgba(255,255,255,.75);z-index:2;background:linear-gradient(rgba(0,0,0,.5),transparent)}.pf-lb-top button{width:44px;height:44px;display:grid;place-items:center;border-radius:50%}.pf-lb-top button:hover{background:rgba(255,255,255,.1)}
 .pf-lb-nav{position:absolute;top:50%;transform:translateY(-50%);width:52px;height:52px;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.08)}.pf-lb-nav:hover{background:rgba(255,255,255,.16)}.pf-lb-nav.l{left:18px}.pf-lb-nav.r{right:18px}
 .pf-lb-cap{position:absolute;bottom:22px;left:0;right:0;text-align:center;font-size:14px;color:rgba(255,255,255,.8)}
@@ -347,7 +347,7 @@ const CSS = `
   .pf-dock{display:flex;align-items:center;gap:8px;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:45;padding:8px 8px 8px 18px;border-radius:999px;background:rgba(29,29,38,.86);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:inset 0 0 0 1px var(--ln),0 12px 30px rgba(0,0,0,.45)}
   .pf-dock div{flex:1;min-width:0;line-height:1.1}.pf-dock small{display:block;font-size:11px;color:var(--mu)}.pf-dock b{font-size:18px;letter-spacing:-.02em}.pf-dock .ghost{width:44px;padding:0}
   .pf-sheet-bg{padding:0;place-items:end stretch}.pf-sheet{max-width:none;border-radius:24px 24px 0 0;max-height:92dvh;padding-bottom:env(safe-area-inset-bottom)}.pf-row{grid-template-columns:1fr}
-  .pf-lb-nav{display:none}
+  .pf-lb-nav{display:none}.pf-lb-stage{padding:56px 0}.pf-lb-img{border-radius:0}
 }
 @media (prefers-reduced-motion:reduce){.pf *{animation:none!important;transition:none!important}}
 `
