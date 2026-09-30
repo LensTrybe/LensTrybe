@@ -12,7 +12,6 @@ import { EditConfirm, EditHome, EditIssue } from './pages/public/Edit'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
 import Pricing from './pages/public/Pricing'
-import SiteLive from './pages/public/SiteLive'
 import Profile from './pages/public/Profile'
 import TeamAccept from './pages/portal/TeamAccept'
 import Founding from './pages/public/Founding'
@@ -94,7 +93,7 @@ export default function App() {
         <Route path="/portal/:slug" element={<ClientThread />} />
         <Route path="/brand/:slug" element={<BrandPage />} />
         <Route path="/review/:slug" element={<LeaveReview />} />
-        <Route path="/site/:slug" element={<SiteLive />} />
+        <Route path="/site/:slug" element={<Profile />} />
         <Route path="/p/:slug" element={<Profile />} />
         <Route path="/team/accept/:token" element={<TeamAccept />} />
         <Route path="/sign/:token" element={<SignLive />} />

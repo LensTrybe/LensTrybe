@@ -133,13 +133,14 @@ function Enquiry({ c, name, pk, busy, start, signedIn, send, onClose }) {
   </div>
 }
 
-export default function Profile({ slug: slugProp }) {
+// embed: drawn inside the workspace's View profile (bar in place, no dock, nothing is sent)
+export default function Profile({ slug: slugProp, embed = false }) {
   const params = useParams(); const slug = slugProp || params.slug; const { user, clientAccount } = useAuth()
   const [d, setD] = useState(undefined), [lb, setLb] = useState(null), [enq, setEnq] = useState(null), [all, setAll] = useState(false), [scrolled, setScrolled] = useState(false), [cols, setCols] = useState(3), [copied, setCopied] = useState(false)
   useEffect(() => { let on = true; if (!LIVE) { setD(null); return } loadSite(slug).then(x => on && setD(x)).catch(() => on && setD(null)); return () => { on = false } }, [slug])
   useEffect(() => { const f = () => setScrolled(window.scrollY > window.innerHeight * 0.55); f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f) }, [])
   useEffect(() => { const f = () => setCols(window.innerWidth < 640 ? 2 : window.innerWidth < 1100 ? 3 : 4); f(); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
-  useEffect(() => { if (d?.c) document.title = d.c.n + (d.c.d ? ' · ' + d.c.d : '') + ' · LensTrybe' }, [d])
+  useEffect(() => { if (d?.c && !embed) document.title = d.c.n + (d.c.d ? ' · ' + d.c.d : '') + ' · LensTrybe' }, [d, embed])
   const c = d?.c
   const busy = useMemo(() => new Set(c?.busy || []), [c])
   const photos = c?.photos || []
@@ -155,16 +156,16 @@ export default function Profile({ slug: slugProp }) {
   const disc = (d.profile.skill_types || []).join(' and ') || 'Creative'
   const where = [c.c, c.state].filter(Boolean).join(', ')
   const signedIn = !!(user && clientAccount)
-  const send = f => sendEnquiry(c.id, f, signedIn ? user : null)
+  const send = embed ? async () => { throw new Error('This is your own profile, so nothing is sent. Client enquiries arrive in Threads.') } : f => sendEnquiry(c.id, f, signedIn ? user : null)
   const open = (start = {}) => setEnq(start)
   const share = async () => { const url = window.location.origin + '/p/' + (d.profile.custom_domain || c.id); try { if (navigator.share) { await navigator.share({ title: name, url }); return } await navigator.clipboard.writeText(url); setCopied(true); setTimeout(() => setCopied(false), 1800) } catch { /* cancelled */ } }
   const bio = String(c.about || '').split(/\n+/).filter(Boolean)
   const go = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  return <div className="pf" style={{ '--acc': accent, '--on': onAcc }}>
+  return <div className={'pf' + (embed ? ' pf-embed' : '')} style={{ '--acc': accent, '--on': onAcc }}>
     <style>{CSS}</style>
 
-    <header className={'pf-bar' + (scrolled ? ' on' : '')}>
+    <header className={'pf-bar' + (scrolled || embed ? ' on' : '')}>
       <Link to="/creatives" className="pf-back"><Ic n="back" s={16} /><span>Find a creative</span></Link>
       <div className="pf-bar-mid">{c.avatar && <img src={imageUrl(c.avatar, 28)} alt="" />}<b>{name}</b><nav>{photos.length > 0 && <button onClick={() => go('work')}>Work</button>}{pk.length > 0 && <button onClick={() => go('packages')}>Packages</button>}<button onClick={() => go('reviews')}>Reviews</button><button onClick={() => go('about')}>About</button></nav></div>
       <div className="pf-bar-r"><button className="pf-icon" onClick={share} aria-label="Share this profile"><Ic n="share" s={17} />{copied && <em>Link copied</em>}</button><button className="pf-btn sm" onClick={() => open()}>Get a quote</button></div>
@@ -243,7 +244,7 @@ export default function Profile({ slug: slugProp }) {
 
     <footer className="pf-foot"><Link to="/"><img src="/logo-white.svg" alt="LensTrybe" /></Link><span>Connect. Capture. Create. · No commission, ever.</span><Link to="/creatives">More creatives</Link></footer>
 
-    <div className="pf-dock">{from > 0 ? <div><small>From</small><b>{fmt(from)}</b></div> : <div><b>{name}</b></div>}<button className="pf-btn ghost" onClick={() => open({ step: 0 })} aria-label="Check a date"><Ic n="cal" s={17} /></button><button className="pf-btn" onClick={() => open()}>Get a quote</button></div>
+    {!embed && <div className="pf-dock">{from > 0 ? <div><small>From</small><b>{fmt(from)}</b></div> : <div><b>{name}</b></div>}<button className="pf-btn ghost" onClick={() => open({ step: 0 })} aria-label="Check a date"><Ic n="cal" s={17} /></button><button className="pf-btn" onClick={() => open()}>Get a quote</button></div>}
 
     {lb != null && <Lightbox photos={photos} at={lb} onAt={setLb} onClose={() => setLb(null)} />}
     {enq && <Enquiry c={c} name={name} pk={pk} busy={busy} start={enq} signedIn={signedIn} send={send} onClose={() => setEnq(null)} />}
@@ -349,5 +350,6 @@ const CSS = `
   .pf-sheet-bg{padding:0;place-items:end stretch}.pf-sheet{max-width:none;border-radius:24px 24px 0 0;max-height:92dvh;padding-bottom:env(safe-area-inset-bottom)}.pf-row{grid-template-columns:1fr}
   .pf-lb-nav{display:none}.pf-lb-stage{padding:56px 0}.pf-lb-img{border-radius:0}
 }
+.pf-embed{min-height:0}.pf-embed .pf-bar{position:relative;padding:0 20px}.pf-embed .pf-back{display:none}.pf-embed .pf-hero{height:min(72vh,680px)}.pf-embed .pf-dock{display:none!important}.pf-embed .pf-foot{padding-bottom:40px}
 @media (prefers-reduced-motion:reduce){.pf *{animation:none!important;transition:none!important}}
 `

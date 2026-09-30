@@ -11,6 +11,7 @@ import { replayTour } from './Tour'
 import { completeness } from '../../lib/complete'
 import DeleteAccount from './DeleteAccount'
 import { useAuth } from '../../backend/AuthContext'
+import Profile from '../public/Profile'
 import { LIVE } from '../../lib/mode'
 import { changeEmail, downloadMyData, newsletterStatus, sendPasswordReset, setNewsletter } from '../../lib/account'
 import { signOut } from '../../lib/auth'
@@ -20,7 +21,6 @@ import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive, FAQS } from
 import { planLabel, getFeatures, normalizeSubscriptionTier } from '../../backend/tierFeatures'
 import { shrink } from '../../lib/shrink'
 import { SPECIALTIES } from '../../lib/specialties'
-import SiteRender from '../../components/SiteRender'
 
 // A portfolio piece in the demo: a sample still (a number) or a photo the visitor picked (a data: URL).
 function Shot({ sd }) {
@@ -131,19 +131,16 @@ export function EditProfile() {
 // the workspace reload over and over, so it is drawn here instead.) Laptop or phone width, real link.
 function ViewProfileLive() {
   const { toast } = useFlows(); const auth = useAuth(); const uid = auth.user?.id
-  const [w, setW] = useState('laptop'), [key, setKey] = useState(0), [d, setD] = useState(undefined), [page, setPage] = useState('home')
-  useEffect(() => { if (!uid) return; let on = true; setD(undefined); live.loadSite(uid).then(x => on && setD(x || null)).catch(() => on && setD(null)); return () => { on = false } }, [uid, key])
+  const [key, setKey] = useState(0)
   if (!uid) return null
   const path = '/creatives/' + uid, link = 'https://lenstrybe.com' + path
   return (
     <section className="view">
       <Head h="View profile" p="Exactly what a client sees at your public link. To change anything, use Edit profile, then Publish."><button className="btn g" onClick={() => { try { navigator.clipboard?.writeText(link)?.catch(() => {}) } catch { /* ignore */ } toast('Link copied: ' + link) }}><Icon name="globe" size={15} />Copy link</button><a className="btn g" href={path} target="_blank" rel="noopener"><Icon name="eye" size={15} />Open in a new tab</a><Link className="btn w" to="/app/profile"><Icon name="edit" size={15} />Edit profile</Link></Head>
-      <div className="vpbar"><div className="chips2">{[['laptop', 'Laptop'], ['phone', 'Phone']].map(([k, l]) => <button key={k} type="button" className={w === k ? 'on' : ''} onClick={() => setW(k)}>{l}</button>)}</div><button type="button" className="act2" onClick={() => setKey(k => k + 1)}>Refresh</button><small>{link}</small></div>
-      <div className={'vpframe ' + w}>
+      <div className="vpbar"><button type="button" className="act2" onClick={() => setKey(k => k + 1)}>Refresh</button><small>{link} · open it on your phone to see the phone layout</small></div>
+      <div className="vpframe laptop">
         <div className="chrome"><span /><span /><span /><i>lenstrybe.com/creatives/{uid.slice(0, 8)}…</i></div>
-        {d === undefined ? <div className="tempty" style={{ padding: 40 }}>Loading your profile.</div>
-          : d === null ? <div className="tempty" style={{ padding: 40 }}>Your profile could not be loaded just now. Press Refresh.</div>
-          : <SiteRender s={{ brand: d.brand, pages: d.pages }} page={page} onPage={setPage} compact={w === 'phone'} live={{ c: d.c, send: async () => { throw new Error('This is your own profile, so nothing is sent. Client enquiries arrive in Threads.') } }} />}
+        <Profile key={key} slug={uid} embed />
       </div>
     </section>
   )
