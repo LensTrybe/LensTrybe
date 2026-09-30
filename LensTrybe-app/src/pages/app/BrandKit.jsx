@@ -4,6 +4,7 @@ import Still from '../../components/Still'
 import { useFlows } from '../../lib/flows'
 import { LIVE } from '../../lib/mode'
 import * as live from '../../lib/live'
+import { useAuth } from '../../backend/AuthContext'
 import { LOOKS, PAIRINGS, FONTS, LAYOUTS, PAPERS, TONES, paperOf, fam, loadFont, contrast, fixContrast, onColour, lum, shade, portalAccent, paletteFromImage, whiteLogo, squareMark, monogram, zip, download, signatureHtml, brandFor } from '../../lib/brand'
 
 // Brand kit: one place that decides how the creative looks everywhere a client sees them. Four tabs on
@@ -20,6 +21,9 @@ export default function BrandKit() {
   const [b, setB] = useState(s.brand); const file = useRef(), lightFile = useRef(), overFile = useRef()
   const [tab, setTab] = useState('look'), [doc, setDoc] = useState('inv'), [dev, setDev] = useState('phone'), [dirty, setDirty] = useState(false), [od, setOd] = useState('inv'), [logoInfo, setLogoInfo] = useState(null), [busy, setBusy] = useState(false)
   useEffect(() => { if (!dirty) setB(s.brand) }, [s.brand, dirty])
+  // live: the real cover photo and packages, so the Profile preview shows your work and your price
+  const uid = useAuth()?.user?.id, [ex, setEx] = useState(null)
+  useEffect(() => { if (!LIVE || !uid) return; let on = true; live.loadMyProfileExtras(uid).then(x => on && setEx(x)).catch(() => {}); return () => { on = false } }, [uid])
   useEffect(() => { loadFont(b.head); loadFont(b.body) }, [b.head, b.body])
   const set = (k, v) => { setB(x => ({ ...x, [k]: v })); setDirty(true) }
   const setM = o => { setB(x => ({ ...x, ...o })); setDirty(true) }
@@ -223,7 +227,7 @@ export default function BrandKit() {
             <div className="h"><b>How it looks</b><div className="tfilt seg3 devseg">{[['phone', 'Phone'], ['desktop', 'Desktop']].map(([k, l]) => <button key={k} className={dev === k ? 'on' : ''} onClick={() => setDev(k)}>{l}</button>)}</div></div>
             <div className="tfilt surf">{SURF.map(([k, l]) => <button key={k} className={doc === k ? 'on' : ''} onClick={() => setDoc(k)}>{l}</button>)}</div>
             <div className={'stage ' + dev}>
-              <div className={'frame ' + dev}><Surface kind={doc} b={b} s={s} /></div>
+              <div className={'frame ' + dev}><Surface kind={doc} b={b} s={s} ex={ex} /></div>
             </div>
           </div>
           <div className="tlumi"><span className="lm" /><div>{fails.length ? 'The ' + acc.toUpperCase() + ' accent fails ' + fails.length + (fails.length === 1 ? ' contrast check' : ' contrast checks') + ': ' + fails.map(f => f.l.toLowerCase()).join(', ') + '. ' + (fails[0].fix !== acc ? 'Nudging it to ' + fails[0].fix.toUpperCase() + ' fixes the first without changing the feel.' : 'A darker or lighter accent fixes it.') : b.logo && b.logoDark && !b.logoLight ? 'Everything passes, but your logo needs a light version for the dark portal. One tap makes it.' : 'Passes contrast on every surface' + (b.logo || b.mark ? ', logo reads on both backgrounds' : '') + '. Nothing to fix.'}{fails.length > 0 && fails[0].fix !== acc && <div className="acts"><button className="y" onClick={() => set('accent', fails[0].fix)}>Fix it</button>{b.logo && b.logoDark && !b.logoLight && <button onClick={makeWhite}>White logo</button>}</div>}</div></div>
@@ -234,7 +238,7 @@ export default function BrandKit() {
 }
 
 // ── every surface the kit lands on, drawn from the draft kit ────────────────
-function Surface({ kind, b, s }) {
+function Surface({ kind, b, s, ex }) {
   const B = ['inv', 'q', 'c'].includes(kind) ? brandFor(b, kind) : { ...b, layout: b.layout || 'classic' }
   const PP = paperOf(b.paper), acc = B.accent, H = fam(b.head), Bf = fam(b.body), rad = (b.radius ?? 12) + 'px'
   const logo = (dark) => (dark ? (b.logoLight || b.mark || b.logo) : (B.logo || b.mark)) ? <img className="blogo" src={dark ? (b.logoLight || b.mark || b.logo) : (B.logo || b.mark)} alt="" /> : <span className="mark" style={{ background: acc }} />
@@ -270,10 +274,10 @@ function Surface({ kind, b, s }) {
     </div>)
   if (kind === 'profile') return (
     <div className="paper ptl bprof" style={paperStyle}>
-      <div className="pav" style={{ borderRadius: rad }}><Still seed={3} mood="golden" /></div>
+      <div className="pav" style={{ borderRadius: rad }}>{(() => { const it = (ex?.items || []).find(x => x.featured) || (ex?.items || [])[0]; return it ? <img src={it.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} /> : <Still seed={3} mood="golden" /> })()}</div>
       <div className="pn"><span className="markrow">{logo(b.paper === 'dark')}</span><h3 style={{ fontFamily: H, margin: 0 }}>{s.profile.n}</h3><p style={{ margin: '2px 0 0' }}>{b.everywhere ? b.tag : s.profile.h}</p></div>
       <div className="kinds">{s.profile.kinds.slice(0, 4).map(k => <span key={k} style={{ borderRadius: rad, borderColor: acc, color: acc }}>{k}</span>)}</div>
-      <div className="from"><small>From</small><b style={{ fontFamily: H }}>${s.profile.from}</b></div>
+      {(() => { const prices = (ex?.packages || []).map(x => Number(x[1]) || 0).filter(Boolean); const from = prices.length ? Math.min(...prices) : Number(s.profile.from) || 0; return from ? <div className="from"><small>From</small><b style={{ fontFamily: H }}>${from.toLocaleString('en-AU')}</b></div> : null })()}
       <button className="pbtn" style={{ background: acc, color: onColour(acc), borderRadius: rad }}>Ask about a date</button>
     </div>)
   // email and receipt
