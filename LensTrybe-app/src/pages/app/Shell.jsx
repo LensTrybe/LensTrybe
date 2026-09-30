@@ -252,7 +252,7 @@ export default function Shell() {
       <Aurora />
       <div className={'shell' + (dock && !onLumi ? '' : ' nodock') + (dockM && !onLumi ? ' dockopen' : '')}>
         <aside className="rail lg" aria-label="Workspace navigation">
-          <div className="lg-h"><Link to="/"><Logo white={dark} height={18} /></Link></div>
+          <div className="lg-h"><Link to="/" aria-label="LensTrybe home">{dark ? <Logo onDark height={26} /> : <Logo height={26} />}</Link></div>
           {TOP.map(item)}
           <div className="sep" />
           {GROUPS.map(group)}
