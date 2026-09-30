@@ -68,7 +68,7 @@ export function SubscriptionLive() {
     if (adminSwitch) { if (p.id === access) return; await live.adminSetTier(user.id, p.id); toast('Switched to ' + p.name + '. Admin test switch, no billing.'); reload(); return }
     if (p.id === 'basic') { if (billed !== 'basic') cancel(); return }
     if (isCurrent(p)) { if (sub?.pending_tier) { await live.planChange(p.id, billing, false); toast('Scheduled change cancelled. Staying on your current plan.'); await load() } return }
-    if (!hasLive) { const r = await payWithRevolut({ user: { id: user.id, email: user.email }, tier: p.id, billing, fullName: profile?.business_name || user.email }); if (r === 'success') { toast('Subscription started!'); reload() } return }
+    if (!hasLive) { const r = await payWithRevolut({ user: { id: user.id, email: user.email }, tier: p.id, billing, fullName: profile?.business_name || user.email }); if (r === 'success') { toast('Subscription started! Setting up your plan…'); await live.waitForTier(user.id); window.location.reload() } return }
     const pv = await live.planChange(p.id, billing, true)
     if (pv.change === 'none') return toast('You are already on this plan.')
     const up = pv.change === 'upgrade', each = aud(price(p)) + '/' + (billing === 'annual' ? 'yr' : 'mo')

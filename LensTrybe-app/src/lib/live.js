@@ -1078,6 +1078,16 @@ export async function messageSeller(me, l, body, threadId) {
 // guard_collab_invite: Basic can browse, save crew and say they're interested; posting and direct
 // invites are Pro and up.
 const COLLAB_COLS = 'id, posted_by, roles_needed, work_type, arrangement, location, date_or_timeline, is_paid, budget_amount, brief, status, created_at'
+// After a first payment the plan on the profile is set by Revolut's webhook a few seconds later.
+// Wait for it (up to about 15 seconds) so the page doesn't reload still showing Trybe Free.
+export async function waitForTier(uid, tries = 10) {
+  for (let i = 0; i < tries; i++) {
+    try { const { data } = await supabase.from('profiles').select('subscription_tier').eq('id', uid).maybeSingle(); if (data && String(data.subscription_tier || 'basic').toLowerCase() !== 'basic') return true } catch { /* try again */ }
+    await new Promise(r => setTimeout(r, 1500))
+  }
+  return false
+}
+
 const PROF_MINI = 'id, business_name, avatar_url, city, state, skill_types, subscription_tier'
 const shapeProf = p => p ? { id: p.id, n: p.business_name || 'A creative', av: p.avatar_url || '', c: p.city || '', state: p.state || '', skills: [].concat(p.skill_types || []).filter(Boolean), tier: String(p.subscription_tier || 'basic').toLowerCase() } : null
 export const shapeCollab = (r, prof) => ({ id: r.id, by: r.posted_by, who: prof || null, roles: r.roles_needed || [], work: r.work_type, arr: r.arrangement, loc: r.location || '', when: r.date_or_timeline || '', paid: !!r.is_paid, amt: r.budget_amount == null ? null : Number(r.budget_amount), brief: r.brief || '', st: r.status, posted: dayOf(r.created_at) })
