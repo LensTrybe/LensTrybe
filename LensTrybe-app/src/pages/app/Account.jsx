@@ -37,6 +37,7 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 export function EditProfile() {
   const F = useFlows(); const { s, toast } = F; const auth = useAuth(); const uid = auth.user?.id
   const [p, setP] = useState(s.profile), [dirty, setDirty] = useState(false); const file = useRef(), avf = useRef()
+  const [docs, setDocs] = useState({}); const docf = useRef(), docKey = useRef('')
   const [pk, setPk] = useState(s.packages || []), [items, setItems] = useState([]), [busy, setBusy] = useState(''), [up, setUp] = useState(null), [fails, setFails] = useState([]), [allShots, setAllShots] = useState(() => { try { return localStorage.getItem('lt-folio-open') === '1' } catch { return false } })
   useEffect(() => { if (!dirty) setP(s.profile) }, [s.profile, dirty])
   // live: the real portfolio and packages
@@ -45,6 +46,13 @@ export function EditProfile() {
     if (busy) return; setBusy('pub')
     try { await live.saveProfileLive(uid, p, pk); F.set('profile', { ...p, strength }); F.set('packages', pk.filter(x => String(x[0] || '').trim()).map(y => y.slice(0, 3))); setDirty(false); await auth.fetchUserData?.(uid, { silent: true }); toast('Published. Your profile is updated.') } catch (e) { toast(e.message) } finally { setBusy('') }
   }
+  // credentials: the certificates behind the switches, private to the creative
+  useEffect(() => { if (!LIVE || !uid) return; let on = true; live.loadCredentialDocs(uid).then(x => on && setDocs(x)).catch(() => {}); return () => { on = false } }, [uid])
+  const pickDoc = k => { docKey.current = k; docf.current?.click() }
+  const upDoc = async e => { const x = e.target.files?.[0]; e.target.value = ''; const k = docKey.current; if (!x || !k) return; setBusy('doc-' + k); try { const path = await live.uploadCredentialDoc(uid, k, x); setDocs(d => ({ ...d, [k + '_url']: path })); toast('Saved. Only you can see it.') } catch (er) { toast(er.message) } finally { setBusy('') } }
+  const viewDoc = async k => { const w = window.open('', '_blank'); try { const u = await live.openCredentialDoc(docs[k + '_url']); if (w) w.location.href = u; else window.location.href = u } catch (er) { w?.close(); toast(er.message) } }
+  const removeDoc = k => F.confirm({ title: 'Remove this certificate?', body: 'The switch stays as it is. Only the file goes.', cta: 'Remove', danger: true, onYes: async () => { try { await live.removeCredentialDoc(uid, k, docs[k + '_url']); setDocs(d => ({ ...d, [k + '_url']: null })); toast('Removed.') } catch (er) { toast(er.message) } } })
+  const cred = p.cred || {}
   const liveAvatar = async x => { setBusy('av'); try { const url = await live.uploadAvatar(uid, x); set('avatar')(url); toast('Photo uploaded. Publish when happy.') } catch (e) { toast(e.message) } finally { setBusy('') } }
   // the plan's photo limit (Infinity on Trybe Studio) and what is left of it
   const tierKey = normalizeSubscriptionTier(auth.profile?.subscription_tier)
@@ -99,8 +107,12 @@ export function EditProfile() {
             <div className="bf"><span>What you do</span><div className="chips2">{['Photographer', 'Videographer', 'Both'].map(d => <button key={d} type="button" className={p.disc === d ? 'on' : ''} onClick={() => set('disc')(d)}>{d}</button>)}</div></div>
             <Fld l="One line clients see first" v={p.h} set={set('h')} />
             <Fld l="Bio" v={p.bio} set={set('bio')} area />
-            <div className="fields two"><Fld l="Phone" v={p.ph || ''} set={set('ph')} /><Fld l="Website" v={p.web || ''} set={set('web')} /></div>
-            <div className="fields two"><Fld l="Instagram" v={p.ig} set={set('ig')} /><Fld l="From price, shown on your card" v={p.from} set={set('from')} /></div>
+            <div className="fields two"><Fld l="Phone" v={p.ph || ''} set={set('ph')} /><Fld l="From price, shown on your card" v={p.from} set={set('from')} /></div>
+          </div>
+          <div className="card lg"><div className="h"><b>Website and socials</b><small className="lumi-by">A handle or a full link · shown on your profile</small></div>
+            <div className="fields two"><Fld l="Website" v={p.web || ''} set={set('web')} /><Fld l="Instagram" v={p.ig || ''} set={set('ig')} /></div>
+            <div className="fields two"><Fld l="TikTok" v={p.tt || ''} set={set('tt')} /><Fld l="Facebook" v={p.fb || ''} set={set('fb')} /></div>
+            <div className="fields two"><Fld l="LinkedIn" v={p.li || ''} set={set('li')} /><Fld l="X" v={p.x || ''} set={set('x')} /></div>
           </div>
           <div className="card lg"><div className="h"><b>Packages</b><small className="lumi-by">Lumi quotes from these · clients see "from" the lowest</small></div>
             <div className="pkrows">{pk.map((x, i) => <div key={i} className="pkrow"><input value={x[0]} placeholder="Full day" onChange={e => setPkAt(i, 0, e.target.value)} /><span>$<input type="number" inputMode="decimal" min="0" value={x[1] === 0 || x[1] === '' ? '' : x[1]} placeholder="3200" onChange={e => setPkAt(i, 1, e.target.value === '' ? '' : Number(e.target.value) || 0)} /></span><input value={x[2]} placeholder="10 hours · 400+ photos" onChange={e => setPkAt(i, 2, e.target.value)} /><button className="ic2" aria-label="Remove" onClick={() => { setPk(a => a.filter((_, k) => k !== i)); setDirty(true) }}><Icon name="x" size={12} /></button></div>)}</div>
@@ -109,6 +121,14 @@ export function EditProfile() {
           </div>
           <div className="card lg"><div className="h"><b>What you shoot</b><small className="lumi-by">Shown on your card, used by the ask bar</small></div>
             {TYPES.map(t => <div key={t} className="bf">{TYPES.length > 1 && <span>{t === 'Photographer' ? 'Photography' : 'Videography'}</span>}<div className="chips2">{SPECIALTIES[t].map(k => <button key={k} type="button" className={specOf(t).includes(k) ? 'on' : ''} onClick={() => toggleSpec(t, k)}>{k}</button>)}</div></div>)}
+          </div>
+          <div className="card lg"><div className="h"><b>Credentials</b><small className="lumi-by">Switch on what you hold · off shows nothing</small></div>
+            <input ref={docf} type="file" accept="application/pdf,image/jpeg,image/png,image/webp" hidden onChange={upDoc} />
+            <div className="brows one">{live.CREDS.map(([k, label, pub]) => <div key={k}>
+              <label className="brow"><span>{label}<small>{cred[k] ? 'Shows as "' + (k === 'other' ? (String(p.credOther || '').trim() || 'what you call it below') : pub) + '" on your profile' : 'Not shown on your profile'}</small></span><Sw on={cred[k]} set={() => set('cred')({ ...cred, [k]: cred[k] ? 0 : 1 })} /></label>
+              {k === 'other' && cred.other ? <Fld l="What it is called" v={p.credOther || ''} set={set('credOther')} /> : null}
+              {LIVE && cred[k] ? <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', margin: '-2px 0 12px' }}>{docs[k + '_url'] ? <><small className="note2" style={{ margin: 0 }}>Certificate saved. Only you can see it.</small><button type="button" className="act2" onClick={() => viewDoc(k)}>View</button><button type="button" className="act2" onClick={() => removeDoc(k)}>Remove</button></> : <><small className="note2" style={{ margin: 0 }}>Optional: keep the certificate here. Only you can see it.</small><button type="button" className="act2" onClick={() => pickDoc(k)} disabled={busy === 'doc-' + k}>{busy === 'doc-' + k ? 'Uploading' : 'Upload'}</button></>}</div> : null}
+            </div>)}</div>
           </div>
         </div>
         <div className="s5 side sticky">

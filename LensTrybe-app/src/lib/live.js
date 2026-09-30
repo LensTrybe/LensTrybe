@@ -170,6 +170,47 @@ export { when, nice, money, today }
 // Shaped into the same object the sample creatives use, so Directory, Ask and Creative render either.
 const TAG = { Photographer: 'photo', Videographer: 'video', 'Drone Operator': 'drone', 'Video Editor': 'edit', 'Content Creator': 'content', 'Social Media Manager': 'social' }
 const spec = s => { const l = low(s); return l.includes('wedding') || l.includes('elope') ? 'wedding' : l.includes('real estate') ? 'realestate' : l.includes('event') || l.includes('corporate') || l.includes('conference') ? 'event' : l.includes('portrait') || l.includes('headshot') || l.includes('family') ? 'portrait' : l.includes('brand') || l.includes('product') || l.includes('commercial') || l.includes('food') ? 'brand' : null }
+// Credentials a creative can list (the old site's set, 30 Sep). [key, in Edit profile, on the profile, its line]
+// The switch (profiles.has_<key>) is public; a certificate, if they keep one here, sits in the private
+// credentials bucket with its path in profile_private.<key>_url, which only its owner can read.
+export const CREDS = [
+  ['insurance', 'Public liability insurance', 'Insured', 'Public liability insurance'],
+  ['blue_card', 'Blue Card or Working with Children Check', 'Blue Card', 'Working with Children Check'],
+  ['police_check', 'National police check', 'Police checked', 'National police check'],
+  ['wwvp', 'Working with Vulnerable People (WWVP)', 'WWVP card', 'Working with Vulnerable People'],
+  ['drone_licence', 'CASA drone licence (RePL or ReOC)', 'CASA licensed', 'Licensed to fly drones commercially'],
+  ['other', 'Another licence or certificate', '', 'Licence or certificate'],
+]
+const DOC_COLS = CREDS.map(([k]) => k + '_url').join(', ')
+export async function loadCredentialDocs(uid) {
+  const { data } = await supabase.from('profile_private').select(DOC_COLS).eq('id', uid).maybeSingle()
+  return data || {}
+}
+export async function uploadCredentialDoc(uid, key, file) {
+  if (!CREDS.some(([k]) => k === key)) throw new Error('That credential is not on the list.')
+  if (!/^(application\/pdf|image\/(jpeg|png|webp))$/.test(file.type || '')) throw new Error('Use a PDF, JPG or PNG.')
+  if (file.size > 10e6) throw new Error('That file is over 10 MB.')
+  const ext = file.type === 'application/pdf' ? 'pdf' : file.type.split('/')[1].replace('jpeg', 'jpg')
+  const path = uid + '/' + key + '-' + Date.now() + '.' + ext
+  const { error } = await supabase.storage.from('credentials').upload(path, file, { contentType: file.type, upsert: false })
+  if (error) throw new Error('Could not upload it. Try again.')
+  const { error: e2 } = await supabase.from('profile_private').upsert({ id: uid, [key + '_url']: path, updated_at: new Date().toISOString() }, { onConflict: 'id' })
+  if (e2) throw new Error('Uploaded, but it could not be saved. Try again.')
+  return path
+}
+export async function openCredentialDoc(path) {
+  const { data, error } = await supabase.storage.from('credentials').createSignedUrl(path, 300)
+  if (error || !data?.signedUrl) throw new Error('Could not open it just now. Try again.')
+  return data.signedUrl
+}
+export async function removeCredentialDoc(uid, key, path) {
+  const { error } = await supabase.from('profile_private').update({ [key + '_url']: null, updated_at: new Date().toISOString() }).eq('id', uid)
+  if (error) throw new Error('Could not remove it. Try again.')
+  if (path && !/^https?:/.test(path)) await supabase.storage.from('credentials').remove([path]).catch(() => {})
+}
+// A handle or a link, as typed, into a full link
+const socialLink = (v, base) => { const t = String(v || '').trim(); if (!t) return null; if (/^https?:\/\//i.test(t)) return t; if (/^(www\.)?[a-z0-9-]+(\.[a-z0-9-]+)+(\/|$)/i.test(t)) return 'https://' + t; return base + t.replace(/^@/, '') }
+
 export function shapeProfile(p, extra = {}) {
   const skills = p.skill_types || [], specs = [].concat(p.specialties || [], ...Object.values(p.specialties_by_type || {}).flat())
   const t = [...new Set([...skills.map(s => TAG[s] || low(s)), ...specs.map(spec).filter(Boolean)])]
@@ -182,11 +223,14 @@ export function shapeProfile(p, extra = {}) {
     why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
     photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.filter(x => x.flag_status !== 'resolved_removed').map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported', reply: x.reply || '', featured: !!x.featured })).sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)),
     busy: extra.busy || [], slug: p.custom_domain || p.id,
+    socials: [['Instagram', p.instagram_url], ['TikTok', p.tiktok_url], ['Facebook', p.facebook_url], ['LinkedIn', p.linkedin_url], ['X', p.twitter_url]].filter(x => x[1]),
+    // only the credentials switched on show; the documents behind them stay private (profile_private)
+    creds: CREDS.filter(([k]) => p['has_' + k] && (k !== 'other' || String(p.other_credential_name || '').trim())).map(([k, , pub, d]) => ({ k, t: k === 'other' ? String(p.other_credential_name).trim() : pub, d })),
     // the specialties they picked, per discipline, so photo and video can be searched apart
     specBy: p.specialties_by_type && typeof p.specialties_by_type === 'object' ? p.specialties_by_type : {}, specAny: Array.isArray(p.specialties) ? p.specialties : [],
   }
 }
-const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, website, site_service_areas, custom_domain, created_at'
+const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, tiktok_url, facebook_url, linkedin_url, twitter_url, website, site_service_areas, custom_domain, created_at, has_insurance, has_blue_card, has_police_check, has_wwvp, has_drone_licence, has_other, other_credential_name'
 export async function loadCreatives() {
   const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).order('created_at', { ascending: false }).limit(200)
   if (error) throw error
@@ -359,13 +403,13 @@ export async function loadMyProfileExtras(uid) {
 }
 const splitPlace = s => { const [a, ...b] = String(s || '').split(','); return { city: a.trim(), state: (b.join(',').trim() || 'QLD').toUpperCase().slice(0, 3) } }
 export async function saveProfileLive(uid, p, packages) {
-  const text = [p.n, p.h, p.bio, ...packages.map(x => x[0] + ' ' + x[2])].filter(Boolean).join('\n')
+  const text = [p.n, p.h, p.bio, p.credOther, ...packages.map(x => x[0] + ' ' + x[2])].filter(Boolean).join('\n')
   const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be published.')
   const { city, state } = splitPlace(p.city)
   const skills = p.disc === 'Both' ? ['Photographer', 'Videographer'] : p.disc ? [p.disc] : []
   // specialties per discipline (what the directory filters on), only for the disciplines they do
   const bySkill = skills.map(t => [t, (p.specBy && p.specBy[t]) || []]).filter(([, v]) => v.length)
-  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: (p.web || '').trim() || null, instagram_url: (p.ig || '').trim() ? (/^https?:/.test(p.ig.trim()) ? p.ig.trim() : 'https://instagram.com/' + p.ig.trim().replace(/^@/, '')) : null, skill_types: skills, specialties: bySkill.length ? [...new Set(bySkill.flatMap(([, v]) => v))] : (p.kinds || []), specialties_by_type: Object.fromEntries(bySkill), avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
+  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: socialLink(p.web, 'https://'), instagram_url: socialLink(p.ig, 'https://instagram.com/'), tiktok_url: socialLink(p.tt, 'https://www.tiktok.com/@'), facebook_url: socialLink(p.fb, 'https://facebook.com/'), linkedin_url: socialLink(p.li, 'https://www.linkedin.com/in/'), twitter_url: socialLink(p.x, 'https://x.com/'), ...Object.fromEntries(CREDS.map(([k]) => ['has_' + k, k === 'other' ? !!(p.cred?.other && String(p.credOther || '').trim()) : !!p.cred?.[k]])), other_credential_name: String(p.credOther || '').trim() || null, skill_types: skills, specialties: bySkill.length ? [...new Set(bySkill.flatMap(([, v]) => v))] : (p.kinds || []), specialties_by_type: Object.fromEntries(bySkill), avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
   const { error } = await supabase.from('profiles').update(row).eq('id', uid)
   if (error) throw new Error(error.message)
   // packages: replace the set (small list, keeps order exact)

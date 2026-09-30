@@ -22,7 +22,7 @@ const I = {
   back: 'M15 18l-6-6 6-6', share: 'M4 12v7h16v-7M12 3v12M7 8l5-5 5 5', close: 'M6 6l12 12M18 6L6 18', left: 'M15 18l-6-6 6-6', right: 'M9 6l6 6-6 6',
   cal: 'M4 6h16v14H4zM4 10h16M9 3v5M15 3v5', pin: 'M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21zM12 12a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z', star: 'M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.3L12 17.5 6.5 20.4l1-6.3L3 9.7l6.2-.9z',
   check: 'M5 12.5l4.5 4.5L19 7', arrow: 'M5 12h14M13 6l6 6-6 6', ig: 'M4 8a4 4 0 0 1 4-4h8a4 4 0 0 1 4 4v8a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4zM12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM17 7h.01', web: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18zM3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9s-1.3 6.4-3.8 9c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3z',
-  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z',
+  grid: 'M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z', link: 'M10 14a4.5 4.5 0 0 0 6.4 0l3-3a4.5 4.5 0 0 0-6.4-6.4l-1 1M14 10a4.5 4.5 0 0 0-6.4 0l-3 3a4.5 4.5 0 0 0 6.4 6.4l1-1', shield: 'M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z',
 }
 function Ic({ n, s = 18, fill }) { return <svg width={s} height={s} viewBox="0 0 24 24" fill={fill ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth={fill ? 0 : 1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={I[n]} /></svg> }
 
@@ -167,7 +167,7 @@ export default function Profile({ slug: slugProp, embed = false }) {
 
     <header className={'pf-bar' + (scrolled || embed ? ' on' : '')}>
       <Link to="/creatives" className="pf-back"><Ic n="back" s={16} /><span>Find a creative</span></Link>
-      <div className="pf-bar-mid">{c.avatar && <img src={imageUrl(c.avatar, 28)} alt="" />}<b>{name}</b><nav>{photos.length > 0 && <button onClick={() => go('work')}>Work</button>}{pk.length > 0 && <button onClick={() => go('packages')}>Packages</button>}<button onClick={() => go('reviews')}>Reviews</button><button onClick={() => go('about')}>About</button></nav></div>
+      <div className="pf-bar-mid">{c.avatar && <img src={imageUrl(c.avatar, 28)} alt="" />}<b>{name}</b><nav>{photos.length > 0 && <button onClick={() => go('work')}>Work</button>}{pk.length > 0 && <button onClick={() => go('packages')}>Packages</button>}<button onClick={() => go('reviews')}>Reviews</button>{c.creds?.length > 0 && <button onClick={() => go('credentials')}>Credentials</button>}<button onClick={() => go('about')}>About</button></nav></div>
       <div className="pf-bar-r"><button className="pf-icon" onClick={share} aria-label="Share this profile"><Ic n="share" s={17} />{copied && <em>Link copied</em>}</button><button className="pf-btn sm" onClick={() => open()}>Get a quote</button></div>
     </header>
 
@@ -220,6 +220,12 @@ export default function Profile({ slug: slugProp, embed = false }) {
           : <div className="pf-card pf-empty"><Ic n="shield" s={22} /><div><b>No reviews yet</b><p>Reviews on LensTrybe only come from real bookings, so every one that appears here is genuine.</p></div></div>}
       </section>
 
+      {c.creds?.length > 0 && <section id="credentials" className="pf-sec">
+        <div className="pf-sec-h"><h2>Credentials</h2></div>
+        <div className="pf-creds">{c.creds.map(x => <div key={x.k} className="pf-card pf-cred"><span><Ic n={x.k === 'insurance' ? 'shield' : 'check'} s={20} /></span><div><b>{x.t}</b><small>{x.d}</small></div></div>)}</div>
+        <p className="pf-fine"><Ic n="check" s={14} />Listed by {name}. Ask them for a copy of any certificate before you book.</p>
+      </section>}
+
       <section id="about" className="pf-sec pf-about">
         <div className="pf-about-img">{c.avatar ? <Photo url={c.avatar} w={520} alt={name} /> : <div className="pf-ph pf-cover0" />}</div>
         <div>
@@ -231,7 +237,7 @@ export default function Profile({ slug: slugProp, embed = false }) {
             {c.areas?.length > 0 && <div><dt>Travels to</dt><dd>{c.areas.join(', ')}</dd></div>}
             {c.years && <div><dt>Experience</dt><dd>{c.years} years</dd></div>}
           </dl>
-          {(c.ig || c.web) && <div className="pf-links">{c.ig && <a href={c.ig} target="_blank" rel="noopener noreferrer"><Ic n="ig" s={16} />Instagram</a>}{c.web && <a href={c.web} target="_blank" rel="noopener noreferrer"><Ic n="web" s={16} />Website</a>}</div>}
+          {(c.socials?.length > 0 || c.web) && <div className="pf-links">{c.web && <a href={c.web} target="_blank" rel="noopener noreferrer"><Ic n="web" s={16} />Website</a>}{(c.socials || []).map(([n, u]) => <a key={n} href={u} target="_blank" rel="noopener noreferrer"><Ic n={n === 'Instagram' ? 'ig' : 'link'} s={16} />{n}</a>)}</div>}
         </div>
       </section>
 
@@ -263,7 +269,7 @@ const CSS = `
 .pf-ph{position:relative;overflow:hidden;background-size:cover;background-position:center;background-color:var(--s1)}
 .pf-ph img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease,transform .6s ease}.pf-ph.ok img{opacity:1}
 .pf-bar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:16px;height:64px;padding:0 max(20px,env(safe-area-inset-left));background:linear-gradient(rgba(14,14,19,.72),rgba(14,14,19,0));transition:background .3s,box-shadow .3s}
-.pf-bar.on{background:rgba(14,14,19,.94);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 1px 0 var(--ln)}
+.pf-bar.on{background:rgba(14,14,19,.985);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 1px 0 var(--ln)}
 .pf-back{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:550;padding:8px 12px 8px 8px;border-radius:999px;color:rgba(255,255,255,.82)!important;flex-shrink:0}.pf-back:hover{color:var(--tx)!important;background:rgba(255,255,255,.06)}
 .pf-bar-mid{flex:1;display:flex;align-items:center;gap:10px;min-width:0;transition:opacity .25s}
 .pf-bar-mid img{width:28px;height:28px;border-radius:50%;object-fit:cover}.pf-bar-mid b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -301,6 +307,7 @@ const CSS = `
 .pf-revs{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}.pf-rev{margin:0;padding:24px}.pf-rev blockquote{margin:12px 0 16px;font-size:17px;line-height:1.55;letter-spacing:-.01em}
 .pf-rev figcaption{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;font-size:13px;color:var(--mu)}.pf-rev figcaption b{color:var(--tx);font-size:14px}.pf-rev em{display:inline-flex;align-items:center;gap:4px;font-style:normal;color:#5fd68c}
 .pf-reply{margin-top:14px;padding:12px 14px;border-radius:12px;background:var(--s2);font-size:14px;color:var(--mu);line-height:1.5}.pf-reply b{display:block;color:var(--tx);font-size:13px;margin-bottom:4px}
+.pf-creds{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}.pf-cred{display:flex;align-items:center;gap:14px;padding:18px 20px}.pf-cred>span{flex-shrink:0;width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:color-mix(in srgb,var(--acc) 16%,transparent);color:var(--acc)}.pf-cred b{display:block;font-size:16px}.pf-cred small{display:block;color:var(--mu);font-size:13.5px;margin-top:2px}
 .pf-empty{display:flex;gap:16px;align-items:flex-start;padding:24px;color:var(--mu)}.pf-empty svg{flex-shrink:0;color:var(--acc);margin-top:2px}.pf-empty b{color:var(--tx);font-size:16px}.pf-empty p{margin:4px 0 0;line-height:1.55;font-size:15px}
 .pf-about{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:56px;align-items:center}.pf-about-img .pf-ph{aspect-ratio:4/5;border-radius:22px}.pf-about h2{margin-bottom:18px}
 .pf-bio{font-size:18px;line-height:1.7;color:#d6d5de;margin:0 0 14px}
