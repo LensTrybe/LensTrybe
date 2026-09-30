@@ -8,13 +8,15 @@ export const TOP = [
 export const GROUPS = [
   ['Clients', 'users', [['clients', 'CRM & Contacts', 'book'], ['meetings', 'Meetings', 'cal']]],
   ['Finance', 'receipt', [['money', 'Finance hub', 'chart'], ['invoicing', 'Invoicing', 'dollar'], ['quotes', 'Quotes', 'file'], ['contracts', 'Contracts', 'fileCheck'], ['expenses', 'Expenses', 'card'], ['tax', 'Tax hub', 'percent']]],
-  ['Portfolio', 'image', [['brand-kit', 'Brand kit', 'palette'], ['website', 'Website', 'globe'], ['deliver', 'Deliver', 'deliver']]],
+  ['Portfolio', 'image', [['brand-kit', 'Brand kit', 'palette'], ['deliver', 'Deliver', 'deliver']]],
   ['Content', 'pen', [['content-calendar', 'Content calendar', 'cal'], ['content-ideas', 'Content ideas', 'spark'], ['performance', 'Performance', 'chart'], ['channels', 'Channels', 'globe']]],
   ['Business', 'briefcase', [['reviews', 'Reviews', 'star'], ['marketplace', 'Marketplace', 'bag'], ['collaborate', 'Collaborate', 'users'], ['team', 'Team', 'users'], ['insights', 'Insights', 'chart']]],
   ['Account', 'user', [['profile', 'Edit profile', 'edit'], ['view-profile', 'View profile', 'eye'], ['subscription', 'Subscription', 'card'], ['referrals', 'Referrals', 'gift'], ['founding', 'Founding hub', 'star'], ['settings', 'Settings', 'settings'], ['support', 'Help and support', 'help']]],
 ]
 // Availability now lives as a tab on Calendar, CRM as a view on CRM & Contacts; their routes stay for old links
-export const HIDDEN = [['availability', 'Availability', 'clock'], ['crm', 'CRM & Contacts', 'user']]
+// Website is off the sidebar since 30 Sep: the new profile replaced it as the public page. The editor
+// still opens at /app/website so it can be finished and rolled out later.
+export const HIDDEN = [['availability', 'Availability', 'clock'], ['crm', 'CRM & Contacts', 'user'], ['website', 'Website', 'globe']]
 export const ALL = [...TOP, ...GROUPS.flatMap(g => g[2]), ...HIDDEN, ['lumi', 'Lumi', 'spark']]
 // What each page holds, for the ones not built in this pass yet.
 export const ABOUT = {

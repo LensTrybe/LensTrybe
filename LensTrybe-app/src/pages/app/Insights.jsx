@@ -15,7 +15,7 @@ import { getFeatures, INSIGHT_WIDGETS, planLabel } from '../../backend/tierFeatu
 // from the store: a year of enquiries and daily views (sample, the shape the real tables will hold)
 // plus the live threads, ledger, reviews and profile.
 const SRC_NOTE = { 'Ask bar': 'A sentence typed on lenstrybe.com', 'Your website': 'Enquiry form on your site', Google: 'Business profile and reviews', Instagram: 'Posts, stories and bio link', Referral: 'Past clients and other creatives', 'Passed on': 'Jobs other creatives could not take', 'Repeat client': 'Booked you before' }
-const SRC_TO = { 'Ask bar': '/app/website', 'Your website': '/app/website', Google: '/app/reviews', Instagram: '/app/channels', Referral: '/app/reviews', 'Passed on': '/app/collaborate', 'Repeat client': '/app/clients' }
+const SRC_TO = { 'Ask bar': '/app/view-profile', 'Your website': '/app/view-profile', Google: '/app/reviews', Instagram: '/app/channels', Referral: '/app/reviews', 'Passed on': '/app/collaborate', 'Repeat client': '/app/clients' }
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 const BOOKED = e => e.st === 'booked' || e.st === 'delivered'
 const pct = (a, b) => b ? Math.round(a / b * 100) : 0
@@ -68,7 +68,7 @@ function InsightsDemo() {
   const bestSrc = SRC.filter(x => x.n >= 8).sort((a, b) => b.rate - a.rate)[0], bigSrc = SRC[0]
   const fast = SPEED[0], slow = SPEED[3]
   const nudges = [
-    bestSrc && bigSrc && bestSrc.k !== bigSrc.k ? [bigSrc.k + ' brings the most enquiries (' + bigSrc.n + '), but ' + bestSrc.k.toLowerCase() + ' books at ' + bestSrc.rate + '% against ' + bigSrc.rate + '%. Worth a nudge to past clients.', 'Ask for a review', '/app/reviews'] : bigSrc ? [bigSrc.k + ' is both your biggest source and books at ' + bigSrc.rate + '%. Keep it easy to find.', 'See the site', '/app/website'] : null,
+    bestSrc && bigSrc && bestSrc.k !== bigSrc.k ? [bigSrc.k + ' brings the most enquiries (' + bigSrc.n + '), but ' + bestSrc.k.toLowerCase() + ' books at ' + bestSrc.rate + '% against ' + bigSrc.rate + '%. Worth a nudge to past clients.', 'Ask for a review', '/app/reviews'] : bigSrc ? [bigSrc.k + ' is both your biggest source and books at ' + bigSrc.rate + '%. Keep it easy to find.', 'See the site', '/app/view-profile'] : null,
     fast[1] && slow[1] ? ['Replies within two hours book at ' + fast[2] + '%; replies after two days book at ' + slow[2] + '%. ' + slow[1] + (slow[1] === 1 ? ' enquiry' : ' enquiries') + ' waited that long in this period.', 'Auto-reply from Lumi', '/app/lumi'] : null,
     busiest && busiest.n ? [busiest.l + ' is your busiest month coming up with ' + busiest.n + ' jobs worth ' + fmt(busiest.v) + '. Second shooters book out early.', 'Book crew', '/app/collaborate'] : null,
     owed.length ? [owed.length + ' invoice' + (owed.length > 1 ? 's' : '') + ' still out, ' + fmt(owedV) + '. You are paid in ' + payDays + ' days on average when the invoice goes with the delivery.', 'Chase', '/app/invoicing'] : null,
@@ -76,7 +76,7 @@ function InsightsDemo() {
   ].filter(Boolean)
 
   const exportCsv = () => { const rows = [['date', 'from', 'type', 'client', 'value', 'reply_hours', 'quoted', 'status', 'job_date', 'lost_reason'], ...E.map(e => [e.d, e.src, e.type, e.who, e.v, e.reply, e.quoted ? 'yes' : 'no', e.st, e.job, e.lost || ''])]; const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([rows.map(r => r.map(x => '"' + String(x).replace(/"/g, '""') + '"').join(',')).join('\n')], { type: 'text/csv' })); a.download = 'insights-' + range + 'd' + (src ? '-' + src.toLowerCase().replace(/\s+/g, '-') : '') + '.csv'; a.click(); toast(E.length + ' enquiries exported.') }
-  const FUNNEL = [['Profile and site views', views, '/app/website'], ['Enquiries', E.length, '/app/threads'], ['Quoted', quoted.length, '/app/quotes'], ['Booked', booked.length, '/app/bookings'], ['Delivered', delivered.length, '/app/deliver'], ['Reviewed', reviewed.length, '/app/reviews']]
+  const FUNNEL = [['Profile and site views', views, '/app/view-profile'], ['Enquiries', E.length, '/app/threads'], ['Quoted', quoted.length, '/app/quotes'], ['Booked', booked.length, '/app/bookings'], ['Delivered', delivered.length, '/app/deliver'], ['Reviewed', reviewed.length, '/app/reviews']]
   const QTRS = useMemo(() => { const out = []; const A = src ? ALL.filter(e => e.src === src) : ALL; for (let i = 3; i >= 0; i--) { const d = parse(TODAY); d.setDate(1); d.setMonth(d.getMonth() - d.getMonth() % 3 - i * 3); const y = d.getFullYear(), q = Math.floor(d.getMonth() / 3); const lo = y + '-' + String(q * 3 + 1).padStart(2, '0') + '-01', hi = y + '-' + String(q * 3 + 3).padStart(2, '0') + '-31'; const a = A.filter(e => e.d >= lo && e.d <= hi), b = a.filter(BOOKED); out.push({ l: 'Q' + (q + 1) + ' ' + String(y).slice(2), n: a.length, b: b.length, v: sum(b, e => e.v), now: i === 0 }) } return out }, [ALL, src])
   const rangeL = { 30: '30 days', 90: '90 days', 365: 'year' }[range]
 
@@ -102,7 +102,7 @@ function InsightsDemo() {
         </div>
         <div className="card lg s5"><div className="h"><b>Where enquiries come from</b><small className="lumi-by">Tap one to filter the page</small></div>
           <div className="cats">{SRC.map(x => <div key={x.k} className={'cat srcrow' + (src === x.k ? ' on' : '')} onClick={() => setSrc(src === x.k ? '' : x.k)}><div className="r"><b>{x.k}</b><span>{x.n} · {pct(x.n, E0.length)}%</span></div><div className="bar"><i style={{ width: pct(x.n, SRC[0].n) + '%' }} /></div><small>{SRC_NOTE[x.k] || ''} · books at <b>{x.rate}%</b>{x.v ? ' · ' + fmt(x.v) : ''}</small></div>)}</div>
-          {src && <Link className="act2" to={SRC_TO[src] || '/app/website'} style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center' }}>Improve {src.toLowerCase()} <Icon name="arrow" size={12} /></Link>}
+          {src && <Link className="act2" to={SRC_TO[src] || '/app/view-profile'} style={{ marginTop: 12, display: 'inline-flex', alignItems: 'center' }}>Improve {src.toLowerCase()} <Icon name="arrow" size={12} /></Link>}
         </div>
 
         <div className="card lg s8"><div className="h"><b>Money by month</b><small className="lumi-by">Bookings by the date of the job · lit months are ahead</small></div>
