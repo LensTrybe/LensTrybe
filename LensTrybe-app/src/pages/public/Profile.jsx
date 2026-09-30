@@ -134,21 +134,26 @@ function Enquiry({ c, name, pk, busy, start, signedIn, send, onClose }) {
 }
 
 // embed: drawn inside the workspace's View profile (bar in place, no dock, nothing is sent)
-export default function Profile({ slug: slugProp, embed = false }) {
+// sheet: opened over the ask results on the home page (Michael, 30 Sep), so closing it keeps the search
+export default function Profile({ slug: slugProp, embed = false, sheet = false, onClose }) {
+  const root = useRef(null)
   const params = useParams(); const slug = slugProp || params.slug; const { user, clientAccount } = useAuth()
   const [d, setD] = useState(undefined), [lb, setLb] = useState(null), [enq, setEnq] = useState(null), [all, setAll] = useState(false), [scrolled, setScrolled] = useState(false), [cols, setCols] = useState(3), [copied, setCopied] = useState(false)
   useEffect(() => { let on = true; if (!LIVE) { setD(null); return } loadSite(slug).then(x => on && setD(x)).catch(() => on && setD(null)); return () => { on = false } }, [slug])
-  useEffect(() => { const f = () => setScrolled(window.scrollY > window.innerHeight * 0.55); f(); window.addEventListener('scroll', f, { passive: true }); return () => window.removeEventListener('scroll', f) }, [])
+  useEffect(() => { const el = sheet ? root.current : window; if (!el) return; const f = () => setScrolled((sheet ? el.scrollTop : window.scrollY) > window.innerHeight * 0.55); f(); el.addEventListener('scroll', f, { passive: true }); return () => el.removeEventListener('scroll', f) }, [sheet, d])
+  useEffect(() => { if (!sheet) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o } }, [sheet])
+  useEffect(() => { if (!sheet) return; const k = e => { if (e.key === 'Escape' && lb == null && !enq) onClose?.() }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [sheet, lb, enq, onClose])
   useEffect(() => { const f = () => setCols(window.innerWidth < 640 ? 2 : window.innerWidth < 1100 ? 3 : 4); f(); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
-  useEffect(() => { if (d?.c && !embed) document.title = d.c.n + (d.c.d ? ' · ' + d.c.d : '') + ' · LensTrybe' }, [d, embed])
+  useEffect(() => { if (d?.c && !embed && !sheet) document.title = d.c.n + (d.c.d ? ' · ' + d.c.d : '') + ' · LensTrybe' }, [d, embed])
   const c = d?.c
   const busy = useMemo(() => new Set(c?.busy || []), [c])
   const photos = c?.photos || []
   const shown = all ? photos : photos.slice(0, cols * 3)
   const colsOf = useMemo(() => { const out = Array.from({ length: cols }, () => []); shown.forEach((p, i) => out[i % cols].push([p, i])); return out }, [shown, cols])
 
-  if (d === undefined) return <div className="pf pf-load"><style>{CSS}</style><span /></div>
-  if (d === null || !c) return <div className="pf pf-none"><style>{CSS}</style><div><h1>Profile not found</h1><p>This profile isn't available. Check the link and try again.</p><Link className="pf-btn" to="/creatives">Find a creative</Link></div></div>
+  const wrap = x => sheet ? <div className="pf-pop" onClick={e => { if (e.target === e.currentTarget) onClose?.() }}>{x}</div> : x
+  if (d === undefined) return wrap(<div className="pf pf-load"><style>{CSS}</style><span /></div>)
+  if (d === null || !c) return wrap(<div className="pf pf-none"><style>{CSS}</style><div><h1>Profile not found</h1><p>This profile isn't available. Check the link and try again.</p><Link className="pf-btn" to="/creatives">Find a creative</Link></div></div>)
 
   const name = c.n, accent = d.brand.accent && lum(d.brand.accent) > 0.06 ? d.brand.accent : '#1DB954', onAcc = onColour(accent)
   const cover = c.cover || photos[0]?.url || '', pk = c.pk || [], from = pk.length ? Math.min(...pk.map(p => p[1]).filter(Boolean)) : 0
@@ -162,11 +167,11 @@ export default function Profile({ slug: slugProp, embed = false }) {
   const bio = String(c.about || '').split(/\n+/).filter(Boolean)
   const go = id => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  return <div className={'pf' + (embed ? ' pf-embed' : '')} style={{ '--acc': accent, '--on': onAcc }}>
+  const page = <div ref={root} className={'pf' + (embed ? ' pf-embed' : '') + (sheet ? ' pf-inpop' : '')} style={{ '--acc': accent, '--on': onAcc }}>
     <style>{CSS}</style>
 
     <header className={'pf-bar' + (scrolled || embed ? ' on' : '')}>
-      <Link to="/creatives" className="pf-back"><Ic n="back" s={16} /><span>Find a creative</span></Link>
+      {sheet ? <button type="button" className="pf-back" onClick={onClose}><Ic n="back" s={16} /><span>Back to your results</span></button> : <Link to="/creatives" className="pf-back"><Ic n="back" s={16} /><span>Find a creative</span></Link>}
       <div className="pf-bar-mid">{c.avatar && <img src={imageUrl(c.avatar, 28)} alt="" />}<b>{name}</b><nav>{photos.length > 0 && <button onClick={() => go('work')}>Work</button>}{pk.length > 0 && <button onClick={() => go('packages')}>Packages</button>}<button onClick={() => go('reviews')}>Reviews</button>{c.creds?.length > 0 && <button onClick={() => go('credentials')}>Credentials</button>}<button onClick={() => go('about')}>About</button></nav></div>
       <div className="pf-bar-r"><button className="pf-icon" onClick={share} aria-label="Share this profile"><Ic n="share" s={17} />{copied && <em>Link copied</em>}</button><button className="pf-btn sm" onClick={() => open()}>Get a quote</button></div>
     </header>
@@ -255,6 +260,7 @@ export default function Profile({ slug: slugProp, embed = false }) {
     {lb != null && <Lightbox photos={photos} at={lb} onAt={setLb} onClose={() => setLb(null)} />}
     {enq && <Enquiry c={c} name={name} pk={pk} busy={busy} start={enq} signedIn={signedIn} send={send} onClose={() => setEnq(null)} />}
   </div>
+  return wrap(page)
 }
 
 const CSS = `
@@ -353,10 +359,14 @@ const CSS = `
   .pf-bio{font-size:16px}.pf-facts{grid-template-columns:1fr}
   .pf-end{margin-top:56px;padding:40px 20px;border-radius:22px}.pf-foot{padding:32px 16px 110px}
   .pf-dock{display:flex;align-items:center;gap:8px;position:fixed;left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));z-index:45;padding:8px 8px 8px 18px;border-radius:999px;background:rgba(29,29,38,.86);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:inset 0 0 0 1px var(--ln),0 12px 30px rgba(0,0,0,.45)}
-  .pf-dock div{flex:1;min-width:0;line-height:1.1}.pf-dock small{display:block;font-size:11px;color:var(--mu)}.pf-dock b{font-size:18px;letter-spacing:-.02em}.pf-dock .ghost{width:44px;padding:0}
+  .pf-dock div{flex:1;min-width:0;line-height:1.1}.pf-dock small{display:block;font-size:11px;color:var(--mu)}.pf-dock b{display:block;font-size:18px;letter-spacing:-.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.pf-dock .ghost{width:44px;padding:0}
   .pf-sheet-bg{padding:0;place-items:end stretch}.pf-sheet{max-width:none;border-radius:24px 24px 0 0;max-height:92dvh;padding-bottom:env(safe-area-inset-bottom)}.pf-row{grid-template-columns:1fr}
   .pf-lb-nav{display:none}.pf-lb-stage{padding:56px 0}.pf-lb-img{border-radius:0}
 }
 .pf-embed{min-height:0}.pf-embed .pf-bar{position:relative;padding:0 20px}.pf-embed .pf-back{display:none}.pf-embed .pf-hero{height:min(72vh,680px)}.pf-embed .pf-dock{display:none!important}.pf-embed .pf-foot{padding-bottom:40px}
+.pf-pop{position:fixed;inset:0;z-index:60;background:rgba(0,0,0,.6);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);padding:20px 20px 0;animation:pffade .2s ease}
+.pf-pop>.pf{height:100%;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;border-radius:22px 22px 0 0;max-width:1440px;margin:0 auto;box-shadow:0 -20px 80px rgba(0,0,0,.5);animation:pffade .3s ease}
+.pf-inpop .pf-bar{position:sticky;margin-bottom:-64px}
+@media (max-width:640px){.pf-pop{padding:0}.pf-pop>.pf{border-radius:0}.pf-inpop .pf-bar{margin-bottom:-56px}}
 @media (prefers-reduced-motion:reduce){.pf *{animation:none!important;transition:none!important}}
 `

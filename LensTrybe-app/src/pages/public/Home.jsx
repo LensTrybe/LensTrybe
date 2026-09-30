@@ -5,6 +5,7 @@ import { useSite } from '../../lib/site'
 import Ask from './Ask'
 import Intro from '../../components/Intro'
 import ProfilePanel from './ProfilePanel'
+import Profile from './Profile'
 
 // The home page: the ask hero. For the client-first launch (site_settings.home_hero = 'job') the
 // sentence becomes a job and leads to the post-a-job form; switching the setting to 'ask' brings
@@ -19,7 +20,8 @@ export default function Home() {
     <>
       <Intro />
       <Ask onOpen={setOpen} jobFirst={site.home_hero !== 'ask'} />
-      <ProfilePanel c={open} onClose={() => setOpen(null)} />
+      {/* a real creative opens their profile over the results, so closing it keeps the search */}
+      {open?.live ? <Profile slug={open.id} sheet onClose={() => setOpen(null)} /> : <ProfilePanel c={open} onClose={() => setOpen(null)} />}
     </>
   )
 }

@@ -147,7 +147,7 @@ export default function Ask({ onOpen, jobFirst = false }) {
       <div className="cfield" ref={field}>
         {orbs.map((o, i) => (
           <div key={o.id} className={'orb' + (o.in ? ' in' : '') + (i === 0 ? ' best' : '')} onPointerEnter={() => aimAt(i)} onPointerLeave={() => lens.current?.aim(null)} style={{ left: pos[i]?.x, top: pos[i]?.y, '--fit': Math.max(0, Math.min(1, (o.s - 50) / 50)), '--sz': 'calc(' + (i === 0 ? 128 : i < 3 ? 110 : 92) + 'px * var(--k, 1))' }}>
-            <button type="button" aria-label={'Open ' + o.n} onClick={e => { if (o.live) return nav('/creatives/' + o.id); document.documentElement.style.setProperty('--ox', e.clientX + 'px'); document.documentElement.style.setProperty('--oy', e.clientY + 'px'); onOpen(o) }}>
+            <button type="button" aria-label={'Open ' + o.n} onClick={e => { document.documentElement.style.setProperty('--ox', e.clientX + 'px'); document.documentElement.style.setProperty('--oy', e.clientY + 'px'); onOpen(o) }}>
               <div className="ph">{o.avatar ? <img src={o.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} /> : <Still seed={o.seed} mood={o.mood} style={{ borderRadius: '50%' }} />}<span className={'fit' + (o.s >= 80 ? '' : o.s >= 55 ? ' mid' : ' low')}>{i === 0 ? 'Closest fit · ' : ''}{o.s}%</span></div>
               <b>{o.n}</b><small>{o.short} · {o.c}</small><span className={'av' + (o.free ? '' : ' no')}><i />{o.live ? (o.free ? 'Taking bookings' : 'Not taking bookings') : o.free ? 'Free on the date' : 'Booked that day'}</span>
             </button>
