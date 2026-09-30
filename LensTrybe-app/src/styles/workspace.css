@@ -1729,6 +1729,12 @@
 .ws .avbig canvas,.ws .avbig img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .ws .avrow b{display:block;font-size:13.5px}.ws .avrow small{display:block;font-size:12px;color:var(--ink-3);margin:2px 0 8px}
 .ws .pkrows{display:flex;flex-direction:column;gap:6px}
+.ws .vpbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:0 0 12px}
+.ws .vpbar small{color:var(--ink-3);font-size:12px;overflow-wrap:anywhere}
+.ws .vpframe{border:1px solid var(--line-2);border-radius:18px;overflow:hidden;background:#f6f5f3;margin:0 auto;transition:max-width .3s ease}
+.ws .vpframe.laptop{max-width:100%}
+.ws .vpframe.phone{max-width:390px}
+.ws .vpframe iframe{display:block;width:100%;height:calc(100dvh - 240px);min-height:560px;border:0}
 .ws .upbar{margin:2px 0 12px}
 .ws .upbar>div{height:8px;border-radius:99px;background:var(--paper-2);border:1px solid var(--line-2);overflow:hidden}
 .ws .upbar i{display:block;height:100%;border-radius:99px;background:var(--neon,#1DB954);transition:width .35s ease}

@@ -124,7 +124,23 @@ export function EditProfile() {
 }
 
 /* View profile: your public card, as a client sees it. */
-export function ViewProfile() {
+// View profile, live: the real public page (lenstrybe.com/creatives/<id>) shown in a frame, so it is
+// exactly what a client sees and can never drift from it. Laptop or phone width, and the real link.
+function ViewProfileLive() {
+  const { toast } = useFlows(); const auth = useAuth(); const uid = auth.user?.id
+  const [w, setW] = useState('laptop'), [key, setKey] = useState(0)
+  if (!uid) return null
+  const path = '/creatives/' + uid, link = 'https://lenstrybe.com' + path
+  return (
+    <section className="view">
+      <Head h="View profile" p="Exactly what a client sees at your public link. To change anything, use Edit profile, then Publish."><button className="btn g" onClick={() => { try { navigator.clipboard?.writeText(link)?.catch(() => {}) } catch { /* ignore */ } toast('Link copied: ' + link) }}><Icon name="globe" size={15} />Copy link</button><a className="btn g" href={path} target="_blank" rel="noopener"><Icon name="eye" size={15} />Open in a new tab</a><Link className="btn w" to="/app/profile"><Icon name="edit" size={15} />Edit profile</Link></Head>
+      <div className="vpbar"><div className="chips2">{[['laptop', 'Laptop'], ['phone', 'Phone']].map(([k, l]) => <button key={k} type="button" className={w === k ? 'on' : ''} onClick={() => setW(k)}>{l}</button>)}</div><button type="button" className="act2" onClick={() => setKey(k => k + 1)}>Refresh</button><small>{link}</small></div>
+      <div className={'vpframe ' + w}><iframe key={key} src={path} title="Your public profile" /></div>
+    </section>
+  )
+}
+export function ViewProfile() { return LIVE ? <ViewProfileLive /> : <ViewProfileDemo /> }
+function ViewProfileDemo() {
   const F = useFlows(); const { s, toast } = F; const p = s.profile
   const link = 'https://lenstrybe.com/creatives/' + p.n.split(' ')[0].toLowerCase()
   const free = (() => { const out = []; let d = new Date(2026, 9, 3); while (out.length < 5) { const k = iso(d); const e = s.events.find(x => x.d === k); if (!e || e.k === 'p') out.push([d.toLocaleDateString('en-AU', { weekday: 'short', day: 'numeric', month: 'short' }), e?.k === 'p']); d.setDate(d.getDate() + 7) } return out })()

@@ -21,7 +21,7 @@ function LiveSite({ s, page, onPage, compact, live }) {
   const b = s.brand, P = paperOf(b.paper), acc = b.accent, pages = s.pages.filter(p => p.on), pg = pages.find(p => p.id === page) || pages[0]
   useEffect(() => { loadFont(b.head); loadFont(b.body) }, [b.head, b.body])
   const [f, setF] = useState({ name: '', email: '', message: '' }), [busy, setBusy] = useState(false), [sent, setSent] = useState(false), [err, setErr] = useState('')
-  const H = fam(b.head), Bf = fam(b.body), rad = (b.radius ?? 12) + 'px', c = live.c || {}, photos = c.photos || [], first = String(b.name || '').split(' ')[0]
+  const H = fam(b.head), Bf = fam(b.body), rad = (b.radius ?? 12) + 'px', c = live.c || {}, photos = c.photos || [], first = String(b.name || '').trim() || 'This creative' /* the whole business name: the first word of "The Dark Roomour" is "The" */
   const heroUrl = pg?.img || (pg?.id === 'home' ? c.cover || photos[0]?.url : photos[['gallery', 'about', 'services', 'contact'].indexOf(pg?.id) + 1]?.url || c.cover || photos[0]?.url)
   const revs = (c.reviews || []).filter(r => r.r >= 4).sort((a, x) => (x.featured ? 1 : 0) - (a.featured ? 1 : 0)).slice(0, 3)
   const logo = b.logo ? <img src={b.logo} alt="" /> : <span className="wmark" style={{ background: acc }} />
