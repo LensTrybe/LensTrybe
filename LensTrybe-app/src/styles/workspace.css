@@ -653,7 +653,7 @@
 .ws .btn.quiet{opacity:.55}
 .ws .side.sticky{position:sticky;top:0;align-self:start}
 .ws .logo-row{display:grid;grid-template-columns:150px minmax(0,1fr);gap:14px;align-items:start}
-.ws .logo-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:118px;border-radius:16px;border:1px dashed var(--line-2);background:var(--paper);font-size:22px;letter-spacing:-.02em;color:var(--ink);transition:border-color .25s,box-shadow .3s}
+.ws .logo-drop{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:118px;padding:8px 12px;overflow:hidden;border-radius:16px;border:1px dashed var(--line-2);background:var(--paper);font-size:22px;letter-spacing:-.02em;color:var(--ink);transition:border-color .25s,box-shadow .3s}
 .ws .logo-drop:hover{border-color:var(--sig-rim);box-shadow:0 0 0 3px var(--sig-bg)}
 .ws .logo-drop small{font-family:var(--font);font-size:10.5px;color:var(--ink-3);letter-spacing:0}
 .ws .mark{display:inline-block;width:14px;height:14px;border-radius:50%;flex:none}
