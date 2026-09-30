@@ -363,7 +363,9 @@ export async function saveProfileLive(uid, p, packages) {
   const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be published.')
   const { city, state } = splitPlace(p.city)
   const skills = p.disc === 'Both' ? ['Photographer', 'Videographer'] : p.disc ? [p.disc] : []
-  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: (p.web || '').trim() || null, instagram_url: (p.ig || '').trim() ? (/^https?:/.test(p.ig.trim()) ? p.ig.trim() : 'https://instagram.com/' + p.ig.trim().replace(/^@/, '')) : null, skill_types: skills, specialties: p.kinds || [], avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
+  // specialties per discipline (what the directory filters on), only for the disciplines they do
+  const bySkill = skills.map(t => [t, (p.specBy && p.specBy[t]) || []]).filter(([, v]) => v.length)
+  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: (p.web || '').trim() || null, instagram_url: (p.ig || '').trim() ? (/^https?:/.test(p.ig.trim()) ? p.ig.trim() : 'https://instagram.com/' + p.ig.trim().replace(/^@/, '')) : null, skill_types: skills, specialties: bySkill.length ? [...new Set(bySkill.flatMap(([, v]) => v))] : (p.kinds || []), specialties_by_type: Object.fromEntries(bySkill), avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
   const { error } = await supabase.from('profiles').update(row).eq('id', uid)
   if (error) throw new Error(error.message)
   // packages: replace the set (small list, keeps order exact)

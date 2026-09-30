@@ -19,6 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive, FAQS } from './AccountLive'
 import { planLabel } from '../../backend/tierFeatures'
 import { shrink } from '../../lib/shrink'
+import { SPECIALTIES } from '../../lib/specialties'
 
 // A portfolio piece in the demo: a sample still (a number) or a photo the visitor picked (a data: URL).
 function Shot({ sd }) {
@@ -48,7 +49,16 @@ export function EditProfile() {
   const liveRemove = it => F.open({ title: 'This photo', sub: it.featured ? 'This one is your cover.' : 'Make it the cover, or take it out of your portfolio.', cta: 'Remove photo', danger: true, fields: [], alt: it.featured ? undefined : { l: 'Make it the cover', on: async () => { try { await live.setCoverPhoto(uid, it.id); setItems(a => a.map(x => ({ ...x, featured: x.id === it.id }))); toast('Cover set.') } catch (e) { toast(e.message) } } }, submit: async () => { try { await live.removePortfolioPhoto(it.id); setItems(a => a.filter(x => x.id !== it.id)); toast('Removed.') } catch (e) { toast(e.message) } } })
   const set = k => v => { setP(x => ({ ...x, [k]: v })); setDirty(true) }
   const tog = p.tog || {}
-  const ALL = ['Weddings', 'Elopements', 'Real estate', 'Events', 'Brand', 'Headshots', 'Family', 'Food', 'Drone']
+  // What you shoot: the full specialty lists the directory searches by (lib/specialties), kept apart
+  // for photography and videography. Before, this was a short sample list of nine.
+  const TYPES = p.disc === 'Photographer' || p.disc === 'Videographer' ? [p.disc] : ['Photographer', 'Videographer']
+  const hasBy = p.specBy && Object.values(p.specBy).some(v => (v || []).length)
+  const specOf = t => hasBy ? (p.specBy[t] || []) : (p.kinds || []).filter(k => SPECIALTIES[t].includes(k))
+  const toggleSpec = (t, n) => {
+    const by = Object.fromEntries(['Photographer', 'Videographer'].map(x => [x, specOf(x)]))
+    by[t] = by[t].includes(n) ? by[t].filter(k => k !== n) : [...by[t], n]
+    setP(x => ({ ...x, specBy: by, kinds: [...new Set(TYPES.flatMap(x2 => by[x2]))] })); setDirty(true)
+  }
   const shots = p.shots || [0, 1, 2, 3, 4, 5, 6, 7]
   const strength = completeness({ ...s, profile: p, packages: pk }).pct
   const publish = () => { if (LIVE) return livePublish(); F.set('profile', { ...p, shots, strength }); F.set('packages', pk.filter(x => x[0].trim())); if (p.h || p.bio) F.upd('pages', 'home', { h: p.h, p: (p.bio.split('. ')[0] || '') + (p.bio ? '.' : '') }); setDirty(false); toast('Published. Profile and website updated.') }
@@ -81,7 +91,7 @@ export function EditProfile() {
             {!pk.length && <p className="note2">Three is plenty: a short one, your main one, and a big one. Prices stay private until you send a quote.</p>}
           </div>
           <div className="card lg"><div className="h"><b>What you shoot</b><small className="lumi-by">Shown on your card, used by the ask bar</small></div>
-            <div className="chips2">{ALL.map(k => <button key={k} type="button" className={p.kinds.includes(k) ? 'on' : ''} onClick={() => { set('kinds')(p.kinds.includes(k) ? p.kinds.filter(x => x !== k) : [...p.kinds, k]) }}>{k}</button>)}</div>
+            {TYPES.map(t => <div key={t} className="bf">{TYPES.length > 1 && <span>{t === 'Photographer' ? 'Photography' : 'Videography'}</span>}<div className="chips2">{SPECIALTIES[t].map(k => <button key={k} type="button" className={specOf(t).includes(k) ? 'on' : ''} onClick={() => toggleSpec(t, k)}>{k}</button>)}</div></div>)}
           </div>
         </div>
         <div className="s5 side sticky">
