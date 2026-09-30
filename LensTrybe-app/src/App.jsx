@@ -13,6 +13,7 @@ import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
 import Pricing from './pages/public/Pricing'
 import SiteLive from './pages/public/SiteLive'
+import Profile from './pages/public/Profile'
 import TeamAccept from './pages/portal/TeamAccept'
 import Founding from './pages/public/Founding'
 import Join from './pages/public/Join'
@@ -94,6 +95,7 @@ export default function App() {
         <Route path="/brand/:slug" element={<BrandPage />} />
         <Route path="/review/:slug" element={<LeaveReview />} />
         <Route path="/site/:slug" element={<SiteLive />} />
+        <Route path="/p/:slug" element={<Profile />} />
         <Route path="/team/accept/:token" element={<TeamAccept />} />
         <Route path="/sign/:token" element={<SignLive />} />
         <Route path="/meeting/:token" element={<MeetingLive />} />
