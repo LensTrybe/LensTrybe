@@ -88,7 +88,7 @@ export default function Tour() {
   else if (!phone && hole.x + hole.w + 16 + cw < W - 16) pos = { left: hole.x + hole.w + 16, top: Math.min(Math.max(16, hole.y - 8), H - 230) }
   else if (hole.y > H / 2) pos = { left: Math.min(Math.max(16, hole.x + hole.w / 2 - cw / 2), W - cw - 16), bottom: H - hole.y + 14 }
   else pos = { left: Math.min(Math.max(16, hole.x + hole.w / 2 - cw / 2), W - cw - 16), top: hole.y + hole.h + 14 }
-  const name = (s.profile?.n || '').split(' ')[0]
+  const name = s.profile?.first || (LIVE ? '' : (s.profile?.n || '').split(' ')[0])
   const body = phone && step.phone ? step.phone + ' ' + step.b : step.b
   return (
     <div className="tour" role="dialog" aria-modal="true" aria-labelledby="tour-t">

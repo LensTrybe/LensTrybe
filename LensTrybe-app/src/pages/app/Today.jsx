@@ -19,8 +19,8 @@ export default function Today() {
   const F = useFlows(); const { s, nav } = F
   const [txt, setTxt] = useState('')
   const comp = completeness(s); const showSetup = !comp.complete && !s.setup?.hidden
-  const first = (s.profile.n || 'there').split(' ')[0]
-  const BRIEF = LIVE ? liveBrief(s, first) : s.setup?.joined ? 'Welcome in, ' + s.profile.n.split(' ')[0] + '. Your workspace is open, with sample bookings, quotes and clients in it so you can see how everything fits together; they clear the moment your first real enquiry lands. Your profile goes live once it has a photo, a line about you and one kind of work. The checklist above walks you through it, and I will draft the bio from your answers.' : BRIEF0
+  const first = s.profile.first || (LIVE ? '' : (s.profile.n || '').split(' ')[0]) || 'there'
+  const BRIEF = LIVE ? liveBrief(s, first) : s.setup?.joined ? 'Welcome in, ' + first + '. Your workspace is open, with sample bookings, quotes and clients in it so you can see how everything fits together; they clear the moment your first real enquiry lands. Your profile goes live once it has a photo, a line about you and one kind of work. The checklist above walks you through it, and I will draft the bio from your answers.' : BRIEF0
   useEffect(() => { let i = 0, t; const step = () => { if (i <= BRIEF.length) { setTxt(BRIEF.slice(0, i)); i += 3; t = setTimeout(step, 16) } }; step(); return () => clearTimeout(t) }, [BRIEF])
   const parts = txt.split(HI)
   const need = s.threads.filter(t => t.need)

@@ -786,7 +786,7 @@ const pageImg = (id, c) => c.image || (id === 'home' ? c.hero_image : id === 'ab
 const secsFor = (id, allowed) => id !== 'home' ? SITE_SECS[id] : SITE_SECS.home.map(([k, on]) => [k, k === 'Portrait and story' ? (allowed.includes('about') ? 0 : 1) : k === 'Booking link' ? (allowed.includes('contact') ? 0 : 1) : on])
 export function shapeSitePages(rows, prof = {}, allowed = sitePagesFor(prof.subscription_tier)) {
   const by = Object.fromEntries((rows || []).map(r => [r.page_type, r]))
-  const first = String(prof.business_name || 'me').split(' ')[0]
+  const first = String(prof.business_name || 'me').trim()
   const DEF = { home: [prof.tagline || prof.business_name || 'Welcome', prof.bio ? String(prof.bio).split('\n')[0].slice(0, 180) : ''], gallery: ['Gallery', 'A few favourites.'], about: ['Hi, I\'m ' + first + '.', ''], contact: ['Say what you need.', 'One sentence is enough. I reply within a day.'] }
   return SITE_PAGES.map(([id, n]) => { const r = by[id], c = r?.content || {}; const [h, p] = pageText(id, c); const base = secsFor(id, allowed); const secs = Array.isArray(c.secs) && c.secs.length ? base.map(([k, on]) => { const s = c.secs.find(x => x[0] === k); return [k, s ? (s[1] ? 1 : 0) : on] }) : base; return { id, n, on: r ? (r.visible !== false ? 1 : 0) : 1, h: h ?? DEF[id][0], p: p ?? DEF[id][1], img: pageImg(id, c), secs, saved: !!r } })
 }
