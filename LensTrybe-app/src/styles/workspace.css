@@ -1734,7 +1734,9 @@
 .ws .vpframe{border:1px solid var(--line-2);border-radius:18px;overflow:hidden;background:#f6f5f3;margin:0 auto;transition:max-width .3s ease}
 .ws .vpframe.laptop{max-width:100%}
 .ws .vpframe.phone{max-width:390px}
-.ws .vpframe iframe{display:block;width:100%;height:calc(100dvh - 240px);min-height:560px;border:0}
+.ws .vpframe .chrome{display:flex;align-items:center;gap:6px;padding:10px 14px;background:#eceae6;border-bottom:1px solid rgba(20,17,26,.1)}
+.ws .vpframe .chrome span{width:9px;height:9px;border-radius:50%;background:rgba(20,17,26,.18)}
+.ws .vpframe .chrome i{font-style:normal;font-size:12px;color:#5B5766;margin-left:8px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ws .upbar{margin:2px 0 12px}
 .ws .upbar>div{height:8px;border-radius:99px;background:var(--paper-2);border:1px solid var(--line-2);overflow:hidden}
 .ws .upbar i{display:block;height:100%;border-radius:99px;background:var(--neon,#1DB954);transition:width .35s ease}
