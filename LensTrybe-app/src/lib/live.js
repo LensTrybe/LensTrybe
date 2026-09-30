@@ -380,24 +380,74 @@ export async function saveProfileLive(uid, p, packages) {
 }
 // One image into the creative's folder of a public bucket; returns its public URL.
 async function putImage(uid, file, bucket, prefix) {
-  const { moderateImage } = await import('../backend/moderateContent'); const { resizeImage } = await import('../backend/resizeImage')
-  const r = await moderateImage(file); if (r?.blocked) throw new Error('That image cannot be used here.')
-  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg'
-  const path = `${uid}/${prefix}${Date.now()}.${ext}`
-  const { error } = await supabase.storage.from(bucket).upload(path, await resizeImage(file), { upsert: false, contentType: file.type || undefined })
+  // same preparation as portfolio photos: a 2400px JPEG, moderation checked on a small copy
+  const { moderateImage } = await import('../backend/moderateContent')
+  const p = await prepPhoto(file); if (p.why) throw new Error(p.why)
+  const r = await moderateImage(p.check); if (r?.blocked) throw new Error('That image cannot be used here.')
+  const path = `${uid}/${prefix}${Date.now()}-${Math.random().toString(36).slice(2, 6)}.${p.ext}`
+  const { error } = await supabase.storage.from(bucket).upload(path, p.full, { upsert: false, contentType: p.type || undefined })
   if (error) throw new Error('Could not upload ' + file.name + '.')
   return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl
 }
 export const uploadAvatar = (uid, file) => putImage(uid, file, 'avatars', 'avatar-')
-export async function addPortfolioPhotos(uid, files, startOrder = 0) {
-  const out = []
-  for (let i = 0; i < files.length; i++) {
-    const url = await putImage(uid, files[i], 'portfolio', 'p-')
-    const { data, error } = await supabase.from('portfolio_items').insert({ creative_id: uid, user_id: uid, image_url: url, file_url: url, file_type: 'image', sort_order: startOrder + i, featured: false }).select('id').single()
-    if (error) throw new Error(error.message)
-    out.push({ id: data.id, url, featured: false })
+// Portfolio uploads (Michael, 30 Sep): one bad photo must not stop the rest, show progress, be
+// quicker, and respect the plan's photo limit. Each photo is opened once in the browser, saved as
+// a JPEG no longer than 2400px (HEIC from iPhones included, where the browser can read it), and
+// checked by moderation from a small 768px copy instead of the full file. Three upload at a time.
+// Resolves { added: [{ id, url, featured }], failed: [{ name, why }] }. Never throws.
+const PHOTO_TYPES = /^image\/(jpeg|jpg|png|webp|heic|heif)$/i
+function drawJpeg(bitmap, maxEdge, quality) {
+  const longest = Math.max(bitmap.width, bitmap.height), k = Math.min(1, maxEdge / longest)
+  const c = document.createElement('canvas'); c.width = Math.max(1, Math.round(bitmap.width * k)); c.height = Math.max(1, Math.round(bitmap.height * k))
+  const ctx = c.getContext('2d'); ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.imageSmoothingQuality = 'high'; ctx.drawImage(bitmap, 0, 0, c.width, c.height)
+  return new Promise(res => c.toBlob(b => res(b), 'image/jpeg', quality))
+}
+async function prepPhoto(file) {
+  const heic = /heic|heif/i.test(file.type) || /\.(heic|heif)$/i.test(file.name)
+  if (!PHOTO_TYPES.test(file.type || '') && !heic) return { why: 'Not a photo we can use. JPG, PNG, WebP or HEIC only.' }
+  let bitmap = null
+  try { bitmap = await createImageBitmap(file) } catch { bitmap = null }
+  if (!bitmap) {
+    if (heic) return { why: 'This iPhone (HEIC) photo could not be opened in this browser. Try Safari, or export it as a JPG.' }
+    // a photo the browser cannot open would not show on the site either
+    return { why: 'This photo could not be opened. It may be damaged. Try exporting it again as a JPG.' }
   }
-  return out
+  try {
+    const [full, check] = await Promise.all([drawJpeg(bitmap, 2400, 0.85), drawJpeg(bitmap, 768, 0.7)])
+    if (!full || !check) return { why: 'This photo could not be read. Try exporting it again.' }
+    return { full, check: new File([check], 'check.jpg', { type: 'image/jpeg' }), ext: 'jpg', type: 'image/jpeg' }
+  } finally { try { bitmap.close?.() } catch { /* ignore */ } }
+}
+export async function addPortfolioPhotos(uid, files, startOrder = 0, onProgress = () => {}) {
+  const { moderateImage } = await import('../backend/moderateContent')
+  const list = Array.from(files), added = new Array(list.length), failed = []
+  let next = 0, done = 0
+  const one = async i => {
+    const file = list[i]
+    try {
+      const p = await prepPhoto(file)
+      if (p.why) { failed.push({ name: file.name, why: p.why }); return }
+      let r = null
+      for (let t = 0; t < 2 && !r; t++) { try { r = await moderateImage(p.check) } catch { if (t) throw new Error('check') } }
+      if (r?.blocked) { failed.push({ name: file.name, why: 'This photo cannot be used on LensTrybe.' }); return }
+      const path = `${uid}/p-${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${p.ext}`
+      const { error: upErr } = await supabase.storage.from('portfolio').upload(path, p.full, { upsert: false, contentType: p.type || undefined })
+      if (upErr) { failed.push({ name: file.name, why: 'The upload did not go through. Try this one again.' }); return }
+      const url = supabase.storage.from('portfolio').getPublicUrl(path).data.publicUrl
+      const { data, error } = await supabase.from('portfolio_items').insert({ creative_id: uid, user_id: uid, image_url: url, file_url: url, file_type: 'image', sort_order: startOrder + i, featured: false }).select('id').single()
+      if (error) {
+        await supabase.storage.from('portfolio').remove([path]).catch(() => {})
+        failed.push({ name: file.name, why: /limit|TIER|cap/i.test(error.message) ? 'Your plan\'s photo limit is reached.' : 'Could not add this one. Try it again.' }); return
+      }
+      added[i] = { id: data.id, url, featured: false }
+    } catch {
+      failed.push({ name: file.name, why: 'Could not check this photo just now. Try it again.' })
+    } finally { done++; onProgress(done, list.length) }
+  }
+  const worker = async () => { while (next < list.length) { const i = next++; await one(i) } }
+  onProgress(0, list.length)
+  await Promise.all([worker(), worker(), worker()])
+  return { added: added.filter(Boolean), failed }
 }
 export async function removePortfolioPhoto(id) { const { error } = await supabase.from('portfolio_items').delete().eq('id', id); if (error) throw new Error(error.message) }
 export async function setCoverPhoto(uid, id) { await supabase.from('portfolio_items').update({ featured: false }).eq('creative_id', uid); await supabase.from('portfolio_items').update({ featured: true }).eq('id', id) }

@@ -17,7 +17,7 @@ import { signOut } from '../../lib/auth'
 import * as live from '../../lib/live'
 import { useNavigate } from 'react-router-dom'
 import { SubscriptionLive, ReferralsLive, FoundingLive, SupportLive, FAQS } from './AccountLive'
-import { planLabel } from '../../backend/tierFeatures'
+import { planLabel, getFeatures, normalizeSubscriptionTier } from '../../backend/tierFeatures'
 import { shrink } from '../../lib/shrink'
 import { SPECIALTIES } from '../../lib/specialties'
 
@@ -36,7 +36,7 @@ const read = (k, d) => { try { const v = localStorage.getItem(k); return v === n
 export function EditProfile() {
   const F = useFlows(); const { s, toast } = F; const auth = useAuth(); const uid = auth.user?.id
   const [p, setP] = useState(s.profile), [dirty, setDirty] = useState(false); const file = useRef(), avf = useRef()
-  const [pk, setPk] = useState(s.packages || []), [items, setItems] = useState([]), [busy, setBusy] = useState('')
+  const [pk, setPk] = useState(s.packages || []), [items, setItems] = useState([]), [busy, setBusy] = useState(''), [up, setUp] = useState(null), [fails, setFails] = useState([])
   useEffect(() => { if (!dirty) setP(s.profile) }, [s.profile, dirty])
   // live: the real portfolio and packages
   useEffect(() => { if (!LIVE || !uid) return; let on = true; live.loadMyProfileExtras(uid).then(x => { if (!on) return; setItems(x.items); setPk(x.packages); F.set('packages', x.packages.map(y => y.slice(0, 3))); F.patch('profile', { shots: Array(x.items.length).fill(0) }) }).catch(() => {}); return () => { on = false } }, [uid]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -45,7 +45,20 @@ export function EditProfile() {
     try { await live.saveProfileLive(uid, p, pk); F.set('profile', { ...p, strength }); F.set('packages', pk.filter(x => String(x[0] || '').trim()).map(y => y.slice(0, 3))); setDirty(false); await auth.fetchUserData?.(uid, { silent: true }); toast('Published. Your profile is updated.') } catch (e) { toast(e.message) } finally { setBusy('') }
   }
   const liveAvatar = async x => { setBusy('av'); try { const url = await live.uploadAvatar(uid, x); set('avatar')(url); toast('Photo uploaded. Publish when happy.') } catch (e) { toast(e.message) } finally { setBusy('') } }
-  const liveAddPhotos = async fs => { setBusy('shots'); try { const added = await live.addPortfolioPhotos(uid, fs, items.length); setItems(a => [...a, ...added]); F.set('profile', { ...s.profile, shots: Array(items.length + added.length).fill(0) }); toast(added.length + (added.length === 1 ? ' photo' : ' photos') + ' added to your portfolio.') } catch (e) { toast(e.message) } finally { setBusy('') } }
+  // the plan's photo limit (Infinity on Trybe Studio) and what is left of it
+  const tierKey = normalizeSubscriptionTier(auth.profile?.subscription_tier)
+  const cap = getFeatures(tierKey).portfolioPhotos, left = Math.max(0, cap - items.length)
+  const liveAddPhotos = async fs => {
+    if (left <= 0) return toast('Your portfolio is full: ' + cap + ' photos on ' + planLabel(tierKey) + '. Remove one, or move up a plan for more.')
+    const take = fs.slice(0, left), skipped = fs.length - take.length
+    setBusy('shots'); setUp({ done: 0, total: take.length }); setFails([])
+    try {
+      const { added, failed } = await live.addPortfolioPhotos(uid, take, items.length, (done, total) => setUp({ done, total }))
+      if (added.length) { setItems(a => [...a, ...added]); F.set('profile', { ...s.profile, shots: Array(items.length + added.length).fill(0) }) }
+      setFails(failed)
+      toast([added.length ? added.length + (added.length === 1 ? ' photo' : ' photos') + ' added.' : 'No photos added.', failed.length ? failed.length + ' could not be added (see below).' : '', skipped ? skipped + ' left out: only ' + left + ' more fit on ' + planLabel(tierKey) + '.' : ''].filter(Boolean).join(' '))
+    } finally { setBusy(''); setUp(null) }
+  }
   const liveRemove = it => F.open({ title: 'This photo', sub: it.featured ? 'This one is your cover.' : 'Make it the cover, or take it out of your portfolio.', cta: 'Remove photo', danger: true, fields: [], alt: it.featured ? undefined : { l: 'Make it the cover', on: async () => { try { await live.setCoverPhoto(uid, it.id); setItems(a => a.map(x => ({ ...x, featured: x.id === it.id }))); toast('Cover set.') } catch (e) { toast(e.message) } } }, submit: async () => { try { await live.removePortfolioPhoto(it.id); setItems(a => a.filter(x => x.id !== it.id)); toast('Removed.') } catch (e) { toast(e.message) } } })
   const set = k => v => { setP(x => ({ ...x, [k]: v })); setDirty(true) }
   const tog = p.tog || {}
@@ -73,7 +86,9 @@ export function EditProfile() {
       <Head h="Edit profile" p="What clients see on lenstrybe.com. Edit once and your website follows.">{LIVE && uid ? <Link className="btn g" to={'/creatives/' + uid} target="_blank"><Icon name="eye" size={15} />View as a client</Link> : <Link className="btn g" to="/app/view-profile"><Icon name="eye" size={15} />View as a client</Link>}<button className={'btn w' + (dirty ? '' : ' quiet')} onClick={publish} disabled={busy === 'pub'}>{busy === 'pub' ? 'Publishing' : dirty ? 'Publish changes' : 'Published'}</button></Head>
       <div className="grid">
         <div className="s7 side">
-          <div className="card lg"><div className="h"><b>Portfolio</b><small className="lumi-by">{LIVE ? (busy === 'shots' ? 'Uploading' : 'Tap a photo for cover or remove · ' + items.length + ' so far') : 'Tap a photo to remove · ' + shots.length + ' of 40 on ' + planLabel(s.plan.name)}</small></div>
+          <div className="card lg"><div className="h"><b>Portfolio</b><small className="lumi-by">{LIVE ? (busy === 'shots' ? 'Uploading' : 'Tap a photo for cover or remove · ' + (cap === Infinity ? items.length + ' photos, no limit on ' + planLabel(tierKey) : items.length + ' of ' + cap + ' · ' + left + ' left on ' + planLabel(tierKey))) : 'Tap a photo to remove · ' + shots.length + ' of 40 on ' + planLabel(s.plan.name)}</small></div>
+            {LIVE && up && <div className="upbar" role="progressbar" aria-valuemin={0} aria-valuemax={up.total} aria-valuenow={up.done}><div><i style={{ width: (up.total ? Math.max(4, Math.round(up.done / up.total * 100)) : 4) + '%' }} /></div><small>Uploading {Math.min(up.done + 1, up.total)} of {up.total}. Keep this page open.</small></div>}
+            {LIVE && fails.length > 0 && <div className="upfails"><b>{fails.length === 1 ? '1 photo was not added' : fails.length + ' photos were not added'}</b>{fails.map((f, i) => <small key={i}><span>{f.name}</span> · {f.why}</small>)}<button type="button" className="act2" onClick={() => setFails([])}>OK</button></div>}
             {LIVE ? <div className="strip2">{items.map(it => <span key={it.id} className="sg" style={{ cursor: 'pointer' }} onClick={() => liveRemove(it)} title={it.featured ? 'Cover' : 'Cover or remove'}><img src={it.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />{it.featured && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos} disabled={busy === 'shots'}><Icon name="plus" size={16} /></button></div> : <div className="strip2">{shots.map((sd, i) => <span key={i} className="sg" style={{ cursor: 'pointer' }} onClick={() => i === 0 ? toast('The cover stays. Drag another photo first to change it.') : removeShot(i)} title={i === 0 ? 'Cover' : 'Remove'}><Shot sd={sd} />{i === 0 && <em>Cover</em>}</span>)}<button type="button" className="sg add" onClick={addPhotos}><Icon name="plus" size={16} /></button></div>}
           </div>
           <div className="card lg"><div className="h"><b>About you</b></div>
