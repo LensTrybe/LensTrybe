@@ -8,10 +8,10 @@ export const TOP = [
 export const GROUPS = [
   ['Clients', 'users', [['clients', 'CRM & Contacts', 'book'], ['meetings', 'Meetings', 'cal']]],
   ['Finance', 'receipt', [['money', 'Finance hub', 'chart'], ['invoicing', 'Invoicing', 'dollar'], ['quotes', 'Quotes', 'file'], ['contracts', 'Contracts', 'fileCheck'], ['expenses', 'Expenses', 'card'], ['tax', 'Tax hub', 'percent']]],
-  ['Portfolio', 'image', [['brand-kit', 'Brand kit', 'palette'], ['deliver', 'Deliver', 'deliver']]],
+  ['Portfolio', 'image', [['profile', 'Edit profile', 'edit'], ['view-profile', 'View profile', 'eye'], ['brand-kit', 'Brand kit', 'palette'], ['deliver', 'Deliver', 'deliver']]],
   ['Content', 'pen', [['content-calendar', 'Content calendar', 'cal'], ['content-ideas', 'Content ideas', 'spark'], ['performance', 'Performance', 'chart'], ['channels', 'Channels', 'globe']]],
   ['Business', 'briefcase', [['reviews', 'Reviews', 'star'], ['marketplace', 'Marketplace', 'bag'], ['collaborate', 'Collaborate', 'users'], ['team', 'Team', 'users'], ['insights', 'Insights', 'chart']]],
-  ['Account', 'user', [['profile', 'Edit profile', 'edit'], ['view-profile', 'View profile', 'eye'], ['subscription', 'Subscription', 'card'], ['referrals', 'Referrals', 'gift'], ['founding', 'Founding hub', 'star'], ['settings', 'Settings', 'settings'], ['support', 'Help and support', 'help']]],
+  ['Account', 'user', [['subscription', 'Subscription', 'card'], ['referrals', 'Referrals', 'gift'], ['founding', 'Founding hub', 'star'], ['settings', 'Settings', 'settings'], ['support', 'Help and support', 'help']]],
 ]
 // Availability now lives as a tab on Calendar, CRM as a view on CRM & Contacts; their routes stay for old links
 // Website is off the sidebar since 30 Sep: the new profile replaced it as the public page. The editor
