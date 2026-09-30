@@ -262,13 +262,13 @@ const CSS = `
 .pf-btn.lg{height:52px;padding:0 26px;font-size:16px}.pf-btn.sm{height:38px;padding:0 16px;font-size:14px}.pf-btn.full{width:100%}
 .pf-ph{position:relative;overflow:hidden;background-size:cover;background-position:center;background-color:var(--s1)}
 .pf-ph img{display:block;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .5s ease,transform .6s ease}.pf-ph.ok img{opacity:1}
-.pf-bar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:16px;height:64px;padding:0 max(20px,env(safe-area-inset-left));transition:background .3s,box-shadow .3s}
+.pf-bar{position:fixed;top:0;left:0;right:0;z-index:40;display:flex;align-items:center;gap:16px;height:64px;padding:0 max(20px,env(safe-area-inset-left));background:linear-gradient(rgba(14,14,19,.72),rgba(14,14,19,0));transition:background .3s,box-shadow .3s}
 .pf-bar.on{background:rgba(14,14,19,.94);-webkit-backdrop-filter:saturate(1.6) blur(18px);backdrop-filter:saturate(1.6) blur(18px);box-shadow:0 1px 0 var(--ln)}
-.pf-back{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:550;padding:8px 12px 8px 8px;border-radius:999px;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}.pf-bar.on .pf-back{background:none}
-.pf-bar-mid{flex:1;display:flex;align-items:center;gap:10px;min-width:0;opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s;pointer-events:none}.pf-bar.on .pf-bar-mid{opacity:1;transform:none;pointer-events:auto}
+.pf-back{display:flex;align-items:center;gap:6px;font-size:14px;font-weight:550;padding:8px 12px 8px 8px;border-radius:999px;color:rgba(255,255,255,.82)!important;flex-shrink:0}.pf-back:hover{color:var(--tx)!important;background:rgba(255,255,255,.06)}
+.pf-bar-mid{flex:1;display:flex;align-items:center;gap:10px;min-width:0;transition:opacity .25s}
 .pf-bar-mid img{width:28px;height:28px;border-radius:50%;object-fit:cover}.pf-bar-mid b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pf-bar-mid nav{display:flex;gap:2px;margin-left:14px}.pf-bar-mid nav button{font-size:14px;color:var(--mu);padding:8px 12px;border-radius:999px}.pf-bar-mid nav button:hover{color:var(--tx);background:rgba(255,255,255,.06)}
-.pf-bar-r{display:flex;align-items:center;gap:8px;margin-left:auto}.pf-bar-r .pf-btn{opacity:0;pointer-events:none;transition:opacity .25s}.pf-bar.on .pf-bar-r .pf-btn{opacity:1;pointer-events:auto}
+.pf-bar-r{display:flex;align-items:center;gap:8px;margin-left:auto}
 .pf-icon{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}.pf-bar.on .pf-icon{background:rgba(255,255,255,.07)}
 .pf-icon em{position:absolute;top:46px;right:0;font-style:normal;font-size:12px;background:var(--s2);padding:6px 10px;border-radius:8px;white-space:nowrap}
 .pf-hero{position:relative;height:min(88vh,860px);min-height:560px;display:flex;align-items:flex-end}
@@ -337,7 +337,7 @@ const CSS = `
 .pf-done h3{font-size:24px;letter-spacing:-.02em;margin:18px 0 8px}.pf-done p{color:var(--mu);line-height:1.55;margin:0 auto 22px;max-width:380px}
 @media (max-width:900px){.pf-about{grid-template-columns:1fr;gap:28px}.pf-about-img{max-width:420px}.pf-bar-mid nav{display:none}}
 @media (max-width:640px){
-  .pf-bar{height:56px;padding:0 12px}.pf-back span{display:none}.pf-back{padding:8px}.pf-bar-r .pf-btn{display:none}
+  .pf-bar{height:56px;padding:0 12px}.pf-bar:not(.on) .pf-bar-mid{opacity:0;pointer-events:none}.pf-back span{display:none}.pf-back{padding:8px}.pf-bar-r .pf-btn{display:none}
   .pf-hero{height:auto;min-height:0;display:block}.pf-cover{position:relative;height:58vh;min-height:360px}.pf-hero::after{height:58vh;min-height:360px;background:linear-gradient(180deg,rgba(14,14,19,.5) 0%,rgba(14,14,19,0) 25%,rgba(14,14,19,0) 55%,var(--bg) 100%)}
   .pf-hero-in{flex-direction:column;align-items:stretch;padding:0 16px 8px;margin-top:-96px;gap:0}.pf-from,.pf-scroll{display:none}
   .pf-hero h1{font-size:44px;margin-top:14px}.pf-tag{font-size:16px;margin-top:10px}.pf-ctas{display:none}.pf-chips{margin-top:16px}
