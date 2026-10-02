@@ -4,6 +4,7 @@ import { StoreProvider } from './lib/store'
 import { AuthProvider } from './backend/AuthContext'
 import { SubscriptionProvider } from './backend/SubscriptionContext'
 import PreviewBar from './components/PreviewBar'
+import { RouteSeo } from './lib/seo'
 import RefractFilter from './components/RefractFilter'
 import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
@@ -48,6 +49,7 @@ export default function App() {
     <AuthProvider><SubscriptionProvider><StoreProvider><ToastProvider>
       <RefractFilter />
       <PreviewBar />
+      <RouteSeo />
       <Routes>
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />

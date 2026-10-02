@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { applySeo, SITE } from '../../lib/seo'
 import { Link, Navigate, useParams, useSearchParams } from 'react-router-dom'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
@@ -86,6 +87,7 @@ export function EditHome() {
 // One issue, read like a magazine.
 export function EditIssue() {
   const { slug } = useParams(); const issues = useIssues(); const issue = issues?.find(i => i.slug === slug)
+  useEffect(() => { if (!issue) return; applySeo({ title: issue.title + ' · The Trybe Edit · LensTrybe', description: String(issue.dek || '').slice(0, 160) || undefined, path: '/edit/' + slug, jsonLd: { '@context': 'https://schema.org', '@type': 'Article', headline: String(issue.title).slice(0, 110), description: issue.dek || undefined, datePublished: issue.publish_at || undefined, author: { '@type': 'Organization', name: 'LensTrybe', url: SITE + '/' }, publisher: { '@type': 'Organization', name: 'LensTrybe', logo: { '@type': 'ImageObject', url: SITE + '/android-chrome-512x512.png' } }, mainEntityOfPage: SITE + '/edit/' + slug, isPartOf: { '@type': 'Periodical', name: 'The Trybe Edit' } } }) }, [issue, slug])
   const cv = useRef(null)
   useEffect(() => { if (!cv.current) return; const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); scrollTo(0, 0); return () => l.destroy() }, [slug, !!issue])
   if (!issues) return <section className="hiw edit issue dark darkhero" style={{ minHeight: '60vh' }} />

@@ -6,6 +6,7 @@ import { onColour } from '../../lib/brand'
 import { fmt } from '../../lib/format'
 import { imageUrl } from '../../backend/imageUrl'
 import { LIVE } from '../../lib/mode'
+import { applySeo, profileLd } from '../../lib/seo'
 
 // The creative profile, rebuilt 30 Sep 2026 (Michael: "a fantastic looking, intuitive and state of
 // the art profile"). One page per creative, built from what they already filled in: cover, work,
@@ -144,7 +145,11 @@ export default function Profile({ slug: slugProp, embed = false, sheet = false, 
   useEffect(() => { if (!sheet) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o } }, [sheet])
   useEffect(() => { if (!sheet) return; const k = e => { if (e.key === 'Escape' && lb == null && !enq) onClose?.() }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [sheet, lb, enq, onClose])
   useEffect(() => { const f = () => setCols(window.innerWidth < 640 ? 2 : window.innerWidth < 1100 ? 3 : 4); f(); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
-  useEffect(() => { if (d?.c && !embed && !sheet) document.title = d.c.n + (d.c.d ? ' · ' + d.c.d : '') + ' · LensTrybe' }, [d, embed])
+  useEffect(() => {
+    if (!d?.c || embed || sheet) return
+    const c = d.c, place = [c.c, c.state].filter(Boolean).join(', '), what = (d.profile.skill_types || []).join(' and ') || 'Creative'
+    applySeo({ title: c.n + ' · ' + what + (place ? ' in ' + place : '') + ' · LensTrybe', description: ((c.d && c.d !== what ? c.d + '. ' : '') + (String(c.about || '').replace(/\s+/g, ' ').slice(0, 120) || what + (place ? ' in ' + place : '') + '. See their work, packages and reviews, and ask for a quote on LensTrybe.')).slice(0, 160), path: '/creatives/' + c.id, image: c.cover || c.photos?.[0]?.url || undefined, jsonLd: profileLd(c, d.profile) })
+  }, [d, embed, sheet])
   const c = d?.c
   const busy = useMemo(() => new Set(c?.busy || []), [c])
   const photos = c?.photos || []

@@ -44,7 +44,6 @@ export function PostJob() {
   const [step, setStep] = useState(1), [err, setErr] = useState('')
   const set = (k, x) => setV(o => ({ ...o, [k]: x }))
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
-  useEffect(() => { document.title = 'Post a job · LensTrybe' }, [])
   useEffect(() => { if (LIVE) live.loadOpenJobs(9).then(setLiveOpen).catch(() => {}) }, [])
   // back from logging in or signing up: the job they filled in is waiting on step 2. Any other visit
   // with a saved, unposted job (say they pressed back on the login page) brings it back on step 1.
