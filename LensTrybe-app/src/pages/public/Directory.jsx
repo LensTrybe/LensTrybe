@@ -13,6 +13,7 @@ import DatePicker, { fmtDate } from '../../components/DatePicker'
 import SpecialtyPicker from '../../components/SpecialtyPicker'
 import { matchesSpecialty, keysForTag, specParts, specKey, DISC, SPECIALTIES } from '../../lib/specialties'
 import { fmt } from '../../lib/format'
+import { livePages, at } from '../../lib/places'
 
 const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
 
@@ -70,6 +71,8 @@ export default function Directory() {
     if (sort === 'rating') l = [...l].sort((a, b) => b.r - a.r || b.rv - a.rv)
     return l
   }, [all, disc, spec, budget, date, found, place, sort, text])
+  // local pages with creatives on them (Photographers in Brisbane and so on), as links for people and search
+  const local = useMemo(() => livePages(all || []), [all])
   const active = spec.size + (budget < 8000) + (date ? 1 : 0) + found + (place ? 1 : 0) + (disc !== 'all') + (text ? 1 : 0)
   const clear = () => { setDisc('all'); setSpec(new Set()); setBudget(8000); setDate(null); setFound(false); setPlace(''); setText('') }
   // The sentence sets this page's own filters (photo or video, specialty, place, budget) over the real
@@ -127,6 +130,15 @@ export default function Directory() {
           {view === 'grid'
             ? (list.length ? <div className="cgrid rv">{list.map((x, i) => <Card key={x.id} x={x} i={i} date={date} />)}</div> : <div className="empty lg">Nobody matches those filters yet. Widen the budget, drop a specialty, or <Link to="/" style={{ color: 'var(--green-t)', fontWeight: 600 }}>ask the lens</Link> instead.</div>)
             : <MapView list={list} />}
+
+          {local.length > 0 && (
+            <nav className="dirlocal" aria-label="Browse by area" style={{ marginTop: 'clamp(36px,5vw,56px)' }}>
+              <p style={{ fontSize: 13, fontWeight: 600, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--ink-2)', margin: '0 0 10px' }}>Browse by area</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {local.map(p => <Link key={p.path} to={p.path} style={{ padding: '8px 14px', borderRadius: 999, border: '1px solid var(--line-2)', background: 'rgba(255,255,255,.6)', fontSize: 13.5, fontWeight: 500, color: 'var(--ink)' }}>{p.kind.label} {at(p.place)}</Link>)}
+              </div>
+            </nav>
+          )}
 
           <div className="closer lg rv" style={{ marginTop: 'clamp(40px,6vw,72px)' }}>
             <div><p className="eb g">Not sure who you need?</p><h2>Say it in a sentence. <em>We'll find them.</em></h2></div>

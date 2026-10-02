@@ -1,11 +1,49 @@
 {
   "rewrites": [
-    { "source": "/sitemap-creatives.xml", "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=creatives" },
-    { "source": "/sitemap-edit.xml", "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=edit" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    {
+      "source": "/sitemap-creatives.xml",
+      "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=creatives"
+    },
+    {
+      "source": "/sitemap-edit.xml",
+      "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=edit"
+    },
+    {
+      "source": "/sitemap-local.xml",
+      "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=local"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
   ],
   "headers": [
-    { "source": "/sitemap-creatives.xml", "headers": [{ "key": "Content-Type", "value": "application/xml; charset=utf-8" }] },
-    { "source": "/sitemap-edit.xml", "headers": [{ "key": "Content-Type", "value": "application/xml; charset=utf-8" }] }
+    {
+      "source": "/sitemap-creatives.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap-edit.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    },
+    {
+      "source": "/sitemap-local.xml",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/xml; charset=utf-8"
+        }
+      ]
+    }
   ]
 }

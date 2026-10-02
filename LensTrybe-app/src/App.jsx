@@ -10,6 +10,7 @@ import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
 import HowItWorks from './pages/public/HowItWorks'
 import { EditConfirm, EditHome, EditIssue } from './pages/public/Edit'
+import Local from './pages/public/Local'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
 import Pricing from './pages/public/Pricing'
@@ -89,6 +90,7 @@ export default function App() {
           <Route path="/refunds" element={<Navigate to="/legal/refunds" replace />} />
           <Route path="/refund-policy" element={<Navigate to="/legal/refunds" replace />} />
           <Route path="/founding-agreement" element={<Navigate to="/legal/founding" replace />} />
+          <Route path="/:kind/:place" element={<Local />} />
         </Route>
         <Route path="/onboarding" element={<Onboard />} />
         <Route path="/portal" element={<RequireClient><ClientHome /></RequireClient>} />
