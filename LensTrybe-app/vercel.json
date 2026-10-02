@@ -1,5 +1,7 @@
 {
   "rewrites": [
+    { "source": "/sitemap-creatives.xml", "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=creatives" },
+    { "source": "/sitemap-edit.xml", "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=edit" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

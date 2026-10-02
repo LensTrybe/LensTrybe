@@ -1,0 +1,22 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /portal
+Disallow: /onboarding
+Disallow: /login
+Disallow: /check-email
+Disallow: /forgot-password
+Disallow: /reset-password
+Disallow: /auth/
+Disallow: /unsubscribe
+Disallow: /sign/
+Disallow: /deliver/
+Disallow: /meeting/
+Disallow: /doc/
+Disallow: /review/
+Disallow: /team/
+Disallow: /dashboard
+Disallow: /client-dashboard
+Disallow: /p/
+
+Sitemap: https://lenstrybe.com/sitemap.xml
