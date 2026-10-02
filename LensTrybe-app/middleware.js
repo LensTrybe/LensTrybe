@@ -17,7 +17,11 @@ export const config = { matcher: ['/((?!api|assets|_vercel|favicon|.*\\..*).*)']
 // cannot name, or a city not on this list, counts as south east, since the guess is rough and a
 // creative wrongly kept out is worse than one wrongly let in.
 const NOT_SEQ = ['cairns', 'townsville', 'mackay', 'rockhampton', 'gladstone', 'bundaberg', 'hervey bay', 'maryborough', 'mount isa', 'emerald', 'yeppoon', 'airlie beach', 'bowen', 'charters towers', 'innisfail', 'port douglas', 'mareeba', 'atherton', 'longreach', 'roma', 'kingaroy', 'biloela', 'moranbah', 'proserpine', 'ayr', 'ingham', 'weipa', 'thursday island']
-const BOT = /googlebot|bingbot|duckduckbot|slurp|yandex|baiduspider|applebot|facebookexternalhit|twitterbot|linkedinbot|pinterest|slackbot|whatsapp|telegrambot|discordbot|vercel-screenshot/i
+// Crawlers and link previews, never sent to the waitlist. Google's own tools do not all say
+// "Googlebot" (URL Inspection is Google-InspectionTool, and there is GoogleOther, Storebot-Google,
+// AdsBot-Google and more), so anything Google is matched, along with Bing's and the AI search
+// crawlers (2 Oct 2026: URL Inspection was being sent to the waitlist).
+const BOT = /googlebot|google-|-google|googleother|bingbot|bingpreview|msnbot|adidxbot|duckduckbot|duckassistbot|slurp|yandex|baiduspider|applebot|facebookexternalhit|facebookcatalog|meta-externalagent|twitterbot|linkedinbot|pinterest|slackbot|whatsapp|telegrambot|discordbot|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-user|perplexitybot|amazonbot|petalbot|ahrefsbot|semrushbot|vercel-screenshot/i
 
 const cookie = (name, value, days) => name + '=' + value + '; Path=/; Max-Age=' + days * 86400 + '; SameSite=Lax; Secure'
 
