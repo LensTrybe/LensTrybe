@@ -231,6 +231,15 @@ export function shapeProfile(p, extra = {}) {
   }
 }
 const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, tiktok_url, facebook_url, linkedin_url, twitter_url, website, site_service_areas, custom_domain, created_at, has_insurance, has_blue_card, has_police_check, has_wwvp, has_drone_licence, has_other, other_credential_name'
+// A creative who already has an account uses a founding code from the Founding hub (2 Oct 2026),
+// so nobody has to delete their account and sign up again. redeem_founding_code grants exactly what
+// sign-up would: 12 months and the badge for the first 100, then 6 months; a comped code its own tier.
+export async function redeemFoundingCode(code, termsVersion) {
+  const c = String(code || '').trim().toUpperCase()
+  const { data, error } = await supabase.rpc('redeem_founding_code', { p_code: c, p_terms_version: termsVersion || null, p_ua: (typeof navigator !== 'undefined' ? navigator.userAgent || '' : '').slice(0, 400) })
+  if (error) throw new Error('Could not use that code just now. Try again.')
+  return data || { ok: false, reason: 'not_found' }
+}
 export async function loadCreatives() {
   const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).order('created_at', { ascending: false }).limit(200)
   if (error) throw error

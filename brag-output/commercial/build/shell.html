@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080" />
+<title>LensTrybe commercial</title>
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+<style>
+@font-face { font-family: "Inter"; src: url("assets/fonts/Inter-var.woff2") format("woff2"); font-weight: 100 900; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-400-normal.woff2") format("woff2"); font-weight: 400; font-style: normal; }
+@font-face { font-family: "Instrument Serif"; src: url("assets/fonts/InstrumentSerif-400-italic.woff2") format("woff2"); font-weight: 400; font-style: italic; }
+</style>
+<style>{{APPCSS}}</style>
+<style>
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: #07070b; }
+#root { position: relative; width: 100%; height: 100%; overflow: hidden; background: #07070b; font-family: "Inter", system-ui, sans-serif; color: #f4f2f7; }
+#gl { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.ad { position: absolute; font-family: "Inter", system-ui, sans-serif; }
+.ad-serif { font-family: "Instrument Serif", Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.ad-grad { background: linear-gradient(90deg, #9AC4C5, #D996BA 55%, #C6A5E5); -webkit-background-clip: text; background-clip: text; color: transparent; padding-right: 0.08em; }
+
+/* hook */
+#hookL { left: 140px; top: 300px; font-size: 84px; font-weight: 600; letter-spacing: -0.045em; line-height: 1.04; color: #fff; text-shadow: 0 4px 40px rgba(0,0,0,0.7); }
+#hookR { right: 140px; top: 620px; font-size: 96px; letter-spacing: -0.03em; line-height: 1.1; text-align: right; }
+.ad-ln { display: block; overflow: hidden; padding: 0.04em 0.1em 0.18em; }
+.ad-ln > span { display: inline-block; }
+#hook2 { left: 0; right: 0; top: 420px; text-align: center; font-size: 104px; font-weight: 600; letter-spacing: -0.045em; color: #fff; text-shadow: 0 4px 40px rgba(0,0,0,0.7); opacity: 0; }
+#hook2 .ad-serif { font-size: 1.08em; }
+
+/* step captions */
+#cap { left: 110px; top: 64px; opacity: 0; }
+#capChip { display: inline-flex; align-items: center; gap: 10px; padding: 9px 20px; border-radius: 999px; background: rgba(141,243,214,0.12); border: 1.5px solid rgba(141,243,214,0.5); color: #A9F5DF; font-size: 21px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; }
+#capChip i { width: 9px; height: 9px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; }
+#capRow { margin-top: 16px; display: flex; align-items: center; gap: 20px; }
+#capN { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; background: #fff; color: #0a0a0f; font-size: 28px; font-weight: 700; flex: none; }
+#capT { font-size: 52px; font-weight: 600; letter-spacing: -0.035em; color: #fff; white-space: nowrap; text-shadow: 0 2px 30px rgba(0,0,0,0.7); }
+
+/* the ask (client) */
+#barWrap { left: 290px; top: 470px; width: 1340px; height: 96px; opacity: 0; }
+#bar { position: absolute; inset: 0; display: flex; align-items: center; gap: 16px; padding: 0 12px 0 30px; border-radius: 999px; background: rgba(16,16,24,0.78); border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 40px 90px -30px rgba(0,0,0,0.95), inset 0 1px 0 rgba(255,255,255,0.14), 0 0 0 8px rgba(29,185,84,0.10); }
+#miniLens { width: 34px; height: 34px; border-radius: 50%; flex: none; position: relative; background: conic-gradient(from 0deg, #9AC4C5, #D996BA, #C6A5E5, #9AC4C5); }
+#miniLens::after { content: ""; position: absolute; inset: 8px; border-radius: 50%; background: #0b0b12; }
+#typed { flex: 1; min-width: 0; font-size: 29px; color: #fff; white-space: nowrap; overflow: hidden; }
+#typedPh { color: rgba(244,242,247,0.55); }
+#caret { display: inline-block; width: 3px; height: 34px; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; vertical-align: -6px; margin-left: 3px; }
+#go { height: 70px; padding: 0 32px; border-radius: 999px; background: #fff; color: #0a0a0f; font-weight: 600; font-size: 25px; display: flex; align-items: center; gap: 12px; flex: none; }
+#beams { left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; }
+.ad-orb { position: absolute; width: 360px; margin-left: -180px; text-align: center; opacity: 0; }
+.ad-orb .ph { position: relative; margin: 0 auto; border-radius: 50%; border: 3px solid rgba(255,255,255,0.18); box-shadow: 0 24px 60px -20px rgba(0,0,0,0.95); }
+.ad-orb .ph canvas { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; }
+.ad-orb.best .ph { border-color: rgba(255,255,255,0.6); box-shadow: 0 0 0 2px rgba(141,243,214,0.55), 0 0 0 12px rgba(141,243,214,0.09), 0 0 60px -6px rgba(141,243,214,0.5); }
+.ad-orb .fit { position: absolute; left: 0; right: 0; bottom: -14px; display: flex; justify-content: center; }
+.ad-orb .fit span { padding: 5px 14px; border-radius: 999px; background: #0a0a0f; border: 1.5px solid rgba(141,243,214,0.6); color: #A9F5DF; font-size: 19px; font-weight: 700; white-space: nowrap; }
+.ad-orb .fit.mid span { border-color: rgba(245,181,68,0.7); color: #f7b955; }
+.ad-orb .fit.low span { border-color: rgba(255,255,255,0.22); color: rgba(244,242,247,0.75); }
+.ad-orb.best .fit span { background: #8DF3D6; color: #0a0a0f; border-color: #8DF3D6; box-shadow: 0 0 22px rgba(141,243,214,0.6); }
+.ad-orb b { display: block; margin-top: 22px; font-size: 24px; font-weight: 600; color: #fff; text-shadow: 0 2px 14px rgba(0,0,0,0.95); white-space: nowrap; }
+.ad-orb small { display: block; margin-top: 3px; font-size: 19px; color: rgba(244,242,247,0.76); white-space: nowrap; text-shadow: 0 2px 12px rgba(0,0,0,0.95); }
+.ad-orb .av { display: inline-flex; align-items: center; gap: 8px; margin-top: 5px; font-size: 18px; font-weight: 600; color: #A9F5DF; }
+.ad-orb .av i { width: 9px; height: 9px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; }
+.ad-orb .av.no { color: rgba(244,242,247,0.7); } .ad-orb .av.no i { background: rgba(244,242,247,0.5); box-shadow: none; }
+#lumiLine { left: 430px; top: 988px; width: 1060px; padding: 18px 26px; border-radius: 22px; display: flex; gap: 16px; align-items: center; background: rgba(16,16,24,0.82); border: 1.5px solid rgba(255,255,255,0.12); opacity: 0; }
+.ad-lm { width: 28px; height: 28px; border-radius: 50%; flex: none; background: conic-gradient(from 90deg, #8DF3D6, #D996BA, #C6A5E5, #8DF3D6); box-shadow: 0 0 18px rgba(141,243,214,0.55); }
+#lumiText { font-size: 23px; color: rgba(244,242,247,0.85); white-space: nowrap; }
+#lumiText b { color: #fff; }
+
+/* phone (client) */
+#phone { left: 760px; top: 196px; width: 400px; height: 830px; border-radius: 58px; background: #0d0d14; border: 2px solid rgba(255,255,255,0.18); box-shadow: 0 60px 140px -40px rgba(0,0,0,1), inset 0 0 0 8px #07070b; overflow: hidden; opacity: 0; transform-origin: 50% 50%; }
+.ph-bar { display: flex; justify-content: space-between; align-items: center; padding: 22px 36px 0; font-size: 17px; font-weight: 600; color: rgba(244,242,247,0.8); }
+.ph-notch { width: 106px; height: 30px; border-radius: 20px; background: #000; }
+.ph-head { display: flex; align-items: center; gap: 14px; padding: 18px 22px 14px; border-bottom: 1.5px solid rgba(255,255,255,0.08); }
+.ph-av { position: relative; width: 48px; height: 48px; border-radius: 50%; overflow: hidden; flex: none; }
+.ph-av canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ph-head b { display: block; font-size: 20px; color: #fff; } .ph-head small { display: block; font-size: 15px; color: rgba(244,242,247,0.66); margin-top: 2px; }
+.ph-live { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; color: #A9F5DF; }
+.ph-live i { width: 8px; height: 8px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 8px #8DF3D6; }
+.ph-view { position: absolute; left: 0; right: 0; top: 142px; bottom: 90px; overflow: hidden; }
+.ph-thread { position: absolute; left: 16px; right: 16px; top: 14px; }
+.pi { opacity: 0; margin-bottom: 14px; }
+.ph-msg { max-width: 312px; padding: 14px 18px; border-radius: 22px 22px 22px 8px; background: rgba(255,255,255,0.09); font-size: 17px; line-height: 1.4; color: #f4f2f7; }
+.ph-sys { text-align: center; font-size: 15px; color: rgba(244,242,247,0.66); }
+.ph-card { padding: 18px 20px; border-radius: 22px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); }
+.ph-card b { display: block; font-size: 19px; color: #fff; } .ph-card small { display: block; margin-top: 4px; font-size: 15px; color: rgba(244,242,247,0.7); }
+.ph-btn { position: relative; margin-top: 14px; height: 50px; border-radius: 14px; background: #fff; color: #0a0a0f; font-weight: 600; font-size: 17px; }
+.ph-btn span { position: absolute; inset: 0; display: grid; place-items: center; border-radius: 14px; }
+.ph-btn .ok { background: #1DB954; color: #04120a; opacity: 0; }
+.ph-sig { margin-top: 12px; height: 66px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1.5px dashed rgba(255,255,255,0.18); }
+.ph-sig svg { width: 100%; height: 100%; display: block; }
+.ph-sig path { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.ph-thumbs { margin-top: 12px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.ph-thumbs span { position: relative; height: 66px; border-radius: 10px; overflow: hidden; }
+.ph-thumbs canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ph-stars { margin-top: 12px; display: flex; gap: 10px; font-size: 40px; color: rgba(244,242,247,0.25); }
+.ph-stars i { font-style: normal; }
+.ph-stars i.on { color: #f5b544; text-shadow: 0 0 14px rgba(245,181,68,0.6); }
+.ph-pin { position: absolute; left: 16px; right: 16px; bottom: 22px; height: 54px; border-radius: 999px; background: rgba(255,255,255,0.06); border: 1.5px solid rgba(255,255,255,0.12); display: flex; align-items: center; padding: 0 22px; font-size: 16px; color: rgba(244,242,247,0.66); }
+#touch { width: 84px; height: 84px; margin: -42px 0 0 -42px; border-radius: 50%; background: rgba(255,255,255,0.3); border: 3px solid rgba(255,255,255,0.85); box-shadow: 0 0 30px rgba(141,243,214,0.5); opacity: 0; left: 0; top: 0; }
+
+/* laptop (creative) */
+#laptop { left: 294px; top: 212px; width: 1332px; opacity: 0; transform-origin: 0 0; }
+.lp-lid { position: relative; padding: 18px; border-radius: 30px 30px 10px 10px; background: #0b0b10; border: 2px solid rgba(255,255,255,0.16); box-shadow: 0 60px 140px -40px rgba(0,0,0,1); }
+.lp-cam { position: absolute; left: 50%; top: 6px; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: #1d1d26; }
+.lp-screen { position: relative; width: 1296px; height: 729px; overflow: hidden; border-radius: 8px; background: #07070b; }
+#lstage { position: absolute; left: 0; top: 0; width: 1440px; height: 810px; transform-origin: 0 0; transform: scale(0.9); overflow: hidden; }
+#lcam { position: absolute; left: 0; top: 0; width: 1440px; height: 810px; transform-origin: 0 0; }
+#lcam > .clip { position: absolute; left: 0; top: 0; width: 1440px; height: 810px; overflow: hidden; }
+.ws { width: 1440px; height: 810px !important; min-height: 0 !important; }
+.ws .aurora { position: absolute !important; }
+.lp-base { margin: 0 -60px; height: 26px; border-radius: 0 0 26px 26px; background: linear-gradient(180deg, #2a2a33, #15151c); box-shadow: 0 30px 60px -20px rgba(0,0,0,0.9); }
+.lp-base i { display: block; width: 200px; height: 8px; margin: 0 auto; border-radius: 0 0 10px 10px; background: #0d0d12; }
+#lcursor { position: absolute; left: 0; top: 0; width: 22px; height: 22px; margin: -2px 0 0 -3px; opacity: 0; z-index: 50; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6)); }
+#lring { position: absolute; left: 0; top: 0; width: 40px; height: 40px; margin: -20px 0 0 -20px; border-radius: 50%; border: 2px solid #8DF3D6; background: rgba(141,243,214,0.18); opacity: 0; z-index: 49; }
+#fA { position: relative; z-index: 40; background: #1c1c25 !important; }
+.board, .bcol { overflow: visible !important; }
+#fcol0, #fcol1, #fcol6 { visibility: hidden; }
+#sc-final .main { overflow: hidden !important; }
+
+/* sync line, toast, end */
+#sync { left: 600px; top: 600px; width: 250px; height: 40px; opacity: 0; }
+#sync svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+#syncDot { position: absolute; left: 0; top: 11px; width: 18px; height: 18px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 18px #8DF3D6; opacity: 0; }
+#toast { left: 0; right: 0; top: 64px; display: flex; justify-content: center; opacity: 0; }
+#toast > div { display: flex; align-items: center; gap: 16px; padding: 20px 30px; border-radius: 22px; background: #14111a; color: #fff; font-size: 27px; font-weight: 500; box-shadow: 0 24px 60px -20px rgba(0,0,0,0.9), 0 0 0 1.5px rgba(255,255,255,0.14); }
+#toast i { width: 14px; height: 14px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 12px rgba(141,243,214,0.7); flex: none; }
+#end { left: 0; right: 0; top: 0; height: 1080px; text-align: center; }
+#endLogo { display: block; width: 470px; height: 99px; margin: 362px auto 0; opacity: 0; }
+#endH { margin-top: 250px; font-size: 76px; font-weight: 600; letter-spacing: -0.045em; color: #fff; opacity: 0; text-shadow: 0 4px 40px rgba(0,0,0,0.7); }
+#endH .ad-serif { font-size: 1.08em; }
+#endChips { margin-top: 30px; display: flex; justify-content: center; gap: 16px; opacity: 0; }
+#endChips span { display: inline-flex; align-items: center; gap: 10px; padding: 12px 26px; border-radius: 999px; background: rgba(16,16,24,0.8); border: 1.5px solid rgba(255,255,255,0.18); font-size: 26px; font-weight: 600; color: #fff; }
+#endChips i { width: 10px; height: 10px; border-radius: 50%; background: #8DF3D6; box-shadow: 0 0 10px #8DF3D6; }
+#endU { display: inline-block; margin-top: 30px; font-size: 32px; font-weight: 600; letter-spacing: 0.02em; color: #A9F5DF; opacity: 0; }
+</style>
+</head>
+<body>
+<div id="root" data-composition-id="main" data-start="0" data-duration="38" data-width="1920" data-height="1080">
+<canvas id="gl" width="1440" height="810"></canvas>
+{{FILTER}}
+
+<!-- hook -->
+<div class="ad" id="hookL" data-layout-allow-overlap><span class="ad-ln"><span id="hl1">Looking for a photographer</span></span><span class="ad-ln"><span id="hl2">or videographer?</span></span></div>
+<div class="ad" id="hookR" data-layout-allow-overlap><span class="ad-ln"><span id="hr1" class="ad-serif ad-grad">Or are you one?</span></span></div>
+<div class="ad" id="hook2" data-layout-allow-overlap>LensTrybe makes it <span class="ad-serif ad-grad">simple.</span></div>
+
+<!-- client: the ask -->
+<svg class="ad" id="beams" viewBox="0 0 1920 1080"><g id="beamG"></g></svg>
+<div class="ad" id="orbs"></div>
+<div class="ad" id="barWrap"><div id="bar"><span id="miniLens"></span><div id="typed"><span id="typedTxt"></span><span id="typedPh">What do you need, where and when?</span><span id="caret"></span></div><div id="go"><span>Find them</span><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div></div></div>
+<div class="ad" id="lumiLine"><span class="ad-lm"></span><div id="lumiText"></div></div>
+
+<!-- creative: the dashboard on a laptop -->
+<div class="ad" id="laptop"><div class="lp-lid"><span class="lp-cam"></span><div class="lp-screen"><div id="lstage"><div id="lcam">
+{{SCENES}}
+<div id="lring"></div>
+<svg id="lcursor" viewBox="0 0 24 24"><path d="M4 2.5 L4 19.5 L8.6 15.2 L11.6 21.6 L14.6 20.2 L11.7 14 L18 14 Z" fill="#fff" stroke="#0a0a0f" stroke-width="1.4" stroke-linejoin="round"/></svg>
+</div></div></div></div><div class="lp-base"><i></i></div></div>
+
+<div class="ad" id="sync"><svg viewBox="0 0 250 40" preserveAspectRatio="none"><path d="M0 20 H250" fill="none" stroke="rgba(141,243,214,0.6)" stroke-width="2.5" stroke-dasharray="6 8"/></svg><span id="syncDot"></span></div>
+
+<!-- client's phone -->
+<div class="ad" id="phone">
+  <div class="ph-bar"><span>9:41</span><span class="ph-notch"></span><span>5G</span></div>
+  <div class="ph-head"><span class="ph-av"><canvas id="phAv" width="96" height="96"></canvas></span><div><b>Mara Okafor</b><small>Wedding photography</small></div><span class="ph-live"><i></i>Live</span></div>
+  <div class="ph-view">
+    <div class="ph-thread" id="pthread">
+      <div class="pi" id="p1"><div class="ph-msg">Hi Ruby and Sol! 13 March is open and I'd love to. Full day is $3,200, quote attached.</div></div>
+      <div class="pi" id="p2"><div class="ph-card"><b>Quote #Q-0431 · Full day</b><small>$3,200 incl. GST · valid 14 days</small><div class="ph-btn" data-layout-allow-overlap><span id="p2b">Accept quote</span><span class="ok" id="p2ok">Accepted ✓</span></div></div></div>
+      <div class="pi" id="p3"><div class="ph-sys">Quote accepted · contract sent</div></div>
+      <div class="pi" id="p4"><div class="ph-card"><b>Contract #C-0431</b><small>12 clauses · plain English</small><div class="ph-sig"><svg viewBox="0 0 300 70" preserveAspectRatio="none"><path id="sig" d="M12 48c14-22 26-30 30-22s-4 34 6 30 20-38 30-32-2 32 8 30 22-26 30-20-4 26 6 24 18-24 30-18 4 20 12 18 24-22 36-16 8 20 20 16 26-20 40-14 10 16 22 12"/></svg></div><div class="ph-btn" data-layout-allow-overlap><span id="p4b">Sign</span><span class="ok" id="p4ok">Signed ✓</span></div></div></div>
+      <div class="pi" id="p5"><div class="ph-card"><b>Deposit · $960</b><small>Secures Sat 13 Mar</small><div class="ph-btn" data-layout-allow-overlap><span id="p5b">Pay deposit</span><span class="ok" id="p5ok">Paid with Apple Pay ✓</span></div></div></div>
+    </div>
+    <div class="ph-thread" id="pthread2">
+      <div class="pi" id="g1"><div class="ph-card"><b>Your gallery is ready</b><small>412 photos · 2 films · rubyandsol.lenstrybe.com</small><div class="ph-thumbs"><span><canvas data-seed="3" data-mood="golden"></canvas></span><span><canvas data-seed="11" data-mood="rose"></canvas></span><span><canvas data-seed="29" data-mood="cool"></canvas></span><span><canvas data-seed="9" data-mood="forest"></canvas></span></div><div class="ph-btn"><span>Download all</span></div></div></div>
+      <div class="pi" id="g2"><div class="ph-card"><b>How was Mara?</b><small>Verified booking · one tap</small><div class="ph-stars"><i id="s1">★</i><i id="s2">★</i><i id="s3">★</i><i id="s4">★</i><i id="s5">★</i></div></div></div>
+      <div class="pi" id="g3"><div class="ph-sys">Thanks! Your review is on Mara's profile.</div></div>
+    </div>
+  </div>
+  <div class="ph-pin">Message Mara</div>
+  <div class="ad" id="touch"></div>
+</div>
+
+<div class="ad" id="cap" data-layout-allow-overlap><span id="capChip" data-layout-allow-overlap><i></i><span id="capChipT">For clients</span></span><div id="capRow"><span id="capN" data-layout-allow-overlap>1</span><span id="capT" data-layout-allow-overlap></span></div></div>
+<div class="ad" id="toast" data-layout-allow-overlap><div><i></i><span id="toastT" data-layout-allow-overlap></span></div></div>
+
+<div class="ad" id="end" data-layout-allow-overlap>
+  <img id="endLogo" src="assets/brand/logo-white.svg" alt="LensTrybe" />
+  <p id="endH" data-layout-allow-overlap>The simple way to book, <span class="ad-serif ad-grad">and be booked.</span></p>
+  <div id="endChips"><span><i></i>Free for clients</span><span><i></i>No commissions for creatives</span></div>
+  <span id="endU">lenstrybe.com</span>
+</div>
+
+{{AUDIO}}
+</div>
+<script>
+window.GEO = {{GEO}};
+{{TIMELINE}}
+</script>
+</body>
+</html>

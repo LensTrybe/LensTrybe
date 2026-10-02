@@ -58,6 +58,10 @@ export default function Join() {
   const google = async () => { if (code && code.trim()) return setErr('Founding codes use email sign-up. Fill in the form and your code is applied.'); const r = await signInWithGoogle('', kind, f.news); if (r.error) setErr(r.error); else if (!LIVE) nav(kind === 'creative' ? '/onboarding' : '/portal/harper-leo') }
   // back from Google with no LensTrybe account yet (they started from Log in): choose, then it's made
   const auth = useAuth(); const [gBusy, setGBusy] = useState(false)
+  // already a creative here: the code is used from the Founding hub, on the account they have
+  const foundingPath = code && code.trim() ? '/app/founding?code=' + encodeURIComponent(code.trim()) : ''
+  useEffect(() => { if (LIVE && foundingPath && auth.profile) nav(foundingPath, { replace: true }) }, [auth.profile]) // eslint-disable-line react-hooks/exhaustive-deps
+  const loginForCode = () => { try { sessionStorage.setItem('returnTo', foundingPath) } catch { /* ignore */ } nav('/login') }
   const gPending = LIVE && auth.user && !auth.loading && !auth.profile && !auth.clientAccount
   const asClient = async () => {
     if (gBusy) return; setGBusy(true); const { first: gf, last: gl } = googleNames(auth.user)
@@ -105,6 +109,7 @@ export default function Join() {
             {kind === 'creative' && (code === null
               ? <button type="button" className="alt left" onClick={() => setCode('')}>Have a founding code? <b>Add it</b></button>
               : <label className="lf"><span>Founding code <button type="button" className="forgot" onClick={() => setCode(null)}>Remove</button></span><input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="The code from your invite email" autoFocus spellCheck={false} /></label>)}
+            {kind === 'creative' && code !== null && code.trim() && <button type="button" className="alt left" onClick={loginForCode}>Already on LensTrybe? <b>Log in to use your code</b></button>}
             <label className="ltick"><input type="checkbox" checked={f.news} onChange={e => u('news', e.target.checked)} /><span>Subscribe me to The Trybe Edit, LensTrybe's monthly read. Unsubscribe any time.</span></label>
             {err && <p className="jerr">{err}</p>}
             <button type="submit" className="btn w lg" disabled={busy} style={busy ? { opacity: .6 } : undefined}>{busy ? 'One moment' : kind === 'creative' ? 'Continue, pick a plan' : 'Create my account'} <Icon name="arrow" size={14} /></button>

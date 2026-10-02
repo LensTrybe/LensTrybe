@@ -13,6 +13,7 @@ import '../../styles/public.css'
 import '../../styles/pages.css'
 import './onboard.css'
 import { planLabel } from '../../backend/tierFeatures'
+import { useFoundingTaken } from '../../lib/founding'
 
 // The one step after Join: pick a plan, agree, and the account is made. Everything else (photo, bio,
 // packages, availability) is the checklist inside, filled in whenever suits. A founding code from
@@ -34,6 +35,13 @@ export default function Onboard() {
   const j = google ? { first: gn.first, last: gn.last, email: gUser?.email || '', disc: gDisc, news: false } : (state || {})
   const first = j.first || '', last = j.last || '', email = j.email || '', disc0 = j.disc || 'Photographer', password = j.password || '', code = (j.code || '').toUpperCase()
   const founding = !!code
+  // What the code gives, as the signup trigger will grant it: the first 100 to redeem get 12 months
+  // and the badge, after that 6 months and no badge. A comped code (another tier) is neither.
+  const taken = useFoundingTaken()
+  const comp = founding && j.codeTier && j.codeTier.toLowerCase() !== 'expert'
+  const freeMonths = taken != null && taken >= 100 ? 6 : 12
+  const freeUntil = (() => { const d = new Date(); d.setMonth(d.getMonth() + freeMonths); return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) })()
+  const foundingLine = comp ? planLabel(j.codeTier[0].toUpperCase() + j.codeTier.slice(1)) + ', on us. Your code sets it up as you join.' : 'Trybe Complete free for ' + freeMonths + ' months, until ' + freeUntil + ', then $49 a month for life' + (freeMonths === 12 ? ', plus the Founding Creative badge' : '') + '. Three real client jobs in the first six months keeps it.'
   const lock = founding ? (j.codeTier ? j.codeTier[0].toUpperCase() + j.codeTier.slice(1) : 'Expert') : ''
   const [plan, setPlan] = useState(lock || 'Pro'), [agree, setAgree] = useState(false), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => {
@@ -59,7 +67,7 @@ export default function Onboard() {
       if (busy) return; setBusy(true)
       const r = await signUpCreative({ first, last, email, password, disc, tier: plan.toLowerCase(), billing: 'monthly', code, news: j.news !== false })
       setBusy(false)
-      if (r.error) return setErr(r.error)
+      if (r.error) { if (r.code === 'exists' && code) { try { sessionStorage.setItem('returnTo', '/app/founding?code=' + encodeURIComponent(code)) } catch { /* ignore */ } return setErr('There is already an account with that email. Log in and use your code from the Founding hub, so you keep your account.') } return setErr(r.error) }
       try { sessionStorage.removeItem('lt_join') } catch { /* ignore */ }
       return nav(r.needsConfirm ? '/check-email' : '/app/today?welcome=1', { replace: true, state: { email, as: 'creative' } })
     }
@@ -78,7 +86,7 @@ export default function Onboard() {
       <header className="obh"><Link to="/"><Logo height={18} /></Link><div className="obs">{['You', 'Plan', 'Your workspace'].map((t, i) => <span key={t} className={i < 1 ? 'd' : i === 1 ? 'c' : ''}><i />{t}</span>)}</div></header>
       <main className="obw">
         <div className="obc lg">
-          <p className="eb g">{founding ? 'Founding creative programme' : 'Last step, ' + first}</p><h1>{founding ? 'Your place is held.' : 'Pick a plan.'}</h1><p className="sub">{founding ? 'Trybe Complete free until 21 September 2027, then $49 a month for life, plus the badge. Three real client jobs in the first six months keeps it.' : 'Three months free on any paid plan: add a card, pay nothing until month four, cancel before then and pay nothing at all. Trybe Free is free forever. Change it any time.'}</p>
+          <p className="eb g">{founding ? 'Founding creative programme' : 'Last step, ' + first}</p><h1>{founding ? 'Your place is held.' : 'Pick a plan.'}</h1><p className="sub">{founding ? foundingLine : 'Three months free on any paid plan: add a card, pay nothing until month four, cancel before then and pay nothing at all. Trybe Free is free forever. Change it any time.'}</p>
           {google && <div className="obdisc" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 16px', alignItems: 'center' }}><span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>What you do</span>{['Photographer', 'Videographer', 'Both'].map(x => <button key={x} type="button" onClick={() => setGDisc(x)} className={'btn sm ' + (gDisc === x ? 'k' : 'g')}>{x}</button>)}</div>}
           <div className="plans4">{PLANS.map(([n, pr, d, tag]) => <button key={n} type="button" className={plan === n ? 'on' : ''} disabled={founding && n !== lock} onClick={() => { setPlan(n); setErr('') }}><b>{planLabel(n)}</b><span>{pr}{pr !== 'Free' && <small style={{ display: 'inline', minHeight: 0, marginLeft: 3 }}>/mo</small>}</span><small>{d}</small><em>{founding && n === lock ? 'Founding: free for a year' : tag}</em></button>)}</div>
           {disc0 === 'Both' && !['Expert', 'Elite'].includes(plan) && <p className="fine">Photographer and videographer on one profile needs Trybe Complete or Trybe Studio. On {planLabel(plan)} you start as a photographer and can add film later.</p>}

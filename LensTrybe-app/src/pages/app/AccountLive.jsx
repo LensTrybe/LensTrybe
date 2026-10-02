@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
+import { FOUNDING_TERMS_VERSION } from '../../backend/foundingTerms'
+import { foundingReason } from '../../lib/auth'
 import Icon from '../../components/Icon'
 import { useFlows } from '../../lib/flows'
 import { useAuth } from '../../backend/AuthContext'
@@ -144,15 +146,52 @@ export function ReferralsLive() {
 /* Founding hub: the three responsibilities that keep the founding deal, and the feedback form. */
 const FB_CATS = ['What is working well', 'What could be better', 'A feature idea', 'A bug or problem', 'Something else']
 const thisMonth = iso => { if (!iso) return false; const d = new Date(iso), n = new Date(); return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() }
+// Not a founding creative yet: use a code from an invite on the account they already have.
+const REDEEM_WHY = {
+  already_founding: 'You are already a founding creative.',
+  has_subscription: 'You are already on a paid plan. Email connect@lenstrybe.com and we will move you across to the founding offer.',
+  deleting: 'Your account is set to be deleted. Cancel that in Settings first, then use your code.',
+  rate_limited: 'Too many tries. Wait ten minutes and try again.',
+  not_creative: 'Founding codes are for creative accounts.',
+  signed_out: 'Log in again, then use your code.',
+}
+function FoundingCode({ user, refresh, toast }) {
+  const [sp] = useSearchParams()
+  const [code, setCode] = useState(() => String(sp.get('code') || '').toUpperCase()), [agree, setAgree] = useState(false), [busy, setBusy] = useState(false), [err, setErr] = useState(''), [won, setWon] = useState(null)
+  const until = m => { const d = new Date(); d.setMonth(d.getMonth() + m); return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) }
+  const redeem = async e => {
+    e.preventDefault(); if (busy) return; setErr('')
+    if (!code.trim()) return setErr('Paste the code from your invite email.')
+    if (!agree) return setErr('Tick the box to accept the Founding Creative Agreement.')
+    setBusy(true)
+    try { const r = await live.redeemFoundingCode(code, FOUNDING_TERMS_VERSION); if (!r.ok) setErr(REDEEM_WHY[r.reason] || foundingReason(r.reason)); else setWon(r) } catch (x) { setErr(x.message) }
+    setBusy(false)
+  }
+  const addCard = async () => { setBusy(true); try { const r = await payWithRevolut({ user: { id: user.id, email: user.email }, tier: 'expert', billing: 'monthly', fullName: user.email }); if (r === 'success') toast('Card saved. Nothing is charged until your free months end.') } catch { toast('The card window could not open. Add it any time from Subscription.') } setBusy(false); refresh() }
+  if (won) return (
+    <div className="card lg s7"><div className="h"><b>{won.founding ? 'Welcome to the founding 100' : 'Your code is applied'}</b></div>
+      <p className="note2">{won.founding ? 'You are on Trybe Complete, free for ' + won.months + ' months until ' + until(won.months) + ', then $49 a month for life' + (won.badge ? ', with the Founding Creative badge on your profile' : '') + '.' : 'Your plan is now ' + planLabel(won.tier) + '.'}</p>
+      {won.founding && <p className="note2">Add a card now so nothing stops when the free months end. Nothing is charged until {until(won.months)}.</p>}
+      <div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>{won.founding && <button type="button" className="btn w sm" disabled={busy} onClick={addCard}>{busy ? 'Opening' : 'Add a card'}</button>}<button type="button" className="btn g sm" disabled={busy} onClick={refresh}>{won.founding ? 'Later, open my founding hub' : 'Done'}</button></div>
+    </div>)
+  return (
+    <form className="card lg s7" onSubmit={redeem}><div className="h"><b>Got a founding invite?</b></div>
+      <p className="note2">Use your code here. You keep this account and everything in it.</p>
+      <label className="bf" style={{ marginTop: 10 }}><span>Founding code</span><input value={code} onChange={e => { setCode(e.target.value.toUpperCase()); setErr('') }} placeholder="The code from your invite email" spellCheck={false} autoComplete="off" /></label>
+      <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginTop: 10, fontSize: 13.5, lineHeight: 1.5 }}><input type="checkbox" checked={agree} onChange={e => { setAgree(e.target.checked); setErr('') }} style={{ marginTop: 3 }} /><span>I accept the <a href="/legal/founding" target="_blank" rel="noopener noreferrer">Founding Creative Agreement</a></span></label>
+      {err && <p className="note2" style={{ color: 'var(--pink-t, #c11f5a)', marginTop: 8 }}>{err}</p>}
+      <div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8 }}><button type="submit" className="btn w sm" disabled={busy}>{busy ? 'Checking' : 'Use my code'}</button><Link className="btn g sm" to="/founding">About the programme</Link></div>
+    </form>)
+}
 export function FoundingLive() {
-  const F = useFlows(); const { toast } = F; const { user, profile } = useAuth()
+  const F = useFlows(); const { toast } = F; const { user, profile, fetchUserData } = useAuth()
   const isFounding = !!(profile && (profile.founding_member === true || profile.founding_member === 'true'))
   const deal = String(profile?.founding_deal_status || 'active')
   const [d, setD] = useState(null), [cat, setCat] = useState(FB_CATS[0]), [msg, setMsg] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => { if (user?.id && isFounding) live.loadFounding(user.id).then(setD).catch(() => setD({ listing: false, jobs: 0, lastFeedback: null })) }, [user?.id, isFounding])
   if (!isFounding) return (
     <section className="view"><Head h="Founding hub" p="For LensTrybe's founding creatives." />
-      <div className="grid"><div className="card lg s7"><div className="h"><b>Founding creatives only</b></div><p className="note2">This hub is for LensTrybe founding creatives. If you were invited and entered your code at sign-up, it will appear here.</p><div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8 }}><Link className="btn g sm" to="/founding">About the founding programme</Link><Link className="btn g sm" to="/app">Back to Today</Link></div></div></div>
+      <div className="grid"><FoundingCode user={user} toast={toast} refresh={() => fetchUserData?.(user.id, { silent: true })} /></div>
     </section>)
   const fbDone = thisMonth(d?.lastFeedback)
   const items = [
