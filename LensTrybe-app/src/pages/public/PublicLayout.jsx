@@ -21,6 +21,9 @@ export default function PublicLayout() {
   // outside the launch area: read anything, but every action points at the waitlist for the area
   const away = outside(), wl = pathname === '/waitlist'
   const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/booking-unavailable', '/auth/confirm', '/waitlist', '/support', '/upcoming', '/founding', '/unsubscribe'].includes(pathname) || pathname.startsWith('/unsubscribe/') || pathname.startsWith('/edit') || pathname.startsWith('/blog') || pathname.startsWith('/jobs')
+  // Blog and The Trybe Edit sit side by side in the header, so only one lights up at a time
+  const editOn = pathname === '/blog/edit' || pathname.startsWith('/edit')
+  const blogOn = pathname.startsWith('/blog') && !editOn
   const [lite, setLite] = useState(!darkTop)
   const [menu, setMenu] = useState(false)
   useEffect(() => {
@@ -48,12 +51,13 @@ export default function PublicLayout() {
         <Link className="logo" to="/" aria-label="LensTrybe home"><span className="lw"><Logo onDark height={26} /></span><span className="li"><Logo height={26} /></span><span className="tagline">Connect. Capture. Create.</span></Link>
         <div className="r lg" ref={nav} onPointerOver={e => glide(e.target.closest("a"))} onPointerLeave={() => glide(null)}>
           <i className="glide" aria-hidden="true" />
-          <NavLink to="/how-it-works" className="hide-m">How it works</NavLink>
-          {!away && <NavLink to="/creatives" className="hide-m">Find a creative</NavLink>}
-          {!away && <NavLink to="/jobs" className="hide-m">Post a job</NavLink>}
-          <NavLink to="/pricing" className="hide-m">Pricing</NavLink>
-          <NavLink to="/blog" className="hide-m">Blog</NavLink>
-          {away && <NavLink to="/founding" className="hide-m">Founding</NavLink>}
+          <NavLink to="/how-it-works" className="hide-m hide-t">How it works</NavLink>
+          {!away && <NavLink to="/creatives" className="hide-m hide-s">Find a creative</NavLink>}
+          {!away && <NavLink to="/jobs" className="hide-m hide-s">Post a job</NavLink>}
+          <NavLink to="/pricing" className="hide-m hide-s">Pricing</NavLink>
+          <Link to="/blog" className="hide-m hide-t" aria-current={blogOn ? 'page' : undefined}>Blog</Link>
+          <Link to="/blog/edit" className="hide-m" aria-current={editOn ? 'page' : undefined}>The Trybe Edit</Link>
+          {away && <NavLink to="/founding" className="hide-m hide-s">Founding</NavLink>}
           {signedIn ? <Link to={isClient ? '/portal' : '/app'} className="cta">{isClient ? 'My portal' : 'My workspace'}</Link> : <>
           <NavLink to="/login">Log in</NavLink>
           {away ? <Link to={waitlistTo()} className="cta">Join the waitlist</Link> : <Link to="/join" className="cta">Join as a creative</Link>}</>}
