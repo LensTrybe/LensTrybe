@@ -1064,8 +1064,9 @@
 /* the hero column never grows past the screen (the Edit's subscribe form pushed it to 434px on a 390px phone) */
 .pub .hiw.edit,.pub .hiw.bloghub,.pub .hiw.blogpost{grid-template-columns:minmax(0,1fr)}
 
-/* the header between phone and wide desktop (4 Oct 2026): with Blog and The Trybe Edit in it, it no
-   longer fits under about 1180px, so the quieter links move into the menu button in two steps */
-@media (min-width:701px) and (max-width:1180px){.pub .top .r .hide-t{display:none}.pub .top .r .mb{display:grid;place-items:center;width:40px;height:40px}}
-@media (min-width:701px) and (max-width:940px){.pub .top .r .hide-s{display:none}}
-@media (min-width:941px) and (max-width:1100px){.pub .top .logo .tagline{display:none}}
+/* the header between phone and wide desktop (4 Oct 2026). Everything fits from 1110px; below that the
+   tagline goes first, then How it works moves into the menu button, then Find a creative, Post a job
+   and Pricing. The Lens, Log in and Join stay in the header at every width above a phone. */
+@media (min-width:701px) and (max-width:1110px){.pub .top .logo .tagline{display:none}}
+@media (min-width:701px) and (max-width:959px){.pub .top .r .hide-t{display:none}.pub .top .r .mb{display:grid;place-items:center;width:40px;height:40px}}
+@media (min-width:701px) and (max-width:880px){.pub .top .r .hide-s{display:none}}

@@ -46,10 +46,10 @@ export function postHead(p) {
       datePublished: p.publish_at || undefined, dateModified: p.updated_at || p.publish_at || undefined,
       author: { '@id': SITE + '/#org', '@type': 'Organization', name: 'LensTrybe', url: SITE + '/' },
       publisher: ORG, inLanguage: 'en-AU', mainEntityOfPage: SITE + path,
-      articleSection: p.category || aud.label, isPartOf: { '@type': 'Blog', '@id': SITE + '/blog#blog', name: 'The LensTrybe blog', url: SITE + '/blog' },
+      articleSection: p.category || aud.label, isPartOf: { '@type': 'Blog', '@id': SITE + '/blog#blog', name: 'The Lens by LensTrybe', url: SITE + '/blog' },
     },
     { '@type': 'BreadcrumbList', itemListElement: [
-      { '@type': 'ListItem', position: 1, name: 'Blog', item: SITE + '/blog' },
+      { '@type': 'ListItem', position: 1, name: 'The Lens', item: SITE + '/blog' },
       { '@type': 'ListItem', position: 2, name: aud.label, item: SITE + aud.path },
       { '@type': 'ListItem', position: 3, name: headline, item: SITE + path },
     ] },
@@ -65,9 +65,9 @@ export function postHead(p) {
 
 // The hub's four pages: /blog and its three pills. Each is a page of its own for Google.
 export const HUBS = {
-  all: { path: '/blog', title: 'The LensTrybe blog · Guides for hiring and running a creative business', description: 'Practical guides for South East Queensland businesses hiring photographers and videographers, and for creatives running their own business. Plus The Trybe Edit.' },
-  clients: { path: '/blog/clients', title: 'Hiring a photographer or videographer · The LensTrybe blog', description: 'Straight answers for South East Queensland businesses hiring photographers and videographers: prices, briefs, what to ask and what to expect.' },
-  creatives: { path: '/blog/creatives', title: 'For photographers and videographers · The LensTrybe blog', description: 'Practical guides for photographers and videographers running their own business: pricing, clients, quotes, contracts and getting found.' },
+  all: { path: '/blog', title: 'The Lens by LensTrybe · Guides for hiring and running a creative business', description: 'Practical guides for South East Queensland businesses hiring photographers and videographers, and for creatives running their own business. Plus The Trybe Edit.' },
+  clients: { path: '/blog/clients', title: 'Hiring a photographer or videographer · The Lens by LensTrybe', description: 'Straight answers for South East Queensland businesses hiring photographers and videographers: prices, briefs, what to ask and what to expect.' },
+  creatives: { path: '/blog/creatives', title: 'For photographers and videographers · The Lens by LensTrybe', description: 'Practical guides for photographers and videographers running their own business: pricing, clients, quotes, contracts and getting found.' },
   edit: { path: '/blog/edit', title: 'The Trybe Edit · LensTrybe', description: "LensTrybe's monthly read for photographers and videographers who are serious about building a business. A new issue on the 1st of every month." },
 }
 // A hub page's head. items (optional) are the cards on it, listed for Google in order.

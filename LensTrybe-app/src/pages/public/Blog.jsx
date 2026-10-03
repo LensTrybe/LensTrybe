@@ -12,7 +12,7 @@ import { loadLatest, loadPost, loadPosts, loadRelated } from '../../lib/blog'
 import BlogPills from '../../components/BlogPills'
 import { Subscribe } from './Edit'
 
-// The LensTrybe blog (4 Oct 2026). A post: the dark lens opener with the title, then the article
+// The Lens, LensTrybe's guides (4 Oct 2026; the addresses stay /blog). A post: the dark lens opener with the title, then the article
 // on the light aurora body, its questions, one call to action, three more posts for the same
 // audience, and the audience's sign-up panel. Posts live in edit_issues (kind = 'post').
 
@@ -90,7 +90,7 @@ function NotFound() {
   return (
     <section className="hiw blogpost dark darkhero" style={{ minHeight: '70vh' }}>
       <canvas className="gl" ref={cv} aria-hidden="true" />
-      <div className="in"><p className="eb">The LensTrybe blog</p><h1><span className="ln"><span>That post <em>isn't here.</em></span></span></h1><p className="sub">It may have moved, or it isn't published yet.</p><div className="ctas"><Link className="btn w" to="/blog">Back to the blog <Icon name="arrow" size={14} /></Link></div></div>
+      <div className="in"><p className="eb">The Lens</p><h1><span className="ln"><span>That post <em>isn't here.</em></span></span></h1><p className="sub">It may have moved, or it isn't published yet.</p><div className="ctas"><Link className="btn w" to="/blog">Back to The Lens <Icon name="arrow" size={14} /></Link></div></div>
     </section>
   )
 }
@@ -115,7 +115,7 @@ export function BlogPost() {
       <section className="hiw blogpost dark darkhero">
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
-          <nav className="crumb" aria-label="Breadcrumb"><Link to="/blog">Blog</Link><i aria-hidden="true">›</i><Link to={aud.path}>{aud.label}</Link></nav>
+          <nav className="crumb" aria-label="Breadcrumb"><Link to="/blog">The Lens</Link><i aria-hidden="true">›</i><Link to={aud.path}>{aud.label}</Link></nav>
           {post.category && <p className="eb">{post.category}</p>}
           <h1><span className="ln"><span dangerouslySetInnerHTML={{ __html: titleHtml(post.title) }} /></span></h1>
           {post.dek && <p className="sub">{post.dek}</p>}
@@ -177,7 +177,7 @@ export function BlogHub({ which = 'all' }) {
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
           <BlogPills on={which === 'all' ? null : which} />
-          {which === 'all' ? <p className="eb">The LensTrybe blog</p> : <Link className="eb" to="/blog">The LensTrybe blog</Link>}
+          {which === 'all' ? <p className="eb">The Lens · by LensTrybe</p> : <Link className="eb" to="/blog">The Lens · by LensTrybe</Link>}
           <h1><span className="ln"><span>Straight answers</span></span><span className="ln"><span>for <em>creative work.</em></span></span></h1>
           <p className="sub">{SUBS[which]}</p>
         </div>
@@ -186,7 +186,7 @@ export function BlogHub({ which = 'all' }) {
         <Aurora />
         <section className="sec" style={{ paddingTop: 'clamp(40px,6vw,72px)' }}><div className="wrap">
           {!items ? <div className="bempty" aria-busy="true" /> : !first ? (
-            <div className="stephead rv"><div><p className="eb g">{which === 'all' ? 'The LensTrybe blog' : AUDIENCES[which].label}</p><h2>The first posts <em>are on the way.</em></h2></div></div>
+            <div className="stephead rv"><div><p className="eb g">{which === 'all' ? 'The Lens' : AUDIENCES[which].label}</p><h2>The first posts <em>are on the way.</em></h2></div></div>
           ) : <>
             <Featured p={first} />
             {rest.length > 0 && <div className="agrid rv" style={{ marginTop: 'clamp(16px,2vw,24px)' }}>{rest.map(p => <PostCard key={p.kind + p.slug} p={p} />)}</div>}
