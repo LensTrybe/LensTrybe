@@ -974,3 +974,72 @@
   .pub .skillrow{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
   .pub .skill{min-width:0}.pub .skill b,.pub .skill span{min-width:0;overflow-wrap:anywhere}
 }
+
+/* ============================================================
+   THE BLOG (4 Oct 2026): posts, hub and pills. Matches the Edit:
+   dark lens opener, then the article on the light aurora body.
+   ============================================================ */
+.pub .hiw.blogpost{min-height:auto;padding:clamp(130px,16vw,170px) clamp(16px,4vw,48px) clamp(64px,8vw,110px)}
+.pub .hiw.blogpost h1{font-size:clamp(36px,5.2vw,72px);line-height:1.04;letter-spacing:-.04em;text-wrap:balance}
+.pub .hiw.blogpost .sub{max-width:60ch}
+.pub .hiw .crumb{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:500;color:rgba(255,255,255,.6);animation:fadeup .9s var(--ease) .1s backwards}
+.pub .hiw .crumb a{color:rgba(255,255,255,.78);transition:color .2s}
+.pub .hiw .crumb a:hover{color:#fff}
+.pub .hiw .crumb i{font-style:normal;color:rgba(255,255,255,.4)}
+.pub .hiw.blogpost .imeta{flex-wrap:wrap;justify-content:center;row-gap:8px}
+
+/* the article: about 720px of reading width */
+.pub .bwrap{max-width:calc(760px + 2 * clamp(16px,4vw,48px))}
+.pub .draftbar{margin:0 0 26px;padding:14px 18px;border-radius:18px;background:rgba(255,45,120,.08);border:1px solid rgba(255,45,120,.3);color:var(--pink-t);font-size:14px;line-height:1.5}
+.pub .draftbar b{font-weight:700}
+.pub .bhero{margin:0 0 clamp(26px,4vw,40px);border-radius:26px;overflow:hidden;background:#0a0a0f;box-shadow:0 30px 70px -34px rgba(31,38,90,.45)}
+.pub .bhero img{display:block;width:100%;height:auto;aspect-ratio:1200/630;object-fit:cover}
+.pub .prose{font-size:clamp(17px,1.25vw,18px);line-height:1.7;color:var(--ink-2);overflow-wrap:break-word}
+.pub .prose>*+*{margin-top:1.05em}
+.pub .prose h2{font-size:clamp(28px,3vw,36px);font-weight:500;letter-spacing:-.035em;line-height:1.12;color:var(--ink);margin-top:1.9em;scroll-margin-top:96px;text-wrap:balance}
+.pub .prose h3{font-size:clamp(20px,1.9vw,24px);font-weight:600;letter-spacing:-.02em;line-height:1.25;color:var(--ink);margin-top:1.6em;scroll-margin-top:96px}
+.pub .prose h4{font-size:18px;font-weight:600;color:var(--ink);margin-top:1.4em}
+.pub .prose h2+*,.pub .prose h3+*,.pub .prose h4+*{margin-top:.6em}
+.pub .prose>:first-child{margin-top:0}
+.pub .prose a{color:var(--green-t);font-weight:500;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.pub .prose a:hover{text-decoration-thickness:2px}
+.pub .prose strong{color:var(--ink);font-weight:600}
+.pub .prose ul,.pub .prose ol{padding-left:1.3em}
+.pub .prose li+li{margin-top:.45em}
+.pub .prose li::marker{color:var(--ink-3)}
+.pub .prose blockquote{margin:1.6em 0;padding:22px 0;border-top:1px solid var(--line-2);border-bottom:1px solid var(--line-2);font-family:var(--serif);font-style:italic;font-size:clamp(21px,2.4vw,26px);line-height:1.45;color:var(--ink)}
+.pub .prose blockquote p{margin:0}
+.pub .prose img{display:block;max-width:100%;height:auto;border-radius:20px}
+.pub .prose figure{margin-block:1.6em}
+.pub .prose figcaption{margin-top:10px;font-size:13.5px;color:var(--ink-3);text-align:center}
+.pub .prose hr{border:0;border-top:1px solid var(--line-2);margin-block:2.2em}
+.pub .prose code{font-size:.88em;padding:.12em .38em;border-radius:6px;background:rgba(20,17,26,.06);color:var(--ink)}
+/* tables: price tables in most posts. The wrapper scrolls sideways on a phone; the page never does. */
+.pub .prose .tbl{max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;border-radius:22px;background:var(--glass-2);border:1px solid rgba(255,255,255,.9);box-shadow:0 18px 50px -24px rgba(31,38,90,.25),inset 0 1px 0 #fff;margin-block:1.6em}
+.pub .prose .tbl:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+.pub .prose table{width:100%;border-collapse:collapse;font-size:15px;line-height:1.45;font-variant-numeric:tabular-nums}
+.pub .prose th{padding:14px 16px;text-align:left;font-size:11.5px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);border-bottom:1px solid var(--line-2);white-space:nowrap}
+.pub .prose td{padding:13px 16px;color:var(--ink-2);border-bottom:1px solid var(--line);vertical-align:top}
+.pub .prose td:first-child{color:var(--ink);font-weight:500}
+.pub .prose tr:last-child td{border-bottom:0}
+.pub .prose [align=right]{text-align:right;white-space:nowrap}
+.pub .prose [align=center]{text-align:center}
+
+/* questions */
+.pub .bfaq{margin-top:clamp(40px,6vw,72px)}
+.pub .bfaq h2{font-size:clamp(28px,3.4vw,44px);font-weight:500;letter-spacing:-.04em;line-height:1.08;margin:10px 0 20px;color:var(--ink)}
+.pub .bfaq h2 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink-3)}
+.pub .bfaq details{border-radius:22px;margin-top:10px}
+.pub .bfaq summary{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;cursor:pointer;list-style:none;font-size:17px;font-weight:600;letter-spacing:-.01em;color:var(--ink)}
+.pub .bfaq summary::-webkit-details-marker{display:none}
+.pub .bfaq summary::after{content:"+";flex:none;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:18px;font-weight:500;color:var(--ink-2);border:1px solid var(--line-2);transition:transform .3s var(--spring)}
+.pub .bfaq details[open] summary::after{transform:rotate(45deg)}
+.pub .bfaq .ans{padding:0 22px 20px;font-size:16px;line-height:1.65;color:var(--ink-2)}
+.pub .bfaq .ans a{color:var(--green-t);text-decoration:underline;text-underline-offset:3px}
+
+/* the call to action, and the sign-up panels */
+.pub .bpost .bcta{margin-top:clamp(40px,6vw,72px)}
+.pub .closer .lede{margin-top:10px;max-width:52ch;font-size:15.5px;line-height:1.55;color:var(--ink-2)}
+.pub .bpanel .subs{width:min(440px,100%)}
+.pub .bcard .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+@media (max-width:600px){.pub .closer .ctas,.pub .closer .ctas .btn{width:100%}.pub .closer .ctas .btn{justify-content:center}}

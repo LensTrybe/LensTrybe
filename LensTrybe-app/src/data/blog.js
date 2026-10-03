@@ -7,7 +7,7 @@ export const POSTS = [
     title: 'A sample post for clients, *in demo mode.*',
     dek: 'A placeholder that shows how a client post looks. Real posts appear here once they are published.',
     meta_title: 'A sample post for clients', meta_description: 'A placeholder post shown in demo mode.',
-    mood: 'golden', seed: 7, approved: true, publish_at: '2026-10-06T07:00:00+10:00', updated_at: '2026-10-06T07:00:00+10:00',
+    mood: 'golden', seed: 7, approved: true, publish_at: '2026-10-02T07:00:00+10:00', updated_at: '2026-10-02T07:00:00+10:00',
     body_md: `This is sample text. It shows the reading layout, not real advice.
 
 ## A section heading
@@ -32,13 +32,14 @@ A paragraph with **bold**, *italic* and [a link to the job board](/jobs).
     title: 'A sample post for creatives, *in demo mode.*',
     dek: 'A placeholder that shows how a creative post looks. Real posts appear here once they are published.',
     meta_title: 'A sample post for creatives', meta_description: 'A placeholder post shown in demo mode.',
-    mood: 'dusk', seed: 12, approved: true, publish_at: '2026-10-07T07:00:00+10:00', updated_at: '2026-10-07T07:00:00+10:00',
+    mood: 'dusk', seed: 12, approved: true, publish_at: '2026-10-03T07:00:00+10:00', updated_at: '2026-10-03T07:00:00+10:00',
     body_md: [
       'This is sample text. It shows the reading layout, not real advice.',
       '## A section heading',
       'A paragraph with [a link to pricing](/pricing).',
       '1. A numbered item',
       '2. Another numbered item',
+      '| Sample | Column two | Column three | Column four | Column five |\n|---|---:|---:|---:|---:|\n| A wide sample row | $000 | $000 | $000 | $000 |',
     ].join('\n\n'),
     faq: [],
   },

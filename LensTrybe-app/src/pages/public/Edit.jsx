@@ -26,7 +26,7 @@ function Body({ paras }) {
   return paras.map((p, i) => p.startsWith('### ') ? <h3 key={i}>{p.slice(4)}</h3> : p.startsWith('> ') ? <blockquote key={i}><Inline text={p.slice(2)} /></blockquote> : <p key={i}><Inline text={p} /></p>)
 }
 
-function Subscribe({ dark }) {
+export function Subscribe({ dark }) {
   const toast = useToast(); const [e, setE] = useState(''); const [busy, setBusy] = useState(false)
   const go = async ev => {
     ev.preventDefault(); if (!e.trim() || busy) return

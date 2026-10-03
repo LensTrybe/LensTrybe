@@ -10,6 +10,7 @@ import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
 import HowItWorks from './pages/public/HowItWorks'
 import { EditConfirm, EditHome, EditIssue } from './pages/public/Edit'
+import { BlogPost } from './pages/public/Blog'
 import Local from './pages/public/Local'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/the-trybe-edit" element={<Go to="/edit" />} />
           <Route path="/the-trybe-edit/*" element={<Go to="/edit" />} />
           <Route path="/trybe-edit" element={<Go to="/edit" />} />
+          <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/jobs" element={<JobsBoard />} />
           <Route path="/jobs/:id" element={<JobsBoard />} />
           <Route path="/creatives" element={<Directory />} />

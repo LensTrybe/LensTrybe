@@ -7,20 +7,13 @@ import { supabase } from '../backend/supabaseClient'
 import { LIVE } from './mode'
 import { POSTS } from '../data/blog'
 
-export const AUDIENCES = {
-  clients: { label: 'For clients', path: '/blog/clients' },
-  creatives: { label: 'For creatives', path: '/blog/creatives' },
-}
+export { AUDIENCES, plain, readTime, isDraft } from './blog-head'
+import { isDraft } from './blog-head'
 // /blog/clients, /blog/creatives and /blog/edit are hub pages, never post slugs (the table checks it too)
 export const RESERVED = ['clients', 'creatives', 'edit', 'confirm']
 
 const POST = 'slug, kind, audience, title, dek, category, body_md, faq, hero_url, hero_alt, meta_title, meta_description, cta_label, cta_href, mood, seed, publish_at, updated_at, approved'
 const CARD = 'slug, kind, audience, title, dek, category, hero_url, hero_alt, mood, seed, publish_at, updated_at'
-
-// The title's accent phrase is marked *like this*; plain text drops the asterisks.
-export const plain = t => String(t || '').replace(/\*/g, '').replace(/\s+/g, ' ').trim()
-export const readTime = md => Math.max(1, Math.round(String(md || '').split(/\s+/).filter(Boolean).length / 220)) + ' min'
-export const isDraft = r => !r?.approved || new Date(r.publish_at).getTime() > Date.now()
 
 const published = q => q.eq('approved', true).lte('publish_at', new Date().toISOString())
 
