@@ -54,7 +54,7 @@ export function Founding() {
   return (
     <>
       <Head title="Founding" sub="The founding 100: invite codes, applications from the Founding page, and how each founding creative is tracking."><button className="hq-btn w sm" onClick={() => setForm({ name: '', email: '', type: 'Photographer', region: '', note: '' })}><Icon name="plus" size={14} />New invite</button></Head>{flashNode}
-      {places && <div className="hq-tiles"><Tile label="Places taken" value={`${places.used} / ${places.cap}`} sub="Live codes and founding creatives" /><Tile label="Places left" value={places.available} /><Tile label="New applications" value={newApps.length} tone={newApps.length ? 'green' : ''} /><Tile label="Founding creatives" value={st.data?.founders?.length ?? '…'} /></div>}
+      {places && <div className="hq-tiles"><Tile label="Places taken" value={`${places.used} / ${places.cap}`} sub="Taken when a creative signs up with a code" /><Tile label="Places left" value={places.available} /><Tile label="New applications" value={newApps.length} tone={newApps.length ? 'green' : ''} /><Tile label="Founding creatives" value={st.data?.founders?.length ?? '…'} /></div>}
       <div className="hq-bar"><Seg value={tab} onChange={setTab} options={[['invites', 'Invites'], ['apps', `Applications${newApps.length ? ' (' + newApps.length + ')' : ''}`], ['founders', 'Founding creatives'], ['feedback', 'Feedback']]} /></div>
       <Err>{inv.err}</Err>
       {inv.busy && !d ? <Loading /> : tab === 'invites' ? <>

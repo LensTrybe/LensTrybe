@@ -240,8 +240,10 @@ export async function redeemFoundingCode(code, termsVersion) {
   if (error) throw new Error('Could not use that code just now. Try again.')
   return data || { ok: false, reason: 'not_found' }
 }
+// Find a creative, the area pages and the ask (3 Oct 2026): listed creatives only, never an account
+// waiting to be deleted (the 30-day window) or a non-creative.
 export async function loadCreatives() {
-  const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).order('created_at', { ascending: false }).limit(200)
+  const { data, error } = await supabase.from('profiles').select(PUB).eq('is_admin', false).eq('is_listed', true).eq('account_type', 'creative').or('pending_deletion.is.null,pending_deletion.eq.false').order('created_at', { ascending: false }).limit(200)
   if (error) throw error
   const ids = (data || []).map(p => p.id)
   let rvBy = {}
@@ -867,13 +869,14 @@ export async function setSiteAddress(uid, slug) {
   if (error) throw new Error(/duplicate|unique/i.test(error.message) ? 'That address is taken. Try another.' : 'Could not save the address. Try again.')
   return s
 }
-const SITE_PROF = PUB + ', brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin'
+const SITE_PROF = PUB + ', brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin, pending_deletion'
 // Public: /site/<address or id> and /creatives/<id>. Returns null when there is no such creative.
 export async function loadSite(slug) {
   const s = String(slug || '').trim().toLowerCase(); if (!s) return null
   const q = supabase.from('profiles').select(SITE_PROF)
   const { data: p } = isUuid(s) ? await q.eq('id', s).maybeSingle() : await q.eq('custom_domain', s).maybeSingle()
-  if (!p || p.is_admin) return null
+  // an account waiting to be deleted (3 Oct 2026) is off the site, as if it had already gone
+  if (!p || p.is_admin || p.pending_deletion) return null
   const allowed = sitePagesFor(p.subscription_tier)
   // Trybe Free: the one page comes from the profile alone, never from saved pages
   const [c, rows] = await Promise.all([loadCreative(p.id), siteEditable(p.subscription_tier) ? loadSitePages(p.id).catch(() => []) : Promise.resolve([])])
@@ -1221,7 +1224,7 @@ export async function loadCollab(uid) {
   }
 }
 export async function findCreatives(uid, q) {
-  let r = supabase.from('profiles').select(PROF_MINI).eq('is_admin', false).eq('is_listed', true).neq('id', uid).order('created_at', { ascending: false }).limit(40)
+  let r = supabase.from('profiles').select(PROF_MINI).eq('is_admin', false).eq('is_listed', true).or('pending_deletion.is.null,pending_deletion.eq.false').neq('id', uid).order('created_at', { ascending: false }).limit(40)
   const s = String(q || '').trim().replace(/[%_,()]/g, ' ').slice(0, 60)
   if (s) r = r.or('business_name.ilike.%' + s + '%,city.ilike.%' + s + '%')
   const { data } = await r

@@ -65,7 +65,7 @@ export default function PublicLayout() {
       <footer className="foot">
         <div className="wrap"><div className="g">
           <span className="logo"><Logo height={20} /></span>
-          <nav><Link to="/support">Support</Link><Link to="/legal/terms">Terms</Link><Link to="/legal/privacy">Privacy</Link><Link to="/legal/refunds">Refunds</Link><Link to="/edit">The Trybe Edit</Link><Link to="/upcoming">Upcoming features</Link><a href="/app/today?preview">Workspace preview</a><a href="/portal/harper-leo?preview">Client portal preview</a></nav>
+          <nav><Link to="/support">Support</Link><Link to="/legal/terms">Terms</Link><Link to="/legal/privacy">Privacy</Link><Link to="/legal/cookies">Cookies</Link><Link to="/legal/refunds">Refunds</Link><Link to="/edit">The Trybe Edit</Link><Link to="/upcoming">Upcoming features</Link><a href="/app/today?preview">Workspace preview</a><a href="/portal/harper-leo?preview">Client portal preview</a></nav>
           <span>© 2026 LensTrybe · connect@lenstrybe.com · Photographers and videographers at launch, six more disciplines after.</span>
         </div></div>
       </footer>
