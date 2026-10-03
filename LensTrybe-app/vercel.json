@@ -1,4 +1,26 @@
 {
+  "redirects": [
+    {
+      "source": "/edit",
+      "destination": "/blog/edit",
+      "statusCode": 301
+    },
+    {
+      "source": "/the-trybe-edit",
+      "destination": "/blog/edit",
+      "statusCode": 301
+    },
+    {
+      "source": "/the-trybe-edit/:path*",
+      "destination": "/blog/edit",
+      "statusCode": 301
+    },
+    {
+      "source": "/trybe-edit",
+      "destination": "/blog/edit",
+      "statusCode": 301
+    }
+  ],
   "rewrites": [
     {
       "source": "/sitemap-creatives.xml",

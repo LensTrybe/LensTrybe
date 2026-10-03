@@ -1043,3 +1043,23 @@
 .pub .bpanel .subs{width:min(440px,100%)}
 .pub .bcard .img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 @media (max-width:600px){.pub .closer .ctas,.pub .closer .ctas .btn{width:100%}.pub .closer .ctas .btn{justify-content:center}}
+
+/* the hub and its pills */
+.pub .hiw.bloghub{min-height:88svh;padding-bottom:80px}
+.pub .hiw .bpills{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;animation:fadeup .9s var(--ease) .05s backwards}
+.pub .hiw .bpills .chip{padding:9px 16px;font-size:13px;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24);color:rgba(255,255,255,.86);backdrop-filter:blur(8px)}
+.pub .hiw .bpills .chip:hover{background:rgba(255,255,255,.16);color:#fff}
+.pub .hiw .bpills .chip.on{background:#fff;border-color:#fff;color:#0a0a0f;font-weight:600}
+.pub .hiw a.eb{transition:color .2s}
+.pub .hiw a.eb:hover{color:#fff}
+.pub .bfeat .cimg img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.pub .bfeat h2{font-size:clamp(26px,3vw,40px);font-weight:500;letter-spacing:-.035em;line-height:1.1;color:var(--ink);text-wrap:balance}
+.pub .bfeat h2 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink-3)}
+.pub .blab{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--green-t);font-weight:700}
+.pub .bempty{min-height:240px}
+.pub .bpanels{display:grid;grid-template-columns:minmax(0,1fr);gap:clamp(14px,2vw,22px)}
+.pub .bpanels>*,.pub .bpanel>div,.pub .bcta>div{min-width:0}
+.pub .hiw .bpills{max-width:100%}
+@media (max-width:480px){.pub .hiw .bpills{gap:6px}.pub .hiw .bpills .chip{padding:8px 12px;font-size:12.5px}}
+/* the hero column never grows past the screen (the Edit's subscribe form pushed it to 434px on a 390px phone) */
+.pub .hiw.edit,.pub .hiw.bloghub,.pub .hiw.blogpost{grid-template-columns:minmax(0,1fr)}

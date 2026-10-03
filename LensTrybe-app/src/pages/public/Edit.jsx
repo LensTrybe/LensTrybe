@@ -10,6 +10,7 @@ import { ISSUES } from '../../data/edit'
 import { LIVE } from '../../lib/mode'
 import { editConfirm, editSubscribe, loadEditIssues } from '../../lib/account'
 import { withUtm } from '../../lib/analytics'
+import BlogPills from '../../components/BlogPills'
 
 // Demo shows the bundled issues; live shows what the edit_issues table has published.
 function useIssues() {
@@ -52,6 +53,7 @@ export function EditHome() {
       <section className="hiw edit dark darkhero">
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
+          <BlogPills on="edit" />
           <p className="eb">LensTrybe presents</p>
           <h1 className="mast"><span className="ln"><span>The Trybe <em>Edit.</em></span></span></h1>
           <p className="sub">A monthly read for professional visual creatives who are serious about building a business, not just a following. Written by the people building LensTrybe.</p>
@@ -92,7 +94,7 @@ export function EditIssue() {
   const cv = useRef(null)
   useEffect(() => { if (!cv.current) return; const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); scrollTo(0, 0); return () => l.destroy() }, [slug, !!issue])
   if (!issues) return <section className="hiw edit issue dark darkhero" style={{ minHeight: '60vh' }} />
-  if (!issue) return <Navigate to={withUtm('/edit')} replace />
+  if (!issue) return <Navigate to={withUtm('/blog/edit')} replace />
   return (
     <>
       <section className="hiw edit issue dark darkhero">
@@ -101,7 +103,7 @@ export function EditIssue() {
           <p className="eb">The Trybe Edit · Issue #{issue.n} · {issue.month}</p>
           <h1><span className="ln"><span><Inline text={issue.title} /></span></span></h1>
           <p className="sub">{issue.dek}</p>
-          <div className="imeta"><span>{issue.read} read</span><span>For creative professionals</span><Link to="/edit">All issues</Link></div>
+          <div className="imeta"><span>{issue.read} read</span><span>For creative professionals</span><Link to="/blog/edit">All issues</Link></div>
         </div>
       </section>
       <div className="lt">
@@ -143,7 +145,7 @@ export function EditConfirm() {
         <p className="eb">The Trybe Edit</p>
         <h1 className="mast"><span className="ln"><span>{st === 'ok' ? <>You're <em>subscribed.</em></> : st === 'bad' ? <>That link <em>didn't work.</em></> : 'Confirming…'}</span></span></h1>
         <p className="sub">{st === 'ok' ? 'A new issue of The Trybe Edit goes up on the 1st of every month.' : st === 'bad' ? (msg || 'Subscribe again and we will send a new link.') : ''}</p>
-        {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn w" to="/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
+        {st !== 'busy' && <div className="ctas" style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 18 }}><Link className="btn w" to="/blog/edit">Read The Trybe Edit <Icon name="arrow" size={14} /></Link></div>}
       </div>
     </section>
   )

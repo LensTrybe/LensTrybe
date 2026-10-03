@@ -10,7 +10,7 @@ import PublicLayout from './pages/public/PublicLayout'
 import Home from './pages/public/Home'
 import HowItWorks from './pages/public/HowItWorks'
 import { EditConfirm, EditHome, EditIssue } from './pages/public/Edit'
-import { BlogPost } from './pages/public/Blog'
+import { BlogHub, BlogPost } from './pages/public/Blog'
 import Local from './pages/public/Local'
 import Directory from './pages/public/Directory'
 import Creative from './pages/public/Creative'
@@ -60,12 +60,16 @@ export default function App() {
         <Route element={<PublicLayout />}>
           <Route path="/" element={<Home />} />
           <Route path="/how-it-works" element={<HowItWorks />} />
-          <Route path="/edit" element={<EditHome />} />
+          <Route path="/blog" element={<BlogHub which="all" />} />
+          <Route path="/blog/clients" element={<BlogHub which="clients" />} />
+          <Route path="/blog/creatives" element={<BlogHub which="creatives" />} />
+          <Route path="/blog/edit" element={<EditHome />} />
+          <Route path="/edit" element={<Go to="/blog/edit" />} />
           <Route path="/edit/confirm" element={<EditConfirm />} />
           <Route path="/edit/:slug" element={<EditIssue />} />
-          <Route path="/the-trybe-edit" element={<Go to="/edit" />} />
-          <Route path="/the-trybe-edit/*" element={<Go to="/edit" />} />
-          <Route path="/trybe-edit" element={<Go to="/edit" />} />
+          <Route path="/the-trybe-edit" element={<Go to="/blog/edit" />} />
+          <Route path="/the-trybe-edit/*" element={<Go to="/blog/edit" />} />
+          <Route path="/trybe-edit" element={<Go to="/blog/edit" />} />
           <Route path="/blog/:slug" element={<BlogPost />} />
           <Route path="/jobs" element={<JobsBoard />} />
           <Route path="/jobs/:id" element={<JobsBoard />} />

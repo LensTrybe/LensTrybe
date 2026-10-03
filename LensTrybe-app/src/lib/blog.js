@@ -6,6 +6,8 @@
 import { supabase } from '../backend/supabaseClient'
 import { LIVE } from './mode'
 import { POSTS } from '../data/blog'
+import { ISSUES } from '../data/edit'
+import { loadEditIssues } from './account'
 
 export { AUDIENCES, plain, readTime, isDraft } from './blog-head'
 import { isDraft } from './blog-head'
@@ -39,4 +41,11 @@ export async function loadPost(slug) {
 export async function loadRelated(post, n = 3) {
   const list = await loadPosts({ audience: post.audience, limit: n + 1 })
   return list.filter(p => p.slug !== post.slug).slice(0, n)
+}
+
+// The hub's /blog: posts and Edit issues together, newest first
+export async function loadLatest(limit = 30) {
+  const [posts, issues] = await Promise.all([loadPosts({ limit }), LIVE ? loadEditIssues().catch(() => []) : Promise.resolve(ISSUES)])
+  const all = [...posts, ...(issues || []).map(i => ({ ...i, kind: 'issue' }))]
+  return all.sort((a, b) => new Date(b.publish_at) - new Date(a.publish_at)).slice(0, limit)
 }

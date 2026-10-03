@@ -7,8 +7,9 @@ import { mountLens } from '../../lib/lens'
 import { applySeo } from '../../lib/seo'
 import { outside, waitlistTo } from '../../lib/region'
 import { renderMarkdown, renderInline, titleHtml } from '../../lib/markdown'
-import { AUDIENCES, CTA, ctaFor, dateAU, plain, postHead, readTime, wasUpdated } from '../../lib/blog-head'
-import { loadPost, loadRelated } from '../../lib/blog'
+import { AUDIENCES, CTA, ctaFor, dateAU, hubHead, itemPath, plain, postHead, readTime, wasUpdated } from '../../lib/blog-head'
+import { loadLatest, loadPost, loadPosts, loadRelated } from '../../lib/blog'
+import BlogPills from '../../components/BlogPills'
 import { Subscribe } from './Edit'
 
 // The LensTrybe blog (4 Oct 2026). A post: the dark lens opener with the title, then the article
@@ -35,13 +36,29 @@ function useLens(deps) {
   return cv
 }
 
-// A post as a card (hub, related posts)
+// A post or an Edit issue as a card (hub, related posts)
+const label = p => (AUDIENCES[p.audience]?.label || 'The Trybe Edit') + (p.category ? ' · ' + p.category : '')
+const Cover = ({ p }) => (p.hero_url ? <img src={p.hero_url} alt={p.hero_alt || ''} loading="lazy" decoding="async" /> : <Still seed={p.seed || 7} mood={p.mood || 'dusk'} />)
 export function PostCard({ p }) {
-  const aud = AUDIENCES[p.audience]
   return (
-    <Link className="acard bcard lg" to={'/blog/' + p.slug}>
-      <div className="img">{p.hero_url ? <img src={p.hero_url} alt={p.hero_alt || ''} loading="lazy" decoding="async" /> : <Still seed={p.seed || 7} mood={p.mood || 'dusk'} />}</div>
-      <div><small>{aud ? aud.label : 'The Trybe Edit'}{p.category ? ' · ' + p.category : ''}</small><b>{plain(p.title)}</b><span>{dateAU(p.publish_at)}</span></div>
+    <Link className="acard bcard lg" to={itemPath(p)}>
+      <div className="img"><Cover p={p} /></div>
+      <div><small>{label(p)}</small><b>{plain(p.title)}</b><span>{dateAU(p.publish_at)}</span></div>
+    </Link>
+  )
+}
+// The newest one, large
+function Featured({ p }) {
+  return (
+    <Link className="ecover bfeat lg rv" to={itemPath(p)}>
+      <div className="cimg"><Cover p={p} /><span className="ctag">{p.kind === 'issue' ? 'Issue #' + p.n : AUDIENCES[p.audience]?.label}</span></div>
+      <div className="cbody">
+        <small className="blab">{label(p)}</small>
+        <h2 dangerouslySetInnerHTML={{ __html: titleHtml(p.title) }} />
+        {p.dek && <p className="dek">{p.dek}</p>}
+        <div className="cmeta"><span>{dateAU(p.publish_at)}</span></div>
+        <span className="btn k">{p.kind === 'issue' ? 'Read the issue' : 'Read the post'} <Icon name="arrow" size={14} /></span>
+      </div>
     </Link>
   )
 }
@@ -131,6 +148,54 @@ export function BlogPost() {
           <div className="agrid rv">{related.map(p => <PostCard key={p.slug} p={p} />)}</div>
         </div></section>}
         {post.audience === 'creatives' && <section className="sec" style={{ paddingTop: 0 }}><div className="wrap bwrap"><EditPanel /></div></section>}
+      </div>
+    </>
+  )
+}
+
+// The hub: /blog (everything, newest first), /blog/clients and /blog/creatives.
+// /blog/edit is The Trybe Edit's own front (EditHome) with the same pills.
+const SUBS = {
+  all: 'Practical guides for South East Queensland businesses hiring photographers and videographers, and for the creatives running their own business. Plus The Trybe Edit, our monthly read for creatives.',
+  clients: 'Practical guides for South East Queensland businesses hiring photographers and videographers.',
+  creatives: 'Practical guides for photographers and videographers running their own business.',
+}
+export function BlogHub({ which = 'all' }) {
+  const [items, setItems] = useState(null)
+  useEffect(() => {
+    let on = true; setItems(null)
+    const load = which === 'all' ? loadLatest() : loadPosts({ audience: which })
+    load.then(d => { if (on) setItems(d) }).catch(() => { if (on) setItems([]) })
+    return () => { on = false }
+  }, [which])
+  useEffect(() => { if (items) applySeo(hubHead(which, items)) }, [items, which])
+  const cv = useLens([which])
+  const [first, ...rest] = items || []
+  return (
+    <>
+      <section className="hiw bloghub dark darkhero">
+        <canvas className="gl" ref={cv} aria-hidden="true" />
+        <div className="in">
+          <BlogPills on={which === 'all' ? null : which} />
+          {which === 'all' ? <p className="eb">The LensTrybe blog</p> : <Link className="eb" to="/blog">The LensTrybe blog</Link>}
+          <h1><span className="ln"><span>Straight answers</span></span><span className="ln"><span>for <em>creative work.</em></span></span></h1>
+          <p className="sub">{SUBS[which]}</p>
+        </div>
+      </section>
+      <div className="lt">
+        <Aurora />
+        <section className="sec" style={{ paddingTop: 'clamp(40px,6vw,72px)' }}><div className="wrap">
+          {!items ? <div className="bempty" aria-busy="true" /> : !first ? (
+            <div className="stephead rv"><div><p className="eb g">{which === 'all' ? 'The LensTrybe blog' : AUDIENCES[which].label}</p><h2>The first posts <em>are on the way.</em></h2></div></div>
+          ) : <>
+            <Featured p={first} />
+            {rest.length > 0 && <div className="agrid rv" style={{ marginTop: 'clamp(16px,2vw,24px)' }}>{rest.map(p => <PostCard key={p.kind + p.slug} p={p} />)}</div>}
+          </>}
+        </div></section>
+        <section className="sec" style={{ paddingTop: 0 }}><div className="wrap bpanels">
+          {which !== 'creatives' && <JobPanel />}
+          {which !== 'clients' && <EditPanel />}
+        </div></section>
       </div>
     </>
   )

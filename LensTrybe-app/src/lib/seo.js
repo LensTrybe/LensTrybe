@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
+import { hubHead } from './blog-head'
 
 // What Google (and link previews) read for each page (2 Oct 2026). The site is one page app, so
 // the head is set here as you move around: a title and description of its own for each public
@@ -28,7 +29,8 @@ const PAGES = {
   '/how-it-works': ['How LensTrybe works · LensTrybe', 'Post a job or find a creative, get quotes, sign, pay and receive your files in one place. How LensTrybe works for clients and for creatives.'],
   '/pricing': ['Pricing for creatives · LensTrybe', 'Plans for photographers and videographers, from free. The first three months are free on any paid plan, and there is no commission on your jobs, ever.'],
   '/founding': ['The Founding 100 · LensTrybe', 'The founding creatives programme: Trybe Complete free for twelve months for the first 100, then $49 a month locked in for life. By invitation.'],
-  '/edit': ['The Trybe Edit · LensTrybe', 'LensTrybe\'s monthly read for photographers, videographers and the people who hire them.'],
+  // the blog hub and its pills (4 Oct 2026); /edit itself now redirects to /blog/edit
+  ...Object.fromEntries(['all', 'clients', 'creatives', 'edit'].map(k => { const h = hubHead(k); return [h.path, [h.title, h.description, h.jsonLd]] })),
   '/upcoming': ['What\'s coming to LensTrybe', 'The disciplines and features joining LensTrybe after launch.'],
   '/support': ['Help and support · LensTrybe', 'Answers to common questions, and how to reach the LensTrybe team.'],
   '/join': ['Join LensTrybe', 'Create a free account to post jobs, or join as a photographer or videographer.'],
