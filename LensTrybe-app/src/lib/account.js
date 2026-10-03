@@ -74,7 +74,10 @@ export async function editSubscribe(email) { if (!LIVE) { await wait(500); retur
 export async function editConfirm(token) { if (!LIVE) { await wait(500); return { ok: true } } return editFn({ action: 'confirm', token }) }
 export async function loadEditIssues() {
   if (!LIVE) return null
-  const { data, error } = await supabase.from('edit_issues').select('slug, n, month, title, dek, read, mood, seed, sections, publish_at').order('n', { ascending: false })
+  // Issues only (blog posts share the table), and only published ones: an admin's session can
+  // also read drafts, which belong on the preview, never in the archive.
+  const { data, error } = await supabase.from('edit_issues').select('slug, n, month, title, dek, read, mood, seed, sections, publish_at, updated_at')
+    .eq('kind', 'issue').eq('approved', true).lte('publish_at', new Date().toISOString()).order('n', { ascending: false })
   if (error) throw new Error('Could not load The Trybe Edit.')
   return data || []
 }

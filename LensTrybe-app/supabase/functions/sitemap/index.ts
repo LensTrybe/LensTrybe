@@ -64,7 +64,8 @@ Deno.serve(async (req) => {
       .eq('is_listed', true).eq('account_type', 'creative').or('is_admin.is.null,is_admin.eq.false').or('pending_deletion.is.null,pending_deletion.eq.false').limit(45000)
     urls = localPages(data || [])
   } else if (type === 'edit') {
-    const { data } = await sb.from('edit_issues').select('slug, publish_at').order('n', { ascending: false }).limit(5000)
+    // Approved Trybe Edit issues only (4 Oct 2026: drafts and blog posts were not filtered out)
+    const { data } = await sb.from('edit_issues').select('slug, publish_at').eq('kind', 'issue').eq('approved', true).order('n', { ascending: false }).limit(5000)
     const now = Date.now()
     urls = (data || []).filter((r) => r.slug && (!r.publish_at || new Date(r.publish_at).getTime() <= now))
       .map((r) => ({ loc: `${SITE}/edit/${encodeURIComponent(r.slug)}`, lastmod: day(r.publish_at), freq: 'monthly', pri: '0.6' }))
