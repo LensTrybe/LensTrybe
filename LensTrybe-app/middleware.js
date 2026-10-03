@@ -24,6 +24,10 @@ const NOT_SEQ = ['cairns', 'townsville', 'mackay', 'rockhampton', 'gladstone', '
 const BOT = /googlebot|google-|-google|googleother|bingbot|bingpreview|msnbot|adidxbot|duckduckbot|duckassistbot|slurp|yandex|baiduspider|applebot|facebookexternalhit|facebookcatalog|meta-externalagent|twitterbot|linkedinbot|pinterest|slackbot|whatsapp|telegrambot|discordbot|gptbot|oai-searchbot|chatgpt-user|claudebot|claude-user|perplexitybot|amazonbot|petalbot|ahrefsbot|semrushbot|vercel-screenshot/i
 
 const cookie = (name, value, days) => name + '=' + value + '; Path=/; Max-Age=' + days * 86400 + '; SameSite=Lax; Secure'
+// Campaign tags (utm_source, utm_medium, utm_campaign and the rest) ride along on every redirect
+// here, so a visit from the flyer QR code, an email or a social post is still counted under its
+// campaign when it lands on the waitlist instead of the home page.
+const withUtm = (to, from) => { for (const [k, v] of from.searchParams) if (/^utm_[a-z]+$/.test(k)) to.searchParams.set(k, v); return to }
 
 export default function middleware(req) {
   const url = new URL(req.url); const h = req.headers
@@ -32,7 +36,8 @@ export default function middleware(req) {
   const jar = h.get('cookie') || ''
   const home = url.pathname === '/'
   if (url.searchParams.get('seq') === '1') {
-    return new Response(null, { status: 307, headers: { Location: home ? '/' : url.pathname, 'Set-Cookie': cookie('lt-seq', '1', 365) } })
+    const to = withUtm(new URL(home ? '/' : url.pathname, url), url)
+    return new Response(null, { status: 307, headers: { Location: to.pathname + to.search, 'Set-Cookie': cookie('lt-seq', '1', 365) } })
   }
   if (/(^|;\s*)lt-seq=1(;|$)/.test(jar)) return
   if (BOT.test(h.get('user-agent') || '')) return
@@ -47,7 +52,7 @@ export default function middleware(req) {
   const known = new RegExp('(^|;\\s*)lt-region=' + code + '(;|$)').test(jar)
   if (inSEQ) return known && !force ? undefined : next({ headers: { 'Set-Cookie': cookie('lt-region', 'QLD', 30) } })
   if (home) {
-    const to = new URL('/waitlist', url); to.search = ''; to.searchParams.set('region', code); to.searchParams.set('from', 'home')
+    const to = new URL('/waitlist', url); to.search = ''; to.searchParams.set('region', code); to.searchParams.set('from', 'home'); withUtm(to, url)
     return new Response(null, { status: 307, headers: { Location: to.toString(), 'Set-Cookie': cookie('lt-region', code, 30) } })
   }
   // any other page: readable, but the app needs to know the area so it can point actions at the waitlist

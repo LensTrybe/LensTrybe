@@ -40,6 +40,10 @@ import Shell from './pages/app/Shell'
 import SignLive from './pages/portal/SignLive'
 import MeetingLive from './pages/portal/MeetingLive'
 import DeliverLive from './pages/portal/DeliverLive'
+import { withUtm } from './lib/analytics'
+
+// An old or short address: on to the new one, keeping any campaign (utm_) tags it arrived with
+const Go = ({ to }) => <Navigate to={withUtm(to)} replace />
 
 // Every route in the next LensTrybe. Public site, onboarding, the client portal
 // and the creative workspace. Two modes (src/lib/mode.js): demo runs on the sample store with
@@ -58,9 +62,9 @@ export default function App() {
           <Route path="/edit" element={<EditHome />} />
           <Route path="/edit/confirm" element={<EditConfirm />} />
           <Route path="/edit/:slug" element={<EditIssue />} />
-          <Route path="/the-trybe-edit" element={<Navigate to="/edit" replace />} />
-          <Route path="/the-trybe-edit/*" element={<Navigate to="/edit" replace />} />
-          <Route path="/trybe-edit" element={<Navigate to="/edit" replace />} />
+          <Route path="/the-trybe-edit" element={<Go to="/edit" />} />
+          <Route path="/the-trybe-edit/*" element={<Go to="/edit" />} />
+          <Route path="/trybe-edit" element={<Go to="/edit" />} />
           <Route path="/jobs" element={<JobsBoard />} />
           <Route path="/jobs/:id" element={<JobsBoard />} />
           <Route path="/creatives" element={<Directory />} />
@@ -70,7 +74,7 @@ export default function App() {
           <Route path="/join" element={<Join />} />
           <Route path="/join/creative" element={<Join />} />
           <Route path="/join/client" element={<Join />} />
-          <Route path="/signup" element={<Navigate to="/join" replace />} />
+          <Route path="/signup" element={<Go to="/join" />} />
           <Route path="/login" element={<Login />} />
           <Route path="/forgot-password" element={<Reset />} />
           <Route path="/reset-password" element={<Reset />} />
@@ -84,12 +88,12 @@ export default function App() {
           <Route path="/support" element={<Support />} />
           <Route path="/legal/:doc" element={<Legal />} />
           {/* Old site addresses (emails, Revolut, Google) keep working */}
-          <Route path="/terms" element={<Navigate to="/legal/terms" replace />} />
-          <Route path="/privacy" element={<Navigate to="/legal/privacy" replace />} />
-          <Route path="/cookies" element={<Navigate to="/legal/cookies" replace />} />
-          <Route path="/refunds" element={<Navigate to="/legal/refunds" replace />} />
-          <Route path="/refund-policy" element={<Navigate to="/legal/refunds" replace />} />
-          <Route path="/founding-agreement" element={<Navigate to="/legal/founding" replace />} />
+          <Route path="/terms" element={<Go to="/legal/terms" />} />
+          <Route path="/privacy" element={<Go to="/legal/privacy" />} />
+          <Route path="/cookies" element={<Go to="/legal/cookies" />} />
+          <Route path="/refunds" element={<Go to="/legal/refunds" />} />
+          <Route path="/refund-policy" element={<Go to="/legal/refunds" />} />
+          <Route path="/founding-agreement" element={<Go to="/legal/founding" />} />
           <Route path="/:kind/:place" element={<Local />} />
         </Route>
         <Route path="/onboarding" element={<Onboard />} />
@@ -109,7 +113,7 @@ export default function App() {
         <Route path="/dashboard/*" element={<OldDashboard />} />
         <Route path="/client-dashboard" element={<OldClientDashboard />} />
         <Route path="/doc/:type/:token" element={<DocView />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Go to="/" />} />
       </Routes>
     </ToastProvider></StoreProvider></SubscriptionProvider></AuthProvider>
   )

@@ -7,6 +7,7 @@ import Icon from '../../components/Icon'
 import { fmt } from '../../lib/format'
 import { LIVE } from '../../lib/mode'
 import { loadCreatives } from '../../lib/live'
+import { logImpressions } from '../../lib/analytics'
 
 const HINTS = [
   ['Wedding in Noosa, 14 Nov', 'A wedding photographer in Noosa on 14 November, around $3,000'],
@@ -77,6 +78,7 @@ export default function Ask({ onOpen, jobFirst = false }) {
     setTimeout(() => {
       setThink(false); lens.current?.think(false); lens.current?.live(true); setLive(true)
       setOrbs(ranked.map(o => ({ ...o, in: false })))
+      void logImpressions(ranked.map(o => o.id))
       requestAnimationFrame(() => layout(ranked.length))
       if (!ranked.length) { setLine('Nobody is listed for that yet. Post it as a job and creatives who do that work will reply.'); return }
       const top = ranked[0], free = ranked.filter(x => x.free).length, inb = b.budget ? ranked.filter(x => x.p <= b.budget).length : null

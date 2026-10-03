@@ -14,6 +14,7 @@ import '../../styles/pages.css'
 import './onboard.css'
 import { planLabel } from '../../backend/tierFeatures'
 import { useFoundingTaken } from '../../lib/founding'
+import { eventOnce, withUtm } from '../../lib/analytics'
 
 // The one step after Join: pick a plan, agree, and the account is made. Everything else (photo, bio,
 // packages, availability) is the checklist inside, filled in whenever suits. A founding code from
@@ -45,10 +46,14 @@ export default function Onboard() {
   const lock = founding ? (j.codeTier ? j.codeTier[0].toUpperCase() + j.codeTier.slice(1) : 'Expert') : ''
   const [plan, setPlan] = useState(lock || 'Pro'), [agree, setAgree] = useState(false), [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   useEffect(() => {
-    if (outside()) return nav(waitlistTo(), { replace: true })
+    if (outside()) return nav(withUtm(waitlistTo()), { replace: true })
     if (google) { if (!auth.loading && !auth.user) nav('/join', { replace: true }); else if (!auth.loading && auth.profile) nav('/app/today', { replace: true }); return }
     if (!first || !email || (LIVE && !password)) nav('/join', { replace: true })
   }, [first, email, password, nav, google, auth.loading, auth.user, auth.profile])
+  // Counted once a visit, when the plan step opens with someone who can finish it: the details from
+  // Join, or a Google account with no LensTrybe account yet. Not on a bounce back to Join.
+  const ready = google ? !!gUser : !!(first && email && (!LIVE || password))
+  useEffect(() => { if (ready && !outside()) eventOnce('creative_signup_started') }, [ready])
   const name = (first + ' ' + last).trim()
   const go = async () => {
     if (!agree) return setErr('Have a read of the terms first, then tick the box.')
@@ -57,6 +62,7 @@ export default function Onboard() {
       if (busy || !gUser) return; setBusy(true)
       const made = await createMyAccount('creative', first, last, disc === 'Both' ? ['Photographer', 'Videographer'] : [disc], false)
       if (made.error) { setBusy(false); return setErr(made.error) }
+      eventOnce('creative_signup_completed') // the account exists now; a paid plan's card step can still follow
       if (plan !== 'Basic') {
         const r = await signUpCreative({ google: true, userId: gUser.id, first, last, email, disc, tier: plan.toLowerCase(), billing: 'monthly' })
         if (r.error) { setBusy(false); return setErr(r.error + ' Your account is made on Trybe Free; you can pick a plan any time in Subscription.') }
@@ -67,6 +73,8 @@ export default function Onboard() {
       if (busy) return; setBusy(true)
       const r = await signUpCreative({ first, last, email, password, disc, tier: plan.toLowerCase(), billing: 'monthly', code, news: j.news !== false })
       setBusy(false)
+      // made, even if a paid plan's card step then failed (they are on Trybe Free and can pick a plan later)
+      if (r.ok || r.userId) eventOnce('creative_signup_completed')
       if (r.error) { if (r.code === 'exists' && code) { try { sessionStorage.setItem('returnTo', '/app/founding?code=' + encodeURIComponent(code)) } catch { /* ignore */ } return setErr('There is already an account with that email. Log in and use your code from the Founding hub, so you keep your account.') } return setErr(r.error) }
       try { sessionStorage.removeItem('lt_join') } catch { /* ignore */ }
       return nav(r.needsConfirm ? '/check-email' : '/app/today?welcome=1', { replace: true, state: { email, as: 'creative' } })

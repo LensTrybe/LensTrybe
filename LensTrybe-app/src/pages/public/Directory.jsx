@@ -14,13 +14,14 @@ import SpecialtyPicker from '../../components/SpecialtyPicker'
 import { matchesSpecialty, keysForTag, specParts, specKey, DISC, SPECIALTIES } from '../../lib/specialties'
 import { fmt } from '../../lib/format'
 import { livePages, at } from '../../lib/places'
+import { logImpressions, withUtm } from '../../lib/analytics'
 
 const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
 
 // Find a creative: the browsable version of the constellation. A dark opener with the lens and a
 // sentence bar that hands off to the ask, then a glass filter bar and the grid on light.
 export default function Directory() {
-  if (outside()) return <Navigate to={waitlistTo('client')} replace />
+  if (outside()) return <Navigate to={withUtm(waitlistTo('client'))} replace />
   const [params] = useSearchParams()
   const cv = useRef(null), slot = useRef(null), bar = useRef(null)
   const [q, setQ] = useState('')
@@ -71,6 +72,9 @@ export default function Directory() {
     if (sort === 'rating') l = [...l].sort((a, b) => b.r - a.r || b.rv - a.rv)
     return l
   }, [all, disc, spec, budget, date, found, place, sort, text])
+  // Each creative the visitor is shown counts once a visit (search_impressions), after the filters
+  // have settled so dragging the budget slider doesn't count every step on the way
+  useEffect(() => { if (!LIVE || all == null) return; const t = setTimeout(() => void logImpressions(list.map(x => x.id)), 1200); return () => clearTimeout(t) }, [all, list])
   // local pages with creatives on them (Photographers in Brisbane and so on), as links for people and search
   const local = useMemo(() => livePages(all || []), [all])
   const active = spec.size + (budget < 8000) + (date ? 1 : 0) + found + (place ? 1 : 0) + (disc !== 'all') + (text ? 1 : 0)

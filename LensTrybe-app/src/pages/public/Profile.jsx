@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../backend/AuthContext'
 import { loadSite, sendEnquiry } from '../../lib/live'
 import { onColour } from '../../lib/brand'
@@ -7,6 +7,7 @@ import { fmt } from '../../lib/format'
 import { imageUrl } from '../../backend/imageUrl'
 import { LIVE } from '../../lib/mode'
 import { applySeo, profileLd } from '../../lib/seo'
+import { logProfileView } from '../../lib/analytics'
 
 // The creative profile, rebuilt 30 Sep 2026 (Michael: "a fantastic looking, intuitive and state of
 // the art profile"). One page per creative, built from what they already filled in: cover, work,
@@ -138,9 +139,11 @@ function Enquiry({ c, name, pk, busy, start, signedIn, send, onClose }) {
 // sheet: opened over the ask results on the home page (Michael, 30 Sep), so closing it keeps the search
 export default function Profile({ slug: slugProp, embed = false, sheet = false, onClose }) {
   const root = useRef(null)
-  const params = useParams(); const slug = slugProp || params.slug; const { user, clientAccount } = useAuth()
+  const params = useParams(); const slug = slugProp || params.slug; const { user, clientAccount } = useAuth(); const { pathname } = useLocation()
   const [d, setD] = useState(undefined), [lb, setLb] = useState(null), [enq, setEnq] = useState(null), [all, setAll] = useState(false), [scrolled, setScrolled] = useState(false), [cols, setCols] = useState(3), [copied, setCopied] = useState(false)
   useEffect(() => { let on = true; if (!LIVE) { setD(null); return } loadSite(slug).then(x => on && setD(x)).catch(() => on && setD(null)); return () => { on = false } }, [slug])
+  // a view for the creative's Insights: not their own View profile (embed), and once a visit
+  useEffect(() => { if (d?.c?.id && !embed) void logProfileView(d.c.id, sheet ? 'ask' : pathname.startsWith('/creatives/') ? 'profile' : 'website') }, [d, embed, sheet]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const el = sheet ? root.current : window; if (!el) return; const f = () => setScrolled((sheet ? el.scrollTop : window.scrollY) > window.innerHeight * 0.55); f(); el.addEventListener('scroll', f, { passive: true }); return () => el.removeEventListener('scroll', f) }, [sheet, d])
   useEffect(() => { if (!sheet) return; const o = document.body.style.overflow; document.body.style.overflow = 'hidden'; return () => { document.body.style.overflow = o } }, [sheet])
   useEffect(() => { if (!sheet) return; const k = e => { if (e.key === 'Escape' && lb == null && !enq) onClose?.() }; window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k) }, [sheet, lb, enq, onClose])

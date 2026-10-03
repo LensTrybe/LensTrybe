@@ -17,6 +17,7 @@ import { moderateText } from '../backend/moderateContent'
 import { FOUNDING_TERMS_VERSION } from '../backend/foundingTerms'
 import { payWithRevolut } from '../backend/revolut'
 import { LT_GOOGLE_OAUTH_PENDING_KEY } from '../backend/AuthContext'
+import { event } from './analytics'
 
 export const isEmail = v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim())
 export const PASSWORD_MIN = 8
@@ -70,7 +71,9 @@ export async function signInWithGoogle(next = '', kind = '', news = false) {
 export async function createMyAccount(kind, first = '', last = '', skills = null, news = false) {
   if (!LIVE) return { ok: true }
   const { error } = await supabase.rpc('create_my_account', { p_kind: kind, p_first: first || '', p_last: last || '', p_skills: skills, p_news: !!news })
-  return error ? { error: error.message || 'The account could not be made. Try again.' } : { ok: true }
+  if (error) return { error: error.message || 'The account could not be made. Try again.' }
+  if (kind === 'client') event('client_account_created')
+  return { ok: true }
 }
 // First and last name from a Google account's details
 export function googleNames(user) {
@@ -174,6 +177,7 @@ export async function signUpClient(f) {
   })
   if (error) return { error: friendly(error.message) }
   if (taken(data)) return { error: 'There is already an account with that email. Log in, or reset the password if it has slipped.', code: 'exists' }
+  event('client_account_created')
   if (data.session) {
     // confirmation off: the trigger has made the row, nothing else to insert
     return { ok: true, needsConfirm: false }

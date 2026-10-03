@@ -9,6 +9,7 @@ import { useToast } from '../../components/Toast'
 import { ISSUES } from '../../data/edit'
 import { LIVE } from '../../lib/mode'
 import { editConfirm, editSubscribe, loadEditIssues } from '../../lib/account'
+import { withUtm } from '../../lib/analytics'
 
 // Demo shows the bundled issues; live shows what the edit_issues table has published.
 function useIssues() {
@@ -91,7 +92,7 @@ export function EditIssue() {
   const cv = useRef(null)
   useEffect(() => { if (!cv.current) return; const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); scrollTo(0, 0); return () => l.destroy() }, [slug, !!issue])
   if (!issues) return <section className="hiw edit issue dark darkhero" style={{ minHeight: '60vh' }} />
-  if (!issue) return <Navigate to="/edit" replace />
+  if (!issue) return <Navigate to={withUtm('/edit')} replace />
   return (
     <>
       <section className="hiw edit issue dark darkhero">

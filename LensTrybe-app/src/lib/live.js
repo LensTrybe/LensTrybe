@@ -10,6 +10,8 @@ import { STAGES } from '../data/workspace'
 import { threadOwnerTierContactSharingRestricted, messageBodyContainsContactDetails, MESSAGING_CONTACT_SHARING_BLOCKED_MESSAGE } from '../backend/messagingContactPolicy'
 import { isMonthlyMessageLimitError, MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE } from '../backend/messageMonthlyLimit'
 import { uploadAttachment } from './attachments'
+import { event } from './analytics'
+import { PLACES } from './places'
 
 const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 const today = () => iso(new Date())
@@ -276,12 +278,14 @@ export async function sendEnquiry(creativeId, f, user) {
     const { error: e2 } = await supabase.from('messages').insert({ thread_id: t.id, sender_type: 'client', sender_name: name, body: contact ? message + '\n\nMy contact details:\n' + contact : message })
     if (e2) throw new Error(e2.message)
     await supabase.functions.invoke('send-enquiry', { body: { thread_id: t.id } }).catch(() => {})
+    event('enquiry_sent')
     return { thread: t.id }
   }
   const name = String(f.name || '').trim(), email = String(f.email || '').trim()
   if (!name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error('Your name and a real email, so the reply can find you.')
   const { data, error } = await supabase.functions.invoke('site-enquiry', { body: { creativeId, name, email, phone: f.phone || null, message: (f.subject ? 'Subject: ' + f.subject + '\n\n' : '') + message, website: f.website || '' } })
   if (error || data?.error) throw new Error(data?.error || 'Something went wrong. Try again.')
+  event('enquiry_sent')
   return { ok: true }
 }
 
@@ -1046,8 +1050,12 @@ export async function postJob(v) {
   if (error) throw dbMsg(error, 'Could not post the job. Try again.')
   // tell creatives who fit (email + bell); the job is posted either way
   supabase.functions.invoke('job-alert', { body: { job_id: data.id } }).catch(() => {})
+  event('job_posted', { job_type: String(v.k || 'Other').slice(0, 40), region: jobRegion(v.loc) })
   return data.id
 }
+// The area a job is in, for counting: one of the local page areas (Brisbane, Gold Coast...), else
+// the state, else Other. Never the address itself.
+const jobRegion = loc => { const l = String(loc || '').toLowerCase(); const p = l && PLACES.find(x => x.names.some(n => l.includes(n))); return p ? (p.short || p.name) : jobStateOf(loc) || 'Other' }
 // A job filled in before sign-up rides on the account (user_metadata.job_draft) until it is posted
 export async function clearJobDraftMeta(user) { if (user?.user_metadata?.job_draft) { try { await supabase.auth.updateUser({ data: { job_draft: null } }) } catch (_) { /* harmless */ } } }
 // New-job alerts: on unless the creative has turned them off (job_alert_optouts)
@@ -1065,6 +1073,7 @@ export async function applyJob(jobId, v) {
   const { data, error } = await supabase.from('job_applications').insert({ job_id: jobId, price, description: description.slice(0, 3000), message: description.slice(0, 3000), includes: includes.slice(0, 1000) || null }).select('id').single()
   if (error) throw error.code === '23505' ? new Error('You\'ve already replied to this job.') : dbMsg(error, 'Could not send your reply. Try again.')
   try { await supabase.functions.invoke('send-message-notification', { body: { job_application_id: data.id } }) } catch (_) { /* the reply is saved either way */ }
+  event('creative_applied_to_job')
   return data.id
 }
 export async function withdrawReply(id) { const { error } = await supabase.from('job_applications').update({ status: 'withdrawn' }).eq('id', id); if (error) throw new Error('Could not withdraw it. Try again.') }

@@ -13,6 +13,7 @@ import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
 import { imageUrl } from '../../backend/imageUrl'
 import * as live from '../../lib/live'
+import { withUtm } from '../../lib/analytics'
 
 // The client side of the job board. Post what you need in a minute, creatives who fit and are free
 // reply with a quote, you pick one and the booking carries on in a thread. Free for clients, always.
@@ -29,7 +30,7 @@ const ago = d => { const n = daysBetween(d, TODAY); return n <= 0 ? 'today' : n 
 
 export default function JobsBoard() {
   const { id } = useParams()
-  if (!id && outside()) return <Navigate to={waitlistTo('client')} replace />
+  if (!id && outside()) return <Navigate to={withUtm(waitlistTo('client'))} replace />
   return id ? (LIVE ? <ClientJobLive id={id} /> : <ClientJob id={id} />) : <PostJob />
 }
 

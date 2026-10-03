@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react'
 import { supabase } from './supabaseClient'
+import { event } from '../lib/analytics'
 
 const AuthContext = createContext(null)
 
@@ -122,7 +123,8 @@ export function AuthProvider({ children }) {
         if (kind === 'client') {
           const { data: { user: u } } = await supabase.auth.getUser()
           const m = u?.user_metadata || {}, full = String(m.full_name || m.name || '').trim()
-          await supabase.rpc('create_my_account', { p_kind: 'client', p_first: m.given_name || full.split(' ')[0] || '', p_last: m.family_name || full.split(' ').slice(1).join(' ') || '', p_skills: null, p_news: news })
+          const { error: made } = await supabase.rpc('create_my_account', { p_kind: 'client', p_first: m.given_name || full.split(' ')[0] || '', p_last: m.family_name || full.split(' ').slice(1).join(' ') || '', p_skills: null, p_news: news })
+          if (!made) event('client_account_created')
           return go(safe || '/portal')
         }
         if (kind === 'creative') { if (window.location.pathname !== '/onboarding') go('/onboarding?google=1'); return }

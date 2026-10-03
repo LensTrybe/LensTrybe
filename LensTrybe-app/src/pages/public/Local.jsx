@@ -9,6 +9,7 @@ import { loadCreatives } from '../../lib/live'
 import { applySeo, SITE } from '../../lib/seo'
 import { kindBySlug, placeBySlug, placeShort, placePre, at, matching, livePages, MIN_FOR } from '../../lib/places'
 import { Card } from './Directory'
+import { logImpressions, withUtm } from '../../lib/analytics'
 
 // A local page for search (2 Oct 2026): "Wedding photographers in Brisbane" and the like, listing
 // the real creatives there, with links on to nearby pages. See lib/places.js for how a creative is
@@ -22,6 +23,7 @@ export default function Local() {
   useEffect(() => { if (!cv.current) return; const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   const list = useMemo(() => kind && place ? matching(all, kind, place) : [], [all, kind, place])
   const pages = useMemo(() => livePages(all || []), [all])
+  useEffect(() => { if (LIVE && all != null && list.length) void logImpressions(list.map(x => x.id)) }, [all, list])
 
   const title = kind && place ? kind.label + ' ' + at(place) : ''
   const path = kind && place ? '/' + kind.slug + '/' + place.slug : '/'
@@ -49,7 +51,7 @@ export default function Local() {
     })
   }, [kind, place, all, list, title, path])
 
-  if (!kind || !place) return <Navigate to="/creatives" replace />
+  if (!kind || !place) return <Navigate to={withUtm('/creatives')} replace />
 
   const n = list.length
   // links on: other kinds in this place, then this kind in other places (only pages worth landing on)
