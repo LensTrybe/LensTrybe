@@ -1070,3 +1070,33 @@
 @media (min-width:701px) and (max-width:1110px){.pub .top .logo .tagline{display:none}}
 @media (min-width:701px) and (max-width:959px){.pub .top .r .hide-t{display:none}.pub .top .r .mb{display:grid;place-items:center;width:40px;height:40px}}
 @media (min-width:701px) and (max-width:880px){.pub .top .r .hide-s{display:none}}
+
+/* The tour (/tour): the deck on the light body. Text left, the recorded screen right. */
+.pub .tourtop .in{max-width:900px}
+.pub .tourfine{font-size:12.5px;color:rgba(255,255,255,.55);line-height:1.5;max-width:60ch}
+.pub .tourlt .tourfine{color:var(--ink-3)}
+.pub .tourlt{scroll-margin-top:72px}
+.pub .tour{padding-top:clamp(28px,4vw,56px)}
+.pub .tourbar{display:flex;align-items:center;gap:10px;padding:8px;border-radius:999px;margin-bottom:clamp(22px,3vw,36px)}
+.pub .tourbar .tb{height:38px;min-width:38px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.5);border:1px solid var(--line);transition:background .2s,transform .3s var(--spring)}
+.pub .tourbar .tb:hover:not(:disabled){background:#fff;transform:translateY(-1px)}
+.pub .tourbar .tb:disabled{opacity:.35;cursor:default}
+.pub .tourbar .tb.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pub .tourbar .tdots{flex:1;display:flex;gap:4px;align-items:center;padding:0 6px;min-width:0}
+.pub .tourbar .tdots button{flex:1;height:6px;border-radius:999px;background:rgba(20,17,26,.12);transition:background .25s,transform .25s}
+.pub .tourbar .tdots button.d{background:rgba(29,185,84,.45)}
+.pub .tourbar .tdots button.on{background:var(--green);box-shadow:0 0 0 3px rgba(29,185,84,.18)}
+.pub .tourbar .tcount{font-size:12.5px;font-weight:600;color:var(--ink-3);white-space:nowrap;font-variant-numeric:tabular-nums}
+.pub .tslide{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.5fr);gap:clamp(24px,4vw,56px);align-items:start;animation:fadeup .6s var(--ease) both}
+.pub .ttext h2{font-size:clamp(30px,3.6vw,50px);font-weight:500;letter-spacing:-.04em;line-height:1.05;margin:10px 0 14px;color:var(--ink);text-wrap:balance}
+.pub .ttext h2 em{font-family:var(--serif);font-style:italic;font-weight:400;color:var(--ink-3)}
+.pub .ttext .lead{margin-bottom:18px}
+.pub .tpts{list-style:none;display:grid;gap:8px;margin:0 0 20px}
+.pub .tpts li{display:flex;gap:10px;align-items:flex-start;font-size:15px;line-height:1.45;color:var(--ink)}
+.pub .tpts li i{flex:none;width:20px;height:20px;border-radius:50%;display:grid;place-items:center;background:var(--green);color:#04120a;margin-top:2px}
+.pub .tscreen{margin:0;padding:10px;border-radius:24px}
+.pub .tscreen video{display:block;width:100%;aspect-ratio:16/10;border-radius:16px;background:#07070b;object-fit:cover}
+.pub .tscreen figcaption{display:flex;gap:10px;align-items:center;padding:12px 6px 4px;font-size:13px;color:var(--ink-2)}
+.pub .tscreen figcaption .lm{flex:none}
+.pub .tfoot{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-top:clamp(22px,3vw,36px);padding-top:18px;border-top:1px solid var(--line)}
+@media (max-width:900px){.pub .tslide{grid-template-columns:1fr}.pub .tscreen{order:-1}.pub .tourbar .tcount{display:none}.pub .tourbar .tb{padding:0 10px}}

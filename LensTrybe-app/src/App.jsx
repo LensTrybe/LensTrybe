@@ -18,6 +18,7 @@ import Pricing from './pages/public/Pricing'
 import Profile from './pages/public/Profile'
 import TeamAccept from './pages/portal/TeamAccept'
 import Founding from './pages/public/Founding'
+import Tour from './pages/public/Tour'
 import Join from './pages/public/Join'
 import Login from './pages/public/Login'
 import Reset from './pages/public/Reset'
@@ -77,6 +78,7 @@ export default function App() {
           <Route path="/creatives/:id" element={<Creative />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/founding" element={<Founding />} />
+          <Route path="/tour" element={<Tour />} />
           <Route path="/join" element={<Join />} />
           <Route path="/join/creative" element={<Join />} />
           <Route path="/join/client" element={<Join />} />

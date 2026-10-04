@@ -18,5 +18,6 @@ Disallow: /team/
 Disallow: /dashboard
 Disallow: /client-dashboard
 Disallow: /p/
+Disallow: /tour
 
 Sitemap: https://lenstrybe.com/sitemap.xml

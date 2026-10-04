@@ -20,7 +20,7 @@ export default function PublicLayout() {
   const home = pathname === '/'
   // outside the launch area: read anything, but every action points at the waitlist for the area
   const away = outside(), wl = pathname === '/waitlist'
-  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/booking-unavailable', '/auth/confirm', '/waitlist', '/support', '/upcoming', '/founding', '/unsubscribe'].includes(pathname) || pathname.startsWith('/unsubscribe/') || pathname.startsWith('/edit') || pathname.startsWith('/blog') || pathname.startsWith('/jobs')
+  const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/booking-unavailable', '/auth/confirm', '/waitlist', '/support', '/upcoming', '/founding', '/unsubscribe', '/tour'].includes(pathname) || pathname.startsWith('/unsubscribe/') || pathname.startsWith('/edit') || pathname.startsWith('/blog') || pathname.startsWith('/jobs')
   // The Lens (the guides and The Trybe Edit, under /blog) lights up anywhere inside it, issues included
   const lensOn = pathname.startsWith('/blog') || pathname.startsWith('/edit')
   const [lite, setLite] = useState(!darkTop)

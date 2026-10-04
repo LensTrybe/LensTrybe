@@ -31,6 +31,7 @@ const PAGES = {
   '/founding': ['The Founding 100 · LensTrybe', 'The founding creatives programme: Trybe Complete free for twelve months for the first 100, then $49 a month locked in for life. By invitation.'],
   // the blog hub and its pills (4 Oct 2026); /edit itself now redirects to /blog/edit
   ...Object.fromEntries(['all', 'clients', 'creatives', 'edit'].map(k => { const h = hubHead(k); return [h.path, [h.title, h.description, h.jsonLd]] })),
+  '/tour': ['A tour of LensTrybe', 'What LensTrybe does for a photographer or videographer, one part at a time. Shared by link only.'],
   '/upcoming': ['What\'s coming to LensTrybe', 'The disciplines and features joining LensTrybe after launch.'],
   '/support': ['Help and support · LensTrybe', 'Answers to common questions, and how to reach the LensTrybe team.'],
   '/join': ['Join LensTrybe', 'Create a free account to post jobs, or join as a photographer or videographer.'],
@@ -42,7 +43,7 @@ const PAGES = {
   '/legal/refunds': ['Refund policy · LensTrybe', 'How refunds work for LensTrybe subscriptions.'],
   '/legal/founding': ['Founding Creative Agreement · LensTrybe', 'The terms of the LensTrybe founding creatives programme.'],
 }
-const NOINDEX = /^\/(waitlist|login|check-email|forgot-password|reset-password|auth|unsubscribe|onboarding|booking-unavailable|edit\/confirm|p\/|portal|sign|deliver|meeting|doc|review|team|app|brand)(\/|$)/
+const NOINDEX = /^\/(waitlist|login|check-email|forgot-password|reset-password|auth|unsubscribe|onboarding|booking-unavailable|edit\/confirm|p\/|portal|sign|deliver|meeting|doc|review|team|app|brand|tour)(\/|$)/
 
 const meta = (attr, key, value) => {
   let el = document.head.querySelector(`meta[${attr}="${key}"]`)
