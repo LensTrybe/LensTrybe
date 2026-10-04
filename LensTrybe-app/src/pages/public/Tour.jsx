@@ -84,14 +84,14 @@ export default function Tour() {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return
       const ctx = new AC(), gain = ctx.createGain(); gain.gain.value = 0.28; gain.connect(ctx.destination)
       music.current = { ctx, gain }
-      const buf = await ctx.decodeAudioData(await (await fetch('/tour/lenstrybe-tour-bed.mp3')).arrayBuffer())
+      const buf = await ctx.decodeAudioData(await (await fetch('/tour/lenstrybe-tour-bed-v2.mp3')).arrayBuffer())
       const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(gain); src.start()
     } catch { /* no music is fine */ }
   }, [])
   useEffect(() => () => { music.current?.ctx.close() }, [])
   const start = () => { setStarted(true); setPlaying(true); playMusic(); deck.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   useEffect(() => { const k = e => { if (!started) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [started, go])
-  useEffect(() => { if (music.current) music.current.gain.gain.value = muted ? 0 : 0.28 }, [muted])
+  useEffect(() => { const m = music.current; if (!m) return; m.gain.gain.value = muted ? 0 : 0.28; if (playing && !muted) m.ctx.resume(); else m.ctx.suspend() }, [muted, playing])
   useEffect(() => { const v = vid.current; if (!v) return; v.muted = true; v.currentTime = 0; v.play().catch(() => {}) }, [i, started])
   const ended = () => { if (playing && i < n - 1) go(1); else if (playing && i === n - 1) setPlaying(false) }
   return (
@@ -114,7 +114,7 @@ export default function Tour() {
             <button type="button" className="tb" onClick={() => go(-1)} disabled={i === 0} aria-label="Previous"><Icon name="arrow" size={14} style={{ transform: 'rotate(180deg)' }} /></button>
             <div className="tdots" role="tablist" aria-label="Slides">{SLIDES.map((x, k) => <button key={x.id} type="button" role="tab" aria-selected={k === i} className={k === i ? 'on' : k < i ? 'd' : ''} onClick={() => setI(k)} aria-label={'Slide ' + (k + 1)} />)}</div>
             <span className="tcount">{i + 1} of {n}</span>
-            <button type="button" className={'tb' + (playing ? ' on' : '')} onClick={() => { setStarted(true); setPlaying(p => !p); playMusic() }} aria-label={playing ? 'Pause' : 'Play'}><Icon name={playing ? 'pause' : 'play'} size={13} style={{ fill: 'currentColor', stroke: 'none' }} /></button>
+            <button type="button" className={'tb' + (playing ? ' on' : '')} onClick={() => { setStarted(true); if (!playing) playMusic(); setPlaying(p => !p) }} aria-label={playing ? 'Pause' : 'Play'}><Icon name={playing ? 'pause' : 'play'} size={13} style={{ fill: 'currentColor', stroke: 'none' }} /></button>
             <button type="button" className={'tb' + (muted ? '' : ' on')} onClick={() => setMuted(m => !m)} aria-label={muted ? 'Unmute music' : 'Mute music'}>{muted ? 'Music off' : 'Music on'}</button>
             <button type="button" className="tb" onClick={() => go(1)} disabled={i === n - 1} aria-label="Next"><Icon name="arrow" size={14} /></button>
           </div>
