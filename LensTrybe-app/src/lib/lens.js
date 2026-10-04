@@ -36,6 +36,47 @@ void main(){
   o+=(hash(gl_FragCoord.xy)-.5)/255.;
   gl_FragColor=vec4(o,1.);
 }`
+// No WebGL (graphics acceleration off in the browser, an old GPU, some locked-down work laptops):
+// paint the same lens once with the 2D canvas instead of leaving a dark gradient (4 Oct 2026, Chrome
+// on Michael's Mac showed no lens at all). Still, not alive, but unmistakably the lens.
+const MINT = '154,196,197', ROSE = '217,150,186', LILAC = '198,165,229'
+function staticLens(cv) {
+  let cy = .5, R = .34
+  const paint = () => {
+    const r = cv.getBoundingClientRect(); if (!r.width || !r.height) return
+    const k = Math.min(devicePixelRatio || 1, 2), W = cv.width = Math.round(r.width * k), H = cv.height = Math.round(r.height * k)
+    const g = cv.getContext('2d'); if (!g) return
+    const X = W / 2, Y = cy * H, RR = R * H, u = H // shader units are fractions of the height
+    g.fillStyle = '#07070b'; g.fillRect(0, 0, W, H)
+    const tint = (x, y, col, a) => { const gr = g.createRadialGradient(x, y, 0, x, y, 1.1 * u); gr.addColorStop(0, `rgba(${col},${a})`); gr.addColorStop(1, `rgba(${col},0)`); g.fillStyle = gr; g.fillRect(0, 0, W, H) }
+    tint(X - .7 * u, H / 2 - .35 * u, '29,185,84', .06); tint(X + .8 * u, H / 2 + .4 * u, '255,45,120', .05)
+    // the glass centre, lit mint to pink across the diagonal, with one soft highlight
+    const inner = RR - .09 * u
+    if (inner > 0) {
+      const gl = g.createLinearGradient(X - inner, Y + inner * .6, X + inner, Y - inner * .6)
+      gl.addColorStop(0, `rgba(140,229,204,.2)`); gl.addColorStop(.6, `rgba(250,173,209,.18)`); gl.addColorStop(1, `rgba(${LILAC},.2)`)
+      g.fillStyle = gl; g.beginPath(); g.arc(X, Y, inner, 0, 7); g.fill()
+      const sx = X - .09 * u, sy = Y - .1 * u, sp = g.createRadialGradient(sx, sy, 0, sx, sy, .17 * u)
+      sp.addColorStop(0, 'rgba(255,255,255,.28)'); sp.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = sp; g.beginPath(); g.arc(X, Y, inner, 0, 7); g.fill()
+    }
+    // the ring: mint, rose, lilac around, a wide glow and a softer core
+    const ring = g.createConicGradient ? g.createConicGradient(-Math.PI / 2, X, Y) : null
+    const stops = [[0, MINT], [.33, ROSE], [.66, LILAC], [1, MINT]]
+    const paintRing = (w, a, blur) => {
+      let fill
+      if (ring) { fill = g.createConicGradient(-Math.PI / 2, X, Y); stops.forEach(([o, c]) => fill.addColorStop(o, `rgba(${c},${a})`)) } else fill = `rgba(${ROSE},${a})`
+      g.save(); if ('filter' in g) g.filter = `blur(${Math.round(blur)}px)`; g.strokeStyle = fill; g.lineWidth = w; g.beginPath(); g.arc(X, Y, RR, 0, 7); g.stroke(); g.restore()
+    }
+    paintRing(.22 * u, .22, .07 * u); paintRing(.07 * u, .55, .025 * u); paintRing(.03 * u, .7, .008 * u)
+    // the dark band just inside the ring, then the vignette
+    g.save(); if ('filter' in g) g.filter = `blur(${Math.round(.012 * u)}px)`; g.strokeStyle = 'rgba(7,7,11,.55)'; g.lineWidth = .03 * u; g.beginPath(); g.arc(X, Y, RR - .06 * u, 0, 7); g.stroke(); g.restore()
+    const v = g.createRadialGradient(X, H / 2, .6 * u, X, H / 2, 1.4 * u); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(0,0,0,.35)'); g.fillStyle = v; g.fillRect(0, 0, W, H)
+  }
+  paint()
+  const ro = new ResizeObserver(() => { clearTimeout(ro.t); ro.t = setTimeout(paint, 80) }); ro.observe(cv)
+  return { think() {}, live() {}, aim() {}, layout: ({ cy: c, r }) => { if (c != null) cy = c; if (r != null) R = r; paint() }, destroy() { ro.disconnect() } }
+}
+
 // Safari and Chrome drop a page's WebGL canvas when the tab sits in the background for a while or
 // the laptop sleeps, and a dropped canvas stays black (29 Sep: the home page showed no lens until a
 // reload). So: take the loss, rebuild when the browser gives the canvas back, and if it never does,
@@ -43,7 +84,6 @@ void main(){
 export function mountLens(cv0) {
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches
   const coarse = matchMedia('(pointer:coarse)').matches
-  const FALLBACK = 'radial-gradient(circle at 50% 50%,#16162a,#07070b 60%)'
   let cv = cv0, gl = null, U = null, lost = false, spare = null
   const sh = (t, s) => { const x = gl.createShader(t); gl.shaderSource(x, s); gl.compileShader(x); return x }
   const scale = coarse ? .5 : .75
@@ -52,8 +92,8 @@ export function mountLens(cv0) {
   const onRestored = () => { setup(); size() }
   function setup() {
     gl = cv.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' })
-    if (!gl) { cv.style.background = FALLBACK; return false }
-    const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); gl.useProgram(pr)
+    if (!gl) return false
+    const pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, FS)); gl.linkProgram(pr); if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { gl = null; return false } gl.useProgram(pr)
     const buf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, buf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 1, -1, -1, 1, 1, 1]), gl.STATIC_DRAW)
     const loc = gl.getAttribLocation(pr, 'p'); gl.enableVertexAttribArray(loc); gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0)
     U = { res: gl.getUniformLocation(pr, 'uRes'), t: gl.getUniformLocation(pr, 'uT'), m: gl.getUniformLocation(pr, 'uM'), p: gl.getUniformLocation(pr, 'uPulse'), l: gl.getUniformLocation(pr, 'uLive'), cy: gl.getUniformLocation(pr, 'uCy'), r: gl.getUniformLocation(pr, 'uR'), aim: gl.getUniformLocation(pr, 'uAim'), aimOn: gl.getUniformLocation(pr, 'uAimOn') }
@@ -63,7 +103,14 @@ export function mountLens(cv0) {
   const listen = c => { c.addEventListener('webglcontextlost', onLost); c.addEventListener('webglcontextrestored', onRestored) }
   const unlisten = c => { c.removeEventListener('webglcontextlost', onLost); c.removeEventListener('webglcontextrestored', onRestored) }
   listen(cv)
-  if (!setup()) return { think() {}, live() {}, layout() {}, aim() {}, destroy() { unlisten(cv) } }
+  if (!setup()) {
+    unlisten(cv)
+    // a canvas that already handed out a WebGL context cannot paint in 2D, so paint a twin beside it
+    let twin = null
+    try { if (!cv.getContext('2d')) { twin = cv.cloneNode(false); twin.removeAttribute('id'); cv.style.display = 'none'; cv.parentNode?.insertBefore(twin, cv.nextSibling) } } catch { /* keep cv */ }
+    const st = staticLens(twin || cv)
+    return { ...st, destroy() { st.destroy(); if (twin) { twin.remove(); cv.style.display = '' } } }
+  }
   let mx = .5, my = .5, tx = .5, ty = .5, pulse = 0, live = 0, liveT = 0, raf = 0, visible = true
   let cy = .5, cyT = .5, R = .34, RT = .34
   let ax = 1, ay = 0, axT = 1, ayT = 0, aimOn = 0, aimOnT = 0
