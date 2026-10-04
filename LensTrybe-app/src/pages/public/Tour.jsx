@@ -71,7 +71,9 @@ const SLIDES = [
 
 export default function Tour() {
   const cv = useRef(null), deck = useRef(null), vid = useRef(null), music = useRef(null) // music: { ctx, gain }
-  const [i, setI] = useState(0), [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [started, setStarted] = useState(false)
+  const [i, setI] = useState(0), [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [started, setStarted] = useState(false), [big, setBig] = useState(true)
+  const fig = useRef(null)
+  const fullscreen = () => { const el = fig.current; if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el) }
   const s = SLIDES[i], n = SLIDES.length
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   const go = useCallback(k => setI(x => Math.max(0, Math.min(n - 1, x + k))), [n])
@@ -116,19 +118,25 @@ export default function Tour() {
             <span className="tcount">{i + 1} of {n}</span>
             <button type="button" className={'tb' + (playing ? ' on' : '')} onClick={() => { setStarted(true); if (!playing) playMusic(); setPlaying(p => !p) }} aria-label={playing ? 'Pause' : 'Play'}><Icon name={playing ? 'pause' : 'play'} size={13} style={{ fill: 'currentColor', stroke: 'none' }} /></button>
             <button type="button" className={'tb' + (muted ? '' : ' on')} onClick={() => setMuted(m => !m)} aria-label={muted ? 'Unmute music' : 'Mute music'}>{muted ? 'Music off' : 'Music on'}</button>
+            <button type="button" className="tb tlay" onClick={() => setBig(b => !b)} aria-pressed={big} title={big ? 'Put the text beside the screen' : 'Make the screen bigger'}>{big ? 'Side by side' : 'Big screen'}</button>
             <button type="button" className="tb" onClick={() => go(1)} disabled={i === n - 1} aria-label="Next"><Icon name="arrow" size={14} /></button>
           </div>
 
-          <div className="tslide" key={s.id}>
+          <div className={'tslide' + (big ? ' big' : '')} key={s.id}>
             <div className="ttext">
-              <p className="eb g">{s.eb}</p>
-              <h2>{s.h}<em>{s.em}</em></h2>
-              <p className="lead">{s.p}</p>
-              <ul className="tpts">{s.pts.map(t => <li key={t}><i><Icon name="check" size={12} /></i>{t}</li>)}</ul>
-              {s.founding && <div className="ctas"><Link className="btn k" to="/founding">Ask for a founding code <Icon name="arrow" size={14} /></Link><Link className="btn g" to="/pricing">See the plans</Link></div>}
+              <div className="tsay">
+                <p className="eb g">{s.eb}</p>
+                <h2>{s.h}<em>{s.em}</em></h2>
+                <p className="lead">{s.p}</p>
+              </div>
+              <div className="tdo">
+                <ul className="tpts">{s.pts.map(t => <li key={t}><i><Icon name="check" size={12} /></i>{t}</li>)}</ul>
+                {s.founding && <div className="ctas"><Link className="btn k" to="/founding">Ask for a founding code <Icon name="arrow" size={14} /></Link><Link className="btn g" to="/pricing">See the plans</Link></div>}
+              </div>
             </div>
-            <figure className="tscreen lg">
-              <video ref={vid} src={'/tour/' + s.id + '.mp4'} poster={'/tour/' + s.id + '.jpg'} muted playsInline autoPlay loop={!playing} onEnded={ended} />
+            <figure className="tscreen lg" ref={fig}>
+              <video ref={vid} src={'/tour/' + s.id + '.mp4'} poster={'/tour/' + s.id + '.jpg'} muted playsInline autoPlay loop={!playing} onEnded={ended} onDoubleClick={fullscreen} />
+              <button type="button" className="tfull" onClick={fullscreen} aria-label="Full screen" title="Full screen (double-click the video also works)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button>
               <figcaption><span className="lm" />{s.cap}</figcaption>
             </figure>
           </div>
