@@ -71,12 +71,11 @@ const SLIDES = [
 
 export default function Tour() {
   const cv = useRef(null), deck = useRef(null), vid = useRef(null), music = useRef(null) // music: { ctx, gain }
-  const [i, setI] = useState(0), [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [started, setStarted] = useState(false), [big, setBig] = useState(true)
+  const [i, setI] = useState(0), [playing, setPlaying] = useState(false), [muted, setMuted] = useState(false), [started, setStarted] = useState(false), [big, setBig] = useState(false)
   const fig = useRef(null)
   const fullscreen = () => { const el = fig.current; if (!el) return; if (document.fullscreenElement) document.exitFullscreen(); else (el.requestFullscreen || el.webkitRequestFullscreen)?.call(el) }
   const s = SLIDES[i], n = SLIDES.length
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
-  const go = useCallback(k => setI(x => Math.max(0, Math.min(n - 1, x + k))), [n])
   // The music bed plays through Web Audio, not an <audio> element: a playing media element makes
   // some browsers pause the muted video beside it. Started on the first click (autoplay rules),
   // looped, and muted by the gain so the toggle is instant.
@@ -91,11 +90,15 @@ export default function Tour() {
     } catch { /* no music is fine */ }
   }, [])
   useEffect(() => () => { music.current?.ctx.close() }, [])
+  // moving to a slide always plays it; the play button is the only way to hold still
+  const go = useCallback(k => { setStarted(true); setPlaying(true); playMusic(); setI(x => Math.max(0, Math.min(n - 1, x + k))) }, [n, playMusic])
+  const jump = k => { setStarted(true); setPlaying(true); playMusic(); setI(k) }
   const start = () => { setStarted(true); setPlaying(true); playMusic(); deck.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   useEffect(() => { const k = e => { if (!started) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [started, go])
   useEffect(() => { const m = music.current; if (!m) return; m.gain.gain.value = muted ? 0 : 0.28; if (playing && !muted) m.ctx.resume(); else m.ctx.suspend() }, [muted, playing])
-  useEffect(() => { const v = vid.current; if (!v) return; v.muted = true; v.currentTime = 0; v.play().catch(() => {}) }, [i, started])
-  const ended = () => { if (playing && i < n - 1) go(1); else if (playing && i === n - 1) setPlaying(false) }
+  // the clip follows the play state: play runs it (and the next one when it ends), pause freezes it
+  useEffect(() => { const v = vid.current; if (!v) return; v.muted = true; if (playing) v.play().catch(() => {}); else v.pause() }, [i, playing])
+  const ended = () => { if (i < n - 1) go(1); else setPlaying(false) }
   return (
     <>
       <section className="hiw tourtop dark darkhero">
@@ -114,7 +117,7 @@ export default function Tour() {
         <section className="sec tour"><div className="wrap">
           <div className="tourbar lg">
             <button type="button" className="tb" onClick={() => go(-1)} disabled={i === 0} aria-label="Previous"><Icon name="arrow" size={14} style={{ transform: 'rotate(180deg)' }} /></button>
-            <div className="tdots" role="tablist" aria-label="Slides">{SLIDES.map((x, k) => <button key={x.id} type="button" role="tab" aria-selected={k === i} className={k === i ? 'on' : k < i ? 'd' : ''} onClick={() => setI(k)} aria-label={'Slide ' + (k + 1)} />)}</div>
+            <div className="tdots" role="tablist" aria-label="Slides">{SLIDES.map((x, k) => <button key={x.id} type="button" role="tab" aria-selected={k === i} className={k === i ? 'on' : k < i ? 'd' : ''} onClick={() => jump(k)} aria-label={'Slide ' + (k + 1)} />)}</div>
             <span className="tcount">{i + 1} of {n}</span>
             <button type="button" className={'tb' + (playing ? ' on' : '')} onClick={() => { setStarted(true); if (!playing) playMusic(); setPlaying(p => !p) }} aria-label={playing ? 'Pause' : 'Play'}><Icon name={playing ? 'pause' : 'play'} size={13} style={{ fill: 'currentColor', stroke: 'none' }} /></button>
             <button type="button" className={'tb' + (muted ? '' : ' on')} onClick={() => setMuted(m => !m)} aria-label={muted ? 'Unmute music' : 'Mute music'}>{muted ? 'Music off' : 'Music on'}</button>
@@ -135,7 +138,7 @@ export default function Tour() {
               </div>
             </div>
             <figure className="tscreen lg" ref={fig}>
-              <video ref={vid} src={'/tour/' + s.id + '.mp4'} poster={'/tour/' + s.id + '.jpg'} muted playsInline autoPlay loop={!playing} onEnded={ended} onDoubleClick={fullscreen} />
+              <video ref={vid} src={'/tour/' + s.id + '.mp4'} poster={'/tour/' + s.id + '.jpg'} muted playsInline preload="auto" onEnded={ended} onDoubleClick={fullscreen} />
               <button type="button" className="tfull" onClick={fullscreen} aria-label="Full screen" title="Full screen (double-click the video also works)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" /></svg></button>
               <figcaption><span className="lm" />{s.cap}</figcaption>
             </figure>
