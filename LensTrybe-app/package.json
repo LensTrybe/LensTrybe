@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --open",
-    "build": "vite build",
+    "build": "vite build && node api/_copy-shell.mjs",
     "preview": "vite preview --open"
   },
   "dependencies": {

@@ -8,3 +8,4 @@ dist
 *.local
 .vercel
 _to_delete/
+api/shell.html
