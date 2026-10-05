@@ -83,9 +83,9 @@ export default function Tour() {
     if (music.current) { if (music.current.ctx.state === 'suspended') music.current.ctx.resume(); return }
     try {
       const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return
-      const ctx = new AC(), gain = ctx.createGain(); gain.gain.value = 0.28; gain.connect(ctx.destination)
+      const ctx = new AC(), gain = ctx.createGain(); gain.gain.value = 0.22; gain.connect(ctx.destination)
       music.current = { ctx, gain }
-      const buf = await ctx.decodeAudioData(await (await fetch('/tour/lenstrybe-tour-bed-v3.mp3')).arrayBuffer())
+      const buf = await ctx.decodeAudioData(await (await fetch('/tour/lenstrybe-tour-bed-v4.mp3')).arrayBuffer())
       const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.connect(gain); src.start()
     } catch { /* no music is fine */ }
   }, [])
@@ -95,7 +95,7 @@ export default function Tour() {
   const jump = k => { setStarted(true); setPlaying(true); playMusic(); setI(k) }
   const start = () => { setStarted(true); setPlaying(true); playMusic(); deck.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) }
   useEffect(() => { const k = e => { if (!started) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); if (e.key === ' ') { e.preventDefault(); setPlaying(p => !p) } }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [started, go])
-  useEffect(() => { const m = music.current; if (!m) return; m.gain.gain.value = muted ? 0 : 0.28; if (playing && !muted) m.ctx.resume(); else m.ctx.suspend() }, [muted, playing])
+  useEffect(() => { const m = music.current; if (!m) return; m.gain.gain.value = muted ? 0 : 0.22; if (playing && !muted) m.ctx.resume(); else m.ctx.suspend() }, [muted, playing])
   // the clip follows the play state: play runs it (and the next one when it ends), pause freezes it
   useEffect(() => { const v = vid.current; if (!v) return; v.muted = true; if (playing) v.play().catch(() => {}); else v.pause() }, [i, playing])
   const ended = () => { if (i < n - 1) go(1); else setPlaying(false) }
