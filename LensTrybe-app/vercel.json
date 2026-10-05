@@ -23,6 +23,10 @@
   ],
   "rewrites": [
     {
+      "source": "/tour",
+      "destination": "/api/render"
+    },
+    {
       "source": "/sitemap-creatives.xml",
       "destination": "https://lqafxisymvrazipaozfk.supabase.co/functions/v1/sitemap?type=creatives"
     },
@@ -67,5 +71,10 @@
         }
       ]
     }
-  ]
+  ],
+  "functions": {
+    "api/render.js": {
+      "includeFiles": "dist/index.html"
+    }
+  }
 }

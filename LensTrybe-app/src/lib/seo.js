@@ -31,7 +31,7 @@ const PAGES = {
   '/founding': ['The Founding 100 · LensTrybe', 'The founding creatives programme: Trybe Complete free for twelve months for the first 100, then $49 a month locked in for life. By invitation.'],
   // the blog hub and its pills (4 Oct 2026); /edit itself now redirects to /blog/edit
   ...Object.fromEntries(['all', 'clients', 'creatives', 'edit'].map(k => { const h = hubHead(k); return [h.path, [h.title, h.description, h.jsonLd]] })),
-  '/tour': ['A tour of LensTrybe', 'What LensTrybe does for a photographer or videographer, one part at a time. Shared by link only.'],
+  '/tour': ['A tour of LensTrybe', 'Nine minutes, 28 short recordings of the real workspace. See what LensTrybe does for a photographer or videographer, one part at a time.', undefined, '/og-tour.png'],
   '/upcoming': ['What\'s coming to LensTrybe', 'The disciplines and features joining LensTrybe after launch.'],
   '/support': ['Help and support · LensTrybe', 'Answers to common questions, and how to reach the LensTrybe team.'],
   '/join': ['Join LensTrybe', 'Create a free account to post jobs, or join as a photographer or videographer.'],
@@ -76,7 +76,7 @@ export function RouteSeo() {
   useEffect(() => {
     const path = pathname.length > 1 ? pathname.replace(/\/+$/, '') : '/'
     const p = PAGES[path]
-    applySeo({ title: p?.[0], description: p?.[1], jsonLd: p?.[2], path, noindex: NOINDEX.test(path) })
+    applySeo({ title: p?.[0], description: p?.[1], jsonLd: p?.[2], image: p?.[3] ? SITE + p[3] : undefined, path, noindex: NOINDEX.test(path) })
   }, [pathname])
   return null
 }
