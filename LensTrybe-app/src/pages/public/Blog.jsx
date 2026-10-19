@@ -156,8 +156,8 @@ export function BlogPost() {
 // The hub: /blog (everything, newest first), /blog/clients and /blog/creatives.
 // /blog/edit is The Trybe Edit's own front (EditHome) with the same pills.
 const SUBS = {
-  all: 'Practical guides for South East Queensland businesses hiring photographers and videographers, and for the creatives running their own business. Plus The Trybe Edit, our monthly read for creatives.',
-  clients: 'Practical guides for South East Queensland businesses hiring photographers and videographers.',
+  all: 'Practical guides for Australian businesses hiring photographers and videographers, and for the creatives running their own business. Plus The Trybe Edit, our monthly read for creatives.',
+  clients: 'Practical guides for Australian businesses hiring photographers and videographers.',
   creatives: 'Practical guides for photographers and videographers running their own business.',
 }
 export function BlogHub({ which = 'all' }) {

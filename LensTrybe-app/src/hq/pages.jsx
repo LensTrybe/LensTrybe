@@ -37,7 +37,7 @@ export function Overview() {
         <Tile label="Monthly revenue" value={money(s.mrr_minor)} sub={`${money(s.trial_mrr_minor)} more once free months end`} tone="green" />
         <Tile label="Founding places" value={`${o.founding?.used} / ${o.founding?.cap}`} sub={`${o.founding?.redeemed} signed up`} />
         <Tile label="Open jobs" value={o.jobs?.open} sub={`${o.jobs?.replies_7} replies this week`} />
-        <Tile label="Waitlist" value={o.waitlist} sub="Outside South East Queensland" />
+        <Tile label="Waitlist" value={o.waitlist} sub="Overseas, or an area not open yet" />
         <Tile label="The Trybe Edit" value={o.edit_readers} sub="Opted-in readers" />
       </div>
       <div className="hq-cols">

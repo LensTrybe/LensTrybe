@@ -23,8 +23,8 @@ const ORG = {
 
 // Pages with fixed wording. Paths not here get the defaults; the ones in NOINDEX stay out of search.
 const PAGES = {
-  '/': ['LensTrybe · Photographers and videographers in South East Queensland', DEFAULT_DESC, ORG],
-  '/creatives': ['Find a photographer or videographer · LensTrybe', 'Browse photographers and videographers across South East Queensland. See their work, packages and reviews, check a date and ask for a quote. No fee to ask.'],
+  '/': ['LensTrybe · Photographers and videographers across Australia', DEFAULT_DESC, ORG],
+  '/creatives': ['Find a photographer or videographer · LensTrybe', 'Browse photographers and videographers across Australia. See their work, packages and reviews, check a date and ask for a quote. No fee to ask.'],
   '/jobs': ['Post a photography or video job · LensTrybe', 'Post your photo or video job for free. Creatives who do that work reply with a real quote and you choose. LensTrybe never takes a cut.'],
   '/how-it-works': ['How LensTrybe works · LensTrybe', 'Post a job or find a creative, get quotes, sign, pay and receive your files in one place. How LensTrybe works for clients and for creatives.'],
   '/pricing': ['Pricing for creatives · LensTrybe', 'Plans for photographers and videographers, from free. The first three months are free on any paid plan, and there is no commission on your jobs, ever.'],

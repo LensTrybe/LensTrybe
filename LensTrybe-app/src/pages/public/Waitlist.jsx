@@ -80,7 +80,7 @@ export default function Waitlist() {
               <p className="tiny">By joining you agree to launch updates and The Trybe Edit. One click to leave. <Link to="/legal/privacy" style={{ color: 'var(--neon-t)', fontWeight: 600 }}>Privacy</Link>.</p>
             </form>
           </>}
-          <p className="lfoot">{outside && <>In South East Queensland after all? <a href="/?seq=1" onClick={e => { e.preventDefault(); claimSEQ(); nav('/') }}>Go to the site</a>. </>}Have a founding code already? <Link to="/founding">Redeem it now</Link>. Already in? <Link to="/login">Log in</Link>.</p>
+          <p className="lfoot">{outside && <>In Australia after all? <a href="/?seq=1" onClick={e => { e.preventDefault(); claimSEQ(); nav('/') }}>Go to the site</a>. </>}Have a founding code already? <Link to="/founding">Redeem it now</Link>. Already in? <Link to="/login">Log in</Link>.</p>
         </div>
       </div>
     </section>

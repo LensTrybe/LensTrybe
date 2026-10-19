@@ -6,8 +6,9 @@ import { SPECIALTIES, matchesSpecialty, specKey } from './specialties'
 // The sitemap edge function (supabase/functions/sitemap) mirrors PLACES, the slugs and the
 // thresholds below; change both together.
 
-// Places in South East Queensland. A creative counts for a place when their town or one of the
-// areas they serve matches a name in its list.
+// Places: South East Queensland first, then the capital cities (added 20 October 2026, when
+// LensTrybe opened Australia-wide). A creative counts for a place when their town or one of the
+// areas they serve matches a name in its list, or, for a capital, when their state is its state.
 export const PLACES = [
   { slug: 'brisbane', name: 'Brisbane', names: ['brisbane', 'west end', 'fortitude valley', 'new farm', 'paddington', 'south brisbane', 'chermside', 'carindale', 'indooroopilly', 'toowong', 'bulimba', 'wynnum', 'sandgate', 'kangaroo point', 'woolloongabba', 'teneriffe', 'ascot', 'hamilton'] },
   { slug: 'gold-coast', name: 'the Gold Coast', short: 'Gold Coast', pre: 'on the', names: ['gold coast', 'surfers paradise', 'broadbeach', 'burleigh', 'southport', 'coolangatta', 'robina', 'palm beach', 'currumbin', 'nerang', 'hope island', 'coomera', 'main beach', 'tamborine'] },
@@ -18,6 +19,13 @@ export const PLACES = [
   { slug: 'logan', name: 'Logan', names: ['logan', 'beenleigh', 'springwood', 'shailer park', 'jimboomba', 'browns plains', 'loganholme'] },
   { slug: 'redlands', name: 'the Redlands', short: 'Redlands', pre: 'in the', names: ['redlands', 'redland', 'cleveland', 'capalaba', 'victoria point', 'thornlands', 'stradbroke', 'wellington point'] },
   { slug: 'toowoomba', name: 'Toowoomba', names: ['toowoomba'] },
+  { slug: 'sydney', name: 'Sydney', state: 'NSW', names: ['sydney', 'newtown', 'surry hills', 'bondi', 'manly', 'parramatta', 'chatswood', 'paddington nsw', 'marrickville', 'redfern', 'glebe', 'cronulla', 'penrith', 'north sydney', 'balmain', 'leichhardt', 'mosman', 'coogee'] },
+  { slug: 'melbourne', name: 'Melbourne', state: 'VIC', names: ['melbourne', 'fitzroy', 'collingwood', 'brunswick', 'st kilda', 'richmond', 'south yarra', 'prahran', 'footscray', 'carlton', 'northcote', 'williamstown', 'box hill', 'hawthorn', 'frankston', 'dandenong'] },
+  { slug: 'canberra', name: 'Canberra', state: 'ACT', names: ['canberra', 'belconnen', 'tuggeranong', 'woden', 'gungahlin', 'braddon', 'kingston act', 'queanbeyan'] },
+  { slug: 'adelaide', name: 'Adelaide', state: 'SA', names: ['adelaide', 'glenelg', 'norwood', 'unley', 'port adelaide', 'henley beach', 'mount barker', 'mclaren vale', 'barossa'] },
+  { slug: 'perth', name: 'Perth', state: 'WA', names: ['perth', 'fremantle', 'subiaco', 'joondalup', 'leederville', 'mount lawley', 'scarborough wa', 'cottesloe', 'rockingham', 'mandurah'] },
+  { slug: 'hobart', name: 'Hobart', state: 'TAS', names: ['hobart', 'sandy bay', 'battery point', 'kingston tas', 'glenorchy', 'new norfolk'] },
+  { slug: 'darwin', name: 'Darwin', state: 'NT', names: ['darwin', 'palmerston', 'casuarina', 'nightcliff', 'parap'] },
 ]
 export const placeBySlug = s => PLACES.find(p => p.slug === s)
 export const placeShort = p => p.short || p.name
@@ -43,6 +51,7 @@ export const MIN_FOR = kind => kind.spec ? 2 : 1
 
 export function inPlace(x, place) {
   const where = [x.c, ...(x.areas || [])].map(s => String(s || '').toLowerCase()).filter(Boolean)
+  if (place.state && String(x.state || '').toUpperCase() === place.state) return true
   return where.some(w => place.names.some(n => w.includes(n)))
 }
 export function isKind(x, kind) {

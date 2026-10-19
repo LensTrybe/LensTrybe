@@ -220,7 +220,7 @@ export function shapeProfile(p, extra = {}) {
   const rv = extra.reviews || [], r = rv.length ? Math.round(rv.reduce((a, x) => a + (x.rating || 0), 0) / rv.length * 10) / 10 : 0
   const from = services.length ? Math.min(...services.map(s => s[1]).filter(Boolean)) : 0
   return {
-    id: p.id, live: true, n: p.business_name || 'Creative', d: p.tagline || skills.join(' and '), short: skills[0] || 'Creative', c: p.city || p.location || '', state: p.state || 'QLD', p: from, r, rv: rv.length, t,
+    id: p.id, live: true, n: p.business_name || 'Creative', d: p.tagline || skills.join(' and '), short: skills[0] || 'Creative', c: p.city || p.location || '', state: p.state || '', p: from, r, rv: rv.length, t,
     mood: ['golden', 'dusk', 'cool', 'forest', 'night', 'rose'][hash(p.id) % 6], seed: (hash(p.id) % 40) + 1, free: p.is_available !== false, found: !!(p.founding_member && p.show_founding_badge !== false), resp: 'about a day',
     why: [p.tagline, p.city ? 'based in ' + p.city : null].filter(Boolean).join(', ') + '.', about: p.bio || '', pk: services.length ? services : [], avatar: p.avatar_url || '', cover: p.cover_url || '', tier: p.subscription_tier || 'basic', years: p.years_experience, ig: p.instagram_url, web: p.website, areas: p.site_service_areas || [],
     photos: (extra.items || []).map(i => ({ id: i.id, url: i.image_url, title: i.headline || i.title || '', alt: i.alt_text || i.title || '', wide: !!i.featured })), reviews: rv.filter(x => x.flag_status !== 'resolved_removed').map(x => ({ id: x.id, who: x.reviewer_name || x.client_name || 'A client', r: x.rating || 5, text: x.body || x.comment || '', when: x.created_at, kind: x.project_type, verified: x.source !== 'imported', reply: x.reply || '', featured: !!x.featured })).sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0)),
@@ -416,7 +416,9 @@ export async function loadMyProfileExtras(uid) {
   ])
   return { items: items.filter(i => i.file_type !== 'video').map(i => ({ id: i.id, url: i.image_url || i.file_url, featured: !!i.featured })), packages: services.map(s => [s.name || '', Number(s.price) || 0, s.description || '', s.id]) }
 }
-const splitPlace = s => { const [a, ...b] = String(s || '').split(','); return { city: a.trim(), state: (b.join(',').trim() || 'QLD').toUpperCase().slice(0, 3) } }
+// "Newtown, NSW" gives both; "Newtown" alone leaves the state they gave at signup as it is
+// (LensTrybe is Australia-wide, so there is no default state to fall back on).
+const splitPlace = s => { const [a, ...b] = String(s || '').split(','); const st = b.join(',').trim().toUpperCase().slice(0, 3); return { city: a.trim(), state: st || undefined } }
 export async function saveProfileLive(uid, p, packages) {
   const text = [p.n, p.h, p.bio, p.credOther, ...packages.map(x => x[0] + ' ' + x[2])].filter(Boolean).join('\n')
   const mod = await moderateText(text); if (mod?.blocked) throw new Error(mod.reason || 'That text cannot be published.')
@@ -424,7 +426,7 @@ export async function saveProfileLive(uid, p, packages) {
   const skills = p.disc === 'Both' ? ['Photographer', 'Videographer'] : p.disc ? [p.disc] : []
   // specialties per discipline (what the directory filters on), only for the disciplines they do
   const bySkill = skills.map(t => [t, (p.specBy && p.specBy[t]) || []]).filter(([, v]) => v.length)
-  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, state: city ? state : null, phone: (p.ph || '').trim() || null, website: socialLink(p.web, 'https://'), instagram_url: socialLink(p.ig, 'https://instagram.com/'), tiktok_url: socialLink(p.tt, 'https://www.tiktok.com/@'), facebook_url: socialLink(p.fb, 'https://facebook.com/'), linkedin_url: socialLink(p.li, 'https://www.linkedin.com/in/'), twitter_url: socialLink(p.x, 'https://x.com/'), ...Object.fromEntries(CREDS.map(([k]) => ['has_' + k, k === 'other' ? !!(p.cred?.other && String(p.credOther || '').trim()) : !!p.cred?.[k]])), other_credential_name: String(p.credOther || '').trim() || null, skill_types: skills, specialties: bySkill.length ? [...new Set(bySkill.flatMap(([, v]) => v))] : (p.kinds || []), specialties_by_type: Object.fromEntries(bySkill), avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
+  const row = { business_name: (p.n || '').trim(), tagline: (p.h || '').trim() || null, bio: (p.bio || '').trim() || null, city: city || null, ...(city ? (state ? { state } : {}) : { state: null }), phone: (p.ph || '').trim() || null, website: socialLink(p.web, 'https://'), instagram_url: socialLink(p.ig, 'https://instagram.com/'), tiktok_url: socialLink(p.tt, 'https://www.tiktok.com/@'), facebook_url: socialLink(p.fb, 'https://facebook.com/'), linkedin_url: socialLink(p.li, 'https://www.linkedin.com/in/'), twitter_url: socialLink(p.x, 'https://x.com/'), ...Object.fromEntries(CREDS.map(([k]) => ['has_' + k, k === 'other' ? !!(p.cred?.other && String(p.credOther || '').trim()) : !!p.cred?.[k]])), other_credential_name: String(p.credOther || '').trim() || null, skill_types: skills, specialties: bySkill.length ? [...new Set(bySkill.flatMap(([, v]) => v))] : (p.kinds || []), specialties_by_type: Object.fromEntries(bySkill), avatar_url: p.avatar && p.avatar !== 'seed' ? p.avatar : null, show_founding_badge: p.tog?.badge !== 0, is_available: p.tog?.avail !== 0 }
   const { error } = await supabase.from('profiles').update(row).eq('id', uid)
   if (error) throw new Error(error.message)
   // packages: replace the set (small list, keeps order exact)

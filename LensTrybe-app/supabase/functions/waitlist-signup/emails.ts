@@ -12,14 +12,14 @@ const IG = 'https://instagram.com/lenstrybe'
 export function waitlistConfirmationHtml(opts: { audience: string; refLink: string; unsubscribeUrl: string | null; live: boolean }) {
   const { audience, refLink, unsubscribeUrl, live } = opts
   const where = live
-    ? `LensTrybe is live across South East Queensland and rolling out across Australia city by city.`
+    ? `LensTrybe is live across Australia and opening overseas country by country.`
     : `LensTrybe opens on 1 October, starting in South East Queensland and rolling out across Australia city by city.`
   const body = audience === 'client'
     ? `${where} We'll let you know the moment you can book creatives in your area.`
     : `${where} We'll let you know the moment we open in your area. Your first three months are free, and there are no commissions, ever. You keep 100% of what you earn.`
   return layout({
     blocks: [
-      heading(live ? 'Live in South East Queensland' : 'Opening 1 October 2026', "You're on the list."),
+      heading(live ? 'Live across Australia' : 'Opening 1 October 2026', "You're on the list."),
       para(body),
       audience === 'creative'
         ? notice(`Want to help bring LensTrybe to your city sooner? Share your link.<br>${link(refLink, refLink)}`, 'green', { html: true })
