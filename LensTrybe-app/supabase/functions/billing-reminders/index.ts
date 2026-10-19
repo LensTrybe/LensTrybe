@@ -8,6 +8,7 @@
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts';
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 import { reminderEmail } from './emails.ts';
+import { layout, heading, para, list } from './email.ts';
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
@@ -142,5 +143,49 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  return json({ ok: true, today, ...result });
+  // Backstop for a card that never saved. A paid subscription with no Revolut payment method can
+  // never be charged, and nothing else notices: on 6 October the webhook never arrived for one
+  // signup and the gap would have stayed silent until the free year ended. Alert the owner about
+  // new ones every day, and the full outstanding list on Mondays.
+  const noCard = { new: 0, outstanding: 0, alerted: false };
+  try {
+    const dayAgo = new Date(Date.now() - 26 * 3600 * 1000).toISOString();
+    const hourAgo = new Date(Date.now() - 3600 * 1000).toISOString();
+    const { data: missing } = await admin.from('subscriptions')
+      .select('id, user_id, tier, status, amount_minor, created_at, next_charge_date')
+      .in('status', ['trialing', 'active'])
+      .gt('amount_minor', 0)
+      .is('revolut_payment_method_id', null)
+      .lt('created_at', hourAgo)
+      .order('created_at', { ascending: false })
+      .limit(200);
+    const all = missing || [];
+    const fresh = all.filter(m => String(m.created_at) >= dayAgo);
+    const monday = new Intl.DateTimeFormat('en-AU', { timeZone: 'Australia/Brisbane', weekday: 'short' }).format(new Date()) === 'Mon';
+    noCard.new = fresh.length; noCard.outstanding = all.length;
+    const items = monday ? all : fresh;
+    if (items.length) {
+      const rows = await Promise.all(items.map(async m => {
+        const { data: p } = await admin.from('profiles').select('business_name').eq('id', m.user_id).maybeSingle();
+        const { data: u } = await admin.auth.admin.getUserById(m.user_id);
+        return `${String(p?.business_name || 'Unknown')}, ${String(u?.user?.email || 'no email')}: ${String(m.tier)}, ${String(m.status)}, joined ${String(m.created_at).slice(0, 10)}, next charge ${String(m.next_charge_date || 'none')}`;
+      }));
+      const subject = `${items.length} paid subscription${items.length === 1 ? '' : 's'} with no saved card`;
+      const html = layout({
+        preheader: subject,
+        blocks: [
+          heading('Billing check', subject),
+          para(monday ? 'Every paid subscription that has no Revolut payment method saved. These cannot be charged when the free months end.' : 'New in the last day: a paid subscription with no Revolut payment method saved. It cannot be charged when the free months end.'),
+          list(rows),
+          para('Check the Revolut Merchant webhook log for the signup date, then send each one an update payment method link.', { small: true }),
+        ],
+        why: 'You get this because you own LensTrybe. It runs with the daily billing reminders.',
+      });
+      noCard.alerted = await sendEmail(resendKey, { to: 'michael@lenstrybe.com', subject, html });
+    }
+  } catch (e) {
+    console.error('billing-reminders: no-card check failed', e instanceof Error ? e.message : String(e));
+  }
+
+  return json({ ok: true, today, ...result, noCard });
 });

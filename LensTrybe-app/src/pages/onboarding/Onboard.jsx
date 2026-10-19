@@ -5,8 +5,8 @@ import Logo from '../../components/Logo'
 import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { useStore, TODAY } from '../../lib/store'
-import { outside, waitlistTo } from '../../lib/region'
-import { createMyAccount, googleNames, signUpCreative } from '../../lib/auth'
+import { outside, waitlistTo, STATES } from '../../lib/region'
+import { createMyAccount, googleNames, setMyLocation, signUpCreative } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import '../../styles/public.css'
@@ -32,7 +32,7 @@ export default function Onboard() {
   // Google: already signed in with no account yet; the name and email come from the Google account
   const auth = useAuth(); const gUser = LIVE && auth.user && !auth.profile && !auth.clientAccount ? auth.user : null
   const google = LIVE && (new URLSearchParams(search).get('google') === '1' || !!gUser)
-  const gn = googleNames(gUser); const [gDisc, setGDisc] = useState('Photographer')
+  const gn = googleNames(gUser); const [gDisc, setGDisc] = useState('Photographer'); const [gCity, setGCity] = useState(''), [gSt, setGSt] = useState('')
   const j = google ? { first: gn.first, last: gn.last, email: gUser?.email || '', disc: gDisc, news: false } : (state || {})
   const first = j.first || '', last = j.last || '', email = j.email || '', disc0 = j.disc || 'Photographer', password = j.password || '', code = (j.code || '').toUpperCase()
   const founding = !!code
@@ -56,12 +56,14 @@ export default function Onboard() {
   useEffect(() => { if (ready && !outside()) eventOnce('creative_signup_started') }, [ready])
   const name = (first + ' ' + last).trim()
   const go = async () => {
+    if (google && (!gCity.trim() || !gSt)) return setErr('Your suburb or town and state, so clients near you can find you.')
     if (!agree) return setErr('Have a read of the terms first, then tick the box.')
     const disc = !['Expert', 'Elite'].includes(plan) && disc0 === 'Both' ? 'Photographer' : disc0
     if (LIVE && google) {
       if (busy || !gUser) return; setBusy(true)
       const made = await createMyAccount('creative', first, last, disc === 'Both' ? ['Photographer', 'Videographer'] : [disc], false)
       if (made.error) { setBusy(false); return setErr(made.error) }
+      await setMyLocation(gCity, gSt) // not fatal: the profile checklist asks again if it did not save
       eventOnce('creative_signup_completed') // the account exists now; a paid plan's card step can still follow
       if (plan !== 'Basic') {
         const r = await signUpCreative({ google: true, userId: gUser.id, first, last, email, disc, tier: plan.toLowerCase(), billing: 'monthly' })
@@ -71,7 +73,7 @@ export default function Onboard() {
     }
     if (LIVE) {
       if (busy) return; setBusy(true)
-      const r = await signUpCreative({ first, last, email, password, disc, tier: plan.toLowerCase(), billing: 'monthly', code, news: j.news !== false })
+      const r = await signUpCreative({ first, last, email, password, disc, tier: plan.toLowerCase(), billing: 'monthly', code, news: j.news !== false, city: j.city || '', state: j.state || '' })
       setBusy(false)
       // made, even if a paid plan's card step then failed (they are on Trybe Free and can pick a plan later)
       if (r.ok || r.userId) eventOnce('creative_signup_completed')
@@ -96,6 +98,7 @@ export default function Onboard() {
         <div className="obc lg">
           <p className="eb g">{founding ? 'Founding creative programme' : 'Last step, ' + first}</p><h1>{founding ? 'Your place is held.' : 'Pick a plan.'}</h1><p className="sub">{founding ? foundingLine : 'Three months free on any paid plan: add a card, pay nothing until month four, cancel before then and pay nothing at all. Trybe Free is free forever. Change it any time.'}</p>
           {google && <div className="obdisc" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', margin: '0 0 16px', alignItems: 'center' }}><span style={{ fontSize: 13, fontWeight: 600, marginRight: 4 }}>What you do</span>{['Photographer', 'Videographer', 'Both'].map(x => <button key={x} type="button" onClick={() => setGDisc(x)} className={'btn sm ' + (gDisc === x ? 'k' : 'g')}>{x}</button>)}</div>}
+          {google && <div className="obloc"><label><span>Suburb or town</span><input value={gCity} onChange={e => { setGCity(e.target.value); setErr('') }} placeholder="Newtown" autoComplete="address-level2" /></label><label><span>State</span><select value={gSt} onChange={e => { setGSt(e.target.value); setErr('') }}><option value="">Choose</option>{STATES.map(s => <option key={s}>{s}</option>)}</select></label></div>}
           <div className="plans4">{PLANS.map(([n, pr, d, tag]) => <button key={n} type="button" className={plan === n ? 'on' : ''} disabled={founding && n !== lock} onClick={() => { setPlan(n); setErr('') }}><b>{planLabel(n)}</b><span>{pr}{pr !== 'Free' && <small style={{ display: 'inline', minHeight: 0, marginLeft: 3 }}>/mo</small>}</span><small>{d}</small><em>{founding && n === lock ? 'Founding: free for a year' : tag}</em></button>)}</div>
           {disc0 === 'Both' && !['Expert', 'Elite'].includes(plan) && <p className="fine">Photographer and videographer on one profile needs Trybe Complete or Trybe Studio. On {planLabel(plan)} you start as a photographer and can add film later.</p>}
           <label className="obagree"><input type="checkbox" checked={agree} onChange={e => { setAgree(e.target.checked); setErr('') }} /><span>I agree to the <Link to="/legal/terms" target="_blank">terms</Link> and <Link to="/legal/privacy" target="_blank">privacy policy</Link>{founding && <> and the <Link to="/legal/founding" target="_blank">founding creative agreement</Link></>}.</span></label>

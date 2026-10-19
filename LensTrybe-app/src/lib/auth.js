@@ -75,6 +75,15 @@ export async function createMyAccount(kind, first = '', last = '', skills = null
   if (kind === 'client') event('client_account_created')
   return { ok: true }
 }
+// Where a creative is based, saved after a Google signup (the email path sends it in the signUp
+// metadata, which the new-user trigger writes). Directory search and a complete listing need both.
+export async function setMyLocation(city, state) {
+  if (!LIVE) return { ok: true }
+  const { data } = await supabase.auth.getUser(); const uid = data?.user?.id
+  if (!uid) return { error: 'Not signed in.' }
+  const { error } = await supabase.from('profiles').update({ city: String(city || '').trim() || null, state: state || null }).eq('id', uid)
+  return error ? { error: error.message } : { ok: true }
+}
 // First and last name from a Google account's details
 export function googleNames(user) {
   const m = user?.user_metadata || {}

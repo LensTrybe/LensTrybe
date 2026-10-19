@@ -3,6 +3,8 @@
 // the cookies so an out-of-area visitor who taps the logo after landing on the waitlist gets the
 // waitlist again, not the hero, without a round trip to the edge.
 export const REGION_NAMES = { QLD: 'South East Queensland', 'QLD-R': 'regional Queensland', NSW: 'New South Wales', VIC: 'Victoria', ACT: 'the ACT', SA: 'South Australia', WA: 'Western Australia', TAS: 'Tasmania', NT: 'the Northern Territory', AU: 'your area', INTL: 'outside Australia' }
+// The eight states and territories, for the location a creative gives at signup
+export const STATES = ['QLD', 'NSW', 'VIC', 'ACT', 'SA', 'WA', 'TAS', 'NT']
 export const STATE_OF = { 'QLD-R': 'QLD', QLD: 'QLD', NSW: 'NSW', VIC: 'VIC', ACT: 'ACT', SA: 'SA', WA: 'WA', TAS: 'TAS', NT: 'NT' }
 const get = n => { try { const m = document.cookie.match(new RegExp('(?:^|;\\s*)' + n + '=([^;]*)')); return m ? decodeURIComponent(m[1]) : '' } catch { return '' } }
 export const inSEQ = () => get('lt-seq') === '1'

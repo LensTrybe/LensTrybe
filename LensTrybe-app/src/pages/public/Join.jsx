@@ -5,7 +5,7 @@ import { mountLens } from '../../lib/lens'
 import { checkFoundingCode, createMyAccount, foundingReason, googleNames, isEmail, PASSWORD_MIN, signInWithGoogle, signOut, signUpClient } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
-import { outside, waitlistTo } from '../../lib/region'
+import { outside, waitlistTo, STATES } from '../../lib/region'
 import { useSite, jobsOpen, untilLabel, jobsPostedRecent } from '../../lib/site'
 import { withUtm } from '../../lib/analytics'
 
@@ -30,7 +30,7 @@ export default function Join() {
   const [kind, setKind] = useState(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : 'creative')
   const [code, setCode] = useState(p.get('founding') || p.get('code') ? (p.get('founding') || p.get('code')).toUpperCase() : null)
   const saved = (() => { try { return JSON.parse(sessionStorage.getItem('lt_join') || 'null') } catch { return null } })()
-  const [f, setF] = useState({ first: saved?.first || '', last: saved?.last || '', email: state?.email || p.get('email') || saved?.email || '', pw: '', disc: saved?.disc || 'Photographer', co: '', news: true }); const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
+  const [f, setF] = useState({ first: saved?.first || '', last: saved?.last || '', email: state?.email || p.get('email') || saved?.email || '', pw: '', disc: saved?.disc || 'Photographer', city: saved?.city || '', st: saved?.state || '', co: '', news: true }); const [err, setErr] = useState(''), [busy, setBusy] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   // arrived from the job form: their job is saved and waiting
   const savedJob = (() => { try { const d = JSON.parse(localStorage.getItem('lt-job-draft') || 'null'); return d?.t && (sessionStorage.getItem('returnTo') || '').startsWith('/jobs') ? d.t : '' } catch { return '' } })()
@@ -42,6 +42,7 @@ export default function Join() {
     if (!f.first.trim() || !f.last.trim()) return setErr(kind === 'creative' ? 'Your name, so clients know who they are talking to.' : 'Your name, so creatives know who is asking.')
     if (!isEmail(f.email)) return setErr('A real email, it is how you log in.')
     if (f.pw.length < PASSWORD_MIN) return setErr('A password of at least eight characters.')
+    if (kind === 'creative' && (!f.city.trim() || !f.st)) return setErr('Your suburb or town and state, so clients near you can find you.')
     setBusy(true)
     try {
       if (kind !== 'creative') {
@@ -51,7 +52,7 @@ export default function Join() {
       }
       let fc = null
       if (code && code.trim()) { const r = await checkFoundingCode(code); if (!r.valid) return setErr(foundingReason(r.reason)); fc = r }
-      const fields = { first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc }
+      const fields = { first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc, city: f.city.trim(), state: f.st }
       try { sessionStorage.setItem('lt_join', JSON.stringify(fields)) } catch { /* ignore */ }
       nav('/onboarding', { state: { ...fields, password: f.pw, news: f.news, code: fc ? fc.code : '', codeTier: fc ? fc.tier : '' } })
     } finally { setBusy(false) }
@@ -107,6 +108,7 @@ export default function Join() {
             <div className="two"><label className="lf"><span>Email</span><input type="email" value={f.email} onChange={e => u('email', e.target.value)} placeholder="you@studio.com.au" autoComplete="email" /></label><label className="lf"><span>Password</span><input type="password" value={f.pw} onChange={e => u('pw', e.target.value)} placeholder="At least 8 characters" autoComplete="new-password" /></label></div>
             {kind === 'client' && <label className="lf"><span>Company <em className="opt">optional</em></span><input value={f.co} onChange={e => u('co', e.target.value)} placeholder="Your business, if it is for one" autoComplete="organization" /></label>}
             {kind === 'creative' && <label className="lf"><span>What you do</span><div className="lsel"><select value={f.disc} onChange={e => u('disc', e.target.value)}><option>Photographer</option><option>Videographer</option><option>Both</option></select><Icon name="back" size={14} /></div></label>}
+            {kind === 'creative' && <div className="two"><label className="lf"><span>Suburb or town</span><input value={f.city} onChange={e => u('city', e.target.value)} placeholder="Newtown" autoComplete="address-level2" /></label><label className="lf"><span>State</span><div className="lsel"><select value={f.st} onChange={e => u('st', e.target.value)}><option value="">Choose</option>{STATES.map(s => <option key={s}>{s}</option>)}</select><Icon name="back" size={14} /></div></label></div>}
             {kind === 'creative' && (code === null
               ? <button type="button" className="alt left" onClick={() => setCode('')}>Have a founding code? <b>Add it</b></button>
               : <label className="lf"><span>Founding code <button type="button" className="forgot" onClick={() => setCode(null)}>Remove</button></span><input value={code} onChange={e => setCode(e.target.value.toUpperCase())} placeholder="The code from your invite email" autoFocus spellCheck={false} /></label>)}

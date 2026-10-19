@@ -52,3 +52,9 @@
 .ob .obnext a:hover{border-color:var(--green)}.ob .obnext a b{grid-area:t;font-size:14px}.ob .obnext a span{grid-area:d;font-size:12.5px;color:var(--ink-3)}.ob .obnext a svg{grid-area:i}
 .ob .lnk{font-size:13px;color:var(--ink-3);background:none;padding:0 8px}
 @media (max-width:700px){.ob .plans4{grid-template-columns:1fr 1fr}.ob .obreview{grid-template-columns:1fr}}
+/* Google signups give their suburb and state here (the email path gives it on Join) */
+.ob .obloc{display:grid;grid-template-columns:1fr 140px;gap:10px}
+.ob .obloc label{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:600}
+.ob .obloc input,.ob .obloc select{height:46px;padding:0 14px;border-radius:14px;font:inherit;font-weight:400;font-size:15px;color:var(--ink);background:var(--paper);border:1px solid var(--line-2);outline:none}
+.ob .obloc input:focus,.ob .obloc select:focus{border-color:var(--green)}
+@media (max-width:480px){.ob .obloc{grid-template-columns:1fr}}
