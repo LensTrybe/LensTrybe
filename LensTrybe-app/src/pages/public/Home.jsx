@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
-import { outside, waitlistTo } from '../../lib/region'
+import { clientOutside, outside, waitlistTo } from '../../lib/region'
 import { useSite } from '../../lib/site'
 import Ask from './Ask'
 import Intro from '../../components/Intro'
@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <>
       <Intro />
-      <Ask onOpen={setOpen} jobFirst={site.home_hero !== 'ask'} />
+      <Ask onOpen={setOpen} jobFirst={site.home_hero !== 'ask'} creativeFirst={clientOutside()} />
       {/* a real creative opens their profile over the results, so closing it keeps the search */}
       {open?.live ? <Profile slug={open.id} sheet onClose={() => setOpen(null)} /> : <ProfilePanel c={open} onClose={() => setOpen(null)} />}
     </>

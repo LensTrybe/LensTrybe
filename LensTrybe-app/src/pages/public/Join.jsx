@@ -5,7 +5,7 @@ import { mountLens } from '../../lib/lens'
 import { checkFoundingCode, createMyAccount, foundingReason, googleNames, isEmail, PASSWORD_MIN, signInWithGoogle, signOut, signUpClient } from '../../lib/auth'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
-import { outside, waitlistTo, STATES } from '../../lib/region'
+import { clientOutside, outside, waitlistTo, STATES } from '../../lib/region'
 import { useSite, jobsOpen, untilLabel, jobsPostedRecent } from '../../lib/site'
 import { withUtm } from '../../lib/analytics'
 
@@ -25,7 +25,8 @@ const WHY = {
 // Join: the lens, the reasons on the left, one pane of dark glass on the right.
 export default function Join() {
   const nav = useNavigate(); const [p] = useSearchParams(); const { pathname, state } = useLocation()
-  if (outside()) return <Navigate to={withUtm(waitlistTo(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : ''))} replace />
+  const toClient = p.get('as') === 'client' || pathname === '/join/client'
+  if (outside() || (toClient && clientOutside())) return <Navigate to={withUtm(waitlistTo(toClient ? 'client' : ''))} replace />
   const cv = useRef(null)
   const [kind, setKind] = useState(p.get('as') === 'client' || pathname === '/join/client' ? 'client' : 'creative')
   const [code, setCode] = useState(p.get('founding') || p.get('code') ? (p.get('founding') || p.get('code')).toUpperCase() : null)

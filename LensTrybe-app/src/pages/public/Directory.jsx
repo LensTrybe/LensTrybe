@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, useSearchParams, Navigate } from 'react-router-dom'
-import { outside, waitlistTo } from '../../lib/region'
+import { clientOutside, waitlistTo } from '../../lib/region'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
 import Icon from '../../components/Icon'
@@ -21,7 +21,7 @@ const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
 // Find a creative: the browsable version of the constellation. A dark opener with the lens and a
 // sentence bar that hands off to the ask, then a glass filter bar and the grid on light.
 export default function Directory() {
-  if (outside()) return <Navigate to={withUtm(waitlistTo('client'))} replace />
+  if (clientOutside()) return <Navigate to={withUtm(waitlistTo('client'))} replace />
   const [params] = useSearchParams()
   const cv = useRef(null), slot = useRef(null), bar = useRef(null)
   const [q, setQ] = useState('')

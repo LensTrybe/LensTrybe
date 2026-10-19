@@ -21,7 +21,9 @@ const reduce = () => matchMedia('(prefers-reduced-motion: reduce)').matches
 // pill right under the bar (Michael, 28 Sep: the original hero back, Post a job kept). On the live
 // site the matches are the real listed creatives; the sample creatives are for the demo only.
 // jobFirst (site_settings.home_hero = 'job'): the same hero with no ask bar, only the pill.
-export default function Ask({ onOpen, jobFirst = false }) {
+// creativeFirst: a visitor whose area is open to creatives but not yet to clients gets the creative
+// hero instead, so the one button on the page is one they can use.
+export default function Ask({ onOpen, jobFirst = false, creativeFirst = false }) {
   const nav = useNavigate()
   const toJob = t => nav('/jobs' + (t && t.trim() ? '?q=' + encodeURIComponent(t.trim()) : ''))
   const cv = useRef(null), lens = useRef(null), field = useRef(null), input = useRef(null), stage = useRef(null)
@@ -123,11 +125,15 @@ export default function Ask({ onOpen, jobFirst = false }) {
     <section className={'ask dark darkhero' + (live ? ' live' : '') + (think ? ' think' : '')} id="ask">
       <canvas className="gl" ref={cv} aria-hidden="true" />
       <div className="stage" ref={stage}>
-        {jobFirst
+        {creativeFirst
+          ? <h1><span className="ln"><span>Your work deserves</span></span> <span className="ln"><span><em>to be seen.</em></span></span></h1>
+          : jobFirst
           ? <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>Creatives <em>come to you.</em></span></span></h1>
           : <h1><span className="ln"><span>Tell us what you need.</span></span> <span className="ln"><span>We'll <em>find them.</em></span></span></h1>}
-        <p className="sub">{jobFirst ? 'Post the job in a minute. Photographers and videographers who do that work reply with a real quote, and you pick one. Free for clients, no commissions, ever.' : 'One sentence. Photographers and videographers across South East Queensland, matched on the work, the place and the budget. Or post a job and let them come to you. No commissions, ever.'}</p>
-        {jobFirst ? <>
+        <p className="sub">{creativeFirst ? 'Photographers and videographers anywhere in Australia: your own page clients can find, plus quotes, contracts, invoices and gallery delivery in one place. One flat plan, never a commission.' : jobFirst ? 'Post the job in a minute. Photographers and videographers who do that work reply with a real quote, and you pick one. Free for clients, no commissions, ever.' : 'One sentence. Photographers and videographers across South East Queensland, matched on the work, the place and the budget. Or post a job and let them come to you. No commissions, ever.'}</p>
+        {creativeFirst ? <>
+          <Link className="jobpill big" to="/join"><i />Join as a creative<Icon name="arrow" size={16} /></Link>
+        </> : jobFirst ? <>
           <Link className="jobpill big" to="/jobs"><i />Post a job<Icon name="arrow" size={16} /></Link>
         </> : <>
         <form className={'bar lg refract chroma tilt' + (think ? ' think' : '')} onSubmit={submit} autoComplete="off" role="search">
@@ -156,8 +162,8 @@ export default function Ask({ onOpen, jobFirst = false }) {
           </div>
         ))}
       </div>
-      {!jobFirst && <div className="lumi-line lg"><span className="lm" /><span>{first > 0 && line.length >= first ? <><b>{line.slice(0, first)}</b>{line.slice(first)}</> : line}{line && <span className="cursor" />}</span></div>}
-      {!jobFirst && <Link className="scroll-cue" to="/how-it-works">How it works<i /></Link>}
+      {!jobFirst && !creativeFirst && <div className="lumi-line lg"><span className="lm" /><span>{first > 0 && line.length >= first ? <><b>{line.slice(0, first)}</b>{line.slice(first)}</> : line}{line && <span className="cursor" />}</span></div>}
+      {!jobFirst && !creativeFirst && <Link className="scroll-cue" to="/how-it-works">How it works<i /></Link>}
     </section>
   )
 }

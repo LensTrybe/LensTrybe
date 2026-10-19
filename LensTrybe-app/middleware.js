@@ -1,10 +1,11 @@
 import { next } from '@vercel/edge'
 
 // Vercel Edge Middleware: the front door checks where a visitor is before the site loads.
-// South East Queensland gets the whole site. Everyone else (regional Queensland, the other
-// states, overseas) can read (how it works, pricing, founding, profiles, the Edit, support) but
-// every action sends them to /waitlist for their area: the home page redirects here at the edge,
-// and the app hides Join / Post a job / the ask once it sees the lt-region cookie this sets.
+// Since 13 October 2026 all of Australia gets the whole site, and creatives anywhere in Australia
+// can join. The lt-region cookie this sets tells the app the visitor's area, so client actions
+// (find a creative, post a job) can point at that area's waitlist until it opens to clients
+// (CLIENT_AREAS in src/lib/region.js). Overseas visitors can read, and the home page sends them
+// to /waitlist at the edge.
 //
 // No geo headers (local dev, `vite preview`) means everyone is let in. Overrides for testing and
 // for people the geo gets wrong: /?geo=NSW pretends to be in NSW, /?geo=QLD:cairns a city,
@@ -51,6 +52,8 @@ export default function middleware(req) {
   const code = inSEQ ? 'QLD' : country !== 'AU' ? 'INTL' : region === 'QLD' ? 'QLD-R' : (region || 'AU')
   const known = new RegExp('(^|;\\s*)lt-region=' + code + '(;|$)').test(jar)
   if (inSEQ) return known && !force ? undefined : next({ headers: { 'Set-Cookie': cookie('lt-region', 'QLD', 30) } })
+  // the rest of Australia: the whole site, with the area remembered for the client side
+  if (country === 'AU') return known && !force ? undefined : next({ headers: { 'Set-Cookie': cookie('lt-region', code, 30) } })
   if (home) {
     const to = new URL('/waitlist', url); to.search = ''; to.searchParams.set('region', code); to.searchParams.set('from', 'home'); withUtm(to, url)
     return new Response(null, { status: 307, headers: { Location: to.toString(), 'Set-Cookie': cookie('lt-region', code, 30) } })

@@ -5,7 +5,7 @@ import Still from '../../components/Still'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { applySeo } from '../../lib/seo'
-import { outside, waitlistTo } from '../../lib/region'
+import { clientOutside, outside, waitlistTo } from '../../lib/region'
 import { renderMarkdown, renderInline, titleHtml } from '../../lib/markdown'
 import { AUDIENCES, CTA, ctaFor, dateAU, hubHead, itemPath, plain, postHead, readTime, wasUpdated } from '../../lib/blog-head'
 import { loadLatest, loadPost, loadPosts, loadRelated } from '../../lib/blog'
@@ -26,8 +26,8 @@ function useInternalLinks() {
   }
 }
 
-// Where a call to action goes for this visitor: outside South East Queensland, the waitlist
-const ctaHref = cta => (outside() && (cta.href === '/jobs' || cta.href.startsWith('/join')) ? waitlistTo(cta.as) : cta.href)
+// Where a call to action goes for this visitor: an area not open yet goes to its waitlist
+const ctaHref = cta => ((cta.href === '/jobs' && clientOutside()) || (cta.href.startsWith('/join') && outside()) ? waitlistTo(cta.as) : cta.href)
 
 // The lens behind every blog opener
 function useLens(deps) {
@@ -65,7 +65,7 @@ function Featured({ p }) {
 
 // The client side's panel: no newsletter, just the job board
 export function JobPanel() {
-  const to = outside() ? waitlistTo('client') : '/jobs'
+  const to = clientOutside() ? waitlistTo('client') : '/jobs'
   return (
     <div className="closer bpanel lg rv">
       <div><p className="eb g">Hiring a photographer or videographer?</p><h2>Post the job. <em>They come to you.</em></h2><p className="lede">{CTA.clients.line}</p></div>

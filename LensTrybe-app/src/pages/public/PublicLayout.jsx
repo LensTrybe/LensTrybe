@@ -5,7 +5,7 @@ import Aurora from '../../components/Aurora'
 import Icon from '../../components/Icon'
 import { useSpecular } from '../../lib/useSpecular'
 import { useReveal } from '../../lib/useReveal'
-import { outside, regionCookie, regionName, waitlistTo } from '../../lib/region'
+import { clientOutside, outside, regionCookie, regionName, waitlistTo } from '../../lib/region'
 import { useAuth } from '../../backend/AuthContext'
 import { LIVE } from '../../lib/mode'
 import '../../styles/public.css'
@@ -19,7 +19,7 @@ export default function PublicLayout() {
   const signedIn = LIVE && !!user
   const home = pathname === '/'
   // outside the launch area: read anything, but every action points at the waitlist for the area
-  const away = outside(), wl = pathname === '/waitlist'
+  const away = outside(), noClients = clientOutside(), wl = pathname === '/waitlist'
   const darkTop = home || ['/how-it-works', '/pricing', '/creatives', '/login', '/join', '/join/creative', '/join/client', '/forgot-password', '/reset-password', '/check-email', '/booking-unavailable', '/auth/confirm', '/waitlist', '/support', '/upcoming', '/founding', '/unsubscribe', '/tour'].includes(pathname) || pathname.startsWith('/unsubscribe/') || pathname.startsWith('/edit') || pathname.startsWith('/blog') || pathname.startsWith('/jobs')
   // The Lens (the guides and The Trybe Edit, under /blog) lights up anywhere inside it, issues included
   const lensOn = pathname.startsWith('/blog') || pathname.startsWith('/edit')
@@ -51,8 +51,8 @@ export default function PublicLayout() {
         <div className="r lg" ref={nav} onPointerOver={e => glide(e.target.closest("a"))} onPointerLeave={() => glide(null)}>
           <i className="glide" aria-hidden="true" />
           <NavLink to="/how-it-works" className="hide-m hide-t">How it works</NavLink>
-          {!away && <NavLink to="/creatives" className="hide-m hide-s">Find a creative</NavLink>}
-          {!away && <NavLink to="/jobs" className="hide-m hide-s">Post a job</NavLink>}
+          {!noClients && <NavLink to="/creatives" className="hide-m hide-s">Find a creative</NavLink>}
+          {!noClients && <NavLink to="/jobs" className="hide-m hide-s">Post a job</NavLink>}
           <NavLink to="/pricing" className="hide-m hide-s">Pricing</NavLink>
           <Link to="/blog" className="hide-m" aria-current={lensOn ? 'page' : undefined}>The Lens</Link>
           {away && <NavLink to="/founding" className="hide-m hide-s">Founding</NavLink>}
@@ -62,8 +62,9 @@ export default function PublicLayout() {
           <button className="mb" aria-label="Menu" onClick={() => setMenu(m => !m)}><Icon name="menu" /></button>
         </div>
       </header>
-      {menu && <nav className="mnav lg" aria-label="Menu"><NavLink to="/how-it-works">How it works</NavLink>{away ? <NavLink to={waitlistTo()}>Join the waitlist</NavLink> : <><NavLink to="/creatives">Find a creative</NavLink><NavLink to="/jobs">Post a job</NavLink></>}<NavLink to="/pricing">Pricing</NavLink><NavLink to="/founding">Founding programme</NavLink><NavLink to="/blog">The Lens</NavLink><NavLink to="/upcoming">Upcoming features</NavLink><NavLink to="/support">Support</NavLink><a href="/app/today?preview">Workspace preview</a></nav>}
-      {away && !wl && <div className="areabar"><span>LensTrybe hasn't opened {regionCookie() === 'INTL' ? 'outside Australia' : 'in ' + regionName(regionCookie())} yet. Have a look around; joining, posting a job and the ask open with your area.</span><Link to={waitlistTo()}>Join the waitlist</Link></div>}
+      {menu && <nav className="mnav lg" aria-label="Menu"><NavLink to="/how-it-works">How it works</NavLink>{away ? <NavLink to={waitlistTo()}>Join the waitlist</NavLink> : noClients ? <NavLink to="/join">Join as a creative</NavLink> : <><NavLink to="/creatives">Find a creative</NavLink><NavLink to="/jobs">Post a job</NavLink></>}<NavLink to="/pricing">Pricing</NavLink><NavLink to="/founding">Founding programme</NavLink><NavLink to="/blog">The Lens</NavLink><NavLink to="/upcoming">Upcoming features</NavLink><NavLink to="/support">Support</NavLink><a href="/app/today?preview">Workspace preview</a></nav>}
+      {away && !wl && <div className="areabar"><span>LensTrybe hasn't opened outside Australia yet. Have a look around; joining opens with your country.</span><Link to={waitlistTo()}>Join the waitlist</Link></div>}
+      {!away && noClients && !wl && <div className="areabar"><span>Creatives in {regionName(regionCookie())} can join now. Finding a creative and posting a job open here as local creatives come on.</span><Link to={waitlistTo('client')}>Hiring? Join the waitlist</Link></div>}
       <Outlet />
       <footer className="foot">
         <div className="wrap"><div className="g">

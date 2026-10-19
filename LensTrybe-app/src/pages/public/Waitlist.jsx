@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
-import { STATE_OF, claimSEQ, inSEQ, isOutside, regionCookie, regionName } from '../../lib/region'
+import { STATE_OF, claimSEQ, clientArea, inSEQ, isOutside, regionCookie, regionName } from '../../lib/region'
 
 // The waitlist, two jobs. Before 1 October it is the pre-launch page for South East Queensland:
 // a countdown, one pane to leave an email, a share link afterwards; once the date passes it sends
@@ -24,7 +24,7 @@ export default function Waitlist() {
   const cv = useRef(null)
   const [now, setNow] = useState(() => Date.now())
   const [who, setWho] = useState(p.get('as') === 'client' ? 'client' : 'creative')
-  const region = (p.get('region') || (!inSEQ() ? regionCookie() : '') || '').toUpperCase(), outside = isOutside(region), place = regionName(region)
+  const region = (p.get('region') || (!inSEQ() ? regionCookie() : '') || '').toUpperCase(), outside = isOutside(region) || (who === 'client' && !clientArea(region)), place = regionName(region)
   const [f, setF] = useState({ email: '', disc: '', st: STATE_OF[region] || '', ref: (p.get('ref') || '').toUpperCase() }), [err, setErr] = useState(''), [done, setDone] = useState(null), [copied, setCopied] = useState(false)
   const u = (k, v) => { setF(o => ({ ...o, [k]: v })); setErr('') }
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .34 }); return () => l.destroy() }, [])
@@ -45,8 +45,8 @@ export default function Waitlist() {
       <div className="jgrid">
         <div className="jpitch">
           <p className="eb">{open ? 'We are open' : outside ? 'Opening area by area' : 'Launching 1 October 2026'}</p>
-          <h1>{open ? <>The doors <em>are open.</em></> : outside ? (region === 'INTL' ? <>Australia first, <em>then the world.</em></> : <>{place[0].toUpperCase() + place.slice(1)}, <em>we are coming.</em></>) : who === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>The right person, <em>found in a sentence.</em></>}</h1>
-          <p className="sub">{open ? 'LensTrybe is live on the east coast, starting in South East Queensland. Creatives join in a minute; clients search free.' : outside ? (region === 'INTL' ? 'LensTrybe is coming. A home for photographers and videographers where you keep everything you earn, and the ask brings clients to you. Australia first, your country after. Leave an email and you are first through the door when we open where you are, with three months free on any paid plan.' : 'LensTrybe is coming to ' + place + '. A home for photographers and videographers where you keep everything you earn, and the ask brings clients to you. Leave an email: you are first through the door when we open near you, with three months free on any paid plan.') : 'A home for Australian photographers and videographers where you keep everything you earn. Leave an email and you are first through the door, with three months free on any paid plan.'}</p>
+          <h1>{open ? <>The doors <em>are open.</em></> : outside ? (region === 'INTL' ? <>Australia first, <em>then the world.</em></> : (who === 'client' ? <>Hiring in {place}? <em>Not long now.</em></> : <>{place[0].toUpperCase() + place.slice(1)}, <em>we are coming.</em></>)) : who === 'creative' ? <>Your work deserves <em>to be seen.</em></> : <>The right person, <em>found in a sentence.</em></>}</h1>
+          <p className="sub">{open ? 'LensTrybe is open to photographers and videographers across Australia. Creatives join in a minute; clients search free.' : outside ? (region === 'INTL' ? 'LensTrybe is coming. A home for photographers and videographers where you keep everything you earn, and the ask brings clients to you. Australia first, your country after. Leave an email and you are first through the door when we open where you are, with three months free on any paid plan.' : (who === 'client' ? 'Photographers and videographers in ' + place + ' are joining LensTrybe now. Finding a creative and posting a job open here once there are enough of them to choose from. Leave an email and we will tell you the day it opens. Free for clients, always.' : 'LensTrybe is coming to ' + place + '. A home for photographers and videographers where you keep everything you earn, and the ask brings clients to you. Leave an email: you are first through the door when we open near you, with three months free on any paid plan.')) : 'A home for Australian photographers and videographers where you keep everything you earn. Leave an email and you are first through the door, with three months free on any paid plan.'}</p>
           {!open && !outside && <div className="wlcount" aria-label="Time until launch">{[[d, 'days'], [h, 'hours'], [m, 'min'], [s, 'sec']].map(([v, l]) => <div key={l}><b>{two(v)}</b><span>{l}</span></div>)}</div>}
           <div className="why">{WHY[who].map(([t, d]) => <div key={t}><i><Icon name="check" size={13} /></i><div><b>{t}</b><span>{d}</span></div></div>)}</div>
         </div>

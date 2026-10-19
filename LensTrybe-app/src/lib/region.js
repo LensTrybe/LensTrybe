@@ -10,10 +10,16 @@ const get = n => { try { const m = document.cookie.match(new RegExp('(?:^|;\\s*)
 export const inSEQ = () => get('lt-seq') === '1'
 export const regionCookie = () => get('lt-region')
 export const regionName = code => REGION_NAMES[code] || 'your area'
-export const isOutside = code => !!code && code !== 'QLD'
+// Creatives join from anywhere in Australia (opened 13 October 2026); only overseas waits.
+export const isOutside = code => code === 'INTL'
+// Clients (find a creative, post a job) open area by area, once each has creatives to show.
+export const CLIENT_AREAS = ['QLD']
+export const clientArea = code => !code || CLIENT_AREAS.includes(code)
 export function claimSEQ() { try { document.cookie = 'lt-seq=1; Path=/; Max-Age=' + 365 * 86400 + '; SameSite=Lax'; document.cookie = 'lt-region=; Path=/; Max-Age=0' } catch { /* private mode */ } }
-// True when the visitor is outside South East Queensland and has not claimed to be inside it.
-// The app hides actions (join, post a job, the ask) for them and points at the waitlist instead.
+// True when the visitor is outside Australia and has not claimed otherwise: joining waits.
 export const outside = () => !inSEQ() && isOutside(regionCookie())
+// True when the visitor's area is not open to clients yet: finding a creative and posting a job
+// point at the client waitlist for their area instead.
+export const clientOutside = () => !inSEQ() && !clientArea(regionCookie())
 // The waitlist for this visitor's area, as a client or a creative
 export const waitlistTo = (as) => '/waitlist?region=' + encodeURIComponent(regionCookie() || 'AU') + (as ? '&as=' + as : '')
