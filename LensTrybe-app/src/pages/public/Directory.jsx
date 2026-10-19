@@ -16,7 +16,9 @@ import { fmt } from '../../lib/format'
 import { livePages, at } from '../../lib/places'
 import { logImpressions, withUtm } from '../../lib/analytics'
 
-const PLACES = ['Noosa', 'Sunshine Coast', 'Brisbane', 'Gold Coast']
+const PLACES = ['Brisbane', 'Gold Coast', 'Sunshine Coast', 'Noosa', 'Sydney', 'Melbourne', 'Canberra', 'Adelaide', 'Perth', 'Hobart', 'Darwin']
+// A capital also matches anyone in its state, since a creative in Newtown or Fitzroy works the city
+const CAPITAL_STATE = { Sydney: 'nsw', Melbourne: 'vic', Canberra: 'act', Adelaide: 'sa', Perth: 'wa', Hobart: 'tas', Darwin: 'nt' }
 
 // Find a creative: the browsable version of the constellation. A dark opener with the lens and a
 // sentence bar that hands off to the ask, then a glass filter bar and the grid on light.
@@ -66,7 +68,7 @@ export default function Directory() {
     l = l.filter(x => !x.p || x.p <= budget)
     if (date) l = l.filter(x => freeOn(x, date))
     if (found) l = l.filter(x => x.found)
-    if (place) l = l.filter(x => (x.c + ' ' + x.state).toLowerCase().includes(place.toLowerCase()) || (place === 'Sunshine Coast' && ['Noosa', 'Sunshine Beach', 'Maroochydore', 'Maleny'].includes(x.c)) || (place === 'Brisbane' && ['Brisbane', 'West End', 'Fortitude Valley'].includes(x.c)))
+    if (place) l = l.filter(x => (x.c + ' ' + x.state).toLowerCase().includes(place.toLowerCase()) || (CAPITAL_STATE[place] && String(x.state || '').toLowerCase() === CAPITAL_STATE[place]) || (place === 'Sunshine Coast' && ['Noosa', 'Sunshine Beach', 'Maroochydore', 'Maleny'].includes(x.c)) || (place === 'Brisbane' && ['Brisbane', 'West End', 'Fortitude Valley'].includes(x.c)))
     if (text) { const w = text.toLowerCase().split(/\s+/).filter(x => x.length > 2); l = l.filter(x => w.some(t => (x.n + ' ' + x.d + ' ' + x.c).toLowerCase().includes(t))) }
     if (sort === 'price') l = [...l].sort((a, b) => a.p - b.p)
     if (sort === 'rating') l = [...l].sort((a, b) => b.r - a.r || b.rv - a.rv)
@@ -105,7 +107,7 @@ export default function Directory() {
         <div className="in">
           <p className="eb">Find a creative</p>
           <h1><span className="ln"><span>Every creative,</span></span> <span className="ln"><span>free on <em>your date.</em></span></span></h1>
-          <p className="sub">Photographers and videographers across Queensland, with live calendars and real prices. Browse below, or say what you need and let the lens find them.</p>
+          <p className="sub">Photographers and videographers across Australia, with live calendars and real prices. Browse below, or say what you need and let the lens find them.</p>
           <form className="sbar" onSubmit={ask} role="search">
             <span className="lens" aria-hidden="true" />
             <input value={q} onChange={e => setQ(e.target.value)} placeholder="A brand film for a café in Brisbane next month, $2,500" aria-label="Describe what you need" />
@@ -132,7 +134,7 @@ export default function Directory() {
           </div>
 
           {view === 'grid'
-            ? (list.length ? <div className="cgrid rv">{list.map((x, i) => <Card key={x.id} x={x} i={i} date={date} />)}</div> : <div className="empty lg">Nobody matches those filters yet. Widen the budget, drop a specialty, or <Link to="/" style={{ color: 'var(--green-t)', fontWeight: 600 }}>ask the lens</Link> instead.</div>)
+            ? (list.length ? <div className="cgrid rv">{list.map((x, i) => <Card key={x.id} x={x} i={i} date={date} />)}</div> : place && !list.length && CAPITAL_STATE[place] ? <div className="empty lg">LensTrybe is new in {place}, so there is nobody to show here yet. <Link to="/jobs" style={{ color: 'var(--green-t)', fontWeight: 600 }}>Post the job free</Link> and local photographers and videographers see it as they join.</div> : <div className="empty lg">Nobody matches those filters yet. Widen the budget, drop a specialty, or <Link to="/" style={{ color: 'var(--green-t)', fontWeight: 600 }}>ask the lens</Link> instead.</div>)
             : <MapView list={list} />}
 
           {local.length > 0 && (
@@ -182,13 +184,13 @@ function PlacePicker({ value, onChange }) {
   return (
     <div className={'dp sp pl' + (open ? ' open' : '')} ref={box}>
       <button type="button" className={'dpb' + (value ? ' on' : '')} onClick={() => setOpen(o => !o)} aria-haspopup="listbox" aria-expanded={open}>
-        <Icon name="pin" size={14} /><span>{value || 'Anywhere in QLD'}</span>
+        <Icon name="pin" size={14} /><span>{value || 'Anywhere'}</span>
         {value ? <i onClick={e => { e.stopPropagation(); onChange('') }} aria-label="Clear place"><Icon name="x" size={12} /></i> : <em className="chev"><Icon name="back" size={12} /></em>}
       </button>
       {open && (
         <div className="dpp spp plp" role="listbox" aria-label="Where">
           <div className="spg">
-            {['', ...PLACES].map(p => <button key={p || 'any'} type="button" role="option" aria-selected={value === p} className={value === p ? 'on' : ''} onClick={() => pick(p)}><span>{p || 'Anywhere in QLD'}</span><i><Icon name="check" size={12} /></i></button>)}
+            {['', ...PLACES].map(p => <button key={p || 'any'} type="button" role="option" aria-selected={value === p} className={value === p ? 'on' : ''} onClick={() => pick(p)}><span>{p || 'Anywhere'}</span><i><Icon name="check" size={12} /></i></button>)}
           </div>
         </div>
       )}

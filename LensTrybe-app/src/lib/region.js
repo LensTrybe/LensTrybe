@@ -12,8 +12,9 @@ export const regionCookie = () => get('lt-region')
 export const regionName = code => REGION_NAMES[code] || 'your area'
 // Creatives join from anywhere in Australia (opened 13 October 2026); only overseas waits.
 export const isOutside = code => code === 'INTL'
-// Clients (find a creative, post a job) open area by area, once each has creatives to show.
-export const CLIENT_AREAS = ['QLD']
+// Areas open to clients (find a creative, post a job). All of Australia since 20 October 2026;
+// take an area out to send its clients to the waitlist again.
+export const CLIENT_AREAS = ['QLD', 'QLD-R', 'NSW', 'VIC', 'ACT', 'SA', 'WA', 'TAS', 'NT', 'AU']
 export const clientArea = code => !code || CLIENT_AREAS.includes(code)
 export function claimSEQ() { try { document.cookie = 'lt-seq=1; Path=/; Max-Age=' + 365 * 86400 + '; SameSite=Lax'; document.cookie = 'lt-region=; Path=/; Max-Age=0' } catch { /* private mode */ } }
 // True when the visitor is outside Australia and has not claimed otherwise: joining waits.
