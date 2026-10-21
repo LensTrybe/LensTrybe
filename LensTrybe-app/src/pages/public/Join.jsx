@@ -12,7 +12,7 @@ import { withUtm } from '../../lib/analytics'
 const WHY = {
   creative: [
     ['Keep every dollar', 'A flat subscription, never a commission. What the client pays is what you get.'],
-    ['Three months free', 'Any paid plan. Add a card, pay nothing until month four, cancel before then and pay nothing at all.'],
+    ['14 days free', 'Any paid plan. Add a card, pay nothing for two weeks, cancel before then and pay nothing at all.'],
     ['Clients post the work', 'People who need a photographer or videographer post the job, with the date, place and budget. You reply with a quote.'],
   ],
   client: [

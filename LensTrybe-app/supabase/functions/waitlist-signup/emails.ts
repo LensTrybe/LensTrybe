@@ -16,7 +16,7 @@ export function waitlistConfirmationHtml(opts: { audience: string; refLink: stri
     : `LensTrybe opens on 1 October, starting in South East Queensland and rolling out across Australia city by city.`
   const body = audience === 'client'
     ? `${where} We'll let you know the moment you can book creatives in your area.`
-    : `${where} We'll let you know the moment we open in your area. Your first three months are free, and there are no commissions, ever. You keep 100% of what you earn.`
+    : `${where} We'll let you know the moment we open in your area. Your first 14 days on any paid plan are free, and there are no commissions, ever. You keep 100% of what you earn.`
   return layout({
     blocks: [
       heading(live ? 'Live across Australia' : 'Opening 1 October 2026', "You're on the list."),

@@ -157,7 +157,7 @@ Build them like the dark opener, as in the approved Founding 100 ads (`meta-ads/
 - Australian English: colour, organise, licence (noun), practise (verb). Australian dollars, GST included.
 - Sentence case headings. Short, direct, warm, a little playful. No corporate speak.
 - **Plans (public names):** Trybe Free (free), Trybe Essential ($24.99 a month), Trybe Complete ($74.99 a month), Trybe Studio ($149.99 a month). Annual is ten months for twelve. Trybe Studio is the top plan.
-- **Offer:** any paid plan is free for the first three months. There is no free trial; never say "free trial". Clients use LensTrybe free, always.
+- **Offer:** any paid plan is free for the first 14 days (since 21 October 2026; it was three months before). Say "14 days free". A partner code giving 30 days free is planned but not built yet, so never promote it until it is live. Founding creatives keep their own terms (12 months, or 6 after the first 100). Clients use LensTrybe free, always.
 - **Founding:** the first 100 creatives who redeem a founding code get Trybe Complete free for twelve months, then $49 a month for life, plus the permanent Founding Creative badge. After the first 100: six months free, the same $49 for life, no badge. Never promise the twelve months or the badge to everyone.
 - **Who can join:** photographers and videographers only for now. Other disciplines can be named as coming later, never as able to join now.
 - Never say "vetted". Never name or compare other platforms in marketing. Call it a platform or marketplace, not an app.

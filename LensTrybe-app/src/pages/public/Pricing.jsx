@@ -20,7 +20,7 @@ const KEYS = {
 }
 const FAQ = [
   ['Do you take a commission?', 'No. Never. You pay the flat subscription and keep every dollar of every job. Clients pay you directly.'],
-  ['What does "three months free" mean?', 'Any paid plan is free for your first three months. You add a card, you are not charged until month four, and you can cancel before then and pay nothing.'],
+  ['What does "14 days free" mean?', 'Any paid plan is free for your first 14 days. You add a card, you are not charged for two weeks, and you can cancel before then and pay nothing. We email you a reminder before your first charge.'],
   ['Can I change plans?', 'Any time. Upgrades apply immediately and downgrades apply at the end of the period you have paid for.'],
   ['Is GST included?', 'Yes. Every price on this page is in Australian dollars with GST included, and your invoices from us are tax invoices.'],
   ['What about the founding programme?', 'The first hundred creatives who redeem a founding code get Trybe Complete free for twelve months, then $49 a month locked for life. The band at the foot of this page has the details.'],
@@ -46,7 +46,7 @@ export default function Pricing() {
         <div className="in">
           <p className="eb">Pricing</p>
           <h1><span className="ln"><span>Pays for itself</span></span> <span className="ln"><span>with <em>one booking.</em></span></span></h1>
-          <p className="sub">No commissions. No lead fees. Four plans, and the first three months of any paid plan are free.</p>
+          <p className="sub">No commissions. No lead fees. Four plans, and the first 14 days of any paid plan are free.</p>
           <WorkspacePeek />
         </div>
         <button type="button" className={'downto' + (lead ? '' : ' gone')} onClick={() => document.getElementById('plans')?.scrollIntoView({ behavior: 'smooth', block: 'start' })} aria-label="See the four plans">

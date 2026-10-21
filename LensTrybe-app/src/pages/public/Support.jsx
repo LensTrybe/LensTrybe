@@ -16,7 +16,7 @@ const FAQS = [
   ['book', 'What happens after I book?', 'The creative gets your enquiry, a quote is built from their real rates, you sign the contract on your phone, pay the deposit, and the date locks on both calendars. Files arrive at one link after the shoot.'],
   ['book', 'Can I cancel or change a booking?', 'Yes. Open the thread and message the creative. Cancellation terms are in the contract you signed, in plain English, and the deposit terms are shown before you pay.'],
   ['money', 'Do you take a commission?', 'No. Never. Creatives pay the subscription and keep every dollar of every job. Clients pay the creative directly through the thread.'],
-  ['money', 'How does the three months free work?', 'Any paid plan is free for your first three months. Add a card, pay nothing until month four, and cancel before then and pay nothing at all.'],
+  ['money', 'How do the 14 days free work?', 'Any paid plan is free for your first 14 days. Add a card, pay nothing for two weeks, and cancel before then and pay nothing at all. We email you a reminder before your first charge.'],
   ['money', 'How do refunds work?', 'Annual plans get a full refund within 14 days of first payment. Monthly plans can be cancelled any time and keep access to the end of the period. The full policy is on the refunds page.'],
   ['account', 'I did not receive an email from LensTrybe.', 'Our emails come from noreply@mail.lenstrybe.com. Check spam or promotions and mark us as safe. If it is still missing, send a message below and we will resend it.'],
   ['account', 'How do I reset my password?', 'On the log in page choose "Forgot it?" or "Email me a magic link". Either one sends a link that signs you in, and you can set a new password from your account settings.'],

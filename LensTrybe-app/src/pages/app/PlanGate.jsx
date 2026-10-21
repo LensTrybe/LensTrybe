@@ -63,7 +63,7 @@ export function usePlanGate() {
     const lines = pitchLines(g.need, g.feature)
     open({
       title: g.name + ' ' + g.verb + ' on ' + g.plan,
-      sub: m.monthly ? '$' + m.monthly.toFixed(2) + ' a month, first three months free. No commission, ever.' : '',
+      sub: m.monthly ? '$' + m.monthly.toFixed(2) + ' a month, first 14 days free. No commission, ever.' : '',
       center: true,
       body: <div className="gatepop">
         {(BLURB[k] || ABOUT[k]) && <p>{BLURB[k] || ABOUT[k]}</p>}

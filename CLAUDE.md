@@ -45,8 +45,8 @@ brief or doc disagrees with this file on any of the points below, **follow this 
 
 - Never use em dashes. Australian English. Sentence case headings and buttons ("Join as a
   creative", "Find a creative").
-- "No commission, ever." Never "free trial" (any paid plan is free for the first three
-  months), never "vetted", never "app" for the platform in marketing.
+- "No commission, ever." Any paid plan is free for the first 14 days ("14 days free"; it was three
+  months before 21 October 2026). Never "vetted", never "app" for the platform in marketing.
 - Photographers and videographers only can join for now.
 - LensTrybe speaks as LensTrybe; Michael's first name only on founding invites.
 
