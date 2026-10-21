@@ -160,7 +160,7 @@ export async function signUpCreative(f) {
     let result
     try { result = await payWithRevolut({ user: { id: userId, email }, tier, billing: f.billing || 'monthly', fullName: (f.first + ' ' + f.last).trim(), referralCode: (f.referral || '').trim() }) }
     catch { return { error: 'The card window could not open. Press the button to try again.', userId } }
-    if (result !== 'success') return { error: 'A card is needed to finish a paid plan. Nothing is charged until your free months end.', userId }
+    if (result !== 'success') return { error: 'A card is needed to finish a paid plan. Nothing is charged until your 14 days free end.', userId }
   }
   return { ok: true, userId, needsConfirm }
 }

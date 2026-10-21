@@ -22,7 +22,7 @@ import { eventOnce, withUtm } from '../../lib/analytics'
 //
 // Live: the account is created here, with the chosen plan in the signUp metadata the way the live
 // site does it, so the trigger sets the free period; a paid plan opens the card window (nothing
-// charged until the free months end); then the check-email page, since confirmation is on.
+// charged until the free period ends); then the check-email page, since confirmation is on.
 // The details arrive in router state from Join (the password is never in a URL); a refresh loses
 // them and goes back to Join with the non-secret fields restored.
 const PLANS = [['Basic', 'Free', 'Profile, enquiries, one skill', 'Free forever'], ['Pro', '$24.99', 'Your own website, quotes and invoices', '14 days free'], ['Expert', '$74.99', 'Contracts, client portals, both skills, reply anywhere in Australia', '14 days free'], ['Elite', '$149.99', 'Custom domain, team of five, Trybe Studio spotlight', '14 days free']]
@@ -84,7 +84,7 @@ export default function Onboard() {
     patch('profile', { n: name, h: '', bio: '', kinds: [], from: '', city: '', ig: '', web: '', ph: '', disc, avatar: '', shots: [], film: '', strength: 0 })
     patch('brand', { name: '', tag: '' })
     patch('settings', { email, phone: '', biz: '', abn: '' })
-    patch('plan', { name: plan, annual: false, founding: founding ? 1 : 0, since: TODAY, trialEnds: plan === 'Basic' ? '' : '2026-12-25' })
+    patch('plan', { name: plan, annual: false, founding: founding ? 1 : 0, since: TODAY, trialEnds: plan === 'Basic' ? '' : new Date(Date.parse(TODAY) + 14 * 864e5).toISOString().slice(0, 10) })
     patch('avail', { touched: 0, kinds: { Weddings: 0, 'Real estate': 0, Events: 0, Brand: 0, Headshots: 0, Family: 0 } })
     set('packages', []); set('channels', a => a.map(c => ({ ...c, on: 0, followers: 0, grow: 0 })))
     patch('setup', { hidden: 0, joined: TODAY })
@@ -104,7 +104,7 @@ export default function Onboard() {
           <label className="obagree"><input type="checkbox" checked={agree} onChange={e => { setAgree(e.target.checked); setErr('') }} /><span>I agree to the <Link to="/legal/terms" target="_blank">terms</Link> and <Link to="/legal/privacy" target="_blank">privacy policy</Link>{founding && <> and the <Link to="/legal/founding" target="_blank">founding creative agreement</Link></>}.</span></label>
           {err && <p className="oberr">{err}</p>}
           <div className="row"><button className="btn p lg" onClick={go} disabled={busy} style={busy ? { opacity: .6 } : undefined}>{busy ? 'Setting up' : plan === 'Basic' || !LIVE ? 'Open my workspace' : 'Add a card and open my workspace'} <Icon name="arrow" size={14} /></button><Link className="btn g lg" to="/pricing">Compare plans</Link></div>
-          <p className="fine">{plan === 'Basic' ? 'No card, ever, on Trybe Free.' : 'A card is saved now and nothing is charged until your free months end; cancel before then and pay nothing at all.'} Your profile goes live the moment it has a photo, a line about you and one kind of work; the workspace walks you through it.</p>
+          <p className="fine">{plan === 'Basic' ? 'No card, ever, on Trybe Free.' : 'A card is saved now and nothing is charged for 14 days; cancel before then and pay nothing at all.'} Your profile goes live the moment it has a photo, a line about you and one kind of work; the workspace walks you through it.</p>
         </div>
       </main>
     </div>

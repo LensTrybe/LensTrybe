@@ -33,8 +33,8 @@ export function Overview() {
       <div className="hq-tiles">
         <Tile label="Creatives" value={o.creatives} sub={`${o.listed} listed in Find a creative`} />
         <Tile label="Clients" value={o.clients} sub={`${o.signups_7} new people this week`} />
-        <Tile label="Paying" value={s.paying} sub={`${s.trialing} in their free months`} />
-        <Tile label="Monthly revenue" value={money(s.mrr_minor)} sub={`${money(s.trial_mrr_minor)} more once free months end`} tone="green" />
+        <Tile label="Paying" value={s.paying} sub={`${s.trialing} in their free period`} />
+        <Tile label="Monthly revenue" value={money(s.mrr_minor)} sub={`${money(s.trial_mrr_minor)} more once free periods end`} tone="green" />
         <Tile label="Founding places" value={`${o.founding?.used} / ${o.founding?.cap}`} sub={`${o.founding?.redeemed} signed up`} />
         <Tile label="Open jobs" value={o.jobs?.open} sub={`${o.jobs?.replies_7} replies this week`} />
         <Tile label="Waitlist" value={o.waitlist} sub="Overseas, or an area not open yet" />
@@ -137,7 +137,7 @@ export function Users({ me }) {
           <tr key={u.id} className="click" onClick={() => setOpen(u.id)}>
             <td><b>{u.name || u.email}</b><small>{u.name ? u.email : ''}{u.location ? (u.name ? ' · ' : '') + u.location : ''}</small>{w && <small className="warn">{w}</small>}</td>
             <td>{u.kind === 'creative' ? 'Creative' : u.kind === 'client' ? 'Client' : <Pill tone="amber">Unfinished</Pill>}{u.founding && <Pill tone="green">Founding</Pill>}{banned && <Pill tone="pink">Suspended</Pill>}{u.pending_deletion && <Pill tone="pink">Deleting</Pill>}{u.old_admin && <Pill>Old admin</Pill>}</td>
-            <td>{u.tier ? PLAN[u.tier] : ''}{u.comp_tier && <small>complimentary</small>}{u.sub_status && <small>{u.sub_status === 'trialing' ? 'free months' : u.sub_status.replace('_', ' ')}</small>}</td>
+            <td>{u.tier ? PLAN[u.tier] : ''}{u.comp_tier && <small>complimentary</small>}{u.sub_status && <small>{u.sub_status === 'trialing' ? 'free period' : u.sub_status.replace('_', ' ')}</small>}</td>
             <td>{day(u.created_at)}</td><td>{ago(u.last_sign_in_at)}</td><td><Icon name="chev" size={14} /></td>
           </tr>) })}
       </tbody></table>{!list.length && <Empty>Nobody matches.</Empty>}</div>}
@@ -168,7 +168,7 @@ function Person({ id, me, onClose, onChanged }) {
             <div><span>Does</span><b>{(p.skill_types || []).join(', ') || 'Not set'}</b></div>
             {p.founding_member && <div><span>Founding</span><b>Since {day(p.founding_member_since)} · deal {p.founding_deal_status || 'active'}</b></div>}
             {p.is_admin && <div><span>Old admin</span><b>Admin on the old site (lenstrybe.com/dashboard/admin)</b></div>}</>}
-          {sub && <div><span>Subscription</span><b>{PLAN[sub.tier] || sub.tier} {sub.billing} · {sub.status === 'trialing' ? 'free months' : sub.status}{sub.amount_minor ? ' · ' + money(sub.amount_minor) : ''}{sub.next_charge_date ? ' · next charge ' + day(sub.next_charge_date) : ''}{sub.card_last4 ? ` · ${sub.card_brand || 'card'} ending ${sub.card_last4}` : ''}{sub.failed_attempts ? ` · ${sub.failed_attempts} failed` : ''}</b></div>}
+          {sub && <div><span>Subscription</span><b>{PLAN[sub.tier] || sub.tier} {sub.billing} · {sub.status === 'trialing' ? 'free period' : sub.status}{sub.amount_minor ? ' · ' + money(sub.amount_minor) : ''}{sub.next_charge_date ? ' · next charge ' + day(sub.next_charge_date) : ''}{sub.card_last4 ? ` · ${sub.card_brand || 'card'} ending ${sub.card_last4}` : ''}{sub.failed_attempts ? ` · ${sub.failed_attempts} failed` : ''}</b></div>}
           {u.deletion && <div><span>Deletion</span><b>{u.deletion.status}, {u.deletion.scheduled_for ? 'goes on ' + day(u.deletion.scheduled_for) : ''}</b></div>}
         </div>
         {Object.keys(u.counts || {}).length > 0 && <div className="hq-mini">{Object.entries(u.counts).map(([k, v]) => <div key={k}><b>{v}</b><small>{(k[0].toUpperCase() + k.slice(1)).replace('_', ' ')}</small></div>)}</div>}

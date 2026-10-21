@@ -1,7 +1,7 @@
 // Emails for send-billing-email. Pure functions: plain data in, { subject, html } out.
 import { layout, heading, para, strong, link, button, facts, planName, esc } from './email.ts'
 
-export const SUB_URL = 'https://lenstrybe.com/dashboard/settings/subscription'
+export const SUB_URL = 'https://lenstrybe.com/app/subscription'
 const FROM_PREVIEW = 'LensTrybe Billing <noreply@mail.lenstrybe.com>'
 const WHY = "You're getting this because it's about the subscription on your LensTrybe account."
 
@@ -118,8 +118,8 @@ export function previews() {
     { id: 'failed', name: 'Payment failed, update your card', kind: 'failed', data: { amountStr: '$74.99' } },
     { id: 'cancelled', name: 'Subscription cancelled by the creative', kind: 'cancelled', data: {} },
     { id: 'downgraded', name: 'Moved to Trybe Free after failed payments', kind: 'downgraded', data: {} },
-    { id: 'trial-plan-changed', name: 'Plan changed during the free trial, with first payment date', kind: 'trial_plan_changed', data: { amountStr: '$749.90', billing: 'annual', firstCharge: '14 March 2027' } },
-    { id: 'trial-plan-changed-nodate', name: 'Plan changed during the free trial, no first payment date known', kind: 'trial_plan_changed', data: { tier: 'pro', amountStr: '$24.99', billing: 'monthly' } },
+    { id: 'trial-plan-changed', name: 'Plan changed during the free period, with first payment date', kind: 'trial_plan_changed', data: { amountStr: '$749.90', billing: 'annual', firstCharge: '14 March 2027' } },
+    { id: 'trial-plan-changed-nodate', name: 'Plan changed during the free period, no first payment date known', kind: 'trial_plan_changed', data: { tier: 'pro', amountStr: '$24.99', billing: 'monthly' } },
     { id: 'founding-ended', name: 'Founding deal ended, standard price from a set date', kind: 'founding_ended', data: { amountStr: '$74.99', billing: 'monthly', firstCharge: '6 October 2026' } },
     { id: 'founding-ended-noplan', name: 'Founding deal ended, no plan continues', kind: 'founding_ended', data: {} },
   ]

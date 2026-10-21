@@ -1,7 +1,7 @@
 // Supabase Edge Function: billing-reminders
 // Internal only (daily cron, x-cron-secret; or service role bearer). Fails closed.
 // Emails a reminder about 7 days before a charge the creative might not expect:
-//   - the first charge when a free trial (including the founding free year) ends
+//   - the first charge when a free period (14 days, or the founding free year) ends
 //   - each annual renewal
 // One reminder per charge date (subscriptions.reminder_sent_for).
 
@@ -175,7 +175,7 @@ Deno.serve(async (req: Request) => {
         preheader: subject,
         blocks: [
           heading('Billing check', subject),
-          para(monday ? 'Every paid subscription that has no Revolut payment method saved. These cannot be charged when the free months end.' : 'New in the last day: a paid subscription with no Revolut payment method saved. It cannot be charged when the free months end.'),
+          para(monday ? 'Every paid subscription that has no Revolut payment method saved. These cannot be charged when the free period ends.' : 'New in the last day: a paid subscription with no Revolut payment method saved. It cannot be charged when the free period ends.'),
           list(rows),
           para('Check the Revolut Merchant webhook log for the signup date, then send each one an update payment method link.', { small: true }),
         ],
