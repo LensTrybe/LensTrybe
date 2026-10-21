@@ -11,6 +11,7 @@ import { LIVE } from '../../lib/mode'
 import { editConfirm, editSubscribe, loadEditIssues } from '../../lib/account'
 import { withUtm } from '../../lib/analytics'
 import BlogPills from '../../components/BlogPills'
+import BackLink from '../../components/BackLink'
 
 // Demo shows the bundled issues; live shows what the edit_issues table has published.
 function useIssues() {
@@ -100,6 +101,7 @@ export function EditIssue() {
       <section className="hiw edit issue dark darkhero">
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
+          <BackLink fallback="/blog/edit" label="All issues" />
           <p className="eb">The Trybe Edit · Issue #{issue.n} · {issue.month}</p>
           <h1><span className="ln"><span><Inline text={issue.title} /></span></span></h1>
           <p className="sub">{issue.dek}</p>

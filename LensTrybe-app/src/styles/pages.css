@@ -986,6 +986,9 @@
 .pub .hiw .crumb a{color:rgba(255,255,255,.78);transition:color .2s}
 .pub .hiw .crumb a:hover{color:#fff}
 .pub .hiw .crumb i{font-style:normal;color:rgba(255,255,255,.4)}
+.pub .hiw .backl{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 15px 0 11px;border-radius:999px;font-size:13px;font-weight:500;color:rgba(255,255,255,.82);background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);cursor:pointer;transition:background .2s,color .2s,transform .3s var(--spring);animation:fadeup .9s var(--ease) .05s backwards}
+.pub .hiw .backl:hover{color:#fff;background:rgba(255,255,255,.14);transform:translateY(-1px)}
+.pub .hiw .backl:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 .pub .hiw.blogpost .imeta{flex-wrap:wrap;justify-content:center;row-gap:8px}
 
 /* the article: about 720px of reading width */

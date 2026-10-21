@@ -11,6 +11,7 @@ import { AUDIENCES, CTA, ctaFor, dateAU, hubHead, itemPath, plain, postHead, rea
 import { loadLatest, loadPost, loadPosts, loadRelated } from '../../lib/blog'
 import BlogPills from '../../components/BlogPills'
 import { Subscribe } from './Edit'
+import BackLink from '../../components/BackLink'
 
 // The Lens, LensTrybe's guides (4 Oct 2026; the addresses stay /blog). A post: the dark lens opener with the title, then the article
 // on the light aurora body, its questions, one call to action, three more posts for the same
@@ -115,6 +116,7 @@ export function BlogPost() {
       <section className="hiw blogpost dark darkhero">
         <canvas className="gl" ref={cv} aria-hidden="true" />
         <div className="in">
+          <BackLink />
           <nav className="crumb" aria-label="Breadcrumb"><Link to="/blog">The Lens</Link><i aria-hidden="true">›</i><Link to={aud.path}>{aud.label}</Link></nav>
           {post.category && <p className="eb">{post.category}</p>}
           <h1><span className="ln"><span dangerouslySetInnerHTML={{ __html: titleHtml(post.title) }} /></span></h1>
