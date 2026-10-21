@@ -168,7 +168,7 @@ Build them like the dark opener, as in the approved Founding 100 ads (`meta-ads/
 - **Client documents** (invoices, quotes, contracts) are white pages in the creative's own brand colour, because they print and become the client's PDF.
 - **Creatives' own pages and sites** use the creative's brand kit, not LensTrybe's.
 - **The workspace** (signed in) uses the same tokens: light by default, dark when toggled (`:root[data-t="dark"]`).
-- **Emails** are built on one shared shell, `supabase/functions/_email/email.ts`: the lens band image with the logo across the top (`email-band.jpg`), a dark page `#0a0a0f`, a `#14141c` card, a small uppercase eyebrow, a white heading, body text `#c9c9d4`, a green pill button with `#04120a` text, Inter with system fallbacks. Sent from `LensTrybe <noreply@mail.lenstrybe.com>`, reply-to `connect@lenstrybe.com`. Change the shell, not individual emails.
+- **Emails** are built on one shared shell, `supabase/functions/_email/email.ts`: the lens band image with the logo across the top (`email-band.jpg`), a dark page `#0a0a0f`, a `#14141c` card, a small uppercase eyebrow, a white heading, body text `#c9c9d4`, a green pill button with `#04120a` text, Inter with system fallbacks. Sent from `LensTrybe <noreply@mail.lenstrybe.com>`, reply-to `connect@lenstrybe.com` (billing emails reply to `billing@lenstrybe.com`, an alias of the main inbox). Change the shell, not individual emails.
 
 ## 11. Retired, do not use
 
