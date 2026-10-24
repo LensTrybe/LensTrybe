@@ -1,6 +1,6 @@
 # LensTrybe brand kit
 
-**The live website is the brand kit.** lenstrybe.com, as built in the LensTrybe Next repo (`LensTrybe Next/LensTrybe-app`), is the final, approved look. This document is a written record of it, taken from the code on 4 October 2026. Where this document and the code disagree, the code wins and this document gets corrected.
+**The live website is the brand kit.** lenstrybe.com, as built in the LensTrybe Next repo (`Documents/LensTrybe/Site/LensTrybe-app`), is the final, approved look. This document is a written record of it, taken from the code on 4 October 2026. Where this document and the code disagree, the code wins and this document gets corrected.
 
 The files that own the brand:
 
@@ -11,8 +11,8 @@ The files that own the brand:
 | Liquid glass | `src/styles/glass.css` |
 | Public pages (hero, sections, cards, nav, footer) | `src/styles/public.css` |
 | The living lens (hero artwork) | `src/lib/lens.js` |
-| Logos | `LensTrybe Main/Branding/logo/` (same artwork as the site's `public/logo-on-dark.svg`) |
-| Approved marketing reference build | `LensTrybe Main/Branding/meta-ads/v2/_build/ad.html` (the Founding 100 Meta ads, Oct 2026) |
+| Logos | `Documents/LensTrybe/Branding/logo/` (same artwork as the site's `public/logo-on-dark.svg`) |
+| Approved marketing reference build | `Documents/LensTrybe/Branding/meta-ads/v2/_build/ad.html` (the Founding 100 Meta ads, Oct 2026) |
 | Plans and prices | `src/data/edit.js` and `src/pages/public/Pricing.jsx` |
 | Founding offer wording | `src/pages/public/Founding.jsx` |
 | Email look | `supabase/functions/_email/email.ts` |
@@ -124,7 +124,7 @@ Status colours for fills and tints: blue `#4A9EFF` (sent, new), amber `#f59e0b` 
 
 The logo is **Option C, editorial caps, locked 15 September 2026**: the lens mark (the mint, rose and lilac ring with a glass centre) and the LENSTRYBE wordmark. It is the logo on the live site.
 
-- Files: `LensTrybe Main/Branding/logo/` in `svg/`, `png/` and `favicon/`. Lockups: horizontal (default), stacked (narrow and square spaces), mark (only where LensTrybe is already named, or as an avatar or app icon).
+- Files: `Documents/LensTrybe/Branding/logo/` in `svg/`, `png/` and `favicon/`. Lockups: horizontal (default), stacked (narrow and square spaces), mark (only where LensTrybe is already named, or as an avatar or app icon).
 - Pick the treatment by background, never by recolouring: `-on-dark`, `-on-light`, `-mono-ink`, `-mono-white`. The one-colour files are for print, embossing, foil and merchandise, where a gradient cannot work.
 - Never stretch, rotate, recolour, outline, add effects to, or retype the logo. The mark and wordmark travel together, except the mark alone in the cases above.
 - Never ask an image generator to draw the logo. The real file goes on in the edit.

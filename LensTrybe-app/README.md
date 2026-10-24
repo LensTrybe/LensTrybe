@@ -5,7 +5,7 @@ touches lenstrybe.com or the live database. Demo mode only, with sample data thr
 
 ## Run it
 
-Double-click **Start LensTrybe Next.command**. The first run installs dependencies, then the site
+Double-click **Start LensTrybe.command**. The first run installs dependencies, then the site
 opens at http://localhost:5180. Press Ctrl+C in the terminal window to stop it.
 
 Or from a terminal in this folder:

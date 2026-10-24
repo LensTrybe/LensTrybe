@@ -24,7 +24,7 @@ const NEEDS: Record<string, string> = {
   support: 'support', support_update: 'support', support_reply: 'support',
   reviews: 'support', review_decide: 'support',
   user_plan: 'admin', user_ban: 'admin', user_unban: 'admin', user_delete: 'admin', job_close: 'admin',
-  founding: 'admin', founding_status: 'admin', broadcasts: 'admin', settings: 'admin', settings_set: 'admin', audit: 'admin',
+  founding: 'admin', founding_status: 'admin', waitlist: 'admin', broadcasts: 'admin', settings: 'admin', settings_set: 'admin', audit: 'admin',
   staff: 'owner', staff_invite: 'owner', staff_invite_revoke: 'owner', staff_active: 'owner', staff_reset_2fa: 'owner',
 }
 
@@ -77,6 +77,20 @@ Deno.serve(async (req) => {
     const d = await r.json().catch(() => ({}))
     return { status: r.status, d }
   }
+  // The waitlist, with what has happened to each person since they joined it: a LensTrybe login,
+  // a founding invite. Matched on email address, ignoring case.
+  const waitlist = async () => {
+    const { data: wl, error } = await sb.from('waitlist').select('id, email, name, audience, creative_type, state, city, source, referred_by, created_at').order('created_at', { ascending: false }).limit(1000)
+    if (error) throw error
+    const { data: inv } = await sb.from('founding_invites').select('id, email, code, full_name, status, sent_at, reminded_at, expires_at, redeemed_at, cancelled_at, created_at').order('created_at', { ascending: false }).limit(5000)
+    const { data: users } = await sb.rpc('hq_users')
+    const key = (e: unknown) => String(e || '').trim().toLowerCase()
+    const invBy = new Map<string, any>(); for (const i of inv || []) if (!invBy.has(key(i.email))) invBy.set(key(i.email), i)
+    const userBy = new Map<string, any>(); for (const u of (users || []) as any[]) userBy.set(key(u.email), u)
+    return (wl || []).map(w => { const u = userBy.get(key(w.email)); return { ...w, invite: invBy.get(key(w.email)) || null, account: u ? { id: u.id, kind: u.kind, founding: !!u.founding } : null } })
+  }
+  // Waiting: a creative on the waitlist with no login and no live or used founding code.
+  const waiting = (w: any) => w.audience !== 'client' && !w.account && (!w.invite || w.invite.status === 'cancelled' || w.invite.status === 'expired' || (w.invite.status !== 'redeemed' && w.invite.expires_at && new Date(w.invite.expires_at).getTime() < Date.now()))
 
   try {
     switch (action) {
@@ -91,7 +105,9 @@ Deno.serve(async (req) => {
         const ids = (jobs || []).map(j => j.id)
         const { data: apps } = ids.length ? await sb.from('job_applications').select('job_id').in('job_id', ids) : { data: [] }
         const replied = new Set((apps || []).map(a => a.job_id))
-        return ok({ overview: o, cron: cron || [], unanswered: (jobs || []).filter(j => !replied.has(j.id)).slice(0, 8) })
+        // Only admins can send founding codes, so only they are told who is waiting for one.
+        const waitlist_waiting = RANK[me.role] >= RANK.admin ? (await waitlist().catch(() => [])).filter(waiting).length : 0
+        return ok({ overview: o, cron: cron || [], unanswered: (jobs || []).filter(j => !replied.has(j.id)).slice(0, 8), waitlist_waiting })
       }
 
       case 'health': {
@@ -270,6 +286,11 @@ Deno.serve(async (req) => {
         const r = await callFn('founding-invites', payload)
         if (act !== 'list' && act !== 'preview' && r.status < 300) await audit('founding.' + act, String(payload.id || payload.application_id || '') || null, act === 'create' ? { count: (payload.invites || []).length, send: !!payload.send } : null)
         return json(req, r.d, r.status)
+      }
+      case 'waitlist': {
+        const rows = await waitlist()
+        await audit('waitlist.viewed', null, { count: rows.length })
+        return ok({ waitlist: rows.map(w => ({ ...w, waiting: waiting(w) })) })
       }
       case 'founding_status': {
         const { data: rows } = await sb.rpc('hq_founding_status')

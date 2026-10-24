@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import Icon from '../components/Icon'
 import { api, PLAN, day, when, ago } from './api'
 import { useLoad, Head, Tile, Pill, Empty, Err, Loading, useFlash, Modal, Search, Seg } from './ui'
@@ -18,10 +19,22 @@ function state(inv) {
   return [`${inv.reminded_at ? 'Reminded' : 'Sent'} · ${left} day${left === 1 ? '' : 's'} left`, inv.reminded_at ? 'amber' : 'green', 'live']
 }
 
+// What has happened to someone on the waitlist since they joined it.
+function WaitStatus({ w }) {
+  if (w.audience === 'client') return <><Pill>Client</Pill><small>Clients can post a job free now</small></>
+  if (w.account?.founding) return <Pill tone="green">Founding creative</Pill>
+  if (w.account) return <><Pill tone="green">Has an account</Pill><small>{w.account.kind === 'creative' ? 'Signed up as a creative' : w.account.kind === 'client' ? 'Signed up as a client' : 'Never finished signing up'}</small></>
+  if (w.invite && !w.waiting) { const [l, tone] = state(w.invite); return <><Pill tone={tone}>{l}</Pill><small>Code <code>{w.invite.code}</code>{w.invite.sent_at ? ', sent ' + day(w.invite.sent_at) : ''}</small></> }
+  if (w.invite) return <><Pill tone="pink">Code {state(w.invite)[0].toLowerCase()}</Pill><small><code>{w.invite.code}</code> was never used</small></>
+  return <Pill tone="amber">No founding code yet</Pill>
+}
+const WAIT_TYPES = ['Photographer', 'Videographer']
+
 export function Founding() {
   const inv = useLoad(() => fnd({ action: 'list' }))
   const st = useLoad(() => api('founding_status'))
-  const [tab, setTab] = useState('invites'), [q, setQ] = useState(''), [f, setF] = useState('all'), [form, setForm] = useState(null), [busy, setBusy] = useState(''), [preview, setPreview] = useState(null)
+  const wl = useLoad(() => api('waitlist'))
+  const [tab, setTab] = useState(() => new URLSearchParams(location.search).get('tab') || 'invites'), [q, setQ] = useState(''), [f, setF] = useState('all'), [form, setForm] = useState(null), [busy, setBusy] = useState(''), [preview, setPreview] = useState(null)
   const [flash, flashNode] = useFlash()
   const d = inv.data, places = d?.places
   const newApps = (d?.applications || []).filter(a => a.status === 'new')
@@ -45,17 +58,26 @@ export function Founding() {
       ;(r.created || []).forEach(merge); if (r.places) inv.setData(o => ({ ...o, places: r.places }))
       const failed = (r.sent || []).find(s => !s.ok)
       flash(failed ? 'Added, but the email did not send: ' + failed.error : send ? `Invite emailed to ${form.email}.` : 'Added as a draft.', failed ? 'bad' : 'ok')
-      setForm(null); inv.load()
+      setForm(null); inv.load(); wl.load()
     } catch (x) { flash(x.data?.problems?.map(p => p.error).join('. ') || x.message, 'bad') }
     setBusy('')
   }
   const app = async (a, status) => { try { await fnd({ action: 'application', application_id: a.id, status }); inv.load(); flash(status === 'dismissed' ? 'Dismissed.' : 'Updated.') } catch (e) { flash(e.message, 'bad') } }
+  const waitList = (wl.data?.waitlist || []).filter(w => !q || [w.name, w.email, w.city, w.state, w.creative_type].some(v => String(v || '').toLowerCase().includes(q.toLowerCase())))
+  const waitingCount = (wl.data?.waitlist || []).filter(w => w.waiting).length
+  const offer = w => setForm({ name: w.name || '', email: w.email, type: WAIT_TYPES.includes(w.creative_type) ? w.creative_type : 'Photographer', region: [w.city, w.state].filter(Boolean).join(', '), note: '' })
+  // An expired code that was never used is re-opened for 14 days rather than replaced.
+  const fresh = async w => {
+    setBusy(w.id)
+    try { const r = await fnd({ action: 'send', id: w.invite.id }); if (r.places) inv.setData(o => ({ ...o, places: r.places })); flash(`A fresh code is on its way to ${w.email}.`); inv.load(); wl.load() } catch (e) { flash(e.message, 'bad') }
+    setBusy('')
+  }
   const showPreview = async () => { try { const r = await fnd({ action: 'preview', name: form?.name, note: form?.note }); setPreview(r) } catch (e) { flash(e.message, 'bad') } }
   return (
     <>
       <Head title="Founding" sub="The founding 100: invite codes, applications from the Founding page, and how each founding creative is tracking."><button className="hq-btn w sm" onClick={() => setForm({ name: '', email: '', type: 'Photographer', region: '', note: '' })}><Icon name="plus" size={14} />New invite</button></Head>{flashNode}
       {places && <div className="hq-tiles"><Tile label="Places taken" value={`${places.used} / ${places.cap}`} sub="Taken when a creative signs up with a code" /><Tile label="Places left" value={places.available} /><Tile label="New applications" value={newApps.length} tone={newApps.length ? 'green' : ''} /><Tile label="Founding creatives" value={st.data?.founders?.length ?? '…'} /></div>}
-      <div className="hq-bar"><Seg value={tab} onChange={setTab} options={[['invites', 'Invites'], ['apps', `Applications${newApps.length ? ' (' + newApps.length + ')' : ''}`], ['founders', 'Founding creatives'], ['feedback', 'Feedback']]} /></div>
+      <div className="hq-bar"><Seg value={tab} onChange={setTab} options={[['invites', 'Invites'], ['apps', `Applications${newApps.length ? ' (' + newApps.length + ')' : ''}`], ['waitlist', `Waitlist${waitingCount ? ' (' + waitingCount + ')' : ''}`], ['founders', 'Founding creatives'], ['feedback', 'Feedback']]} /></div>
       <Err>{inv.err}</Err>
       {inv.busy && !d ? <Loading /> : tab === 'invites' ? <>
         <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email, code or region" /><Seg value={f} onChange={setF} options={[['all', 'All'], ['live', 'Live'], ['draft', 'Drafts'], ['signed', 'Signed up'], ['expired', 'Expired'], ['cancelled', 'Cancelled']]} /></div>
@@ -70,7 +92,17 @@ export function Founding() {
       </> : tab === 'apps' ? (
         (d.applications || []).length ? (d.applications || []).map(a => <div key={a.id} className="hq-card"><div className="hq-row"><div><b>{a.name}{a.business_name && a.business_name !== a.name ? ' · ' + a.business_name : ''}</b><small>{a.email} · {a.creative_type} · {a.region} · {ago(a.created_at)}</small>{a.portfolio_url && <a className="hq-link" href={/^https?:\/\//.test(a.portfolio_url) ? a.portfolio_url : 'https://' + a.portfolio_url} target="_blank" rel="noreferrer noopener">{a.portfolio_url}</a>}</div>
           <div className="hq-right">{a.status === 'new' ? <><button className="hq-btn w sm" onClick={() => { setForm({ name: a.name, email: a.email, type: a.creative_type || 'Photographer', region: a.region || '', note: '' }); }}>Invite</button><button className="hq-btn g sm" onClick={() => app(a, 'dismissed')}>Dismiss</button></> : <Pill tone={a.status === 'invited' ? 'green' : 'grey'}>{a.status}</Pill>}</div></div></div>) : <Empty>No applications yet.</Empty>
-      ) : tab === 'founders' ? (
+      ) : tab === 'waitlist' ? <>
+        <p className="hq-note">People who joined the waitlist before LensTrybe opened near them. We are open Australia-wide now, so any creative here without a code can be offered a founding place. The invite comes from "Michael from LensTrybe".</p>
+        <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email or town" /></div>
+        <Err>{wl.err}</Err>
+        {wl.busy && !wl.data ? <Loading /> : waitList.length ? <div className="hq-table stack"><table><thead><tr><th>Person</th><th>Since then</th></tr></thead><tbody>{waitList.map(w => (
+          <tr key={w.id}><td><b>{w.name || w.email}</b><small>{[w.name ? w.email : '', w.audience === 'client' ? '' : w.creative_type || 'Creative', [w.city, w.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ')}</small>{w.referred_by && <small>Referred by {w.referred_by}</small>}<small>Joined the waitlist {day(w.created_at)}</small></td>
+            <td><WaitStatus w={w} />{(w.waiting || w.account) && <div className="hq-acts" style={{ marginTop: 10 }}>
+              {w.waiting && (w.invite?.status === 'unused' ? <button className="hq-btn w sm" disabled={!!busy} onClick={() => fresh(w)}>Send a fresh code</button> : <button className="hq-btn w sm" disabled={!!busy} onClick={() => offer(w)}>Offer a founding place</button>)}
+              {w.account && <Link className="hq-btn g sm" to={'/users?open=' + w.account.id}>Open in People</Link>}
+            </div>}</td></tr>))}</tbody></table></div> : <Empty>{q ? 'Nobody matches.' : 'Nobody is on the waitlist.'}</Empty>}
+      </> : tab === 'founders' ? (
         !st.data ? <Loading /> : st.data.founders.length ? <div className="hq-table"><table><thead><tr><th>Founding creative</th><th>Since</th><th>Profile complete</th><th>Jobs through LensTrybe</th><th>Last feedback</th><th>Deal</th></tr></thead><tbody>
           {st.data.founders.map(x => { const since = x.founding_member_since ? (Date.now() - new Date(x.founding_member_since)) / 864e5 : 0; const signedUp = (d.invites || []).find(i => i.redeemed_by === x.id); return (
             <tr key={x.id}><td><b>{x.business_name || 'No name yet'}</b><small>{x.business_email}</small></td><td>{day(x.founding_member_since)}</td>

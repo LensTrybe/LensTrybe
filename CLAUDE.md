@@ -57,6 +57,6 @@ brief or doc disagrees with this file on any of the points below, **follow this 
 - Supabase project `lqafxisymvrazipaozfk`: run migrations and deploy Edge Functions live, and
   keep the repo copy identical to what is deployed. Secrets live in Supabase, never in code.
 - Michael commits and pushes. Give him the commands one per code box:
-  `cd "/Users/michaelmanoli/Documents/LensTrybe Next/LensTrybe-app"`, then
+  `cd "/Users/michaelmanoli/Documents/LensTrybe/Site/LensTrybe-app"`, then
   `git add -A && git commit -m "..."`, then `git push origin next`.
 - Keep Notion (LensTrybe HQ, `33a6feaf-ab29-819b-9c03-d7aeb549d46c`) updated with what shipped.

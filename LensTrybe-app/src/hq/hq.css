@@ -186,3 +186,13 @@ input[type=date].hq-input { width: auto; color-scheme: dark; }
   .hq-table table { min-width: 640px; }
   .hq-cols { grid-template-columns: minmax(0, 1fr); }
 }
+
+/* Tables marked .stack become one card per row on a phone: each cell on its own line. */
+@media (max-width: 640px) {
+  .hq-table.stack thead { display: none; }
+  .hq-table.stack tr, .hq-table.stack td { display: block; }
+  .hq-table.stack td { border-bottom: 0; }
+  .hq-table.stack td + td { padding-top: 0; }
+  .hq-table.stack tr { border-bottom: 1px solid var(--line); }
+  .hq-table.stack tr:last-child { border-bottom: 0; }
+}

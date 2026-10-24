@@ -24,6 +24,7 @@ export function Overview() {
     o.founding?.applications_new > 0 && { to: '/founding', tone: 'green', t: `${o.founding.applications_new} new founding application${o.founding.applications_new === 1 ? '' : 's'}`, s: 'Invite or dismiss.' },
     s.past_due > 0 && { to: '/users', tone: 'pink', t: `${s.past_due} subscription${s.past_due === 1 ? '' : 's'} past due`, s: 'Card declined. They have been emailed.' },
     failing.length > 0 && { to: '/launch', tone: 'pink', t: `${failing.length} scheduled job${failing.length === 1 ? '' : 's'} failed this week`, s: failing.map(f => f.jobname).join(', ') },
+    data.waitlist_waiting > 0 && { to: '/founding?tab=waitlist', tone: 'green', t: `${data.waitlist_waiting} on the waitlist with no founding code`, s: 'We are open Australia-wide now. Offer them a founding place.' },
     o.unfinished > 0 && { to: '/users', tone: 'grey', t: `${o.unfinished} sign-up${o.unfinished === 1 ? '' : 's'} never finished`, s: 'Made a login but never picked creative or client.' },
   ].filter(Boolean)
   const days = o.signups_by_day || [], max = Math.max(1, ...days.map(d => d.creatives + d.clients))
@@ -37,7 +38,7 @@ export function Overview() {
         <Tile label="Monthly revenue" value={money(s.mrr_minor)} sub={`${money(s.trial_mrr_minor)} more once free periods end`} tone="green" />
         <Tile label="Founding places" value={`${o.founding?.used} / ${o.founding?.cap}`} sub={`${o.founding?.redeemed} signed up`} />
         <Tile label="Open jobs" value={o.jobs?.open} sub={`${o.jobs?.replies_7} replies this week`} />
-        <Tile label="Waitlist" value={o.waitlist} sub="Overseas, or an area not open yet" />
+        <Tile label="Waitlist" value={o.waitlist} sub={<Link to="/founding?tab=waitlist">See who they are</Link>} />
         <Tile label="The Trybe Edit" value={o.edit_readers} sub="Opted-in readers" />
       </div>
       <div className="hq-cols">
