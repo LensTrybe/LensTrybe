@@ -101,7 +101,7 @@ void main(){
     o+=vec3(.6,.9,.85)*.02*uFloor*exp(-depth*30.);
   }
   o*=1.-.35*smoothstep(.6,1.4,length(uv0));
-  o+=(hash(gl_FragCoord.xy+fract(uT))-.5)*.035;
+  o+=(hash(gl_FragCoord.xy+fract(uT))-.5)*.024;
   gl_FragColor=vec4(o,1.);
 }`
 
@@ -128,7 +128,7 @@ export function runIntro({ stage, gl: cv, fx, tag, scan, flash }, { onCut }) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE)
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR)
   gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true); gl.uniform1i(U.uTex, 0)
-  const scale = coarse ? .55 : .8
+  const scale = coarse ? Math.min(1, 1200 / Math.max(innerWidth, innerHeight)) : .8
   let W = 0, H = 0
   const tc = document.createElement('canvas'), tctx = tc.getContext('2d'), fctx = fx.getContext('2d')
   function size() {
@@ -143,15 +143,19 @@ export function runIntro({ stage, gl: cv, fx, tag, scan, flash }, { onCut }) {
 
   function layout() {
     size()
-    const fs = Math.max(30, Math.min(W * .064, 76)), sp = fs * .3
+    // portrait phones: a bigger name with tighter tracking, and the lens is bigger against it
+    const narrow = W < 700
+    const fs = narrow ? Math.max(30, Math.min(W * .112, 50)) : Math.max(30, Math.min(W * .064, 76)), sp = fs * (narrow ? .18 : .3)
     tctx.font = `500 ${fs}px Inter, sans-serif`
     const adv = LETTERS.map(l => tctx.measureText(l).width)
     const total = adv.reduce((a, b) => a + b, 0) + sp * (LETTERS.length - 1)
     let x = (W - total) / 2
     const cy = H * .5
     const ls = LETTERS.map((l, i) => { const o = { cx: x + adv[i] / 2, cy, w: adv[i] }; x += adv[i] + sp; return o })
-    const R = fs * .7, left = ls[0].cx - adv[0] / 2, right = ls[8].cx + adv[8] / 2, floorY = cy + R * 2.05
-    geo = { ls, R, cy, fs, left, right, floorY, xStart: -R * 2.2, xRight: right + R * 1.4, xT: ls[4].cx + R * 1.25, xLand: left - R * 1.35 }
+    const R = fs * (narrow ? .92 : .7), left = ls[0].cx - adv[0] / 2, right = ls[8].cx + adv[8] / 2, floorY = cy + R * 2.05
+    geo = { ls, R, cy, fs, left, right, floorY, xStart: -R * 2.2, xRight: right + R * 1.4, xT: ls[4].cx + R * 1.25, xLand: left - R * 1.35,
+      // when lens plus name are wider than the screen (phones), the camera pulls back as the lens lands so both stay in frame
+      zfit: Math.min(1, (W - 28) / (right - (left - R * 2.35))), cxw: ((left - R * 2.35) + right) / 2 }
     tag.style.top = (cy + R * 1.35) + 'px'
     lit = LETTERS.map(() => 0); erase = LETTERS.map(() => 0); tAng = 13
     const n = coarse ? 28 : 60
@@ -207,7 +211,7 @@ export function runIntro({ stage, gl: cv, fx, tag, scan, flash }, { onCut }) {
     for (let i = 0; i < 22; i++) { const a = Math.random() * Math.PI * 2, s = 40 + Math.random() * 160; parts.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 30, life: 0, max: .5 + Math.random() * .4, c: cols[i % 4], r: 1 + Math.random() * 2 }) }
   }
   function drawFx(dt, lx, ly, R, t) {
-    fctx.clearRect(0, 0, W, H)
+    fctx.save(); fctx.setTransform(1, 0, 0, 1, 0, 0); fctx.clearRect(0, 0, W, H); fctx.restore()
     fctx.globalCompositeOperation = 'lighter'
     const dim = t > 5500 ? clamp(1 - (t - 5500) / 500, 0, 1) : 1
     const px = (mx - .5) * 30, py = (.5 - my) * 20
@@ -241,6 +245,7 @@ export function runIntro({ stage, gl: cv, fx, tag, scan, flash }, { onCut }) {
     let x = g.xStart, y = cy, R = R0, gaze = [1, -.3], glint = 0, fly = 0, land = 0, on = 1, floor = 1, flare = 0, hi = 1, zoomW = 1, wordA = 1, tilt = 0
     const pool = t >= 350 && t < 5500 ? 1 : 0
     let cam = [0, 0, 1 + .05 * clamp(t / 4500, 0, 1)]
+    let pan = t < 3250 ? 0 : t < 4050 ? ease(clamp((t - 3250) / 800, 0, 1)) : t < 5500 ? 1 : t < 6300 ? 1 - ease(clamp((t - 5500) / 800, 0, 1)) : 0
     if (t < 600) { on = t < 350 ? 0 : 1; const p = clamp(t / 600, 0, 1); scan.style.opacity = p < .9 ? .5 : 0; scan.style.top = (p * H) + 'px' }
     else scan.style.opacity = 0
     if (t >= 150 && t < 950) glint = Math.sin(clamp((t - 150) / 800, 0, 1) * Math.PI) * .8
@@ -269,9 +274,12 @@ export function runIntro({ stage, gl: cv, fx, tag, scan, flash }, { onCut }) {
     gl.uniform2f(U.uVel, vx / H, 0); gl.uniform2f(U.uGaze, gaze[0], gaze[1]); gl.uniform1f(U.uGlint, glint); gl.uniform2f(U.uGlintP, (g.xStart + R0 * 3 - W / 2) / H, (H / 2 - (g.floorY + R0 * .1)) / H)
     gl.uniform1f(U.uFly, fly); gl.uniform2f(U.uM, mx, my); gl.uniform1f(U.uLand, land); gl.uniform1f(U.uOn, on)
     gl.uniform1f(U.uFloor, floor); gl.uniform1f(U.uFloorY, (H / 2 - g.floorY) / H); gl.uniform1f(U.uStretch, clamp(Math.abs(vx) * .012, 0, .22))
+    const fit = g.zfit < 1 ? pan : 0, zf = lerp(1, g.zfit, fit), cxe = lerp(W / 2, g.cxw, fit)
+    cam[0] += (cxe - W / 2) / H; cam[2] *= zf
     gl.uniform3f(U.uCam, cam[0], cam[1], cam[2]); gl.uniform1f(U.uFlare, flare); gl.uniform1f(U.uHi, hi); gl.uniform1f(U.uZoomW, zoomW); gl.uniform1f(U.uWordA, wordA); gl.uniform1f(U.uTilt, tilt); gl.uniform1f(U.uPool, pool)
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
-    drawFx(dt, x, y, R0, t)
+    fctx.setTransform(zf, 0, 0, zf, W / 2 - cxe * zf, H / 2 * (1 - zf)); drawFx(dt, x, y, R0, t); fctx.setTransform(1, 0, 0, 1, 0, 0)
+    tag.style.left = (W / 2 + (W / 2 - cxe) * zf) + 'px'; tag.style.top = (H / 2 + (cy + R0 * 1.35 - H / 2) * zf) + 'px'
     raf = requestAnimationFrame(frame)
   }
   function start() {
