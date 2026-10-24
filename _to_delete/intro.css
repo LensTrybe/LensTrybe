@@ -1,0 +1,18 @@
+/* ── The intro (24 Oct 2026): the lens wakes up. One WebGL canvas (src/lib/intro.js) paints the room,
+   the floor, the living lens and the name through its glass; a 2D canvas adds dust and the motes the
+   name breaks into. Only the tagline, the letterbox bars and the flash are DOM. .out fades it off. ── */
+.intro{position:fixed;inset:0;z-index:200;background:#07070b;cursor:pointer;overflow:hidden;transition:opacity .7s var(--ease)}
+.intro.out{opacity:0;pointer-events:none}
+.intro .igl,.intro .ifx{position:absolute;inset:0;width:100%;height:100%}
+.intro .ifx{pointer-events:none}
+.intro .iscan{position:absolute;left:0;right:0;top:-2px;height:1px;opacity:0;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(169,245,223,0) 15%,rgba(169,245,223,.55) 50%,rgba(217,150,186,0) 85%,transparent)}
+.intro .itag{position:absolute;left:50%;top:60%;transform:translate(-50%,-50%);margin:0;font-size:clamp(12px,1.5vw,16px);letter-spacing:.14em;text-transform:uppercase;color:rgba(244,242,247,.42);opacity:0;transition:opacity .9s var(--ease);white-space:nowrap;pointer-events:none;z-index:3}
+.intro .itag.on{opacity:1}
+.intro .itag em{font-family:var(--serif);font-style:italic;text-transform:none;letter-spacing:0;font-size:1.25em;background:linear-gradient(90deg,var(--mint),var(--rose) 50%,var(--lilac));-webkit-background-clip:text;background-clip:text;color:transparent}
+.intro .ilb{position:absolute;left:0;right:0;height:7.5%;background:#030305;z-index:6;pointer-events:none;transition:transform 1.2s var(--ease)}
+.intro .ilb.t{top:0}.intro .ilb.b{bottom:0}
+.intro.out .ilb.t{transform:translateY(-101%)}.intro.out .ilb.b{transform:translateY(101%)}
+.intro .iflash{position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:5}
+/* the hero's own headline waits under the intro and rises as it clears */
+.introing .pub .ask h1 .ln span{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){.intro{display:none}}
