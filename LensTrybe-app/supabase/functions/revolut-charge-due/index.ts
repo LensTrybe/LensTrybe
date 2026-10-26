@@ -8,8 +8,9 @@
 // retries.
 //
 // Safety:
-//   - Each subscription is CLAIMED (charging_at) before charging, so overlapping runs
-//     can never double charge.
+//   - Each subscription is CLAIMED (charging_at) before charging, and only while it is still
+//     due (status, next_charge_date and a saved card re-checked in the claim itself), so
+//     overlapping runs can never double charge. The charge then uses the freshly claimed row.
 //   - A charge only counts once Revolut reports the order COMPLETED. A charge that is
 //     still processing is recorded in inflight_charge and settled on the next run (or
 //     by revolut-webhook) through the revolut_apply_charge DB function, which applies
@@ -194,9 +195,10 @@ Deno.serve(async (req) => {
   }
 
   // Due: trialing subs whose trial has ended, active renewals, and past_due retries.
+  const DUE_COLS = 'id, user_id, tier, billing, status, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end, founding_member, pending_tier, pending_billing, first_charge_discount, failed_attempts, past_due_since, inflight_charge'
   let dueQuery = sb
     .from('subscriptions')
-    .select('id, user_id, tier, billing, status, amount_minor, currency, revolut_customer_id, revolut_payment_method_id, current_period_end, founding_member, pending_tier, pending_billing, first_charge_discount, failed_attempts, past_due_since, inflight_charge')
+    .select(DUE_COLS)
     .eq('provider', 'revolut')
     .in('status', ['active', 'trialing', 'past_due'])
     .not('revolut_payment_method_id', 'is', null)
@@ -276,8 +278,18 @@ Deno.serve(async (req) => {
         .update({ charging_at: new Date().toISOString() })
         .eq('id', sub.id)
         .or(`charging_at.is.null,charging_at.lt."${cutoff}"`)
-        .select('id')
+        // 26 Oct 2026: claim it only if it is STILL due. The list above was read before any
+        // claim, so an overlapping run (the daily job and a card-update retry) could already
+        // have charged it and released its claim; without these checks this run would charge
+        // it a second time from the stale list.
+        .in('status', ['active', 'trialing', 'past_due'])
+        .lte('next_charge_date', today)
+        .not('revolut_payment_method_id', 'is', null)
+        .select(DUE_COLS)
       if (!claimed || claimed.length === 0) { counts.skipped++; continue }
+      // From here on, work from the row as it is now (status, amount, charge in flight), not as
+      // the list read it.
+      Object.assign(sub, claimed[0])
 
       // ---- A charge from an earlier run is still unsettled: settle it first. ----
       const inflight = sub.inflight_charge as Record<string, any> | null
