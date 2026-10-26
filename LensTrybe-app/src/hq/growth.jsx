@@ -23,6 +23,8 @@ function guessState(text) {
 function state(inv) {
   if (inv.status === 'redeemed') return ['Signed up', 'green', 'signed']
   if (inv.status === 'cancelled') return ['Cancelled', 'grey', 'cancelled']
+  // a founding creative's own code to pass on (no email, no expiry)
+  if (inv.notes === 'Peer invite') return ['Peer invite', 'amber', 'peer']
   const left = inv.expires_at ? Math.ceil((new Date(inv.expires_at) - Date.now()) / 864e5) : null
   if (inv.status === 'expired' || (left !== null && left <= 0)) return ['Expired', 'pink', 'expired']
   if (!inv.sent_at) return ['Draft', 'grey', 'draft']
@@ -92,7 +94,7 @@ export function Founding() {
       <div className="hq-bar"><Seg value={tab} onChange={setTab} options={[['invites', 'Invites'], ['apps', `Applications${newApps.length ? ' (' + newApps.length + ')' : ''}`], ['waitlist', `Waitlist${waitingCount ? ' (' + waitingCount + ')' : ''}`], ['founders', 'Founding creatives'], ['feedback', 'Feedback']]} /></div>
       <Err>{inv.err}</Err>
       {inv.busy && !d ? <Loading /> : tab === 'invites' ? <>
-        <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email, code or region" /><Seg value={f} onChange={setF} options={[['all', 'All'], ['live', 'Live'], ['draft', 'Drafts'], ['signed', 'Signed up'], ['expired', 'Expired'], ['cancelled', 'Cancelled']]} /></div>
+        <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email, code or region" /><Seg value={f} onChange={setF} options={[['all', 'All'], ['live', 'Live'], ['draft', 'Drafts'], ['peer', 'Peer'], ['signed', 'Signed up'], ['expired', 'Expired'], ['cancelled', 'Cancelled']]} /></div>
         {list.length ? <div className="hq-table"><table><thead><tr><th>Creative</th><th>Code</th><th>State</th><th /></tr></thead><tbody>{list.map(i => { const [l, tone, k] = state(i); return (
           <tr key={i.id}><td><b>{i.full_name}</b><small>{[i.email, i.skill_type, i.state && i.state + "'s 100", i.region].filter(Boolean).join(' · ')}</small>{i.email_error && <small className="warn">{i.email_error}</small>}</td><td><code>{i.code}</code></td><td><Pill tone={tone}>{l}</Pill></td>
             <td><div className="hq-right">
@@ -100,6 +102,7 @@ export function Founding() {
               {k === 'live' && <><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'send')}>Resend</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => navigator.clipboard.writeText(INVITE_BASE + i.code).then(() => flash('Link copied.'))}>Copy link</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'extend')}>Add 14 days</button><button className="hq-btn bad sm" disabled={!!busy} onClick={() => act(i, 'cancel')}>Cancel</button></>}
               {k === 'expired' && <><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'send')}>Send a fresh code</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'cancel')}>Cancel</button></>}
               {k === 'signed' && <span className="hq-note">Signed up {day(i.redeemed_at)}</span>}
+              {k === 'peer' && <><button className="hq-btn g sm" disabled={!!busy} onClick={() => navigator.clipboard.writeText(INVITE_BASE + i.code).then(() => flash('Link copied.'))}>Copy link</button><button className="hq-btn bad sm" disabled={!!busy} onClick={() => act(i, 'cancel')}>Cancel</button></>}
             </div></td></tr>) })}</tbody></table></div> : <Empty>No invites match.</Empty>}
       </> : tab === 'apps' ? (
         (d.applications || []).length ? (d.applications || []).map(a => <div key={a.id} className="hq-card"><div className="hq-row"><div><b>{a.name}{a.business_name && a.business_name !== a.name ? ' · ' + a.business_name : ''}</b><small>{a.email} · {a.creative_type} · {a.region} · {ago(a.created_at)}</small>{a.portfolio_url && <a className="hq-link" href={/^https?:\/\//.test(a.portfolio_url) ? a.portfolio_url : 'https://' + a.portfolio_url} target="_blank" rel="noreferrer noopener">{a.portfolio_url}</a>}</div>

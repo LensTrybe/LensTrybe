@@ -1330,6 +1330,13 @@ export async function loadFounding(uid) {
   ])
   return { listing: !!lc.data, jobs: Number(jc.data || 0), lastFeedback: fb.data?.[0]?.created_at || null }
 }
+// Peer invites (26 Oct 2026): a founding creative's three founding places to pass on in their own
+// state. The database creates them on first view and never more than three.
+export async function loadPeerInvites() {
+  const { data, error } = await supabase.rpc('my_peer_invites')
+  if (error) throw new Error('Could not load your invites just now.')
+  return data || { ok: false }
+}
 export async function sendFoundingFeedback(uid, category, message) {
   const text = String(message || '').trim(); if (!text) throw new Error('Write a little something first.')
   const { error } = await supabase.from('founding_feedback').insert({ creative_id: uid, category, message: text.slice(0, 5000) })

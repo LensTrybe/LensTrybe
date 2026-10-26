@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import Logo from '../../components/Logo'
 import Aurora from '../../components/Aurora'
@@ -30,7 +30,10 @@ export default function PublicLayout() {
     const on = () => { const h = document.querySelector('.darkhero'); setLite(!h || scrollY > h.offsetHeight - 140) }
     on(); addEventListener('scroll', on, { passive: true }); return () => removeEventListener('scroll', on)
   }, [darkTop])
-  useEffect(() => { window.scrollTo(0, 0); setMenu(false) }, [pathname])
+  // A new page opens at the top straight away. Before paint and not smooth (the site sets smooth
+  // scrolling on html), so a page never shows at the old scroll position and then glides up, and the
+  // directory card to profile transition captures the profile with its cover on screen.
+  useLayoutEffect(() => { window.scrollTo({ top: 0, left: 0, behavior: 'instant' }); setMenu(false) }, [pathname])
   useSpecular([pathname]); useReveal([pathname])
   // a glass capsule glides under whichever link the pointer is over, and rests under the current page
   const nav = useRef(null)

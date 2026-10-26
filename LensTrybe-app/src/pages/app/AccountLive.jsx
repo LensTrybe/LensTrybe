@@ -184,6 +184,34 @@ function FoundingCode({ user, refresh, toast }) {
       <div className="acts" style={{ marginTop: 12, display: 'flex', gap: 8 }}><button type="submit" className="btn w sm" disabled={busy}>{busy ? 'Checking' : 'Use my code'}</button><Link className="btn g sm" to="/founding">About the programme</Link></div>
     </form>)
 }
+const STATE_NAME = { NSW: 'New South Wales', VIC: 'Victoria', QLD: 'Queensland', WA: 'Western Australia', SA: 'South Australia', TAS: 'Tasmania', ACT: 'the ACT', NT: 'the Northern Territory' }
+// Three founding places a founding creative can pass on to photographers and videographers they
+// rate, in their own state. Each is a normal founding code, so it counts in that state's 100.
+function PeerInvites({ toast }) {
+  const [d, setD] = useState(null)
+  useEffect(() => { live.loadPeerInvites().then(setD).catch(() => setD({ ok: false })) }, [])
+  if (d && !d.ok) return null
+  const where = d ? STATE_NAME[d.state] || d.state : ''
+  const offer = d ? d.months + ' months of Trybe Complete free, then $49 a month for life' : ''
+  const link = c => 'https://lenstrybe.com/join/creative?code=' + c
+  const msg = c => "I'm a founding creative on LensTrybe, the no-commission platform for photographers and videographers. I've got a founding place in " + where + ' for you: ' + offer + '. Join with my code ' + c + ': ' + link(c)
+  const copy = (t, what) => { try { navigator.clipboard?.writeText(t)?.catch(() => {}) } catch (_) { /* */ } toast(what + ' copied.') }
+  const share = async c => { if (navigator.share) { try { await navigator.share({ text: msg(c) }); return } catch (e) { if (e?.name === 'AbortError') return } } copy(msg(c), 'Message') }
+  const joined = (d?.invites || []).filter(i => i.status === 'redeemed').length
+  return (
+    <div className="card lg s12"><div className="h"><b>Invite three creatives</b>{d && <span className={'st ' + (joined ? 'ok' : 'viewed')}>{joined} of 3 joined</span>}</div>
+      {!d ? <SkLines n={3} label="Loading your invites" /> : <>
+        <p className="note2">Pass a founding place to photographers or videographers you rate. Each code gives them {offer}{d.months === 12 ? ', plus the Founding Creative badge' : ''}. {d.left} of {where}'s 100 places are left. Codes don't expire, and each one works once.</p>
+        {d.invites.map(i => i.status === 'redeemed'
+          ? <div key={i.code} className="lnkrow"><Icon name="check" size={14} /><span><b>{i.joined}</b> joined with {i.code}</span></div>
+          : i.status === 'unused'
+            ? <div key={i.code} className="lnkrow"><Icon name="gift" size={14} /><span style={{ fontWeight: 700, letterSpacing: '.05em' }}>{i.code}</span><button onClick={() => copy(link(i.code), 'Link')}>Copy link</button><button onClick={() => share(i.code)}>Share</button></div>
+            : <div key={i.code} className="lnkrow"><Icon name="gift" size={14} /><span style={{ textDecoration: 'line-through' }}>{i.code}</span><small>No longer active</small></div>)}
+      </>}
+    </div>
+  )
+}
+
 export function FoundingLive() {
   const F = useFlows(); const { toast } = F; const { user, profile, fetchUserData } = useAuth()
   const isFounding = !!(profile && (profile.founding_member === true || profile.founding_member === 'true'))
@@ -195,6 +223,7 @@ export function FoundingLive() {
       <div className="grid"><FoundingCode user={user} toast={toast} refresh={() => fetchUserData?.(user.id, { silent: true })} /></div>
     </section>)
   const fbDone = thisMonth(d?.lastFeedback)
+  const freeM = Number(profile?.founding_free_months) === 6 ? 6 : 12
   const items = [
     { t: 'Complete your profile to 100%', d: 'A finished, client-ready listing within 7 days of joining.', done: !!d?.listing, st: d?.listing ? 'Complete' : 'In progress', to: d?.listing ? null : ['/app/profile', 'Finish your profile'] },
     { t: 'Run your first 3 real jobs through LensTrybe', d: 'Within your first 6 months. Send a quote, have the client accept it, then invoice and mark it paid.', done: (d?.jobs || 0) >= 3, st: Math.min(d?.jobs || 0, 3) + ' of 3 done', to: (d?.jobs || 0) >= 3 ? null : ['/app/quotes', 'Create a quote'] },
@@ -204,10 +233,11 @@ export function FoundingLive() {
   const send = async () => { if (busy) return; setBusy(true); try { await live.sendFoundingFeedback(user.id, cat, msg); setMsg(''); setD(x => ({ ...x, lastFeedback: new Date().toISOString() })); toast('Thanks. Your feedback has been sent, and your monthly feedback is ticked off.') } catch (e) { toast(e.message) } finally { setBusy(false) } }
   return (
     <section className="view">
-      <Head h="Founding hub" p="Thanks for being one of the first. Here is what keeps your founding deal: 12 months free Trybe Complete, then $49/mo for life."><Link className="btn g" to="/legal/founding">Your agreement</Link></Head>
+      <Head h="Founding hub" p={"Thanks for being one of the first. Here is what keeps your founding deal: " + freeM + " months free Trybe Complete, then $49/mo for life."}><Link className="btn g" to="/legal/founding">Your agreement</Link></Head>
       <div className="grid">
-        <Tiles t={[['Your deal', chip[1], deal === 'at_risk' ? 'sort it before your grace period ends' : deal === 'reverted' ? 'on the standard plan now' : '12 months free Trybe Complete, then $49/mo', deal === 'active' ? '' : 'w'], ['Founding since', profile?.founding_member_since ? nice(String(profile.founding_member_since).slice(0, 10), { year: 'numeric' }) : '·', 'the day you joined', 'n'], ['Responsibilities', d ? items.filter(x => x.done).length + ' of 3' : '…', 'done', 'n'], ['Feedback', fbDone ? 'Sent' : 'Due', 'this month', fbDone ? 'n' : 'w']]} />
+        <Tiles t={[['Your deal', chip[1], deal === 'at_risk' ? 'sort it before your grace period ends' : deal === 'reverted' ? 'on the standard plan now' : freeM + ' months free Trybe Complete, then $49/mo', deal === 'active' ? '' : 'w'], ['Founding since', profile?.founding_member_since ? nice(String(profile.founding_member_since).slice(0, 10), { year: 'numeric' }) : '·', 'the day you joined', 'n'], ['Responsibilities', d ? items.filter(x => x.done).length + ' of 3' : '…', 'done', 'n'], ['Feedback', fbDone ? 'Sent' : 'Due', 'this month', fbDone ? 'n' : 'w']]} />
         {deal === 'at_risk' && <div className="s12"><div className="tlumi"><span className="lm" /><div>You have a little outstanding on your founding responsibilities. Sort it before your grace period ends to keep your deal.</div></div></div>}
+        <PeerInvites toast={toast} />
         <div className="card lg s7"><div className="h"><b>Your founding responsibilities</b><span className={'st ' + chip[0]}>{chip[1]}</span></div>
           <div className="need">{items.map(x => <div key={x.t} className="r" style={{ alignItems: 'flex-start' }}><span className="av" style={{ background: x.done ? 'var(--sig)' : 'var(--bg-3)', display: 'grid', placeItems: 'center', color: x.done ? '#04120a' : 'inherit' }}><Icon name={x.done ? 'check' : 'clock'} size={14} /></span><div><b>{x.t}</b><small style={{ whiteSpace: 'normal' }}>{x.d}</small>{x.to && <Link className="lnk" to={x.to[0]} style={{ display: 'inline-block', marginTop: 6 }}>{x.to[1]} →</Link>}</div><div className="do"><span className={'st ' + (x.done ? 'ok' : 'viewed')}>{d ? x.st : '…'}</span></div></div>)}</div>
         </div>

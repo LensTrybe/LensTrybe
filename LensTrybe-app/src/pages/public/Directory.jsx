@@ -10,7 +10,7 @@ import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { CREATIVES, freeOn } from '../../data/creatives'
 import { LIVE } from '../../lib/mode'
-import { loadCreatives, prefetchSite } from '../../lib/live'
+import { loadCreatives, loadSiteCached, peekSite, prefetchSite } from '../../lib/live'
 import DatePicker, { fmtDate } from '../../components/DatePicker'
 import SpecialtyPicker from '../../components/SpecialtyPicker'
 import { matchesSpecialty, keysForTag, specParts, specKey, DISC, SPECIALTIES } from '../../lib/specialties'
@@ -215,7 +215,19 @@ export function Card({ x, i = 0, date = null }) {
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
     e.preventDefault()
     const el = e.currentTarget.querySelector('.img'); if (el) el.style.viewTransitionName = 'creative-photo'
-    const t = document.startViewTransition(() => flushSync(() => nav(to, { state })))
+    // Show the profile, then hold the transition (at most 0.4s) until its cover photo is decoded and
+    // showing, so the card photo has a real cover to grow into rather than a blank that fades in later.
+    // On a phone the tap is the first warning, so the profile may not be loaded yet: wait for it too
+    // (at most 0.4s), otherwise the profile would open on its skeleton with no cover to grow into.
+    const wait = ms => new Promise(r => setTimeout(r, ms))
+    const t = document.startViewTransition(async () => {
+      if (peekSite(x.id) === undefined) await Promise.race([loadSiteCached(x.id).catch(() => {}), wait(400)])
+      flushSync(() => nav(to, { state }))
+      const img = document.querySelector('.pf-cover img')
+      if (!img) return
+      try { await Promise.race([img.decode(), wait(400)]) } catch { return }
+      if (img.complete && img.naturalWidth) { img.style.transition = 'none'; img.parentElement?.classList.add('ok') }
+    })
     t.finished.finally(() => { if (el) el.style.viewTransitionName = '' })
   }
   return (
