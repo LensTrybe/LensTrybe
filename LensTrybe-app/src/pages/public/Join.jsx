@@ -55,7 +55,7 @@ export default function Join() {
       if (code && code.trim()) { const r = await checkFoundingCode(code); if (!r.valid) return setErr(foundingReason(r.reason)); fc = r }
       const fields = { first: f.first.trim(), last: f.last.trim(), email: f.email.trim(), disc: f.disc, city: f.city.trim(), state: f.st }
       try { sessionStorage.setItem('lt_join', JSON.stringify(fields)) } catch { /* ignore */ }
-      nav('/onboarding', { state: { ...fields, password: f.pw, news: f.news, code: fc ? fc.code : '', codeTier: fc ? fc.tier : '' } })
+      nav('/onboarding', { state: { ...fields, password: f.pw, news: f.news, code: fc ? fc.code : '', codeTier: fc ? fc.tier : '', codeMonths: fc ? fc.months : null } })
     } finally { setBusy(false) }
   }
   const google = async () => { if (code && code.trim()) return setErr('Founding codes use email sign-up. Fill in the form and your code is applied.'); const r = await signInWithGoogle('', kind, f.news); if (r.error) setErr(r.error); else if (!LIVE) nav(kind === 'creative' ? '/onboarding' : '/portal/harper-leo') }

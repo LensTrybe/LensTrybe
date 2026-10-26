@@ -23,7 +23,7 @@ const FAQ = [
   ['What does "14 days free" mean?', 'Any paid plan is free for your first 14 days. You add a card, you are not charged for two weeks, and you can cancel before then and pay nothing. We email you a reminder before your first charge.'],
   ['Can I change plans?', 'Any time. Upgrades apply immediately and downgrades apply at the end of the period you have paid for.'],
   ['Is GST included?', 'Yes. Every price on this page is in Australian dollars with GST included, and your invoices from us are tax invoices.'],
-  ['What about the founding programme?', 'The first hundred creatives who redeem a founding code get Trybe Complete free for twelve months, then $49 a month locked for life. The band at the foot of this page has the details.'],
+  ['What about the founding programme?', 'The first hundred creatives in each state who redeem a founding code get Trybe Complete free for twelve months, then $49 a month locked for life. The band at the foot of this page has the details.'],
 ]
 
 // Pricing: a dark opener with the lens, four glass plans, the full comparison, the maths and a short FAQ.

@@ -196,3 +196,8 @@ input[type=date].hq-input { width: auto; color-scheme: dark; }
   .hq-table.stack tr { border-bottom: 1px solid var(--line); }
   .hq-table.stack tr:last-child { border-bottom: 0; }
 }
+
+/* Founding places per state: eight small counts under the tiles. */
+.hq-states { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 8px; margin-bottom: 14px; }
+.hq-states b small { font-size: 12px; font-weight: 500; color: var(--ink3); }
+@media (max-width: 640px) { .hq-states { grid-template-columns: repeat(4, minmax(0, 1fr)); } }

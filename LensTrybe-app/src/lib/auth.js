@@ -103,10 +103,10 @@ export async function signOut() {
 export async function checkFoundingCode(code) {
   const c = String(code || '').trim().toUpperCase()
   if (!FOUNDING_RE.test(c)) return { valid: false, reason: 'format' }
-  if (!LIVE) return { valid: true, tier: 'expert', code: c }
+  if (!LIVE) return { valid: true, tier: 'expert', code: c, months: 12, state: 'QLD' }
   const { data, error } = await supabase.functions.invoke('founding-code', { body: { action: 'validate', code: c } })
   if (error || !data?.valid) return { valid: false, reason: data?.reason || 'invalid' }
-  return { valid: true, tier: data?.tier || 'expert', code: c }
+  return { valid: true, tier: data?.tier || 'expert', code: c, months: data?.months ?? null, state: data?.state ?? null }
 }
 export function foundingReason(reason) {
   if (reason === 'format') return 'That does not look like a code. Copy it from your invite email.'

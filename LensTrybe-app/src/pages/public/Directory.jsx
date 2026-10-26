@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { Link, useSearchParams, Navigate } from 'react-router-dom'
+import { Link, useSearchParams, Navigate, useNavigate } from 'react-router-dom'
+import { flushSync } from 'react-dom'
+import Photo from '../../components/Photo'
 import { clientOutside, waitlistTo } from '../../lib/region'
 import Aurora from '../../components/Aurora'
 import Still from '../../components/Still'
@@ -8,7 +10,7 @@ import Icon from '../../components/Icon'
 import { mountLens } from '../../lib/lens'
 import { CREATIVES, freeOn } from '../../data/creatives'
 import { LIVE } from '../../lib/mode'
-import { loadCreatives } from '../../lib/live'
+import { loadCreatives, prefetchSite } from '../../lib/live'
 import DatePicker, { fmtDate } from '../../components/DatePicker'
 import SpecialtyPicker from '../../components/SpecialtyPicker'
 import { matchesSpecialty, keysForTag, specParts, specKey, DISC, SPECIALTIES } from '../../lib/specialties'
@@ -201,9 +203,24 @@ function PlacePicker({ value, onChange }) {
 export function Card({ x, i = 0, date = null }) {
   const free = freeOn(x, date), when = date ? fmtDate(date) : '14 Nov'
   const kind = x.t.includes('video') && !x.t.includes('photo') ? 'Videographer' : x.t.includes('video') ? 'Photo + video' : 'Photographer'
+  const to = '/creatives/' + x.id, pic = x.cover || x.avatar
+  // Live creatives: load the profile and its cover as soon as the card is pointed at or touched,
+  // and let the card photo flow into the profile cover when it opens.
+  const warm = x.live ? () => prefetchSite(x.id) : undefined
+  const nav = useNavigate(), state = x.live && pic ? { hero: x.cover || null } : undefined
+  // The browser's view transition: only this card's photo is named, so it alone flows into the
+  // profile cover. A plain click only; new-tab clicks and reduced motion take the normal link.
+  const open = e => {
+    if (!x.live || typeof document.startViewTransition !== 'function' || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
+    e.preventDefault()
+    const el = e.currentTarget.querySelector('.img'); if (el) el.style.viewTransitionName = 'creative-photo'
+    const t = document.startViewTransition(() => flushSync(() => nav(to, { state })))
+    t.finished.finally(() => { if (el) el.style.viewTransitionName = '' })
+  }
   return (
-    <Link className="ccard lg" to={'/creatives/' + x.id} style={{ '--i': i }}>
-      <div className="img">{x.live && (x.cover || x.avatar) ? <CardImg src={x.cover || x.avatar} seed={x.seed} mood={x.mood} /> : <Still seed={x.seed + 40} mood={x.mood} />}
+    <Link className="ccard lg" to={to} style={{ '--i': i }} state={state} onClick={open} onPointerEnter={warm} onFocus={warm} onTouchStart={warm}>
+      <div className="img">{x.live && pic ? <CardImg src={pic} seed={x.seed} mood={x.mood} /> : <Still seed={x.seed + 40} mood={x.mood} />}
         <div className="tp"><span className="tag">{kind}</span>{!x.live && <span className={'av' + (free ? '' : ' busy')}><i />{free ? 'Free ' + when : 'Booked ' + when}</span>}</div>
       </div>
       <div className="bot">
@@ -238,5 +255,5 @@ function CardImg({ src, seed, mood }) {
   const [bad, setBad] = useState(false)
   useEffect(() => setBad(false), [src])
   if (bad) return <Still seed={(seed || 0) + 40} mood={mood} />
-  return <img src={bigger(src)} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+  return <Photo src={bigger(src)} width={420} referrerPolicy="no-referrer" onError={() => setBad(true)} />
 }

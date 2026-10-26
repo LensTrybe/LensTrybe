@@ -14,6 +14,12 @@ export const SENDER_LINE = 'LensTrybe, Brisbane, Queensland, Australia. Reply to
 
 const FOOTER_NOTE = "You're getting this because Michael invited you personally to join LensTrybe as a founding creative, at a business address published on your own website. If it's not for you, no need to do anything. The code simply expires."
 
+// 100 founding places in every state and territory (25 Oct 2026). The invite names the state.
+const STATE_NAME: Record<string, string> = { NSW: 'New South Wales', VIC: 'Victoria', QLD: 'Queensland', WA: 'Western Australia', SA: 'South Australia', TAS: 'Tasmania', ACT: 'the ACT', NT: 'the Northern Territory' }
+const POSSESSIVE: Record<string, string> = { NSW: "New South Wales'", VIC: "Victoria's", QLD: "Queensland's", WA: "Western Australia's", SA: "South Australia's", TAS: "Tasmania's", ACT: "the ACT's", NT: "the Northern Territory's" }
+const inState = (st: string | null) => st && STATE_NAME[st] ? ` in ${STATE_NAME[st]}` : ' in your state'
+const stateOwn = (st: string | null) => st && POSSESSIVE[st] ? POSSESSIVE[st] : "your state's"
+
 function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Australia/Brisbane' })
 }
@@ -42,17 +48,17 @@ const signOff = () => [
   signoff('Michael', 'Founder, LensTrybe'),
 ]
 
-export function inviteEmail(first: string, c: string, expiresIso: string, note: string, unsubUrl: string | null) {
+export function inviteEmail(first: string, c: string, expiresIso: string, note: string, unsubUrl: string | null, st: string | null = null) {
   const name = first || 'there'
   return shell([
     heading('Founding creative invite', `Hi ${name}, I'd love you on board`),
     note ? quote(note) : '',
     para("I'm building LensTrybe: a home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever."),
-    para("I'm hand-picking creatives for the founding 100, and I'd like you to be one of them. The places go to the first 100 who use their code."),
+    para(`Every state gets its own founding 100. I'm hand-picking creatives for the founding 100${inState(st)}, and I'd like you to be one of them. The places go to the first 100${inState(st)} who use their code.`),
     list([
-      `Our ${strong('Trybe Complete plan free for 12 months')} from the day you join (normally $74.99 a month), or 6 months if the 100 places have already gone`,
+      `Our ${strong('Trybe Complete plan free for 12 months')} from the day you join (normally $74.99 a month), or 6 months if ${stateOwn(st)} 100 places have already gone`,
       `Then ${strong('$49 a month, or $588 a year, locked in for life')}`,
-      'A Founding Creative badge on your profile, for the first 100 to claim a place',
+      `A Founding Creative badge on your profile, for the first 100${inState(st)} to claim a place`,
       'A direct line to me, and a real say in what we build next',
     ], { html: true, title: 'What you get' }),
     list([
@@ -68,13 +74,13 @@ export function inviteEmail(first: string, c: string, expiresIso: string, note: 
   ], inviteSubject(first), unsubUrl)
 }
 
-export function reminderEmail(first: string, c: string, expiresIso: string, left: number | null, unsubUrl: string | null) {
+export function reminderEmail(first: string, c: string, expiresIso: string, left: number | null, unsubUrl: string | null, st: string | null = null) {
   const name = first || 'there'
   return shell([
     heading('Your founding place', `Hi ${name}, your place is still here`),
-    para('Just a quick nudge in case my last email got buried. Your founding invite is still open: Trybe Complete free, then $49 a month locked in for life, and no commission on your jobs, ever. Places go to the first 100 to use a code, so the sooner you claim it the better.'),
+    para(`Just a quick nudge in case my last email got buried. Your founding invite is still open: Trybe Complete free, then $49 a month locked in for life, and no commission on your jobs, ever. Places go to the first 100${inState(st)} to use a code, so the sooner you claim it the better.`),
     para(`Your code expires on ${strong(fmtDate(expiresIso))}. After that the place goes to the next creative on my list.`, { html: true }),
-    left !== null && left <= 40 ? para(`For what it's worth, ${strong(`${left} of the 100 places are left`)}.`, { html: true }) : '',
+    left !== null && left <= 40 ? para(`For what it's worth, ${strong(`${left} of ${stateOwn(st)} 100 places are left`)}.`, { html: true }) : '',
     codeBox(c, expiresIso),
     button('Claim my founding place', inviteLink(c)),
     para(`Tap the button, then ${strong('Apply')} next to your code. Everything's in the ${link('Founding Creative Agreement', `${SITE}/founding-agreement`)}.`, { html: true, small: true }),
@@ -95,9 +101,9 @@ export function previews() {
   const expires = '2026-10-13T09:00:00.000Z'
   const note = "Loved your Maleny wedding set on Instagram, Sam.\nThe light in that barn was something else."
   return [
-    { id: 'invite', name: 'Founding invite from Michael, with a personal note', audience: 'creative', subject: inviteSubject('Sam'), from: FROM_PREVIEW, html: inviteEmail('Sam', 'SAM-7K2Q', expires, note, unsub) },
-    { id: 'invite-nonote', name: 'Founding invite from Michael, no note', audience: 'creative', subject: inviteSubject('Sam'), from: FROM_PREVIEW, html: inviteEmail('Sam', 'SAM-7K2Q', expires, '', unsub) },
-    { id: 'reminder', name: 'Founding invite reminder, 7 days left on the code', audience: 'creative', subject: reminderSubject('Sam', 62), from: FROM_PREVIEW, html: reminderEmail('Sam', 'SAM-7K2Q', expires, 62, unsub) },
-    { id: 'reminder-scarce', name: 'Founding invite reminder when 40 or fewer places are left', audience: 'creative', subject: reminderSubject('Sam', 18), from: FROM_PREVIEW, html: reminderEmail('Sam', 'SAM-7K2Q', expires, 18, unsub) },
+    { id: 'invite', name: 'Founding invite from Michael, with a personal note', audience: 'creative', subject: inviteSubject('Sam'), from: FROM_PREVIEW, html: inviteEmail('Sam', 'SAM-7K2Q', expires, note, unsub, 'QLD') },
+    { id: 'invite-nonote', name: 'Founding invite from Michael, no note', audience: 'creative', subject: inviteSubject('Sam'), from: FROM_PREVIEW, html: inviteEmail('Sam', 'SAM-7K2Q', expires, '', unsub, 'NSW') },
+    { id: 'reminder', name: 'Founding invite reminder, 7 days left on the code', audience: 'creative', subject: reminderSubject('Sam', 62), from: FROM_PREVIEW, html: reminderEmail('Sam', 'SAM-7K2Q', expires, 62, unsub, 'VIC') },
+    { id: 'reminder-scarce', name: 'Founding invite reminder when 40 or fewer places are left', audience: 'creative', subject: reminderSubject('Sam', 18), from: FROM_PREVIEW, html: reminderEmail('Sam', 'SAM-7K2Q', expires, 18, unsub, 'WA') },
   ]
 }

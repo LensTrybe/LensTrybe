@@ -10,6 +10,7 @@ import * as live from '../../lib/live'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
 import { planLabel } from '../../backend/tierFeatures'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Marketplace: gear bought, sold and swapped between creatives on LensTrybe. Browse what others have
 // listed, keep your own listings and the conversations on them, save things to come back to.
@@ -112,7 +113,7 @@ function MarketLive() {
   const list = useMemo(() => pool.filter(l => (cat === 'all' || l.cat === cat) && (cond === 'all' || l.cond === cond) && (!swap || l.swap) && (!q || (l.t + ' ' + l.d + ' ' + l.cat + ' ' + l.loc + ' ' + l.seller.n).toLowerCase().includes(q.toLowerCase()))).sort((a, b) => sort === 'lo' ? a.p - b.p : sort === 'hi' ? b.p - a.p : a.posted < b.posted ? 1 : -1), [pool, cat, cond, swap, q, sort])
   // from Inventory's "Sell it": open the listing prefilled once the page has loaded
   useEffect(() => { const gid = params.get('sell'); if (!d || !gid) return; setParams({}, { replace: true }); post(true, gid) }, [d]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!d) return <section className="view mkt"><div className="vh"><div><h1>Marketplace</h1><p>Loading listings…</p></div></div></section>
+  if (!d) return <section className="view mkt"><div className="vh"><div><h1>Marketplace</h1><p>Buy, sell and swap gear with other creatives. No fee, no cut, you deal directly.</p></div></div><SkCards n={6} label="Loading listings" /></section>
   const l = tab !== 'messages' ? all.get(sel) : null
   const conv = tab === 'messages' ? (d.buying.find(t => t.id === sel) || d.buying[0]) : null
   const liveMine = d.mine.filter(x => x.st === 'live'), sold = d.mine.filter(x => x.st === 'sold')

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useLocation, useParams } from 'react-router-dom'
 import { useAuth } from '../../backend/AuthContext'
-import { loadSite, sendEnquiry } from '../../lib/live'
+import { loadSiteCached, peekSite, sendEnquiry } from '../../lib/live'
 import { onColour } from '../../lib/brand'
 import { fmt } from '../../lib/format'
 import { imageUrl } from '../../backend/imageUrl'
@@ -140,8 +140,8 @@ function Enquiry({ c, name, pk, busy, start, signedIn, send, onClose }) {
 export default function Profile({ slug: slugProp, embed = false, sheet = false, onClose }) {
   const root = useRef(null)
   const params = useParams(); const slug = slugProp || params.slug; const { user, clientAccount } = useAuth(); const { pathname } = useLocation()
-  const [d, setD] = useState(undefined), [lb, setLb] = useState(null), [enq, setEnq] = useState(null), [all, setAll] = useState(false), [scrolled, setScrolled] = useState(false), [cols, setCols] = useState(3), [copied, setCopied] = useState(false)
-  useEffect(() => { let on = true; if (!LIVE) { setD(null); return } loadSite(slug).then(x => on && setD(x)).catch(() => on && setD(null)); return () => { on = false } }, [slug])
+  const [d, setD] = useState(() => (LIVE ? peekSite(slugProp || params.slug) : undefined)), [lb, setLb] = useState(null), [enq, setEnq] = useState(null), [all, setAll] = useState(false), [scrolled, setScrolled] = useState(false), [cols, setCols] = useState(3), [copied, setCopied] = useState(false)
+  useEffect(() => { let on = true; if (!LIVE) { setD(null); return } setD(peekSite(slug)); loadSiteCached(slug).then(x => on && setD(x)).catch(() => on && setD(null)); return () => { on = false } }, [slug])
   // a view for the creative's Insights: not their own View profile (embed), and once a visit
   useEffect(() => { if (d?.c?.id && !embed) void logProfileView(d.c.id, sheet ? 'ask' : pathname.startsWith('/creatives/') ? 'profile' : 'website') }, [d, embed, sheet]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { const el = sheet ? root.current : window; if (!el) return; const f = () => setScrolled((sheet ? el.scrollTop : window.scrollY) > window.innerHeight * 0.55); f(); el.addEventListener('scroll', f, { passive: true }); return () => el.removeEventListener('scroll', f) }, [sheet, d])
@@ -292,7 +292,7 @@ const CSS = `
 .pf-icon{position:relative;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;background:rgba(0,0,0,.35);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px)}.pf-bar.on .pf-icon{background:rgba(255,255,255,.07)}
 .pf-icon em{position:absolute;top:46px;right:0;font-style:normal;font-size:12px;background:var(--s2);padding:6px 10px;border-radius:8px;white-space:nowrap}
 .pf-hero{position:relative;height:min(88vh,860px);min-height:560px;display:flex;align-items:flex-end}
-.pf-cover{position:absolute;inset:0}.pf-cover img{object-position:center 40%;animation:pfzoom 14s ease-out both}@keyframes pfzoom{from{transform:scale(1.07)}to{transform:scale(1)}}
+.pf-cover{position:absolute;inset:0}.pf:not(.pf-embed):not(.pf-inpop) .pf-cover{view-transition-name:creative-photo}.pf-cover img{object-position:center 40%;animation:pfzoom 14s ease-out both}@keyframes pfzoom{from{transform:scale(1.07)}to{transform:scale(1)}}
 .pf-cover0{background:radial-gradient(120% 90% at 70% 10%,#2a2a36,#0e0e13)}
 .pf-hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(14,14,19,.55) 0%,rgba(14,14,19,0) 22%,rgba(14,14,19,0) 42%,rgba(14,14,19,.72) 72%,var(--bg) 100%);pointer-events:none}
 .pf-hero-in{position:relative;z-index:2;width:100%;max-width:1280px;margin:0 auto;padding:0 32px 64px;display:flex;align-items:flex-end;justify-content:space-between;gap:32px}

@@ -260,9 +260,9 @@ function FoundingDemo() {
   const code = 'FOUND-' + s.profile.n.split(' ')[0].toUpperCase() + '-23'
   return (
     <section className="view">
-      <Head h="Founding hub" p="One of the first hundred. Trybe Complete free for twelve months, then $49 a month for life."><Link className="btn g" to="/legal/founding">Founding agreement</Link></Head>
+      <Head h="Founding hub" p="One of the first hundred in your state. Trybe Complete free for twelve months, then $49 a month for life."><Link className="btn g" to="/legal/founding">Founding agreement</Link></Head>
       <div className="grid">
-        <Tiles t={[['Your number', '#23', 'of 100', ''], ['Founding creatives', '71', '29 places left', 'n'], ['Your rate', '$49 / mo', 'locked for life, from 1 Jun 2027', ''], ['Free until', '1 Jun 2027', '8 months to go', 'n']]} />
+        <Tiles t={[['Your number', '#23', 'of 100 in Queensland', ''], ['Founding creatives in Queensland', '71', '29 places left', 'n'], ['Your rate', '$49 / mo', 'locked for life, from 1 Jun 2027', ''], ['Free until', '1 Jun 2027', '8 months to go', 'n']]} />
         <div className="card lg s8"><div className="h"><b>What founding gets you</b></div>
           <div className="chk set">{[['Trybe Complete free for twelve months', 1], ['$49 a month for life after that, ever', 1], ['Founding badge on your card and profile', 1], ['A say in what gets built · Upcoming features', 1], ['First look at Trybe Studio features before they ship', 1], ['Your name on the founding wall', wall ? 1 : 0]].map(([t, v]) => <label key={t} className={v ? 'on' : ''}><input type="checkbox" checked={!!v} readOnly /><i><Icon name="check" size={11} /></i><span>{t}</span></label>)}</div>
           <p className="tempty" style={{ textAlign: 'left', padding: '12px 2px 0', fontSize: 12 }}>The wall is opt-in. <button className="lnk" onClick={() => { F.patch('settings', { wall: !wall }); toast(wall ? 'Taken off the founding wall.' : 'Added to the founding wall.') }}>{wall ? 'Take your name off' : 'Add your name'}</button></p>

@@ -7,6 +7,7 @@ import { nextOpen } from '../lib/avail'
 import { nice } from '../lib/store'
 import { imageUrl } from '../backend/imageUrl'
 import '../styles/site.css'
+import Photo from './Photo'
 
 // The creative's website, rendered from their pages, profile, brand kit, reviews and packages.
 // The same component draws the preview in the Website editor and every creative's public profile,
@@ -14,7 +15,7 @@ import '../styles/site.css'
 const KEYS = ['Weddings', 'Real estate', 'Brand and headshots', 'Recent work']
 const GRID = { Weddings: [3, 5, 9], 'Real estate': [13, 17, 21], 'Brand and headshots': [23, 29, 31], 'Recent work': [3, 13, 23, 5, 17, 29] }
 const im = (u, w) => { if (!u) return u; try { return imageUrl(u, w) || u } catch { return u } }
-const Ph = ({ url, seed, mood, tall, rad, w = 700 }) => <span className={'ws-ph' + (tall ? ' tall' : '')} style={{ borderRadius: rad }}>{url ? <img src={im(url, w)} alt="" loading="lazy" /> : <Still seed={seed} mood={mood} />}</span>
+const Ph = ({ url, seed, mood, tall, rad, w = 700 }) => <span className={'ws-ph' + (tall ? ' tall' : '')} style={{ borderRadius: rad }}>{url ? <Photo src={url} width={w} style={{ position: 'absolute', inset: 0 }} /> : <Still seed={seed} mood={mood} />}</span>
 const money = v => { const n = Number(String(v ?? '').replace(/[^0-9.]/g, '')); return n ? fmt(n) : String(v || '') }
 // live: the real site. Pages, photos, packages, reviews and calendar come from the creative's own data.
 function LiveSite({ s, page, onPage, compact, live }) {

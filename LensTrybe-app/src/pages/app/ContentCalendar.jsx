@@ -26,7 +26,7 @@ export default function ContentCalendar() {
   const on = id => LIVE || CHN.find(c => c.id === id)?.on
   const movePost = () => F.open({ title: 'Move · ' + p.t, cta: 'Move', fields: [{ k: 'd', l: 'Day', type: 'date', required: true, value: p.d, min: T0, half: true }, { k: 'time', l: 'Time', type: 'time', value: p.time || '19:30', half: true, hint: 'Best for that day: ' + hhmm(F.bestTime(p.d)) }], submit: v => { F.upd('posts', sel, { d: v.d, time: v.time }); setStart(monday(parse(v.d))); toast('Moved to ' + longd(parse(v.d)) + ', ' + hhmm(v.time) + '.') } })
   const rewrite = () => { const takes = [p.body, p.body.split('. ')[0] + '. That is the whole story.', 'Quick one: ' + p.body.charAt(0).toLowerCase() + p.body.slice(1)]; F.open({ title: 'Rewrite', sub: LIVE ? 'Three quick takes. Pick one or edit it.' : 'Three takes in your voice, from your last forty posts. Pick one or edit it.', cta: 'Use this', fields: [{ k: 'body', l: 'Caption', type: 'select', value: takes[0], options: takes.map((t, i) => [t, ['As written', 'Shorter', 'Casual'][i] + ' · ' + t.slice(0, 48) + '…']) }, { k: 'edit', l: 'Or edit', type: 'textarea', rows: 4, value: p.body }], submit: v => { upd('body', v.edit !== p.body ? v.edit : v.body); toast('Caption updated.') } }) }
-  const remove = () => F.confirm({ title: 'Delete this post?', body: p.t, cta: 'Delete', danger: true, onYes: () => { F.del('posts', p.id); setSel(null); toast('Deleted.') } })
+  const remove = () => { setSel(null); F.removeUndo('posts', p.id, 'Post deleted.') }
   const move = n => setStart(x => { const d = new Date(x); d.setDate(x.getDate() + n * 7); return d })
   const week = posts.filter(x => days.some(d => iso(d) === x.d))
   // drag a post onto another day; posted ones stay where they went out

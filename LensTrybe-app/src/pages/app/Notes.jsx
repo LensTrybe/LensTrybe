@@ -19,7 +19,7 @@ export default function Notes() {
   const set = (k, v) => upd('notes', n.id, { [k]: v, w: 'Just now' })
   const attachLive = () => F.open({ title: 'Attach this note', sub: 'To a project or a client, so it sits with the job.', cta: 'Attach', fields: [{ k: 'on', l: 'Attach to', type: 'select', value: n.proj ? 'p:' + n.proj : n.client ? 'c:' + n.client : '', options: F.noteTargets() }], submit: v => { const t = F.noteTarget(v.on); upd('notes', n.id, t); toast(t.on ? 'Attached to ' + t.on + '.' : 'Detached.') } })
   const attach = () => LIVE ? attachLive() : F.open({ title: 'Attach this note', sub: 'Lumi reads notes attached to a client before she drafts to them.', cta: 'Attach', fields: [{ k: 'on', l: 'Client', type: 'select', value: s.people.find(p => p.n === n.on)?.id || '', options: [['', 'Nobody'], ...s.people.map(p => [p.id, p.n])] }], submit: v => { const p = s.people.find(x => x.id === v.on); upd('notes', n.id, { on: p?.n || '', to: p ? '/app/thread/' + p.id : '' }); toast(p ? 'Attached to ' + p.n + '.' : 'Detached.') } })
-  const remove = () => F.confirm({ title: 'Delete this note?', body: n.t, cta: 'Delete', danger: true, onYes: () => { del('notes', n.id); setSel(notes.find(x => x.id !== n.id)?.id || null); toast('Note deleted.') } })
+  const remove = () => { setSel(notes.find(x => x.id !== n.id)?.id || null); F.removeUndo('notes', n.id, 'Note deleted.') }
   return (
     <section className="view fill">
       <div className={'tw notes' + (opened ? ' open' : '')}>

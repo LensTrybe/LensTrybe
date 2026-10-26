@@ -7,6 +7,7 @@ import { answer } from './CommandBar'
 import { LIVE } from '../../lib/mode'
 import LumiChat from './LumiChat'
 import { lumiList, lumiDelete, lumiPin, lumiRename, useLumiUsage, usageLine } from '../../lib/lumi'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 export default function Lumi() { return LIVE ? <LiveLumi /> : <DemoLumi /> }
 
@@ -50,7 +51,7 @@ function LiveLumi() {
           <div className="tlh"><h1><span className="lm" style={{ verticalAlign: -2, marginRight: 8 }} />Lumi</h1><button className="btn w sm" onClick={fresh}><Icon name="plus" size={14} />New chat</button></div>
           {u && <p className="lusage">{usageLine(u)}</p>}
           <div className="trows">
-            {list === null && <div className="tempty">Loading your chats</div>}
+            {list === null && <SkRows n={4} label="Loading your chats" />}
             {list?.map(x => <button key={x.id} type="button" className={'tli' + (cur.id === x.id ? ' on' : '')} onClick={() => pick(x)}><span className="nic"><Icon name={x.pinned ? 'star' : 'spark'} size={15} /></span><div className="tx"><div className="r1"><b>{x.title || 'New conversation'}</b><small>{when(x.updated_at)}</small></div><span className="r2">{(x.messages || []).filter(m => m.role === 'assistant').slice(-1)[0]?.content?.replace(/[*#]/g, '').slice(0, 90) || 'No answer yet'}</span></div></button>)}
             {list && !list.length && <div className="tempty">No chats yet. Ask Lumi anything on the right.</div>}
           </div>

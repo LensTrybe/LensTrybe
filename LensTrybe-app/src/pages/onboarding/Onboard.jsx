@@ -13,7 +13,6 @@ import '../../styles/public.css'
 import '../../styles/pages.css'
 import './onboard.css'
 import { planLabel } from '../../backend/tierFeatures'
-import { useFoundingTaken } from '../../lib/founding'
 import { eventOnce, withUtm } from '../../lib/analytics'
 
 // The one step after Join: pick a plan, agree, and the account is made. Everything else (photo, bio,
@@ -36,11 +35,11 @@ export default function Onboard() {
   const j = google ? { first: gn.first, last: gn.last, email: gUser?.email || '', disc: gDisc, news: false } : (state || {})
   const first = j.first || '', last = j.last || '', email = j.email || '', disc0 = j.disc || 'Photographer', password = j.password || '', code = (j.code || '').toUpperCase()
   const founding = !!code
-  // What the code gives, as the signup trigger will grant it: the first 100 to redeem get 12 months
-  // and the badge, after that 6 months and no badge. A comped code (another tier) is neither.
-  const taken = useFoundingTaken()
+  // What the code gives, as the signup trigger will grant it: the first 100 to redeem in the code's
+  // state get 12 months and the badge, after that 6 months and no badge (founding-code works it out
+  // and Join passes it on). A comped code (another tier) is neither.
   const comp = founding && j.codeTier && j.codeTier.toLowerCase() !== 'expert'
-  const freeMonths = taken != null && taken >= 100 ? 6 : 12
+  const freeMonths = j.codeMonths === 6 ? 6 : 12
   const freeUntil = (() => { const d = new Date(); d.setMonth(d.getMonth() + freeMonths); return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'long', year: 'numeric' }) })()
   const foundingLine = comp ? planLabel(j.codeTier[0].toUpperCase() + j.codeTier.slice(1)) + ', on us. Your code sets it up as you join.' : 'Trybe Complete free for ' + freeMonths + ' months, until ' + freeUntil + ', then $49 a month for life' + (freeMonths === 12 ? ', plus the Founding Creative badge' : '') + '. Three real client jobs in the first six months keeps it.'
   const lock = founding ? (j.codeTier ? j.codeTier[0].toUpperCase() + j.codeTier.slice(1) : 'Expert') : ''

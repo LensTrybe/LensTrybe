@@ -152,7 +152,9 @@ serve(async (req) => {
 
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      // Idempotency key (26 Oct 2026): a double tap or a retry inside the same minute sends one
+      // email, not two. Resend answers 409 to the repeat, which is treated as already sent.
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json', 'Idempotency-Key': `quote-${quoteId}-${Math.floor(Date.now() / 60000)}` },
       body: JSON.stringify({
         from: 'LensTrybe <noreply@mail.lenstrybe.com>',
         to: [record.client_email],
@@ -162,6 +164,7 @@ serve(async (req) => {
       }),
     })
     const data = await res.json().catch(() => ({}))
+    if (res.status === 409) return jsonRes({ success: true, duplicate: true, url: docUrl })
     if (!res.ok) {
       // Resend answers 429 when the account's daily sending quota is gone. Telling
       // someone to try again in that state is wrong advice, because it cannot succeed

@@ -10,6 +10,7 @@ import { LIVE } from '../../lib/mode'
 import { loadMyJobs } from '../../lib/live'
 import '../../styles/public.css'
 import '../../styles/pages.css'
+import { SkRows } from '../../components/Skeleton'
 
 // The client's front door once signed in: every booking as a thread link, and the ask for a new
 // one. Each row is a real portal link (my_portals), the same one the emails carry.
@@ -36,7 +37,7 @@ export default function ClientHome() {
         <p className="sub">Every job you book on LensTrybe lives behind one link: quote, contract, deposit, messages and the gallery when it lands. They are all here.</p>
         <div className="ctas" style={{ margin: '4px 0 22px' }}><Link className="btn p lg" to="/jobs">Post a job <Icon name="arrow" size={14} /></Link></div>
         <div className="lg chlist">
-          {rows === null && <p className="fine">Loading your bookings.</p>}
+          {rows === null && <SkRows n={3} label="Loading your bookings" />}
           {rows && rows.length === 0 && <div className="chempty"><b>Nothing booked yet.</b><p>Post what you need and creatives who do that work reply with a real quote.</p><Link className="btn p" to="/jobs">Post a job <Icon name="arrow" size={14} /></Link></div>}
           {rows && rows.map(r => <Link key={r.id} className="chrow" to={'/portal/' + r.id}><div><b>{r.title}</b><span>{[r.with, r.when].filter(Boolean).join(' · ')}</span></div><em>{r.st}</em><Icon name="arrow" size={14} /></Link>)}
         </div>

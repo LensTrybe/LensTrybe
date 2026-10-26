@@ -8,6 +8,8 @@
 // for the first 100, then 6 months; a comped code its own tier) and refuses the same cases
 // (not a creative, deleting, already founding, already paying). Before this it always gave 12
 // months and the badge, with no cap, no terms record and no account checks.
+// 25 Oct 2026: 100 founding places per state. validate also says which state the code counts in
+// and what it gives if used now (12 months while that state has places, then 6).
 // The grant at sign-up itself is done by handle_new_user. No JWT check at the gateway, because
 // validate runs before anyone is signed in; redeem checks the user's token itself.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -84,7 +86,7 @@ Deno.serve(async (req) => {
 
     const { data: invite, error } = await admin
       .from("founding_invites")
-      .select("status, region, expires_at, grant_tier, grant_forever")
+      .select("status, region, state, expires_at, grant_tier, grant_forever")
       .eq("code", normalisedCode)
       .maybeSingle();
 
@@ -99,9 +101,12 @@ Deno.serve(async (req) => {
     // Just checking a code (user not signed in yet). tier and forever let the signup screen
     // say what the code actually gives; the grant itself is done by handle_new_user.
     if (action === "validate") {
+      const { data: months } = invite.grant_tier ? { data: null } : await admin.rpc("founding_months_for_code", { p_code: normalisedCode });
       return json({
         valid: true,
         region: invite.region ?? null,
+        state: invite.state ?? null,
+        months: typeof months === "number" ? months : null,
         tier: invite.grant_tier ?? "expert",
         forever: invite.grant_forever === true,
       });

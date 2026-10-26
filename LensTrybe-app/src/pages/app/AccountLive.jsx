@@ -9,6 +9,7 @@ import { TIER_ORDER, TIER_META, planCardLines, planLabel } from '../../backend/t
 import { payWithRevolut, getSavedCard, updateSavedCard } from '../../backend/revolut'
 import { nice } from '../../lib/store'
 import * as live from '../../lib/live'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Live versions of Subscription, Referrals, Founding hub and Support. They work the way the live
 // site does: the same tables, the same edge functions (change-subscription, cancel-revolut-subscription,
@@ -40,7 +41,7 @@ export function SubscriptionLive() {
     } else setCard(null)
   }
   useEffect(() => { load() }, [user?.id]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (sub === undefined) return <section className="view"><Head h="Subscription" p="Loading your plan…" /></section>
+  if (sub === undefined) return <section className="view"><Head h="Subscription" p="Your plan and the card it's billed to. No commission, ever." /><SkLines n={4} label="Loading your plan" /></section>
   const access = String(profile?.subscription_tier || ctxTier || 'basic').toLowerCase().replace('vip', 'elite')
   const hasLive = !!(sub && LIVE_ST.includes(sub.status))
   const billed = (hasLive ? sub.tier : null) || 'basic', curBilling = sub?.billing || 'monthly'
@@ -132,7 +133,7 @@ export function ReferralsLive() {
         </div>
         <div className="s4 side">
           <div className="card lg"><div className="h"><b>Your code</b></div>
-            {!d ? <p className="note2">Loading…</p> : d.code ? <><div className="lnkrow" style={{ margin: '0 0 10px' }}><Icon name="star" size={14} /><span style={{ fontWeight: 700, letterSpacing: '.05em' }}>{d.code}</span><button onClick={() => copy(d.code, 'Code')}>Copy</button></div><div className="lnkrow" style={{ margin: '0 0 10px' }}><Icon name="globe" size={14} /><span>{link.replace('https://', '')}</span><button onClick={() => copy(link, 'Link')}>Copy</button></div><button className="btn g sm" onClick={share}>Write a message</button></>
+            {!d ? <SkLines n={2} label="Loading" /> : d.code ? <><div className="lnkrow" style={{ margin: '0 0 10px' }}><Icon name="star" size={14} /><span style={{ fontWeight: 700, letterSpacing: '.05em' }}>{d.code}</span><button onClick={() => copy(d.code, 'Code')}>Copy</button></div><div className="lnkrow" style={{ margin: '0 0 10px' }}><Icon name="globe" size={14} /><span>{link.replace('https://', '')}</span><button onClick={() => copy(link, 'Link')}>Copy</button></div><button className="btn g sm" onClick={share}>Write a message</button></>
               : <><p className="note2">Your referral code appears here once you're on a paid plan.</p><Link className="btn g sm" to="/app/subscription" style={{ marginTop: 10 }}>See plans</Link></>}
           </div>
           <div className="card lg"><div className="h"><b>How it works</b></div><div className="kv"><span>1</span><b>Share your code or link with another creative</b></div><div className="kv"><span>2</span><b>They join and start a paid plan</b></div><div className="kv"><span>3</span><b>You both get 10% off</b></div>{profile?.referred_by_code ? <p className="note2" style={{ marginTop: 8 }}>You joined with code {profile.referred_by_code}.</p> : null}</div>

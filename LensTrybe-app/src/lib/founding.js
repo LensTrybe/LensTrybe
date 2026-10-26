@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../backend/supabaseClient'
 import { LIVE } from './mode'
 
-// How many of the hundred founding places are taken, from founding_places_used() (a place is taken
+// How many founding places are taken across Australia (100 in every state, 800 in all), from
+// founding_places_used() (a place is taken
 // when a code is redeemed). The demo shows a made-up number. null while loading, so a page never
 // flashes a wrong count.
 let cache = null

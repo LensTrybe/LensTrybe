@@ -7,6 +7,7 @@ import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { planLabel } from '../../backend/tierFeatures'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Team: seats in the workspace. Who is in, who is invited, what each one can see, and which roles are
 // offered when you invite. Seats come from the plan; the owner takes the first one.
@@ -67,7 +68,7 @@ function TeamLive() {
       <div className="vh"><div><h1>Team</h1><p>Team is part of Trybe Studio. Bring in up to four people: second shooters, editors, an assistant.</p></div><div className="acts"><Link className="btn w" to="/app/subscription">See plans</Link></div></div>
       <div className="grid"><div className="card lg s7"><div className="h"><b>How it works on Trybe Studio</b></div><p className="note2">You invite someone by email. They accept and get their own LensTrybe workspace on Trybe Studio, and they show on your team with their role. They don't see your clients, jobs or money.</p><div className="acts" style={{ marginTop: 12 }}><Link className="btn g" to="/app/subscription">Move up to Trybe Studio</Link></div></div></div>
     </section>)
-  if (!d) return <section className="view"><div className="vh"><div><h1>Team</h1><p>Loading your team…</p></div></div></section>
+  if (!d) return <section className="view"><div className="vh"><div><h1>Team</h1><p>You plus up to {MAX_TEAM} people on your Trybe Studio team. Each one gets their own LensTrybe workspace; they don't see yours.</p></div></div><SkRows n={3} label="Loading your team" /></section>
   const age = r => daysBetween(ymd(r.created_at), TODAY)
   const invites = d.invites.map(r => ({ ...r, expired: age(r) >= TTL_DAYS }))
   const used = d.members.length + invites.filter(r => !r.expired).length, free = Math.max(0, MAX_TEAM - used)

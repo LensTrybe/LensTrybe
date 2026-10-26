@@ -9,6 +9,7 @@ import { CREATIVE_TYPES } from '../../backend/creativeTypes'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
 import { useSite, jobsOpen, untilLabel } from '../../lib/site'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Job board: briefs from clients on lenstrybe.com and jobs other creatives cannot take. Sorted by fit,
 // filtered by what you do and how far you go, replied to with a quote that opens a thread. Every reply
@@ -122,7 +123,7 @@ function JobsLive() {
     const by = { new: (x, y) => x.posted < y.posted ? 1 : -1, soon: (x, y) => (x.d || '9') < (y.d || '9') ? -1 : 1, budget: (x, y) => y.b - x.b }[sort]
     return a.slice().sort(by)
   }, [d, tab, ct, where, sort, q, hiddenIds.join()]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!d) return <section className="view jobs"><div className="vh"><div><h1>Job board</h1><p>Loading the board…</p></div></div></section>
+  if (!d) return <section className="view jobs"><div className="vh"><div><h1>Job board</h1><p>Briefs from clients on LensTrybe, and jobs other creatives could not take. Reply with a quote; if they accept, a thread opens. Nothing is taken from what you earn.</p></div></div><SkCards n={4} min={320} pic={90} label="Loading the board" /></section>
   const cur = tab === 'replies' ? (list.find(r => r.id === sel) || list[0]) : (list.find(j => j.id === sel) || list[0])
   const j = tab === 'replies' ? cur?.j : cur, mine = tab === 'replies' ? cur : null
   const month = TODAY.slice(0, 7), won = replies.filter(r => r.st === 'accepted')

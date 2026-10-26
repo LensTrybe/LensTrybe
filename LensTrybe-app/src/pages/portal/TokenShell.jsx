@@ -30,7 +30,8 @@ export function TokenState({ kicker, title, children }) {
 }
 
 export function Loading({ text = 'One moment.' }) {
-  return <TokenShell><p className="fine" style={{ textAlign: 'center', paddingTop: 120 }}>{text}</p></TokenShell>
+  // The shape of the document that is opening, not a line of text (26 Oct 2026).
+  return <TokenShell><div className="pjob lg tstate" role="status" aria-busy="true" aria-label={text} style={{ display: 'grid', gap: 14 }}><span className="sk t" style={{ width: 120 }} /><span className="sk h" style={{ width: '70%' }} /><span className="sk t" style={{ width: '92%' }} /><span className="sk t" style={{ width: '80%' }} /><span className="sk" style={{ height: 160, borderRadius: 16, marginTop: 6 }} /></div></TokenShell>
 }
 
 export function NotOurs({ what = 'link' }) {

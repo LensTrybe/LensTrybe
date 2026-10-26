@@ -12,13 +12,24 @@ const Ctx = createContext({ open: () => {}, confirm: () => {}, close: () => {} }
 
 export function SheetProvider({ children }) {
   const [sh, setSh] = useState(null), [v, setV] = useState({}), [on, setOn] = useState(false), [err, setErr] = useState(null), [busy, setBusy] = useState(false), [busyText, setBusyText] = useState('')
-  const first = useRef()
+  const first = useRef(), sheetEl = useRef(null), drag = useRef(null)
   const close = useCallback(() => { setBusy(false); setOn(false); setTimeout(() => setSh(null), 260) }, [])
   const open = useCallback(cfg => {
     const init = {}; (cfg.fields || []).forEach(f => { init[f.k] = f.value ?? (f.type === 'toggle' ? false : f.type === 'chips' ? [] : '') })
     setV(init); setErr(null); setSh(cfg); requestAnimationFrame(() => { setOn(true); setTimeout(() => first.current?.focus(), 80) })
   }, [])
   const confirm = useCallback(cfg => open({ ...cfg, fields: [], submit: cfg.onYes }), [open])
+  // Phone: pull the sheet down by its header to close it (26 Oct 2026). A short fast flick or a
+  // pull past 110px closes; anything less springs back. Not while it is saving.
+  const phone = () => typeof matchMedia === 'function' && matchMedia('(max-width: 640px)').matches
+  const dStart = e => { if (!phone() || busy || !sheetEl.current) return; drag.current = { y: e.touches[0].clientY, t: Date.now(), dy: 0 }; sheetEl.current.style.transition = 'none' }
+  const dMove = e => { const d = drag.current; if (!d || !sheetEl.current) return; d.dy = Math.max(0, e.touches[0].clientY - d.y); sheetEl.current.style.transform = `translateY(${d.dy}px)` }
+  const dEnd = () => {
+    const d = drag.current, el = sheetEl.current; drag.current = null; if (!d || !el) return
+    el.style.transition = ''
+    const fast = d.dy / Math.max(1, Date.now() - d.t) > 0.6
+    if (d.dy > 110 || (fast && d.dy > 40)) { el.style.transform = 'translateY(100%)'; close() } else el.style.transform = ''
+  }
   useEffect(() => { if (!sh) return; const k = e => { if (e.key === 'Escape') close() }; addEventListener('keydown', k); return () => removeEventListener('keydown', k) }, [sh, close])
   const set = (k, x) => setV(o => { const f = (sh?.fields || []).find(y => y.k === k); const n = { ...o, [k]: x }; return f?.effect ? { ...n, ...(f.effect(x, n) || {}) } : n })
   const go = e => {
@@ -59,8 +70,9 @@ export function SheetProvider({ children }) {
     <Ctx.Provider value={{ open, confirm, close }}>
       {children}
       {sh && <div className={'sheetbk' + (on ? ' on' : '') + (sh.center ? ' center' : '')} onMouseDown={e => { if (e.target === e.currentTarget) close() }}>
-        <form className={'sheet' + (on ? ' on' : '') + (sh.wide ? ' wide' : '') + (sh.center ? ' center' : '')} role="dialog" aria-modal="true" aria-labelledby="sheet-t" onSubmit={go}>
-          <div className="sh-h"><div><h2 id="sheet-t">{sh.title}</h2>{sh.sub && <p>{sh.sub}</p>}</div><button type="button" className="x" aria-label="Close" onClick={close}><Icon name="x" size={16} /></button></div>
+        <form ref={sheetEl} className={'sheet' + (on ? ' on' : '') + (sh.wide ? ' wide' : '') + (sh.center ? ' center' : '')} role="dialog" aria-modal="true" aria-labelledby="sheet-t" onSubmit={go}>
+          <span className="grab" aria-hidden="true" onTouchStart={dStart} onTouchMove={dMove} onTouchEnd={dEnd} onTouchCancel={dEnd} />
+          <div className="sh-h" onTouchStart={dStart} onTouchMove={dMove} onTouchEnd={dEnd} onTouchCancel={dEnd}><div><h2 id="sheet-t">{sh.title}</h2>{sh.sub && <p>{sh.sub}</p>}</div><button type="button" className="x" aria-label="Close" onClick={close}><Icon name="x" size={16} /></button></div>
           <div className="sh-b">
             {sh.body && <div className="sh-body">{typeof sh.body === 'function' ? sh.body(v) : sh.body}</div>}
             {sh.lumi && <div className="tlumi"><span className="lm" /><div>{sh.lumi}</div></div>}

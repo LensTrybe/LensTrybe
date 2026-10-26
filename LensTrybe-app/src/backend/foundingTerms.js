@@ -1,4 +1,5 @@
-// The Founding Creative Agreement: the terms for the Founding 100.
+// The Founding Creative Agreement: the terms for the Founding 100 (100 in every state and
+// territory since 25 October 2026).
 //
 // Single source for the public page (/founding-agreement) and the full text shown inside
 // the signup step next to the tick box. When the wording changes, bump
@@ -8,13 +9,13 @@
 // Body format (rendered by LegalBody): blank lines separate blocks, lines starting with
 // "• " make a list, **text** is bold and [text](/path) is a link.
 
-export const FOUNDING_TERMS_VERSION = '2026-09-28'
-export const FOUNDING_TERMS_UPDATED = '28 September 2026'
+export const FOUNDING_TERMS_VERSION = '2026-10-25'
+export const FOUNDING_TERMS_UPDATED = '25 October 2026'
 export const FOUNDING_TERMS_TITLE = 'Founding Creative Agreement'
 
 export const FOUNDING_TERMS_INTRO = `**The terms for the Founding 100.**
 
-You've been personally invited to be one of the first 100 creatives on LensTrybe. This is a genuine partnership: we give you our best tools for free while we grow, and in return you help us prove the platform with real work. This agreement sets out exactly what you get, what we ask, and what happens if things change.
+You've been personally invited to be one of the first 100 creatives on LensTrybe in your state or territory. Every Australian state and territory has its own 100 founding places. This is a genuine partnership: we give you our best tools for free while we grow, and in return you help us prove the platform with real work. This agreement sets out exactly what you get, what we ask, and what happens if things change.
 
 It applies if you create your LensTrybe account with a founding code and tick the box to accept it. It sits alongside our [Terms and Conditions](/terms), [Privacy Policy](/privacy) and [Refund Policy](/refunds), which also apply. If this agreement and the Terms conflict, this agreement applies to the extent of the conflict.
 
@@ -24,8 +25,9 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'who',
     title: '1. Who can join',
-    body: `• The founding deal is offered by invitation only, at LensTrybe's discretion, and there are no more than 100 places.
-• **We invite more creatives than there are places, and the places go to the first 100 who use their code.** Holding a code does not reserve a place. If the 100 are taken before you use yours, you still join on the same locked rate and the same terms, with 6 months free instead of 12 and without the Founding Creative badge. Section 2 sets out both.
+    body: `• The founding deal is offered by invitation only, at LensTrybe's discretion, and there are 100 founding places in each Australian state and territory.
+• **Your invite says which state or territory your place counts in**, usually where you are based, and that does not change if you later move.
+• **We invite more creatives than there are places, and the places go to the first 100 in each state or territory who use their code.** Holding a code does not reserve a place. If your state's 100 are taken before you use yours, you still join on the same locked rate and the same terms, with 6 months free instead of 12 and without the Founding Creative badge. Section 2 sets out both.
 • Your founding code is personal to you, works once, can't be transferred or sold, and expires 14 days after we send it.
 • One founding account per person or business.
 • You must be 18 or older and running a genuine creative business in Australia.
@@ -34,9 +36,9 @@ export const FOUNDING_TERMS_SECTIONS = [
   {
     id: 'you-get',
     title: '2. What you get',
-    body: `• **Trybe Complete free, for 12 months or 6.** Full access to our Trybe Complete plan (previously called Expert, normally $74.99 a month), free from the day you create your account. If you are one of the first 100 to use a founding code, that is 12 months. If the 100 places are already taken when you use yours, it is 6 months. Everything else below is the same either way, apart from the badge. Your dashboard shows the date your free period ends, and we email you about 7 days before.
+    body: `• **Trybe Complete free, for 12 months or 6.** Full access to our Trybe Complete plan (previously called Expert, normally $74.99 a month), free from the day you create your account. If you are one of the first 100 in your state or territory to use a founding code, that is 12 months. If your state's 100 places are already taken when you use yours, it is 6 months. Everything else below is the same either way, apart from the badge. Your dashboard shows the date your free period ends, and we email you about 7 days before.
 • **$49 a month for life after that.** When your free period ends, your Trybe Complete plan continues at a locked founding rate of $49 a month, or $588 a year if you choose annual billing. It won't go up for as long as you keep your founding deal.
-• **A permanent Founding Creative badge** on your profile, for the first 100 to use a code. It stays for life, even if your founding deal ends. If the places were already taken when you used yours, you don't get the badge.
+• **A permanent Founding Creative badge** on your profile, for the first 100 in each state or territory to use a code. It stays for life, even if your founding deal ends. If your state's places were already taken when you used yours, you don't get the badge.
 • **Zero commission, always.** You keep 100% of what you earn. LensTrybe never takes a cut of your work.
 • **A real say.** Founding creatives get a direct line to us and help shape what we build next.`,
   },

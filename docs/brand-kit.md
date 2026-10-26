@@ -98,7 +98,7 @@ Status colours for fills and tints: blue `#4A9EFF` (sent, new), amber `#f59e0b` 
 - **Instrument Serif, italic, weight 400**: only for the **accent phrase**, the last words of a headline, in `<em>`. Loaded as `Instrument Serif:ital@1`.
   - On dark: filled with the mint, rose, lilac gradient (`background-clip: text`).
   - On light sections: the same serif italic in a muted ink colour (Ink 2 or Ink 3), not a gradient.
-  - One accent phrase per headline, always at the end, usually two or three words with the full stop inside: "100 founding places. *Be one.*", "Keep 100% of *every job.*", "Pays for itself with *one booking.*", "The first hundred creatives *on LensTrybe.*", "Short answers, *no asterisks.*"
+  - One accent phrase per headline, always at the end, usually two or three words with the full stop inside: "100 founding places. *Be one.*", "Keep 100% of *every job.*", "Pays for itself with *one booking.*", "The first hundred in *every state.*", "Short answers, *no asterisks.*"
 - **Hero headline (h1):** Inter 600, `clamp(40px, 7vw, 104px)`, letter spacing `-0.045em`, line height 1, white on the dark opener with a soft shadow. Written as two lines; each line rises into place on load.
 - **Section headline (h2):** Inter 500, `clamp(34px, 5vw, 72px)`, letter spacing `-0.04em`.
 - **All headings:** letter spacing about `-0.03em`, line height about 1.05, balanced wrapping, sentence case.
@@ -157,8 +157,8 @@ Build them like the dark opener, as in the approved Founding 100 ads (`meta-ads/
 - Australian English: colour, organise, licence (noun), practise (verb). Australian dollars, GST included.
 - Sentence case headings. Short, direct, warm, a little playful. No corporate speak.
 - **Plans (public names):** Trybe Free (free), Trybe Essential ($24.99 a month), Trybe Complete ($74.99 a month), Trybe Studio ($149.99 a month). Annual is ten months for twelve. Trybe Studio is the top plan.
-- **Offer:** any paid plan is free for the first 14 days (since 21 October 2026; it was three months before). Say "14 days free". A partner code giving 30 days free is planned but not built yet, so never promote it until it is live. Founding creatives keep their own terms (12 months, or 6 after the first 100). Clients use LensTrybe free, always.
-- **Founding:** the first 100 creatives who redeem a founding code get Trybe Complete free for twelve months, then $49 a month for life, plus the permanent Founding Creative badge. After the first 100: six months free, the same $49 for life, no badge. Never promise the twelve months or the badge to everyone.
+- **Offer:** any paid plan is free for the first 14 days (since 21 October 2026; it was three months before). Say "14 days free". A partner code giving 30 days free is planned but not built yet, so never promote it until it is live. Founding creatives keep their own terms (12 months, or 6 after their state's first 100). Clients use LensTrybe free, always.
+- **Founding:** 100 founding places in every state and territory (NSW, VIC, QLD, WA, SA, TAS, ACT, NT; 800 in all, since 25 October 2026). Each invite says which state's 100 it counts in. The first 100 in each state who redeem a founding code get Trybe Complete free for twelve months, then $49 a month (or $588 a year) for life, plus the permanent Founding Creative badge. After a state's first 100: six months free, the same $49 for life, no badge. Creatives who join without a code get 14 days free, then the normal price. Never promise the twelve months or the badge to everyone.
 - **Who can join:** photographers and videographers only for now. Other disciplines can be named as coming later, never as able to join now.
 - Never say "vetted". Never name or compare other platforms in marketing. Call it a platform or marketplace, not an app.
 - Key lines: No commission, ever. Keep 100% of every job. One login, not five apps. Connect. Capture. Create.

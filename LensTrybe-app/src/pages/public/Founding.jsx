@@ -10,10 +10,10 @@ import { foundingApply } from '../../lib/account'
 // The terms live at /legal/founding; this page sells it and takes applications. Nobody signs up
 // from here without a code: an application is a request, a person decides, a code arrives by email.
 const GET = [
-  ['12 months of Trybe Complete, free', 'The top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The twelve months go to the first hundred creatives who use a code; after that it is six months, on the same price.'],
+  ['12 months of Trybe Complete, free', 'The top plan from the day you join, normally $74.99 a month. Nothing is charged for a year. The twelve months go to the first hundred creatives in each state who use a code; after that it is six months, on the same price.'],
   ['$49 a month after that, for life', 'Locked in. It never goes up while you keep your founding deal. Everyone joining later pays $74.99.'],
   ['Zero commission, always', 'You keep 100% of every job. LensTrybe makes money from subscriptions, never from your work.'],
-  ['A permanent Founding Creative badge', 'On your profile for good, even if you later change plans. The badge goes to the first hundred who use a code.'],
+  ['A permanent Founding Creative badge', 'On your profile for good, even if you later change plans. The badge goes to the first hundred in each state who use a code.'],
   ['A real say in what gets built', 'A direct line to Michael. Founding creatives shape the roadmap, and the workspace shows what they asked for.'],
   ['Trybe Studio spotlight for the first quarter', 'Your profile sits in the home page rotation for the first ninety days after launch, the same slot Trybe Studio pays for.'],
 ]
@@ -33,7 +33,8 @@ const REGIONS = ['South East Queensland', 'Brisbane', 'Gold Coast', 'Sunshine Co
 export default function Founding() {
   const nav = useNavigate()
   const taken = useFoundingTaken()
-  const left = taken == null ? null : Math.max(0, 100 - taken)
+  // 100 founding places in every state and territory (25 Oct 2026): eight states, 800 places.
+  const left = taken == null ? null : Math.max(0, 800 - taken)
   const cv = useRef(null)
   useEffect(() => { const l = mountLens(cv.current); l.layout({ cy: .5, r: .3 }); return () => l.destroy() }, [])
   const [code, setCode] = useState(''), [cerr, setCerr] = useState('')
@@ -60,9 +61,9 @@ export default function Founding() {
       <div className="in">
       <div className="fdhero">
         <p className="eb">Invitation only</p>
-        <h1><span className="ln"><span>The first hundred</span></span> <span className="ln"><span>creatives <em>on LensTrybe.</em></span></span></h1>
-        <p className="sub">A home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever. Michael is hand-picking a hundred creatives to start it with, and the deal they get never comes back.</p>
-        <div className="fdcount lg d"><div className="n"><b>{left ?? '…'}</b><span>of 100 founding places left</span></div><div className="bar"><i style={{ width: (left == null ? 0 : 100 - left) + '%' }} /></div><small>A place is taken when a code is used, not when it is sent. More codes go out than there are places, so holding one does not hold a place.</small></div>
+        <h1><span className="ln"><span>The first hundred</span></span> <span className="ln"><span>in <em>every state.</em></span></span></h1>
+        <p className="sub">A home for Australian photographers and videographers where you keep everything you earn. No commission on your jobs, ever. Michael is hand-picking a hundred creatives in every state and territory to start it with, and the deal they get never comes back.</p>
+        <div className="fdcount lg d"><div className="n"><b>{left ?? '…'}</b><span>of 800 founding places left</span></div><div className="bar"><i style={{ width: (left == null ? 0 : (800 - left) / 8) + '%' }} /></div><small>One hundred in every state and territory. A place is taken when a code is used, not when it is sent. More codes go out than there are places, so holding one does not hold a place.</small></div>
         <div className="ctas"><button className="btn w lg" onClick={() => document.getElementById('fcode')?.focus()}>I have a code <Icon name="arrow" size={14} /></button><button className="btn g lg" onClick={toApply}>Ask for a code</button></div>
       </div>
 
@@ -79,7 +80,7 @@ export default function Founding() {
 
       <section className="fdsec rv"><h2>What you get</h2><div className="fdgrid">{GET.map(([t, d]) => <div key={t} className="lg fdcard"><b>{t}</b><p>{d}</p></div>)}</div></section>
       <section className="fdsec rv"><h2>What is asked in return</h2><p className="lede">This is a partnership, not a giveaway. A directory of half-finished profiles helps nobody, so the founding deal comes with three commitments.</p><div className="fdgrid three">{ASK.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Fall behind and you get an email and fourteen days to put it right. Nothing happens silently, and if the founding deal ends your account stays, it just moves to the standard price. The full terms are in the <Link to="/legal/founding">Founding Creative Agreement</Link>.</p></section>
-      <section className="fdsec rv"><h2>How it works</h2><div className="fdgrid three">{HOW.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Open to photographers and videographers across Australia. Anyone redeeming after the first hundred: Trybe Complete free for six months, the same $49 a month for life, no badge.</p></section>
+      <section className="fdsec rv"><h2>How it works</h2><div className="fdgrid three">{HOW.map(([t, d], i) => <div key={t} className="lg fdcard"><i>{i + 1}</i><b>{t}</b><p>{d}</p></div>)}</div><p className="fine">Open to photographers and videographers across Australia. Anyone redeeming after their state's first hundred: Trybe Complete free for six months, the same $49 a month for life, no badge.</p></section>
 
       <section id="apply" className="fdapply rv">
         <div className="fdah"><h2>Want one of the places?</h2><p className="lede">Say who you are and show the work. Michael reads every one of these himself, and if you are a fit a code is on its way within a few days.</p></div>

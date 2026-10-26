@@ -12,6 +12,7 @@ import { isMonthlyMessageLimitError, MONTHLY_MESSAGE_LIMIT_EXCEEDED_MESSAGE } fr
 import { uploadAttachment } from './attachments'
 import { event } from './analytics'
 import { PLACES } from './places'
+import { imageUrl } from '../backend/imageUrl'
 
 const iso = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0')
 const today = () => iso(new Date())
@@ -235,7 +236,7 @@ export function shapeProfile(p, extra = {}) {
 const PUB = 'id, business_name, tagline, bio, city, state, location, skill_types, specialties, specialties_by_type, avatar_url, cover_url, subscription_tier, founding_member, show_founding_badge, is_available, years_experience, instagram_url, tiktok_url, facebook_url, linkedin_url, twitter_url, website, site_service_areas, custom_domain, created_at, has_insurance, has_blue_card, has_police_check, has_wwvp, has_drone_licence, has_other, other_credential_name'
 // A creative who already has an account uses a founding code from the Founding hub (2 Oct 2026),
 // so nobody has to delete their account and sign up again. redeem_founding_code grants exactly what
-// sign-up would: 12 months and the badge for the first 100, then 6 months; a comped code its own tier.
+// sign-up would: 12 months and the badge for the first 100 in the code's state, then 6 months; a comped code its own tier.
 export async function redeemFoundingCode(code, termsVersion) {
   const c = String(code || '').trim().toUpperCase()
   const { data, error } = await supabase.rpc('redeem_founding_code', { p_code: c, p_terms_version: termsVersion || null, p_ua: (typeof navigator !== 'undefined' ? navigator.userAgent || '' : '').slice(0, 400) })
@@ -381,7 +382,15 @@ export async function saveMoneyDoc(kind, inv, total, me, raw) {
   if (error) throw new Error(docError(error, kind)); return data
 }
 // Email it to the client (send-quote / send-invoice / send-contract) and mark it sent.
-export async function sendDocLive(kind, id) {
+// A second tap while a send is still going joins the first send instead of starting another
+// (26 Oct 2026); the functions also pass Resend an idempotency key for retries.
+const sending = new Map()
+export function sendDocLive(kind, id) {
+  const k = kind + ':' + id
+  if (!sending.has(k)) sending.set(k, sendDocOnce(kind, id).finally(() => sending.delete(k)))
+  return sending.get(k)
+}
+async function sendDocOnce(kind, id) {
   const fn = kind === 'q' ? 'send-quote' : kind === 'inv' ? 'send-invoice' : 'send-contract'
   const key = kind === 'q' ? 'quote_id' : kind === 'inv' ? 'invoice_id' : 'contract_id'
   const { data, error } = await supabase.functions.invoke(fn, { body: { [key]: id } })
@@ -877,6 +886,21 @@ export async function setSiteAddress(uid, slug) {
 }
 const SITE_PROF = PUB + ', brand_primary_color, brand_logo_url, site_primary_color, site_logo_url, site_heading_font, site_body_font, site_seo_title, is_admin, pending_deletion'
 // Public: /site/<address or id> and /creatives/<id>. Returns null when there is no such creative.
+// The public profile (Profile.jsx), cached for a minute (26 Oct 2026). Pointing at or touching a
+// directory card loads it and its cover photo before the click, so the profile opens straight
+// away; a visit shows the cached copy at once. The workspace keeps calling loadSite directly.
+const siteCache = new Map()
+const warmPhoto = u => { if (!u || typeof Image === 'undefined') return; try { const i = new Image(); i.decoding = 'async'; i.src = imageUrl(u, 1600) || u } catch { /* only a preload */ } }
+export function prefetchSite(slug) {
+  if (!slug) return
+  const hit = siteCache.get(slug)
+  if (hit && Date.now() - hit.at < 60e3) return
+  const e = { at: Date.now(), v: undefined, p: null }
+  e.p = loadSite(slug).then(v => { e.v = v; warmPhoto(v?.c?.cover || v?.c?.photos?.[0]?.url); return v }).catch(err => { siteCache.delete(slug); throw err })
+  siteCache.set(slug, e)
+}
+export const peekSite = slug => siteCache.get(slug)?.v
+export function loadSiteCached(slug) { prefetchSite(slug); return siteCache.get(slug).p }
 export async function loadSite(slug) {
   const s = String(slug || '').trim().toLowerCase(); if (!s) return null
   const q = supabase.from('profiles').select(SITE_PROF)

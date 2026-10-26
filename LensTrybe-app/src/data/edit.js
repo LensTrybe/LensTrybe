@@ -48,7 +48,7 @@ export const ISSUES = [
         "**3.** Send it. If the client accepts, a conversation opens with them, and they're added to your clients automatically.",
       ], tip: { h: 'Reply early, keep it short', p: 'A short, specific message that mentions their date and their brief stands out.' } },
       { k: 'founding', label: 'Founding 100', h: 'Help shape *LensTrybe*', body: [
-        "We're inviting 100 Australian creatives to help shape LensTrybe. Founding creatives get 12 months of Trybe Complete free, then $49 a month locked in for life, plus a permanent Founding Creative badge.",
+        "We're inviting 100 creatives in every Australian state and territory to help shape LensTrybe. The first 100 in each state get 12 months of Trybe Complete free, then $49 a month locked in for life, plus a permanent Founding Creative badge.",
         "In return we ask for a finished profile within seven days, your next three jobs run through the platform, and a line of feedback each month.",
         "Places are invitation only. If you'd like one, email **connect@lenstrybe.com** and tell me about your work.",
       ] },

@@ -88,14 +88,14 @@ export function FoundingBand() {
       <Still seed={21} mood="night" />
       <div className="a">
         <p className="eb p">Founding creative programme</p>
-        <h2>The first hundred set the tone.</h2>
+        <h2>The first hundred in every state set the tone.</h2>
         <p>Redeem a founding code and get Trybe Complete free for twelve months, then $49 a month locked for life, plus the permanent Founding Creative badge. In return: finish your profile in a week, run your next three jobs through the platform, and tell us one honest thing a month.</p>
         <Link className="pill" to="/founding">Apply for a code <Icon name="arrow" size={14} /></Link>
       </div>
       <div className="b">
         <div className="k"><b>$0 for 12 months</b><span>Trybe Complete, normally $74.99 a month</span></div>
         <div className="k"><b>$49 a month, for life</b><span>After the first year. Never $74.99.</span></div>
-        <div className="k"><span className="cnt"><b>{taken ?? '…'}</b> of 100 places redeemed. A place is claimed when a code is redeemed, not when it is sent.</span><div className="meter"><i style={{ width: Math.min(100, taken || 0) + '%' }} /></div></div>
+        <div className="k"><span className="cnt"><b>{taken ?? '…'}</b> of 800 places redeemed, 100 in every state and territory. A place is claimed when a code is redeemed, not when it is sent.</span><div className="meter"><i style={{ width: Math.min(100, (taken || 0) / 8) + '%' }} /></div></div>
       </div>
     </div>
   )

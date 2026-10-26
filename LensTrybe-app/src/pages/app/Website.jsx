@@ -8,6 +8,7 @@ import { LIVE } from '../../lib/mode'
 import { useAuth } from '../../backend/AuthContext'
 import * as live from '../../lib/live'
 import { planLabel } from '../../backend/tierFeatures'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Website: your site, built from your profile and brand kit. One page on Trybe Free (built for you),
 // Home and Gallery on Trybe Essential, Home, About, Gallery and Contact on Trybe Complete and Studio.
@@ -188,7 +189,7 @@ function WebsiteLive() {
         <div className="s7 side sticky">
           <div className="card lg sitep">
             <div className="chrome"><span /><span /><span /><i>lenstrybe.com/site/{slug}{pg && pg.id !== 'home' ? ' · ' + pg.n : ''}</i></div>
-            {c ? <SiteRender s={{ brand: live.siteBrand(P || {}), pages }} page={pg?.id} onPage={setSel} compact live={{ c }} /> : <div className="tempty" style={{ padding: 40 }}>Loading your site.</div>}
+            {c ? <SiteRender s={{ brand: live.siteBrand(P || {}), pages }} page={pg?.id} onPage={setSel} compact live={{ c }} /> : <div style={{ padding: 24, display: 'grid', gap: 18 }}><span className="sk" style={{ height: 220, borderRadius: 18 }} /><SkLines n={3} label="Loading your site" /></div>}
           </div>
         </div>
       </div>

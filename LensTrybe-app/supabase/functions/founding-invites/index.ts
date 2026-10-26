@@ -1,11 +1,16 @@
 // Supabase Edge Function: founding-invites
 //
-// The Founding Invites tool. Michael invites up to 100 founding creatives, each with a
-// personal single-use code (FIRSTNAME-XXXX) sent in a personal email.
+// The Founding Invites tool. Michael invites founding creatives, each with a personal
+// single-use code (FIRSTNAME-XXXX) sent in a personal email.
+//
+// 25 Oct 2026: 100 founding places in every state and territory (800 in all). Each invite says
+// which state's 100 it counts in (founding_invites.state, required on a new invite). The first
+// 100 to redeem in a state get 12 months and the badge, then 6 months and no badge; codes keep
+// going out after a state's 100 are used, for that second tier.
 //
 //  Admin actions (JWT of a profile with is_admin = true, or LensTrybe HQ via hq-api):
 //    list                      invites + places used / cap + redeemed creatives' deal status
-//    create  {invites, send}   add one or many invites (name, email, skill_type, region, note)
+//    create  {invites, send}   add one or many invites (name, email, skill_type, state, region, note)
 //    send    {id, manual}      send, resend or re-open an invite: the code is live for 14 days
 //                              (manual: Michael shares the link himself, no email is sent)
 //    update  {id, ...fields}   fix a name, email, type, region or note on a live invite
@@ -19,9 +24,9 @@
 //    marks unused codes past expires_at as expired, and sends one reminder once an invite
 //    has 7 days or less left.
 //
-//  Places: a live invite (unused, not expired) or a founding creative who still has the deal
-//  takes a place. founding_places_used() in the database is the source of truth and a
-//  trigger on founding_invites refuses anything that would go over the cap.
+//  Places: a founding creative who still has the deal takes a place in their state's 100.
+//  founding_places_used(state) and founding_places_by_state() in the database are the source
+//  of truth; a code does not hold a place, so invites are never refused for being over.
 //
 //  Consent and unsubscribe (Spam Act 2003):
 //    Invites go to business addresses published on the recipient's own website, which is
@@ -176,14 +181,19 @@ async function sendEmail(to: string, subject: string, html: string, unsubToken: 
 // ---------------------------------------------------------------------------
 // Data helpers
 // ---------------------------------------------------------------------------
-const INVITE_COLS = 'id, code, email, full_name, first_name, region, skill_type, personal_note, status, sent_at, last_sent_at, send_count, reminded_at, expires_at, cancelled_at, redeemed_by, redeemed_at, email_error, notes, created_at'
+const INVITE_COLS = 'id, code, email, full_name, first_name, region, state, skill_type, personal_note, status, sent_at, last_sent_at, send_count, reminded_at, expires_at, cancelled_at, redeemed_by, redeemed_at, email_error, notes, created_at'
 
+export const STATES = ['NSW', 'VIC', 'QLD', 'WA', 'SA', 'TAS', 'ACT', 'NT']
+const stateCode = (s: unknown) => { const u = String(s ?? '').trim().toUpperCase(); return STATES.includes(u) ? u : null }
+
+// Places across Australia and per state: { used, cap (all states), per_state, available, by_state }.
 async function places(sb: SupabaseClient) {
   const { data: used } = await sb.rpc('founding_places_used')
   const { data: cap } = await sb.rpc('founding_cap')
+  const { data: byState } = await sb.rpc('founding_places_by_state')
   const u = Number(used ?? 0)
   const c = Number(cap ?? 100)
-  return { used: u, cap: c, available: Math.max(0, c - u) }
+  return { used: u, cap: c * STATES.length, per_state: c, available: Math.max(0, c * STATES.length - u), by_state: (byState ?? {}) as Record<string, { used: number, cap: number, available: number }> }
 }
 
 function isFull(err: { message?: string } | null) {
@@ -247,7 +257,7 @@ async function sendInvite(sb: SupabaseClient, inv: Record<string, any>, manual =
 
   // manual: Michael is sharing the link himself (text, DM). Start the clock, no email.
   const first = inv.first_name || firstNameOf(inv.full_name || '')
-  const err = manual ? null : await sendEmail(inv.email, inviteSubject(first), inviteEmail(first, inv.code, expires, inv.personal_note || '', unsubToken ? unsubscribeUrl(unsubToken) : null), unsubToken)
+  const err = manual ? null : await sendEmail(inv.email, inviteSubject(first), inviteEmail(first, inv.code, expires, inv.personal_note || '', unsubToken ? unsubscribeUrl(unsubToken) : null, inv.state || null), unsubToken)
   const now = new Date().toISOString()
 
   if (err) {
@@ -311,8 +321,9 @@ async function runCron(sb: SupabaseClient) {
   let reminded = 0
   let failed = 0
   let skipped = 0
-  const left = (await places(sb)).available
+  const byState = (await places(sb)).by_state
   for (const inv of due ?? []) {
+    const left = inv.state && byState[inv.state] ? byState[inv.state].available : null
     if (!inv.email) continue
     const sub = await subscriber(sb, inv.email)
     if (sub.optedOut) {
@@ -332,7 +343,7 @@ async function runCron(sb: SupabaseClient) {
     // two, which is the shape most likely to trip rate limiting and the hardest to read
     // in the logs when something does go wrong.
     if (reminded + failed > 0) await sleep(SEND_GAP_MS)
-    const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left, unsubscribeUrl(sub.token)), sub.token)
+    const err = await sendEmail(inv.email, reminderSubject(first, left), reminderEmail(first, inv.code, inv.expires_at, left, unsubscribeUrl(sub.token), inv.state || null), sub.token)
     if (err) {
       failed++
       await sb.from('founding_invites').update({ email_error: err }).eq('id', inv.id)
@@ -419,12 +430,13 @@ Deno.serve(async (req) => {
       const code = clean(body.code, 40) || `${codeStem(first)}-${randomSuffix()}`
       const expires = addDays(VALID_DAYS)
       const kind = body.kind === 'reminder' ? 'reminder' : 'invite'
-      const left = (await places(sb)).available
+      const st = stateCode(body.state)
+      const left = st ? ((await places(sb)).by_state[st]?.available ?? null) : null
       return json({
         subject: kind === 'reminder' ? reminderSubject(first, left) : inviteSubject(first),
         html: kind === 'reminder'
-          ? reminderEmail(first, code, expires, left, `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`)
-          : inviteEmail(first, code, expires, cleanNote(body.note), `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`),
+          ? reminderEmail(first, code, expires, left, `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`, st)
+          : inviteEmail(first, code, expires, cleanNote(body.note), `${SITE}/unsubscribe/00000000-0000-0000-0000-000000000000`, st),
       })
     }
 
@@ -445,21 +457,21 @@ Deno.serve(async (req) => {
         if (seen.has(email)) { problems.push({ row: i + 1, error: `${email} is listed twice` }); continue }
         seen.add(email)
         if (await emailTaken(sb, email)) { problems.push({ row: i + 1, error: `${email} already has a live invite or a founding account` }); continue }
+        const region = clean(r.region, 80) || null
+        let state = stateCode(r.state)
+        if (!state && region) { const { data: guess } = await sb.rpc('au_state_code', { p: region }); state = stateCode(guess) }
+        if (!state) { problems.push({ row: i + 1, error: `Pick the state ${full} is in. Each state has its own 100 places.` }); continue }
         prepared.push({
           full_name: full,
           first_name: firstNameOf(full),
           email,
           skill_type: clean(r.skill_type, 60) || null,
-          region: clean(r.region, 80) || null,
+          region,
+          state,
           personal_note: cleanNote(r.note) || null,
         })
       }
       if (problems.length) return json({ error: 'Some rows need fixing before anything is added.', problems }, 400)
-
-      const p = await places(sb)
-      if (prepared.length > p.available) {
-        return json({ error: p.available === 0 ? 'All founding places are taken.' : `Only ${p.available} founding place${p.available === 1 ? '' : 's'} left. You're adding ${prepared.length}.`, places: p }, 409)
-      }
 
       const created: Record<string, any>[] = []
       const failed: { email: string; error: string }[] = []
@@ -592,6 +604,7 @@ Deno.serve(async (req) => {
       }
       if (body.skill_type !== undefined) patch.skill_type = clean(body.skill_type, 60) || null
       if (body.region !== undefined) patch.region = clean(body.region, 80) || null
+      if (body.state !== undefined) { const st = stateCode(body.state); if (!st) return json({ error: 'Pick a state.' }, 400); patch.state = st }
       if (body.note !== undefined) patch.personal_note = cleanNote(body.note) || null
       if (Object.keys(patch).length === 0) return json({ invite: inv })
       const { data, error } = await sb.from('founding_invites').update(patch).eq('id', id).in('status', ['unused', 'expired']).select(INVITE_COLS).maybeSingle()

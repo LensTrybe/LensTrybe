@@ -8,6 +8,7 @@ import { imageUrl } from '../../backend/imageUrl'
 import * as live from '../../lib/live'
 import { TODAY, nice, daysBetween } from '../../lib/store'
 import { fmt } from '../../lib/format'
+import { SkLines, SkRows, SkCards } from '../../components/Skeleton'
 
 // Collaborate: the second shooters, editors and pilots you book onto jobs, what they are on, what they
 // are owed, and the jobs passed between creatives when someone is double booked. Every ask goes to the
@@ -104,7 +105,7 @@ function CollabLive() {
   // from a project's "Ask a creative"
   useEffect(() => { const pid = params.get('ask'); if (!d || !pid) return; setParams({}, { replace: true }); const pr = s.projects.find(x => String(x.id) === pid); if (!pr) return
     invite({ msg: 'Hi, are you free to help on ' + pr.n + (pr.d ? ' on ' + nice(pr.d, { weekday: 'long' }) : '') + (pr.at ? ' at ' + pr.at : '') + '? Let me know your rate and I can send the details.', then: c => c && F.upd('projects', pr.id, x => ({ crew: [...(x.crew || []), c.n + ' · asked ' + nice(TODAY)] })) }) }, [d]) // eslint-disable-line react-hooks/exhaustive-deps
-  if (!d) return <section className="view collab"><div className="vh"><div><h1>Collaborate</h1><p>Loading…</p></div></div></section>
+  if (!d) return <section className="view collab"><div className="vh"><div><h1>Collaborate</h1><p>Find second shooters, editors and pilots on LensTrybe, post what you need, and keep a crew you can ask first.</p></div></div><SkRows n={4} label="Loading" /></section>
   const inCrew = id => d.crewIds.includes(id)
   const crewToggle = pr => run('c' + pr.id, async () => { const on = !inCrew(pr.id); await live.toggleCrew(P.id, pr.id, on); await load(); toast(on ? pr.n + ' is in your crew.' : pr.n + ' is off your crew.') })
   const sentFor = cid => d.sent.find(i => i.collab?.id === cid)
@@ -157,7 +158,7 @@ function CollabLive() {
             {d.crew.length > 0 && <><div className="h" style={{ marginTop: 4 }}><b>Your crew</b><small className="lumi-by">{basic ? 'Invites are on Trybe Essential and above' : 'Invite them straight to a job'}</small></div>
               <div className="need">{d.crew.map(p => <div key={p.id} className="r"><Av p={p} /><div><b>{p.n}</b><small>{[p.skills.slice(0, 2).join(', '), [p.c, p.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'On LensTrybe'}</small></div><div className="do"><button className="y" onClick={() => invite({ to: p })}>Invite</button><Link className="lnk" to={'/creatives/' + p.id} target="_blank" rel="noopener noreferrer">Profile</Link><button disabled={!!busy} onClick={() => crewToggle(p)}>Remove</button></div></div>)}</div></>}
             <div className="h" style={{ marginTop: 18 }}><b>Find creatives</b><label className="tsearch" style={{ margin: 0, height: 34, width: 260 }}><Icon name="search" size={14} /><input value={q} onChange={e => setQ(e.target.value)} placeholder="Name or city" aria-label="Find creatives" /></label></div>
-            <div className="need">{(found || []).filter(p => !inCrew(p.id)).map(p => <div key={p.id} className="r"><Av p={p} /><div><b>{p.n}</b><small>{[p.skills.slice(0, 2).join(', '), [p.c, p.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'On LensTrybe'}</small></div><div className="do"><button className="y" disabled={!!busy} onClick={() => crewToggle(p)}>Add to crew</button><Link className="lnk" to={'/creatives/' + p.id} target="_blank" rel="noopener noreferrer">Profile</Link></div></div>)}{found && !found.filter(p => !inCrew(p.id)).length && <div className="tempty">{q ? 'Nobody matches that.' : 'Everyone listed is already in your crew.'}</div>}{!found && <div className="tempty">Loading…</div>}</div>
+            <div className="need">{(found || []).filter(p => !inCrew(p.id)).map(p => <div key={p.id} className="r"><Av p={p} /><div><b>{p.n}</b><small>{[p.skills.slice(0, 2).join(', '), [p.c, p.state].filter(Boolean).join(', ')].filter(Boolean).join(' · ') || 'On LensTrybe'}</small></div><div className="do"><button className="y" disabled={!!busy} onClick={() => crewToggle(p)}>Add to crew</button><Link className="lnk" to={'/creatives/' + p.id} target="_blank" rel="noopener noreferrer">Profile</Link></div></div>)}{found && !found.filter(p => !inCrew(p.id)).length && <div className="tempty">{q ? 'Nobody matches that.' : 'Everyone listed is already in your crew.'}</div>}{!found && <SkRows n={3} label="Loading" />}</div>
           </>}
         </div>
         {tab !== 'crew' && cur && <div className="s4 side">

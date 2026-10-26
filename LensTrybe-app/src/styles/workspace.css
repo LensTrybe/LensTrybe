@@ -2052,3 +2052,23 @@
 .ws .tl .e .new{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--sig);margin-left:6px;vertical-align:1px}
 .ws .sheet .tl .e.bc{align-items:start}
 .ws .sheet .tl .e.bc b,.ws .sheet .tl .e.bc small{white-space:normal}
+
+/* Bigger tap areas on touch screens (26 Oct 2026): the visible size stays, the area you can tap
+   grows to about 40px. Measured at 390px: filter chips 28px tall, the stage menu 24px, inline
+   card links 19px, gear checkboxes 13px. */
+@media (pointer:coarse){
+  .ws .tfilt button,.ws .stmenu .mb,.ws .card .h>a,.ws a.lnk,.ws .tour-f .skip,.ws .sh-h .x{position:relative}
+  .ws .tfilt button::after{content:'';position:absolute;inset:-6px -2px}
+  .ws .stmenu .mb::after{content:'';position:absolute;inset:-8px}
+  .ws .card .h>a::after,.ws a.lnk::after,.ws .tour-f .skip::after{content:'';position:absolute;inset:-11px -6px}
+  .ws .sh-h .x::after{content:'';position:absolute;inset:-5px}
+  .ws label.kt input,.ws .chk input{width:20px;height:20px}
+}
+
+/* Phone sheets close with a swipe down (26 Oct 2026): a grab bar shows where to hold. */
+.ws .sheet .grab{display:none}
+@media(max-width:640px){
+  .ws .sheet .grab{display:block;width:40px;height:5px;border-radius:3px;background:var(--line-2,rgba(255,255,255,.22));margin:10px auto -14px;flex:none}
+  .ws .sheet .sh-h{touch-action:none}
+}
+

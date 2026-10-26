@@ -36,7 +36,7 @@ export function Overview() {
         <Tile label="Clients" value={o.clients} sub={`${o.signups_7} new people this week`} />
         <Tile label="Paying" value={s.paying} sub={`${s.trialing} in their free period`} />
         <Tile label="Monthly revenue" value={money(s.mrr_minor)} sub={`${money(s.trial_mrr_minor)} more once free periods end`} tone="green" />
-        <Tile label="Founding places" value={`${o.founding?.used} / ${o.founding?.cap}`} sub={`${o.founding?.redeemed} signed up`} />
+        <Tile label="Founding places" value={`${o.founding?.used} / ${o.founding?.cap}`} sub={`${o.founding?.per_state || 100} in every state · ${o.founding?.redeemed} signed up`} />
         <Tile label="Open jobs" value={o.jobs?.open} sub={`${o.jobs?.replies_7} replies this week`} />
         <Tile label="Waitlist" value={o.waitlist} sub={<Link to="/founding?tab=waitlist">See who they are</Link>} />
         <Tile label="The Trybe Edit" value={o.edit_readers} sub="Opted-in readers" />
@@ -178,8 +178,8 @@ function Person({ id, me, onClose, onChanged }) {
         {can(me, 'admin') && <div className="hq-danger">
           {p && <div className="hq-setting"><div><b>Plan</b><small>Anything above what they pay for is recorded as complimentary, so billing can't undo it. This does not change what they are charged.</small></div>
             <select className="hq-input" value={(p.subscription_tier || 'basic').toLowerCase()} disabled={working} onChange={e => act('user_plan', { tier: e.target.value }, 'Plan changed to ' + PLAN[e.target.value] + '.')}>{Object.entries(PLAN).map(([k, l]) => <option key={k} value={k}>{l}</option>)}</select></div>}
-          {p && !p.founding_member && <div className="hq-setting"><div><b>Founding place</b><small>Emails them a founding code. They use it on the account they already have (Founding hub), so nothing is deleted and they sign up again for nothing. 12 months free and the badge while places last.</small></div>
-            <button className="hq-btn g sm" disabled={working} onClick={() => act('founding', { payload: { action: 'create', send: true, invites: [{ name: p.business_name || u.email, email: u.email, skill_type: (p.skill_types || [])[0] || null, region: p.state || null }] } }, 'Founding invite sent to ' + u.email + '.')}>Offer a founding place</button></div>}
+          {p && !p.founding_member && <div className="hq-setting"><div><b>Founding place</b><small>Emails them a founding code. They use it on the account they already have (Founding hub), so nothing is deleted and they sign up again for nothing. Counts in their state's 100: 12 months free and the badge while that state has places, then 6 months.</small></div>
+            <button className="hq-btn g sm" disabled={working} onClick={() => act('founding', { payload: { action: 'create', send: true, invites: [{ name: p.business_name || u.email, email: u.email, skill_type: (p.skill_types || [])[0] || null, state: p.state || null, region: p.city || p.state || null }] } }, 'Founding invite sent to ' + u.email + '.')}>Offer a founding place</button></div>}
           <div className="hq-setting"><div><b>{banned ? 'Suspended' : 'Suspend'}</b><small>{banned ? 'They cannot sign in. Nothing is deleted.' : 'Stops them signing in. Nothing is deleted and it can be undone.'}</small></div>
             {banned ? <button className="hq-btn g sm" disabled={working} onClick={() => act('user_unban', {}, 'They can sign in again.')}>Lift suspension</button> : <button className="hq-btn g sm" onClick={() => setAsk('ban')}>Suspend</button>}</div>
           <div className="hq-setting"><div><b>Delete account</b><small>Removes the login and everything tied to it, for good. Refused while they have a live subscription.</small></div><button className="hq-btn bad sm" onClick={() => setAsk('delete')}>Delete</button></div>

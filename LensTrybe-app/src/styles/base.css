@@ -7,6 +7,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 input,textarea,select{font:inherit}
 img,canvas,svg{max-width:100%;display:block}
 h1,h2,h3,h4{margin:0;letter-spacing:-.03em;line-height:1.05;text-wrap:balance}
+p,li,figcaption,blockquote{text-wrap:pretty}
 p{margin:0}
 :focus-visible{outline:2px solid var(--green);outline-offset:3px;border-radius:6px}
 ::selection{background:rgba(29,185,84,.35)}
@@ -31,6 +32,10 @@ p{margin:0}
 .chip.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .toast{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translate(-50%,-16px);opacity:0;padding:16px 24px;border-radius:18px;background:#14111a;color:#fff;font-size:15.5px;font-weight:500;line-height:1.4;z-index:200;box-shadow:0 20px 50px -20px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.12);transition:all .4s var(--ease);pointer-events:none;max-width:calc(100vw - 32px);text-align:center}
 .toast.on{opacity:1;transform:translate(-50%,0)}
+.toast.act{display:flex;align-items:center;gap:0;padding:10px 10px 10px 22px;pointer-events:auto}
+.toast button{margin-left:16px;min-height:36px;padding:0 16px;border-radius:99px;border:0;background:rgba(255,255,255,.14);color:#fff;font:inherit;font-weight:600;font-size:14.5px;cursor:pointer;transition:background .2s var(--ease)}
+.toast button:hover{background:rgba(255,255,255,.24)}
+.toast button:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 .toast i{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--neon,var(--green));box-shadow:0 0 12px rgba(141,243,214,.6);margin-right:12px;vertical-align:0}
 .cur{position:fixed;left:0;top:0;width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(20,17,26,.85);box-shadow:0 0 0 1px rgba(255,255,255,.6);pointer-events:none;z-index:300;transition:width .25s var(--ease),height .25s var(--ease),background .25s;opacity:0;will-change:transform}
 .dark .cur,.pub:not(.pub-light) .cur{border-color:rgba(255,255,255,.9);box-shadow:0 0 0 1px rgba(0,0,0,.4)}
@@ -67,3 +72,28 @@ p{margin:0}
 .previewbar .pv-out{color:#c9c9d4;background:rgba(255,255,255,.08)}
 @media (max-width:900px){.previewbar{left:12px;right:12px;transform:none;width:auto;bottom:calc(84px + env(safe-area-inset-bottom));border-radius:16px;padding:10px 12px;font-size:12.5px}.previewbar span{flex:1 1 100%;text-align:center}.previewbar.pv-portal{bottom:calc(12px + env(safe-area-inset-bottom))}}
 .previewbar.pv-note{box-shadow:0 14px 40px -12px rgba(0,0,0,.6),0 0 0 1px rgba(29,185,84,.55)}
+
+/* Photos that blur up (26 Oct 2026, components/Photo.jsx): a tiny blurred copy shows at once and
+   the full photo fades in over it. Without a tiny copy, a soft lens-coloured wash with a sheen. */
+.phx{position:relative;display:block;width:100%;height:100%;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--mint) 26%,transparent),color-mix(in srgb,var(--rose) 20%,transparent) 55%,color-mix(in srgb,var(--lilac) 26%,transparent))}
+.phx>i{position:absolute;inset:-6%;background-size:cover;background-position:center;filter:blur(16px) saturate(1.15);transition:opacity .7s var(--ease)}
+.phx>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;opacity:0;transition:opacity .7s var(--ease)}
+.phx.on>img{opacity:1}
+.phx.on>i{opacity:0}
+.phx:not(.lq):not(.on)::after{content:'';position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);background-size:240% 100%;animation:phx-sheen 1.6s linear infinite}
+@keyframes phx-sheen{from{background-position:130% 0}to{background-position:-130% 0}}
+
+/* Skeletons (26 Oct 2026): grey shapes the size of what is loading, with a slow sheen. */
+.sk{display:block;border-radius:10px;background:linear-gradient(100deg,var(--line) 30%,color-mix(in srgb,var(--line) 35%,transparent) 50%,var(--line) 70%);background-size:240% 100%;animation:phx-sheen 1.5s linear infinite}
+.sk.t{height:12px;border-radius:6px}.sk.h{height:30px;border-radius:8px}.sk.c{border-radius:50%}
+
+/* The directory card's photo flows into the profile cover (React Router viewTransition). */
+::view-transition-group(creative-photo){animation-duration:.5s;animation-timing-function:var(--ease)}
+::view-transition-old(root),::view-transition-new(root){animation-duration:.28s}
+
+@media (prefers-reduced-motion:reduce){
+  .phx>img,.phx>i{transition:none}
+  .phx::after,.sk{animation:none!important}
+  ::view-transition-group(*),::view-transition-old(*),::view-transition-new(*){animation:none!important}
+}
+

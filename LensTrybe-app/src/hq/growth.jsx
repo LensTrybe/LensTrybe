@@ -9,6 +9,16 @@ import { useLoad, Head, Tile, Pill, Empty, Err, Loading, useFlash, Modal, Search
 const fnd = payload => api('founding', { payload })
 const bc = payload => api('broadcasts', { payload })
 const INVITE_BASE = 'https://lenstrybe.com/join/creative?code='
+// 100 founding places in every state and territory (25 Oct 2026). Each invite counts in one state.
+const STATES = [['NSW', 'New South Wales'], ['VIC', 'Victoria'], ['QLD', 'Queensland'], ['WA', 'Western Australia'], ['SA', 'South Australia'], ['TAS', 'Tasmania'], ['ACT', 'Australian Capital Territory'], ['NT', 'Northern Territory']]
+const CODES = STATES.map(s => s[0])
+// A state code from free text ("Sydney, NSW", "Regional Victoria"), or '' when it can't tell.
+const CITY = { NSW: /sydney|newcastle|wollongong|new south wales/i, VIC: /melbourne|geelong|ballarat|bendigo|victoria/i, QLD: /brisbane|gold coast|sunshine coast|cairns|townsville|toowoomba|queensland/i, WA: /perth|fremantle|western australia/i, SA: /adelaide|south australia/i, TAS: /hobart|launceston|tasmania/i, ACT: /canberra|capital territory/i, NT: /darwin|alice springs|northern territory/i }
+function guessState(text) {
+  const t = String(text || '')
+  const code = CODES.find(c => new RegExp('\\b' + c + '\\b', 'i').test(t))
+  return code || CODES.find(c => CITY[c].test(t)) || ''
+}
 
 function state(inv) {
   if (inv.status === 'redeemed') return ['Signed up', 'green', 'signed']
@@ -38,7 +48,7 @@ export function Founding() {
   const [flash, flashNode] = useFlash()
   const d = inv.data, places = d?.places
   const newApps = (d?.applications || []).filter(a => a.status === 'new')
-  const list = (d?.invites || []).filter(i => (f === 'all' || state(i)[2] === f) && (!q || [i.full_name, i.email, i.code, i.region].some(v => String(v || '').toLowerCase().includes(q.toLowerCase()))))
+  const list = (d?.invites || []).filter(i => (f === 'all' || state(i)[2] === f) && (!q || [i.full_name, i.email, i.code, i.region, i.state].some(v => String(v || '').toLowerCase().includes(q.toLowerCase()))))
   const merge = x => x && inv.setData(o => ({ ...o, invites: o.invites.some(p => p.id === x.id) ? o.invites.map(p => p.id === x.id ? x : p) : [x, ...o.invites] }))
   const act = async (i, action, extra = {}) => {
     setBusy(i.id + action)
@@ -54,7 +64,7 @@ export function Founding() {
   const create = async (e, send) => {
     e.preventDefault(); setBusy('create')
     try {
-      const r = await fnd({ action: 'create', send, invites: [{ name: form.name, email: form.email, skill_type: form.type, region: form.region, note: form.note }] })
+      const r = await fnd({ action: 'create', send, invites: [{ name: form.name, email: form.email, skill_type: form.type, state: form.state, region: form.region, note: form.note }] })
       ;(r.created || []).forEach(merge); if (r.places) inv.setData(o => ({ ...o, places: r.places }))
       const failed = (r.sent || []).find(s => !s.ok)
       flash(failed ? 'Added, but the email did not send: ' + failed.error : send ? `Invite emailed to ${form.email}.` : 'Added as a draft.', failed ? 'bad' : 'ok')
@@ -65,24 +75,26 @@ export function Founding() {
   const app = async (a, status) => { try { await fnd({ action: 'application', application_id: a.id, status }); inv.load(); flash(status === 'dismissed' ? 'Dismissed.' : 'Updated.') } catch (e) { flash(e.message, 'bad') } }
   const waitList = (wl.data?.waitlist || []).filter(w => !q || [w.name, w.email, w.city, w.state, w.creative_type].some(v => String(v || '').toLowerCase().includes(q.toLowerCase())))
   const waitingCount = (wl.data?.waitlist || []).filter(w => w.waiting).length
-  const offer = w => setForm({ name: w.name || '', email: w.email, type: WAIT_TYPES.includes(w.creative_type) ? w.creative_type : 'Photographer', region: [w.city, w.state].filter(Boolean).join(', '), note: '' })
+  const offer = w => setForm({ name: w.name || '', email: w.email, type: WAIT_TYPES.includes(w.creative_type) ? w.creative_type : 'Photographer', state: guessState(w.state) || guessState(w.city), region: w.city || '', note: '' })
+  const byState = places?.by_state || {}
   // An expired code that was never used is re-opened for 14 days rather than replaced.
   const fresh = async w => {
     setBusy(w.id)
     try { const r = await fnd({ action: 'send', id: w.invite.id }); if (r.places) inv.setData(o => ({ ...o, places: r.places })); flash(`A fresh code is on its way to ${w.email}.`); inv.load(); wl.load() } catch (e) { flash(e.message, 'bad') }
     setBusy('')
   }
-  const showPreview = async () => { try { const r = await fnd({ action: 'preview', name: form?.name, note: form?.note }); setPreview(r) } catch (e) { flash(e.message, 'bad') } }
+  const showPreview = async () => { try { const r = await fnd({ action: 'preview', name: form?.name, note: form?.note, state: form?.state }); setPreview(r) } catch (e) { flash(e.message, 'bad') } }
   return (
     <>
-      <Head title="Founding" sub="The founding 100: invite codes, applications from the Founding page, and how each founding creative is tracking."><button className="hq-btn w sm" onClick={() => setForm({ name: '', email: '', type: 'Photographer', region: '', note: '' })}><Icon name="plus" size={14} />New invite</button></Head>{flashNode}
-      {places && <div className="hq-tiles"><Tile label="Places taken" value={`${places.used} / ${places.cap}`} sub="Taken when a creative signs up with a code" /><Tile label="Places left" value={places.available} /><Tile label="New applications" value={newApps.length} tone={newApps.length ? 'green' : ''} /><Tile label="Founding creatives" value={st.data?.founders?.length ?? '…'} /></div>}
+      <Head title="Founding" sub="The founding 100 in every state: invite codes, applications from the Founding page, and how each founding creative is tracking."><button className="hq-btn w sm" onClick={() => setForm({ name: '', email: '', type: 'Photographer', state: '', region: '', note: '' })}><Icon name="plus" size={14} />New invite</button></Head>{flashNode}
+      {places && <div className="hq-tiles"><Tile label="Places taken" value={`${places.used} / ${places.cap}`} sub={`${places.per_state || 100} in every state, taken when a code is used`} /><Tile label="Places left" value={places.available} sub="12 months and the badge. After a state's 100, 6 months" /><Tile label="New applications" value={newApps.length} tone={newApps.length ? 'green' : ''} /><Tile label="Founding creatives" value={st.data?.founders?.length ?? '…'} /></div>}
+      {places?.by_state && <div className="hq-mini hq-states">{STATES.map(([c, n]) => <div key={c} title={n}><b>{byState[c]?.used ?? 0}<small> / {byState[c]?.cap ?? 100}</small></b><small>{c}</small></div>)}</div>}
       <div className="hq-bar"><Seg value={tab} onChange={setTab} options={[['invites', 'Invites'], ['apps', `Applications${newApps.length ? ' (' + newApps.length + ')' : ''}`], ['waitlist', `Waitlist${waitingCount ? ' (' + waitingCount + ')' : ''}`], ['founders', 'Founding creatives'], ['feedback', 'Feedback']]} /></div>
       <Err>{inv.err}</Err>
       {inv.busy && !d ? <Loading /> : tab === 'invites' ? <>
         <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email, code or region" /><Seg value={f} onChange={setF} options={[['all', 'All'], ['live', 'Live'], ['draft', 'Drafts'], ['signed', 'Signed up'], ['expired', 'Expired'], ['cancelled', 'Cancelled']]} /></div>
         {list.length ? <div className="hq-table"><table><thead><tr><th>Creative</th><th>Code</th><th>State</th><th /></tr></thead><tbody>{list.map(i => { const [l, tone, k] = state(i); return (
-          <tr key={i.id}><td><b>{i.full_name}</b><small>{[i.email, i.skill_type, i.region].filter(Boolean).join(' · ')}</small>{i.email_error && <small className="warn">{i.email_error}</small>}</td><td><code>{i.code}</code></td><td><Pill tone={tone}>{l}</Pill></td>
+          <tr key={i.id}><td><b>{i.full_name}</b><small>{[i.email, i.skill_type, i.state && i.state + "'s 100", i.region].filter(Boolean).join(' · ')}</small>{i.email_error && <small className="warn">{i.email_error}</small>}</td><td><code>{i.code}</code></td><td><Pill tone={tone}>{l}</Pill></td>
             <td><div className="hq-right">
               {k === 'draft' && <><button className="hq-btn w sm" disabled={!!busy} onClick={() => act(i, 'send')}>Email it</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'send', { manual: true })}>Copy link instead</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'delete')}>Delete</button></>}
               {k === 'live' && <><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'send')}>Resend</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => navigator.clipboard.writeText(INVITE_BASE + i.code).then(() => flash('Link copied.'))}>Copy link</button><button className="hq-btn g sm" disabled={!!busy} onClick={() => act(i, 'extend')}>Add 14 days</button><button className="hq-btn bad sm" disabled={!!busy} onClick={() => act(i, 'cancel')}>Cancel</button></>}
@@ -91,7 +103,7 @@ export function Founding() {
             </div></td></tr>) })}</tbody></table></div> : <Empty>No invites match.</Empty>}
       </> : tab === 'apps' ? (
         (d.applications || []).length ? (d.applications || []).map(a => <div key={a.id} className="hq-card"><div className="hq-row"><div><b>{a.name}{a.business_name && a.business_name !== a.name ? ' · ' + a.business_name : ''}</b><small>{a.email} · {a.creative_type} · {a.region} · {ago(a.created_at)}</small>{a.portfolio_url && <a className="hq-link" href={/^https?:\/\//.test(a.portfolio_url) ? a.portfolio_url : 'https://' + a.portfolio_url} target="_blank" rel="noreferrer noopener">{a.portfolio_url}</a>}</div>
-          <div className="hq-right">{a.status === 'new' ? <><button className="hq-btn w sm" onClick={() => { setForm({ name: a.name, email: a.email, type: a.creative_type || 'Photographer', region: a.region || '', note: '' }); }}>Invite</button><button className="hq-btn g sm" onClick={() => app(a, 'dismissed')}>Dismiss</button></> : <Pill tone={a.status === 'invited' ? 'green' : 'grey'}>{a.status}</Pill>}</div></div></div>) : <Empty>No applications yet.</Empty>
+          <div className="hq-right">{a.status === 'new' ? <><button className="hq-btn w sm" onClick={() => { setForm({ name: a.name, email: a.email, type: a.creative_type || 'Photographer', state: guessState(a.region), region: a.region || '', note: '' }); }}>Invite</button><button className="hq-btn g sm" onClick={() => app(a, 'dismissed')}>Dismiss</button></> : <Pill tone={a.status === 'invited' ? 'green' : 'grey'}>{a.status}</Pill>}</div></div></div>) : <Empty>No applications yet.</Empty>
       ) : tab === 'waitlist' ? <>
         <p className="hq-note">People who joined the waitlist before LensTrybe opened near them. We are open Australia-wide now, so any creative here without a code can be offered a founding place. The invite comes from "Michael from LensTrybe".</p>
         <div className="hq-bar"><Search value={q} onChange={setQ} placeholder="Name, email or town" /></div>
@@ -116,9 +128,10 @@ export function Founding() {
           <label className="hq-field"><span>Name</span><input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required autoFocus /></label>
           <label className="hq-field"><span>Business email (published on their own site)</span><input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} required /></label>
           <div className="hq-two"><label className="hq-field"><span>What they do</span><select value={form.type} onChange={e => setForm({ ...form, type: e.target.value })}><option>Photographer</option><option>Videographer</option></select></label>
-            <label className="hq-field"><span>Region</span><input value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} placeholder="Brisbane" /></label></div>
+            <label className="hq-field"><span>State (which 100 they count in)</span><select value={form.state} onChange={e => setForm({ ...form, state: e.target.value })} required><option value="">Pick a state</option>{STATES.map(([c, n]) => <option key={c} value={c}>{n}{byState[c] ? ` (${byState[c].available} of ${byState[c].cap} left)` : ''}</option>)}</select></label></div>
+          <label className="hq-field"><span>Town or area (optional)</span><input value={form.region} onChange={e => setForm({ ...form, region: e.target.value })} placeholder="Newcastle" /></label>
           <label className="hq-field"><span>Personal note (optional, sits at the top of the email)</span><textarea value={form.note} onChange={e => setForm({ ...form, note: e.target.value })} rows={3} /></label>
-          <p className="hq-note">The email comes from "Michael from LensTrybe", with the code, what they get and what's asked of them. The code works for 14 days and takes one of the 100 places while it's live.</p>
+          <p className="hq-note">The email comes from "Michael from LensTrybe", with the code, what they get and what's asked of them. The code works for 14 days. When they use it they take a place in {form.state ? (STATES.find(s => s[0] === form.state)?.[1] || form.state) + "'s" : 'their state\'s'} 100: 12 months free and the badge while that state has places, then 6 months and no badge.</p>
           <div className="hq-acts"><button type="button" className="hq-btn g sm" onClick={showPreview}>Preview email</button><button type="button" className="hq-btn g sm" disabled={busy === 'create'} onClick={e => create(e, false)}>Save as draft</button><button className="hq-btn w sm" disabled={busy === 'create'}>Email the invite</button></div>
         </form>
       </Modal>}
